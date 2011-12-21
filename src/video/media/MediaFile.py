@@ -8,8 +8,9 @@ import logging
 from cv2 import cv
 
 class MediaFile:
-    def __init__(self, fileName):
+    def __init__(self, fileName, midiTimingClass):
         self.setFileName(fileName)
+        self._midiTiming = midiTimingClass
         self._fileOk = False
         self._image = None
         self._firstImage = None
@@ -18,7 +19,7 @@ class MediaFile:
         self._originalTime = 0.0
         self._currentFrame = 0;
         self._startSongPosition = 0.0
-        self._syncLength = 0
+        self._syncLength = self._midiTiming.getTicksPerQuarteNote() * 4
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
@@ -37,11 +38,11 @@ class MediaFile:
     def getNumberOfFrames(self):
         return self._numberOfFrames
     
-    def getCurrentFps(self):
+    def getOriginalFps(self):
         return self._originalFrameRate
 
-    def setCurrentFps(self, framerate):
-        self._originalFrameRate = framerate
+    def setMidiLength(self, midiLength):
+        self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
     
     def getCurrentFramePos(self):
         return self._currentFrame
@@ -89,7 +90,11 @@ class MediaFile:
             self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
             raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
-        self._log.info("Read file %s with %d frames, framerate %d and length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime)
+        self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
+        print self._syncLength
+        print self._syncLength / self._midiTiming.getTicksPerQuarteNote()
+        print self._syncLength / self._midiTiming.getTicksPerQuarteNote() / 4
+        self._log.warning("Read file %s with %d frames, framerate %d and length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime)
         self._fileOk = True
 
 class MediaError(Exception):

@@ -16,6 +16,7 @@ from kivy.clock import Clock
 from pcnKivy.pcnVideoWidget import PcnVideo
 
 import video.media.MediaFile
+from midi.MidiTiming import MidiTiming
 import midi.TcpMidiListner
 from utilities import MultiprocessLogger
 
@@ -29,16 +30,18 @@ logging.root.setLevel(logging.ERROR)
 class MyKivyApp(App):
     def build(self):
         self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
-        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi")
+        self._midiTiming = MidiTiming()
+
+        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", self._midiTiming)
 #        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi")
 #        self._mediaFile = video.media.MediaFile.MediaFile("Gutta_FlyingCombined_mjpeg.avi")
         self._mediaFile.openFile()
-        self._mediaFile.setCurrentFps(60)
+        self._mediaFile.setMidiLength(8.0)
 #        originalBaars120BPM = int((self._originalTime / 2) + 0.5)
         self._pcnVideoWidget.setFrameProviderClass(self._mediaFile)
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
-        self._midiListner = midi.TcpMidiListner.TcpMidiListner(self._multiprocessLogger)
+        self._midiListner = midi.TcpMidiListner.TcpMidiListner(self._midiTiming, self._multiprocessLogger)
 #        self._log.setLevel(logging.WARNING)
         return self._pcnVideoWidget
 
@@ -53,7 +56,9 @@ class MyKivyApp(App):
     def getNextFrame(self, dt):
         if (dt > 0.02):
             self._log.info("Too slow main schedule " + str(dt))
-        self._mediaFile.skipFrames(time.time())
+        timeStamp = time.time()
+        midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp)
+        self._mediaFile.skipFrames(midiTime)
         self._midiListner.getData()
         self._multiprocessLogger.handleQueuedLoggs()
 

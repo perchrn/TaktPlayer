@@ -57,7 +57,7 @@ class MyKivyApp(App):
         if (dt > 0.02):
             self._log.info("Too slow main schedule " + str(dt))
         timeStamp = time.time()
-        midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp)
+        midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
         self._mediaFile.skipFrames(midiTime)
         self._midiListner.getData()
         self._multiprocessLogger.handleQueuedLoggs()

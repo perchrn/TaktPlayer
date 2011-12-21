@@ -3,7 +3,6 @@ Created on 12. des. 2011
 
 @author: pcn
 '''
-#@ReservedAssignment
 
 import socket
 import time
@@ -12,7 +11,6 @@ from utilities import MultiprocessLogger
 from multiprocessing import Process, Queue
 from Queue import Empty
 from midi.MidiStateHolder import MidiStateHolder
-from midi.MidiTiming import MidiTiming
 
 def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
 #        while(True):
@@ -28,7 +26,7 @@ def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
         #Ask process hogging port to shut down
         import ctypes
         udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        buffer = ctypes.create_string_buffer(6)
+        buffer = ctypes.create_string_buffer(6) #@ReservedAssignment
         for i in range(6): #fa-fa-fa (*2) like in Allo Allo:-P
             buffer[i] = chr(0xfa)
         udpClientSocket.sendto(buffer, ("127.0.0.1", port))

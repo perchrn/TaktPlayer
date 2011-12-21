@@ -111,12 +111,8 @@ class MidiTiming(object):
 #            self.printMidiPosition()
 
     def guessMidiLength(self, originalLength):
-        print originalLength
         barLength = 240 / self._midiBpm # 240 = 60sec * 4beats
-        print barLength
         bars = originalLength / barLength
-        print bars
-        print "DEBUGG V0TT"
         #Use editor for more detailed timing options
         if(bars > 0.875):
             bars = int(bars + 0.5)

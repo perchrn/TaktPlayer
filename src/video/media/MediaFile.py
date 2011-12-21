@@ -91,10 +91,7 @@ class MediaFile:
             raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
         self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
-        print self._syncLength
-        print self._syncLength / self._midiTiming.getTicksPerQuarteNote()
-        print self._syncLength / self._midiTiming.getTicksPerQuarteNote() / 4
-        self._log.warning("Read file %s with %d frames, framerate %d and length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime)
+        self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
 class MediaError(Exception):

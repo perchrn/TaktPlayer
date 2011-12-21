@@ -15,9 +15,11 @@ from kivy.clock import Clock
 #pcn stuff
 from pcnKivy.pcnVideoWidget import PcnVideo
 
-import video.media.MediaFile
+from video.media.MediaMixer import MediaMixer
+from video.media.MediaFile import MediaFile
 from midi.MidiTiming import MidiTiming
 import midi.TcpMidiListner
+
 from utilities import MultiprocessLogger
 
 #Python standard
@@ -29,18 +31,25 @@ logging.root.setLevel(logging.ERROR)
 
 class MyKivyApp(App):
     def build(self):
+        #Multithreaded logging utility:
+        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
+
         self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
         self._midiTiming = MidiTiming()
+        self._mediaMixer = MediaMixer(self._multiprocessLogger)
+#        self._mediaPool = MediaPool(self._midiTiming, self._mediaMixer)
+#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
+#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
+#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1D", 16.0)
 
-        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", self._midiTiming)
+        self._mediaFile = MediaFile("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", self._midiTiming)
 #        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi")
 #        self._mediaFile = video.media.MediaFile.MediaFile("Gutta_FlyingCombined_mjpeg.avi")
         self._mediaFile.openFile()
         self._mediaFile.setMidiLength(8.0)
 #        originalBaars120BPM = int((self._originalTime / 2) + 0.5)
         self._pcnVideoWidget.setFrameProviderClass(self._mediaFile)
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
         self._midiListner = midi.TcpMidiListner.TcpMidiListner(self._midiTiming, self._multiprocessLogger)
 #        self._log.setLevel(logging.WARNING)
         return self._pcnVideoWidget
@@ -52,6 +61,7 @@ class MyKivyApp(App):
     def on_stop(self):
         self._log.info("Close applicaton")
         self._midiListner.stopDaemon()
+        self._mediaMixer.stopMixerProcess()
 
     def getNextFrame(self, dt):
         if (dt > 0.02):

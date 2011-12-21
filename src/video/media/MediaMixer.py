@@ -11,6 +11,7 @@ import time
 from utilities import MultiprocessLogger
 
 def mixerProcess(inputQueue, outputQueue, logQueue):
+    #Logging etc.
     processLogger = logging.getLogger('mixerProcess')
     processLogger.setLevel(logging.DEBUG)
     MultiprocessLogger.configureProcessLogger(processLogger, logQueue)

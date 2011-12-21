@@ -3,6 +3,8 @@ Created on 20. des. 2011
 
 @author: pcn
 '''
+from midi import MidiUtilities
+
 class MidiChannelStateHolder(object):
     def __init__(self, channelId):
         self._midiChannel = channelId
@@ -17,32 +19,6 @@ class MidiChannelStateHolder(object):
         self._noteOffSPP = 0.0
         self._noteOnInSync = False
         self._noteOffInSync = False
-
-    def noteToLetter(self, note):
-        if(note == 0):
-            return "C"
-        if(note == 1):
-            return "C#"
-        if(note == 2):
-            return "D"
-        if(note == 3):
-            return "D#"
-        if(note == 4):
-            return "E"
-        if(note == 5):
-            return "F"
-        if(note == 6):
-            return "F#"
-        if(note == 7):
-            return "G"
-        if(note == 8):
-            return "G#"
-        if(note == 9):
-            return "H"
-        if(note == 10):
-            return "H#"
-        if(note == 11):
-            return "A"
 
     def noteEvent(self, noteOn, note, velocity, songPosition):
         (midiSync, spp) = songPosition
@@ -61,9 +37,7 @@ class MidiChannelStateHolder(object):
                 self._noteOffSPP = spp
                 self._noteOffInSync = midiSync
         self._note = note
-        octav = int(note / 12) - 2
-        note = note % 12
-        noteLetter = self.noteToLetter(note)
+        (octav, noteLetter) = MidiUtilities.noteToOctavAndLetter(note)
         self._octav = octav
         self._noteLetter = noteLetter
         self._velocity = velocity

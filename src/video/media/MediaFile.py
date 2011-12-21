@@ -7,6 +7,9 @@ import os.path
 import logging
 from cv2 import cv
 
+def getEmptyImage(x, y):
+    return cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3)
+
 class MediaFile:
     def __init__(self, fileName, midiTimingClass):
         self.setFileName(fileName)
@@ -46,7 +49,7 @@ class MediaFile:
     
     def getCurrentFramePos(self):
         return self._currentFrame
-    
+
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
         self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)

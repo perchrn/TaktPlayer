@@ -16,7 +16,7 @@ from kivy.clock import Clock
 from pcnKivy.pcnVideoWidget import PcnVideo
 
 from video.media.MediaMixer import MediaMixer
-from video.media.MediaFile import MediaFile
+from video.media.MediaPool import MediaPool
 from midi.MidiTiming import MidiTiming
 import midi.TcpMidiListner
 
@@ -31,27 +31,24 @@ logging.root.setLevel(logging.ERROR)
 
 class MyKivyApp(App):
     def build(self):
-        #Multithreaded logging utility:
+        #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+#        self._log.setLevel(logging.WARNING)
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
         self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
         self._midiTiming = MidiTiming()
         self._mediaMixer = MediaMixer(self._multiprocessLogger)
-#        self._mediaPool = MediaPool(self._midiTiming, self._mediaMixer)
-#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
-#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
-#        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1D", 16.0)
+        self._mediaPool = MediaPool(self._midiTiming, self._mediaMixer, self._multiprocessLogger)
+        self._mediaPool.addMedia("", "0C", 1.0) #Blank media
+        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1D", 16.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1E", 16.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1F", 32.0)
 
-        self._mediaFile = MediaFile("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", self._midiTiming)
-#        self._mediaFile = video.media.MediaFile.MediaFile("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi")
-#        self._mediaFile = video.media.MediaFile.MediaFile("Gutta_FlyingCombined_mjpeg.avi")
-        self._mediaFile.openFile()
-        self._mediaFile.setMidiLength(8.0)
-#        originalBaars120BPM = int((self._originalTime / 2) + 0.5)
-        self._pcnVideoWidget.setFrameProviderClass(self._mediaFile)
+        self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = midi.TcpMidiListner.TcpMidiListner(self._midiTiming, self._multiprocessLogger)
-#        self._log.setLevel(logging.WARNING)
         return self._pcnVideoWidget
 
     def stopProcess(self):
@@ -67,9 +64,8 @@ class MyKivyApp(App):
         if (dt > 0.02):
             self._log.info("Too slow main schedule " + str(dt))
         timeStamp = time.time()
-        midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
-        self._mediaFile.skipFrames(midiTime)
         self._midiListner.getData()
+        self._mediaPool.updateVideo(timeStamp)
         self._multiprocessLogger.handleQueuedLoggs()
 
 if __name__ in ('__android__', '__main__'):

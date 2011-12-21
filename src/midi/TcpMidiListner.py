@@ -67,9 +67,11 @@ def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
 
 class TcpMidiListner(object):
     def __init__(self, midiTimingClass, multiprocessLogger):
-        #Daemon variables:
+        #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
+
+        #Daemon variables:
         self._midiQueue = Queue(1024)
         self._midiListnerCommandQueue = Queue(-1)
         self.startDaemon('', 2020)

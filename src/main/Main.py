@@ -39,7 +39,7 @@ class MyKivyApp(App):
         self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
         self._midiTiming = MidiTiming()
         self._mediaMixer = MediaMixer(self._multiprocessLogger)
-        self._mediaPool = MediaPool(self._midiTiming, self._mediaMixer, self._multiprocessLogger)
+        self._mediaPool = MediaPool(self._midiTiming, self._mediaMixer, self._multiprocessLogger, (800, 600))
         self._mediaPool.addMedia("", "0C", 1.0) #Blank media
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
@@ -61,18 +61,24 @@ class MyKivyApp(App):
         self._mediaMixer.stopMixerProcess()
 
     def getNextFrame(self, dt):
-        if (dt > 0.02):
-            self._log.info("Too slow main schedule " + str(dt))
-        timeStamp = time.time()
-        self._midiListner.getData()
-        self._mediaPool.updateVideo(timeStamp)
-        self._multiprocessLogger.handleQueuedLoggs()
+        try:
+            if (dt > 0.02):
+                self._log.info("Too slow main schedule " + str(dt))
+            timeStamp = time.time()
+            self._midiListner.getData()
+            self._mediaPool.updateVideo(timeStamp)
+            self._multiprocessLogger.handleQueuedLoggs()
+        except:
+            self.stopProcess()
+            raise
 
 if __name__ in ('__android__', '__main__'):
-    
-    mainApp = MyKivyApp()
-    Clock.schedule_interval(mainApp.getNextFrame, 0)
-#    Clock.schedule_interval(mainApp.frameReady, -1)
-    signal.signal(signal.SIGINT, mainApp.stopProcess)
-    mainApp.run()
-
+    try:
+        mainApp = MyKivyApp()
+        Clock.schedule_interval(mainApp.getNextFrame, 0)
+#        Clock.schedule_interval(mainApp.frameReady, -1)
+        signal.signal(signal.SIGINT, mainApp.stopProcess)
+        mainApp.run()
+    except:
+        mainApp.stopProcess()
+        raise

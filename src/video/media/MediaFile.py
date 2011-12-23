@@ -6,14 +6,27 @@ Created on 12. okt. 2011
 import os.path
 import logging
 from cv2 import cv
+import numpy
 
 def getEmptyImage(x, y):
-    return cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3)
+    return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), x, y)
+
+def resizeImage(image, x, y):
+    resizedImage = cv.CreateMat(x, y, cv.CV_8UC3)
+    cv.Resize(image, resizedImage)
+    return resizedImage
+
+def imageToArray(image):
+    return numpy.asarray(image)
+
+def imageFromArray(array):
+    return cv.fromarray(array)
 
 class MediaFile:
-    def __init__(self, fileName, midiTimingClass):
+    def __init__(self, fileName, midiTimingClass, windowSize):
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
+        self._currentWindowWidth, self._currentWindowHeight = windowSize
         self._fileOk = False
         self._image = None
         self._firstImage = None
@@ -50,6 +63,9 @@ class MediaFile:
     def getCurrentFramePos(self):
         return self._currentFrame
 
+    def resizeImage(self, image):
+        return resizeImage(image, self._currentWindowWidth, self._currentWindowHeight)
+
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
         self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
@@ -64,6 +80,7 @@ class MediaFile:
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._image = cv.QueryFrame(self._videoFile)
+                self._image = self.resizeImage(self._image)
             return True
         else:
             #print "Same"
@@ -77,11 +94,12 @@ class MediaFile:
         self._videoFile = cv.CaptureFromFile(self._filename)
         try:
             self._image = cv.QueryFrame(self._videoFile)
-            self._firstImage = self._image
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
             print "Exception while reading: " + os.path.basename(self._filename)
             raise MediaError("File caused exception!")
+        self._image = self.resizeImage(self._image)
+        self._firstImage = self._image
         if (self._image == None):
             self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
             print "Could not read frames from: " + os.path.basename(self._filename)

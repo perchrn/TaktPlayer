@@ -9,6 +9,7 @@ import logging
 import time
 
 from utilities import MultiprocessLogger
+from video.media.MediaFile import imageFromArray, imageToArray, getEmptyImage
 
 def mixerProcess(inputQueue, outputQueue, logQueue):
     #Logging etc.
@@ -28,12 +29,15 @@ def mixerProcess(inputQueue, outputQueue, logQueue):
         queueEmpty = False
         while(queueEmpty == False):
             try:
-                image, midichannel = inputQueue.get_nowait()
-                if(midichannel == -1):
+                queueImageString, queueMidiChannel = inputQueue.get_nowait()
+                processLogger.debug("got something ch: " + str(queueMidiChannel))
+                if(queueMidiChannel == -1):
                     processLogger.debug("got command QUIT")
                     run = False
                 else:
                     gotOne = True
+                    image = queueImageString
+                    processLogger.debug("got something 2")
             except Empty:
                 queueEmpty = True
 
@@ -45,9 +49,9 @@ class MediaMixer(object):
         self._outputQueue = Queue(4)
         self.startMixerProcess()
 
-        self._currentImage = None
+        self._currentImage = getEmptyImage(800, 600)
         self._currentImageId = 0
-        self._nextImage = None
+        self._nextImage = self._currentImage
         self._nextImageId = 0
 
     def startMixerProcess(self):
@@ -67,11 +71,8 @@ class MediaMixer(object):
         return self._currentImage
 
     def gueueImage(self, image, midiChannel):
-        self._inputQueue.put_nowait((image, midiChannel))
-
-    def _setImage(self, newImage):
-        self._nextImage = newImage
-        self._nextImageId += 1
+        print "gueueImage ch: " + str(midiChannel)
+        self._inputQueue.put_nowait((imageToArray(image), midiChannel))
 
     def _updateImage(self):
         if(self._currentImageId != self._nextImageId):
@@ -83,12 +84,14 @@ class MediaMixer(object):
         queueEmpty = False
         while(queueEmpty == False):
             try:
-                image = self._outputQueue.get_nowait()
+                imageArray = self._outputQueue.get_nowait()
+                print "_updateWithLatestImageFromQueue got one"
                 gotOne = True
             except Empty:
                 queueEmpty = True
         if(gotOne):
-            self._setImage(image)
+            self._nextImage = imageFromArray(imageArray)
+            self._nextImageId += 1
             self._updateImage()
 
 

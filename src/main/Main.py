@@ -49,6 +49,8 @@ class MyKivyApp(App):
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = midi.TcpMidiListner.TcpMidiListner(self._midiTiming, self._multiprocessLogger)
+        self._timingThreshold = 2.0/60
+        self._lastDelta = 0.0
         return self._pcnVideoWidget
 
     def stopProcess(self):
@@ -60,14 +62,19 @@ class MyKivyApp(App):
         self._midiListner.stopDaemon()
         self._mediaMixer.stopMixerProcess()
 
+    def frameReady(self, dt):
+        pass
+
     def getNextFrame(self, dt):
         try:
-            if (dt > 0.02):
+            if (dt > self._timingThreshold):
                 self._log.info("Too slow main schedule " + str(dt))
             timeStamp = time.time()
             self._midiListner.getData()
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()
+            print "PCN time: " + str(time.time() - timeStamp) + " last delta: " + str(self._lastDelta)
+            self._lastDelta = dt
         except:
             self.stopProcess()
             raise

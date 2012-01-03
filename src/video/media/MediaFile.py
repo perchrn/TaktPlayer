@@ -9,12 +9,20 @@ from cv2 import cv
 import numpy
 
 def getEmptyImage(x, y):
-    return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), x, y)
+    resizeMat = crateMat(x,y)
+    return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
 
-def resizeImage(image, x, y):
-    resizedImage = cv.CreateMat(x, y, cv.CV_8UC3)
-    cv.Resize(image, resizedImage)
-    return resizedImage
+def crateMat(width, heigth):
+    return cv.CreateMat(heigth, width, cv.CV_8UC3)
+
+def resizeImage(image, resizeMat):
+    cv.Resize(image, resizeMat)
+    return resizeMat
+
+def cropAndResize(image, left, top, width, height, resizeMat):
+#    cropped = cv.CreateImage( (width, height), cv.IPL_DEPTH_8U, 3)
+    src_region = cv.GetSubRect(image, (left, top, width, height) )
+    return resizeImage(src_region, resizeMat)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -27,6 +35,7 @@ class MediaFile:
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
         self._currentWindowWidth, self._currentWindowHeight = windowSize
+        self._tmpResizeMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
         self._fileOk = False
         self._image = None
         self._firstImage = None
@@ -64,26 +73,31 @@ class MediaFile:
         return self._currentFrame
 
     def resizeImage(self, image):
-        return resizeImage(image, self._currentWindowWidth, self._currentWindowHeight)
+        return resizeImage(image, self._tmpResizeMat)
+
+    def cropAndResize(self, image, left, top, width, height):
+        return cropAndResize(image, left, top, width, height, self._tmpResizeMat)
 
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
         self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
-#        self._currentFrame = int((((currentSongPosition - self._startSongPosition) * self._originalFrameRate) + 1) % self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):
-            #if(((lastFrame + 1) % self._numberOfFrames) != self._currentFrame):
-                #print "Skip"
             if(self._currentFrame == 0):
                 self._image = self._firstImage
                 self._log.debug("Setting firstframe %d", self._currentFrame)
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._image = cv.QueryFrame(self._videoFile)
-                self._image = self.resizeImage(self._image)
+                print str(self._currentFrame) + " /: " + str(float(self._currentFrame) / self._numberOfFrames) + " -.5: " + str((self._currentFrame / self._numberOfFrames) -0.5)
+                cropWidth = int(400 + (400 * abs((float(self._currentFrame) / self._numberOfFrames) -0.5)))
+                cropHeight = int(cropWidth * 600 / 800)
+                cropLeft = 400 - (cropWidth / 2)
+                cropTop = 300 - (cropHeight / 2)
+                self._image = self.cropAndResize(self._image, cropLeft, cropTop, cropWidth, cropHeight)
+#                self._image = self.resizeImage(self._image)
             return True
         else:
-            #print "Same"
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
             return False
 

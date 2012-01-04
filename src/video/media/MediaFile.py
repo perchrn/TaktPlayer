@@ -31,6 +31,10 @@ def cropAndResize(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, res
     right = left + width
     bottom = top + height
     outputRect = False
+    outPutLeft = 0
+    outPutWidth = -1
+    outPutTop = 0
+    outPutHeight = -1
     if(left < 0):
         outPutLeft = -int(float(left) / zoomXFraction)
         left = 0
@@ -44,16 +48,20 @@ def cropAndResize(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, res
         top = 0
         outputRect = True
     if(bottom > originalHeight):
-        outPutBHeight = originalHeight+int(float(originalHeight - bottom) / zoomYFraction) - outPutTop
+        outPutHeight = originalHeight+int(float(originalHeight - bottom) / zoomYFraction) - outPutTop
         height = originalHeight - top
         outputRect = True
     print "Zoom: " + str(zoomX) + " M:(+) " + str(minRange) + " R:(+) " + str(rangeFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
     src_region = cv.GetSubRect(image, (left, top, width, height) )
     if(outputRect):
-        tmpMat = crateMat(outPutWidth, outPutBHeight)
+        if(outPutWidth < 0):
+            outPutWidth = originalWidth - outPutLeft
+        if(outPutHeight < 0):
+            outPutHeight = originalHeight - outPutTop
+        tmpMat = crateMat(outPutWidth, outPutHeight)
         resized = resizeImage(src_region, tmpMat)
         cv.SetZero(resizeMat)
-        dst_region = cv.GetSubRect(resizeMat, (outPutLeft, outPutTop, outPutWidth, outPutBHeight) )
+        dst_region = cv.GetSubRect(resizeMat, (outPutLeft, outPutTop, outPutWidth, outPutHeight) )
         cv.Copy(resized, dst_region)
         return resizeMat
     return resizeImage(src_region, resizeMat)
@@ -128,8 +136,8 @@ class MediaFile:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._image = cv.QueryFrame(self._videoFile)
                 zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-#                self._image = self.cropAndResize(self._image, 0.25, 0.5, zoom)
-                self._image = self.resizeImage(self._image)
+                self._image = self.cropAndResize(self._image, 0.25, -0.25, zoom)
+#                self._image = self.resizeImage(self._image)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)

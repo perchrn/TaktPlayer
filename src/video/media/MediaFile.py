@@ -19,7 +19,7 @@ def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
 
-def cropAndResize(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeMat):
+def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeMat):
     originalWidth, originalHeight = cv.GetSize(image)
     rangeFraction = maxRange - minRange
     zoomXFraction = minRange + (rangeFraction * zoomX)
@@ -53,14 +53,14 @@ def cropAndResize(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, res
         outPutHeight = originalHeight+int(float(originalHeight - bottom) / zoomYFraction) - outPutTop
         height = originalHeight - top
         outputRect = True
-    print "Zoom: " + str(zoomX) + " M: " + str(minRange) + " R:(+) " + str(rangeFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
+#    print "Zoom: " + str(zoomX) + " M: " + str(minRange) + " R:(+) " + str(rangeFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
     src_region = cv.GetSubRect(image, (left, top, width, height) )
     if(outputRect):
         if(outPutWidth < 0):
             outPutWidth = originalWidth - outPutLeft
         if(outPutHeight < 0):
             outPutHeight = originalHeight - outPutTop
-        print "Zoom OUT: " + str(outPutWidth) + " h: " + str(outPutHeight) + " l: " + str(outPutLeft) + " t: " + str(outPutTop)
+#        print "Zoom OUT: " + str(outPutWidth) + " h: " + str(outPutHeight) + " l: " + str(outPutLeft) + " t: " + str(outPutTop)
         tmpMat = crateMat(outPutWidth, outPutHeight)
         resized = resizeImage(src_region, tmpMat)
         cv.SetZero(resizeMat)
@@ -124,8 +124,8 @@ class MediaFile:
     def resizeImage(self, image):
         return resizeImage(image, self._tmpResizeMat)
 
-    def cropAndResize(self, image, xcenter, ycenter, zoom):
-        return cropAndResize(image, xcenter, ycenter, zoom, zoom, self._minZoomPercent, self._maxZoomPercent, self._tmpResizeMat)
+    def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
+        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpResizeMat)
 
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
@@ -139,8 +139,8 @@ class MediaFile:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._image = cv.QueryFrame(self._videoFile)
                 zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-                self._image = self.cropAndResize(self._image, -0.25, -0.25, zoom)
-#                self._image = self.resizeImage(self._image)
+#                self._image = self.zoomImage(self._image, -0.25, -0.25, zoom, zoom)
+                self._image = self.resizeImage(self._image)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)

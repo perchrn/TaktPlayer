@@ -66,7 +66,7 @@ def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
 
 
 class TcpMidiListner(object):
-    def __init__(self, midiTimingClass, multiprocessLogger):
+    def __init__(self, midiTimingClass, midiStateHolderClass, multiprocessLogger):
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
@@ -80,8 +80,7 @@ class TcpMidiListner(object):
         self._midiInsideSysExMessage = False
 
         self._midiTiming = midiTimingClass
-        self._midiStateHolder = MidiStateHolder()
-        self._debug = 0
+        self._midiStateHolder = midiStateHolderClass
 
 #    def __del__(self):
 #        if(self._connection != None):
@@ -194,14 +193,6 @@ class TcpMidiListner(object):
                 print "Unknown message: %02x %02x %02x %02x" % (command, data1, data2, data3)
 
     def getData(self):
-#        if(self._connection == None):
-#            self._connection, self._conectedAddress = self._socket.accept()
-#        data = self._connection.recv(1024)
-        self._debug += 1
-        if(self._debug > 120):
-            self._debug = 0
-            self._midiTiming.printMidiPosition()
-            self._midiStateHolder.printState()
         while(True):
             try:
                 dataTimeStamp, self._conectedAddress, data = self._midiQueue.get_nowait()

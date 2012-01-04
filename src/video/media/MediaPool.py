@@ -9,7 +9,7 @@ from video.media.MediaFile import MediaFile, getEmptyImage
 from midi import MidiUtilities
 
 class MediaPool(object):
-    def __init__(self, midiTiming, mediaMixer, multiprocessLogger, windowSize):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, multiprocessLogger, windowSize):
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
@@ -19,11 +19,15 @@ class MediaPool(object):
         self._emptyImage = getEmptyImage(self._currentWindowSize[0], self._currentWindowSize[1])
 
         self._midiTiming = midiTiming
+        self._midiStateHolder = midiStateHolder
         self._mediaMixer = mediaMixer
         self._mediaMixer.gueueImage(self._emptyImage, 1)
         self._mediaPool = []
         for i in range(128): #@UnusedVariable
             self._mediaPool.append(None)
+        self._mediaTracks = []
+        for i in range(16): #@UnusedVariable
+            self._mediaTracks.append(None)
 
     def addMedia(self, fileName, noteLetter, midiLength):
         midiNote = MidiUtilities.noteStringToNoteNumber(noteLetter)
@@ -33,7 +37,6 @@ class MediaPool(object):
             mediaFile = MediaFile(fileName, self._midiTiming, self._currentWindowSize)
             mediaFile.openFile()
             mediaFile.setMidiLength(midiLength)
-#            self._mediaMixer.gueueImage(mediaFile.getFirstImage(), 1)
         else:
             mediaFile = None
 

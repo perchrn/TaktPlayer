@@ -18,6 +18,8 @@ class MediaPool(object):
 
         self._emptyImage = getEmptyImage(self._currentWindowSize[0], self._currentWindowSize[1])
 
+        self._defaultQuantize = 24
+
         self._midiTiming = midiTiming
         self._midiStateHolder = midiStateHolder
         self._mediaMixer = mediaMixer
@@ -36,7 +38,7 @@ class MediaPool(object):
         if(len(fileName) > 0):
             mediaFile = MediaFile(fileName, self._midiTiming, self._currentWindowSize)
             mediaFile.openFile()
-            mediaFile.setMidiLength(midiLength)
+            mediaFile.setMidiLengthInBeats(midiLength)
         else:
             mediaFile = None
 
@@ -45,9 +47,28 @@ class MediaPool(object):
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
-        mediaFile = self._mediaPool[36]
-        mediaFile.skipFrames(midiTime)
-        self._mediaMixer.gueueImage(mediaFile.getImage(), 1)
+        activeMedia = None
+        for midiChannel in range(16):
+            quantizeValue = self._defaultQuantize
+            note = self._midiStateHolder.checkForWaitingNote(midiChannel)
+            if(note > -1):
+                noteMedia = self._mediaPool[note]
+                if(noteMedia != None):
+                    quantizeValue = noteMedia.getQuantize()
+                self._midiStateHolder.quantizeWaitingNote(midiChannel, note, quantizeValue)
+            newNote = self._midiStateHolder.getActiveNote(midiChannel, midiTime)
+            if(newNote.isActive(midiTime)):
+                newMedia = self._mediaPool[newNote.getNote()]
+                if(newMedia):
+                    newMedia.setStartPosition(newNote.getStartPosition())
+                    activeMedia = newMedia
+        #TODO: Make sure we only use the same MediaFile instance once.
+        #TODO: Mix video, don't just show the highest channel ;-)
+        if(activeMedia != None):
+            activeMedia.skipFrames(midiTime)
+            self._mediaMixer.gueueImage(activeMedia.getImage(), 1)
+        else:
+            self._mediaMixer.gueueImage(self._emptyImage, 1)
         pass
 
 

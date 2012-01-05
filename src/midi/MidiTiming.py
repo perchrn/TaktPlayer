@@ -4,9 +4,12 @@ Created on 21. des. 2011
 @author: pcn
 '''
 import time
+import logging
 
 class MidiTiming(object):
     def __init__(self):
+        #Logging etc.
+        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         #MIDI timing variables:
         self._midiOurSongPosition = 0;
         self._midiLastTimeEventWasSPP = False

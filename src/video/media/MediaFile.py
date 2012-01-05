@@ -90,6 +90,7 @@ class MediaFile:
         self._currentFrame = 0;
         self._startSongPosition = 0.0
         self._syncLength = self._midiTiming.getTicksPerQuarteNote() * 4
+        self._quantizeLength = self._midiTiming.getTicksPerQuarteNote() * 4#Default one bar
 
         self._minZoomPercent = 0.25
         self._maxZoomPercent = 4.0
@@ -115,9 +116,15 @@ class MediaFile:
     def getOriginalFps(self):
         return self._originalFrameRate
 
-    def setMidiLength(self, midiLength):
+    def setMidiLengthInBeats(self, midiLength):
         self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
-    
+
+    def getQuantize(self):
+        return self._quantizeLength
+
+    def setStartPosition(self, spp):
+        self._startSongPosition = spp
+
     def getCurrentFramePos(self):
         return self._currentFrame
 
@@ -138,7 +145,7 @@ class MediaFile:
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._image = cv.QueryFrame(self._videoFile)
-                zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
+#                zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
 #                self._image = self.zoomImage(self._image, -0.25, -0.25, zoom, zoom)
                 self._image = self.resizeImage(self._image)
             return True

@@ -91,6 +91,7 @@ class MediaFile:
         self._tmpMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
         self._fileOk = False
         self._image = None
+        self._captureImage = None
         self._firstImage = None
         self._numberOfFrames = 0
         self._originalFrameRate = 25
@@ -142,23 +143,30 @@ class MediaFile:
     def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
         return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpMat)
 
+    def _aplyEffects(self):
+#        zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
+#        self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
+        self._image = self.resizeImage(self._captureImage)
+        
+
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
         self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):
             if(self._currentFrame == 0):
-                self._image = self._firstImage
+                self._captureImage = self._firstImage
                 self._log.debug("Setting firstframe %d", self._currentFrame)
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
-                self._image = cv.QueryFrame(self._videoFile)
-#                zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-#                self._image = self.zoomImage(self._image, -0.25, -0.25, zoom, zoom)
-                self._image = self.resizeImage(self._image)
+                self._captureImage = cv.QueryFrame(self._videoFile)
+                if(self._captureImage == None):
+                    self._captureImage = self._firstImage
+            self._aplyEffects()
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
+            self._aplyEffects()
             return False
 
     def openFile(self):
@@ -167,18 +175,17 @@ class MediaFile:
             raise MediaError("File does not exist!")
         self._videoFile = cv.CaptureFromFile(self._filename)
         try:
-            self._image = cv.QueryFrame(self._videoFile)
+            self._captureImage = cv.QueryFrame(self._videoFile)
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
             print "Exception while reading: " + os.path.basename(self._filename)
             raise MediaError("File caused exception!")
-        if (self._image == None):
+        if (self._captureImage == None):
             self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
             print "Could not read frames from: " + os.path.basename(self._filename)
             raise MediaError("File could not be read!")
         try:
-            self._image = self.resizeImage(self._image)
-            self._firstImage = self._image
+            self._firstImage = self._captureImage
             self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
             self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
         except:

@@ -46,8 +46,8 @@ class MyKivyApp(App):
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1D", 16.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1E", 16.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1F", 32.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1E", 12.0)
+        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1F", 24.0)
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)

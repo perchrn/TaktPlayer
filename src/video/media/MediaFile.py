@@ -69,6 +69,14 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
+def mixImagesAdd(image1, image2, mixMat):
+    cv.Add(image1, image2, mixMat)
+    return mixMat
+
+def mixImagesMultiply(image1, image2, mixMat):
+    cv.Mul(image1, image2, mixMat, 0.002)
+    return mixMat
+
 def imageToArray(image):
     return numpy.asarray(image)
 
@@ -80,7 +88,7 @@ class MediaFile:
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
         self._currentWindowWidth, self._currentWindowHeight = windowSize
-        self._tmpResizeMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
+        self._tmpMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
         self._fileOk = False
         self._image = None
         self._firstImage = None
@@ -129,10 +137,10 @@ class MediaFile:
         return self._currentFrame
 
     def resizeImage(self, image):
-        return resizeImage(image, self._tmpResizeMat)
+        return resizeImage(image, self._tmpMat)
 
     def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
-        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpResizeMat)
+        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpMat)
 
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
@@ -180,6 +188,11 @@ class MediaFile:
         self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
+
+    def mixWithImage(self, image):
+        return self._image # Mode replace...
+#        return mixImagesAdd(image, self._image, self._tmpMat)
+#        return mixImagesMultiply(image, self._image, self._tmpMat)
 
 class MediaError(Exception):
     def __init__(self, value):

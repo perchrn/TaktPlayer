@@ -47,8 +47,8 @@ class MediaPool(object):
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
-        activeMedia = None
         for midiChannel in range(16):
+            activeMedia = None
             quantizeValue = self._defaultQuantize
             note = self._midiStateHolder.checkForWaitingNote(midiChannel)
             if(note > -1):
@@ -62,13 +62,12 @@ class MediaPool(object):
                 if(newMedia):
                     newMedia.setStartPosition(newNote.getStartPosition())
                     activeMedia = newMedia
+            if(activeMedia != None):
+                activeMedia.skipFrames(midiTime)
+                self._mediaMixer.gueueImage(activeMedia, midiChannel)
+            else:
+                self._mediaMixer.gueueImage(None, midiChannel)
         #TODO: Make sure we only use the same MediaFile instance once.
-        #TODO: Mix video, don't just show the highest channel ;-)
-        if(activeMedia != None):
-            activeMedia.skipFrames(midiTime)
-            self._mediaMixer.gueueImage(activeMedia.getImage(), 1)
-        else:
-            self._mediaMixer.gueueImage(self._emptyImage, 1)
-        pass
+        self._mediaMixer.mixImages()
 
 

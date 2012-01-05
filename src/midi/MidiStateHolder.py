@@ -92,10 +92,9 @@ class NoteState(object):
             factor = float(rest) / quantizeValue
             if(factor > 0.15):
                 quantizedSPP += quantizeValue
-            print factor
             print "Quantizing Note: " + str(self._note) + " SPP: " + str(spp) + " (" + str(int(spp/24)) + ") quantizedSPP: " + str(quantizedSPP) + " (" + str(int(spp/24)) + ") diff: " + str(spp - quantizedSPP) + " quantizeStep: " + str(quantizeValue) + " (" + str(int(quantizeValue/24)) + ")"
             return quantizedSPP
-        
+
     def quantize(self, quantizeValue):
         self._quantizeValue = quantizeValue
         if((self._noteOnSPP >= 0.0) and (self._noteOnQuantizedSPP < 0)):

@@ -5,7 +5,7 @@ Created on 21. des. 2011
 '''
 import logging
 
-from video.media.MediaFile import MediaFile, getEmptyImage
+from video.media.MediaFile import VideoLoopFile, ImageFile, getEmptyImage
 from midi import MidiUtilities
 
 class MediaPool(object):
@@ -30,13 +30,17 @@ class MediaPool(object):
         self._mediaTracks = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
+        mediaFile = VideoLoopFile("../../testFiles/basicVideo/herrang.jpg", self._midiTiming, self._currentWindowSize)
+        mediaFile.openFile()
+        print "Adding test NOTE: " + str(48)
+        self._mediaPool[48] = mediaFile
 
     def addMedia(self, fileName, noteLetter, midiLength):
         midiNote = MidiUtilities.noteStringToNoteNumber(noteLetter)
         self._log.info("Adding media \"%s\" to note number %d with length %f" %(fileName, midiNote, midiLength))
 
         if(len(fileName) > 0):
-            mediaFile = MediaFile(fileName, self._midiTiming, self._currentWindowSize)
+            mediaFile = VideoLoopFile(fileName, self._midiTiming, self._currentWindowSize)
             mediaFile.openFile()
             mediaFile.setMidiLengthInBeats(midiLength)
         else:
@@ -59,6 +63,12 @@ class MediaPool(object):
             newNote = self._midiStateHolder.getActiveNote(midiChannel, midiTime)
             if(newNote.isActive(midiTime)):
                 newMedia = self._mediaPool[newNote.getNote()]
+                oldMedia = self._mediaTracks[midiChannel]
+                if(oldMedia == None):
+                    self._mediaTracks[midiChannel] = newMedia
+                elif(oldMedia != newMedia):
+                    oldMedia.restartSequence()
+                    self._mediaTracks[midiChannel] = newMedia
                 if(newMedia):
                     newMedia.setStartPosition(newNote.getStartPosition())
                     activeMedia = newMedia
@@ -67,7 +77,7 @@ class MediaPool(object):
                 self._mediaMixer.gueueImage(activeMedia, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, midiChannel)
-        #TODO: Make sure we only use the same MediaFile instance once.
+        #TODO: Make sure we only use the same VideoLoopFile instance once.
         self._mediaMixer.mixImages()
 
 

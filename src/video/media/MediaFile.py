@@ -90,13 +90,26 @@ def mixImagesMultiply(image1, image2, mixMat):
     cv.Mul(image1, image2, mixMat, 0.002)
     return mixMat
 
+class MixMode:
+    (Add, Multiply, LumaKey, Replace) = range(4)
+
+def mixImages(mode, image1, image2, mixMat, mixMask):
+    if(mode == MixMode.Add):
+        return mixImagesAdd(image1, image2, mixMat)
+    if(mode == MixMode.Multiply):
+        return mixImagesMultiply(image1, image2, mixMat)
+    if(mode == MixMode.LumaKey):
+        return mixImageSelfMask(image1, image2, mixMask, mixMat)
+    if(mode == MixMode.Replace):
+        return image2
+
 def imageToArray(image):
     return numpy.asarray(image)
 
 def imageFromArray(array):
     return cv.fromarray(array)
 
-class MediaFile:
+class MediaFile(object):
     def __init__(self, fileName, midiTimingClass, windowSize):
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
@@ -112,11 +125,13 @@ class MediaFile:
         self._originalTime = 0.0
         self._currentFrame = 0;
         self._startSongPosition = 0.0
-        self._syncLength = self._midiTiming.getTicksPerQuarteNote() * 4
+        self._syncLength = self._midiTiming.getTicksPerQuarteNote() * 4#Default one bar (re calculated on load)
         self._quantizeLength = self._midiTiming.getTicksPerQuarteNote() * 4#Default one bar
 
         self._minZoomPercent = 0.25
         self._maxZoomPercent = 4.0
+
+        self._mixMode = MixMode.Add
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
@@ -145,8 +160,11 @@ class MediaFile:
     def getQuantize(self):
         return self._quantizeLength
 
-    def setStartPosition(self, spp):
-        self._startSongPosition = spp
+    def setStartPosition(self, startSpp):
+        self._startSongPosition = startSpp
+
+    def restartSequence(self):
+        pass
 
     def getCurrentFramePos(self):
         return self._currentFrame
@@ -162,6 +180,45 @@ class MediaFile:
 #        self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
         self._image = self.resizeImage(self._captureImage)
         
+
+    def skipFrames(self, currentSongPosition):
+        pass
+
+    def openFile(self):
+        pass
+
+    def mixWithImage(self, image):
+        return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
+    
+class ImageFile:
+    def __init__(self, fileName, midiTimingClass, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
+
+    def skipFrames(self, currentSongPosition):
+        self._aplyEffects()
+
+    def openFile(self):
+        if (os.path.isfile(self._filename) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
+            raise MediaError("File does not exist!")
+        try:
+            self._captureImage = cv.LoadImage(self._filename)
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
+            print "Exception while reading: " + os.path.basename(self._filename)
+            raise MediaError("File caused exception!")
+        if (self._captureImage == None):
+            self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
+            print "Could not read frames from: " + os.path.basename(self._filename)
+            raise MediaError("File could not be read!")
+        self._firstImage = self._captureImage
+        self._originalTime = 1.0
+        self._log.warning("Read image file %s", os.path.basename(self._filename))
+        self._fileOk = True
+
+class VideoLoopFile(MediaFile):
+    def __init__(self, fileName, midiTimingClass, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
 
     def skipFrames(self, currentSongPosition):
         lastFrame = self._currentFrame;
@@ -209,12 +266,6 @@ class MediaFile:
         self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
-
-    def mixWithImage(self, image):
-#        return self._image # Mode replace...
-#        return mixImageSelfMask(image, self._image, self._tmpMask, self._tmpMat)
-        return mixImagesAdd(image, self._image, self._tmpMat)
-#        return mixImagesMultiply(image, self._image, self._tmpMat)
 
 class MediaError(Exception):
     def __init__(self, value):

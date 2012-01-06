@@ -18,7 +18,7 @@ class MediaPool(object):
 
         self._emptyImage = getEmptyImage(self._currentWindowSize[0], self._currentWindowSize[1])
 
-        self._defaultQuantize = 24
+        self._defaultQuantize = 24 * 4
 
         self._midiTiming = midiTiming
         self._midiStateHolder = midiStateHolder

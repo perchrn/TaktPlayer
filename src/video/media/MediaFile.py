@@ -15,6 +15,9 @@ def getEmptyImage(x, y):
 def crateMat(width, heigth):
     return cv.CreateMat(heigth, width, cv.CV_8UC3)
 
+def crateMask(width, heigth):
+    return cv.CreateMat(heigth, width, cv.CV_8UC1)
+
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
@@ -69,6 +72,16 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
+def mixImageSelfMask(image1, image2, mixMask, mixMat):
+    cv.Copy(image1, mixMat)
+    cv.CmpS(image2, 0.1, mixMask, cv.CV_CMP_GT)
+    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
+    tmpMat = crateMat(800, 600)
+    cv.ConvertScale(mixMat, tmpMat, 255)
+    return tmpMat
+    cv.Copy(image2, mixMat, mixMask)
+    return mixMat
+
 def mixImagesAdd(image1, image2, mixMat):
     cv.Add(image1, image2, mixMat)
     return mixMat
@@ -89,6 +102,7 @@ class MediaFile:
         self._midiTiming = midiTimingClass
         self._currentWindowWidth, self._currentWindowHeight = windowSize
         self._tmpMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
+        self._tmpMask = crateMask(self._currentWindowWidth, self._currentWindowHeight)
         self._fileOk = False
         self._image = None
         self._captureImage = None
@@ -197,8 +211,9 @@ class MediaFile:
         self._fileOk = True
 
     def mixWithImage(self, image):
-        return self._image # Mode replace...
-#        return mixImagesAdd(image, self._image, self._tmpMat)
+#        return self._image # Mode replace...
+#        return mixImageSelfMask(image, self._image, self._tmpMask, self._tmpMat)
+        return mixImagesAdd(image, self._image, self._tmpMat)
 #        return mixImagesMultiply(image, self._image, self._tmpMat)
 
 class MediaError(Exception):

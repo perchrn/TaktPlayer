@@ -29,6 +29,9 @@ class NoteState(object):
     def getStartPosition(self):
         return self._noteOnQuantizedSPP
 
+    def getUnquantizedStartPosition(self):
+        return self._noteOnSPP
+
     def getStopPosition(self):
         return self._noteOffQuantizedSPP
 
@@ -37,7 +40,27 @@ class NoteState(object):
             return False
         if(self._noteOnQuantizedSPP == -1):
             return False
-        if(self._noteOnQuantizedSPP < spp):
+        if((spp < 0.0) or (self._noteOnQuantizedSPP <= spp)):
+            return True
+        else:
+            return False
+
+    def isNoteUneleased(self, spp):
+        if(self._note == -1):
+            return False
+        if(self._noteOffQuantizedSPP == -1):
+            return True
+        if(self._noteOffQuantizedSPP > spp):
+            return True
+        else:
+            return False
+
+    def isNoteReleased(self, spp):
+        if(self._note == -1):
+            return False
+        if(self._noteOffQuantizedSPP == -1):
+            return False
+        if(self._noteOffQuantizedSPP <= spp):
             return True
         else:
             return False
@@ -57,9 +80,9 @@ class NoteState(object):
     def printState(self, midiChannel):
         if(self._note > -1):
             if(self._noteOn):
-                print "State: Note on: " + self._noteLetter + str(self._octav) + " vel: " + str(self._velocity) + " channel: " + str(midiChannel) + " OnSPP: " + str(self._noteOnSPP) + " OffSPP: " + str(self._noteOffSPP)
+                print "State: Note on: " + self._noteLetter + str(self._octav) + " vel: " + str(self._velocity) + " channel: " + str(midiChannel) + " OnSPP: " + str(self._noteOnSPP) + " OffSPP: " + str(self._noteOffSPP) + " OnSPP: " + str(self._noteOnQuantizedSPP) + " OffSPP: " + str(self._noteOffQuantizedSPP)
             else:
-                print "State: Note off: " + self._noteLetter + str(self._octav) + " vel: " + str(self._velocity) + " channel: " + str(midiChannel) + " OnSPP: " + str(self._noteOnSPP) + " OffSPP: " + str(self._noteOffSPP)
+                print "State: Note off: " + self._noteLetter + str(self._octav) + " vel: " + str(self._velocity) + " channel: " + str(midiChannel) + " OnSPP: " + str(self._noteOnSPP) + " OffSPP: " + str(self._noteOffSPP) + " OnSPP: " + str(self._noteOnQuantizedSPP) + " OffSPP: " + str(self._noteOffQuantizedSPP)
 
     def noteOn(self, note, velocity, songPosition, spp, midiSync):
         self._noteOn = True
@@ -106,46 +129,116 @@ class MidiChannelStateHolder(object):
     def __init__(self, channelId):
         self._midiChannel = channelId
 
-        self._activeNote = NoteState()
-        self._nextNote = NoteState()
+#        self._nextNote = NoteState()
+        self._activeNotes = []
+        for i in range(128): #@UnusedVariable
+            self._activeNotes.append(NoteState())
+        self._numberOfWaitingActiveNotes = 0
+        self._nextNotes = []
+        for i in range(128): #@UnusedVariable
+            self._nextNotes.append(NoteState())
+        self._numberOfWaitingNextNotes = 0
+        self._activeNote = self._activeNotes[0]
+
 
     def noteEvent(self, noteOn, note, velocity, songPosition):
         (midiSync, spp) = songPosition
         if(noteOn == False):
+            nextNote = self._nextNotes[note]
             if(self._activeNote.isOn(note)):
                 self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
-            elif(self._nextNote.isOn(note)):
-                self._nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+            elif(nextNote.isOn(note)):
+                nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
         else:
-            if(velocity > 0):
-                self._nextNote = NoteState()#reset note
-                self._nextNote.noteOn(note, velocity, songPosition, spp, midiSync)
+            if(velocity > 0): #NOTE ON!!!
+                nextNote = NoteState()#reset note
+                nextNote.noteOn(note, velocity, songPosition, spp, midiSync)
+                self._nextNotes[note] = nextNote
+                self._numberOfWaitingNextNotes += 1
             else:
                 #Velocity 0 is the same as note off.
                 if(self._activeNote.isOn(note)):
                     self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
-                elif(self._nextNote.isOn(note)):
-                    self._nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+                elif(nextNote.isOn(note)):
+                    nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+
+    def _findWaitingActiveNote(self, spp):
+        returnNote = None
+        noteCount = 0
+        for note in range(128):
+            testNote = self._activeNotes[note]
+            if(testNote.isActive(spp)):
+                if(testNote.isNoteUneleased(spp)):
+                    if(returnNote == None):
+                        returnNote = testNote
+                    else:
+                        if(testNote.getStartPosition() < returnNote.getStartPosition()):
+                            returnNote = testNote
+                    noteCount += 1
+        self._numberOfWaitingActiveNotes = noteCount
+        return returnNote
+
+    def _findWaitingNextNote(self):
+        returnNote = None
+        noteCount = 0
+        for note in range(128):
+            testNote = self._nextNotes[note]
+            if(testNote.isActive(-1.0)):
+                if(returnNote == None):
+                    returnNote = testNote
+                else:
+                    if(testNote.getStartPosition() < returnNote.getStartPosition()):
+                        returnNote = testNote
+                noteCount += 1
+        self._numberOfWaitingNextNotes = noteCount
+        return returnNote
+
+    def _findUnquantizedNexNote(self):
+        returnNote = None
+        for note in range(128):
+            testNote = self._nextNotes[note]
+            if(testNote.isUnquantized()):
+                if(returnNote == None):
+                    returnNote = testNote
+                else:
+                    if(testNote.getUnquantizedStartPosition() < returnNote.getUnquantizedStartPosition()):
+                        returnNote = testNote
+        return returnNote
 
     def getActiveNote(self, spp):
-        if(self._nextNote.isActive(spp)):
-            self._activateNextNote()
+        if(self._numberOfWaitingNextNotes > 0):
+            nextNote = self._findWaitingNextNote()
+            if((nextNote != None) and (nextNote.isActive(spp))):
+                self._activateNextNote(nextNote)
+        if(self._numberOfWaitingActiveNotes > 0):
+            if(self._activeNote.isNoteReleased(spp)):
+                testNote = self._findWaitingActiveNote(spp)
+                if(testNote != None):
+                    print "Re activating downpressed note: " + str(testNote.getNote())
+                    self._activeNote = testNote
         return self._activeNote
 
-    def getNextNote(self):
-        return self._nextNote
+#    def getNextNote(self):
+#        return self._nextNote
 
-    def _activateNextNote(self):
-        self._activeNote = self._nextNote
-        self._nextNote = NoteState()#reset note
+    def _activateNextNote(self, nextNote):
+        noteId = nextNote.getNote()
+        print "Activate NextNote! " + str(noteId)
+        self._activeNote = nextNote
+        self._activeNotes[noteId] = nextNote
+        self._nextNotes[noteId] = NoteState()#reset note
+        self._numberOfWaitingNextNotes -= 1
+        self._numberOfWaitingActiveNotes += 1
 
     def quantizeNextNote(self, note, quantizeValue):
-        if(self._nextNote.getNote() == note):
-            self._nextNote.quantize(quantizeValue)
+        testNote = self._nextNotes[note]
+        if(testNote.getNote() == note):
+            testNote.quantize(quantizeValue)
 
     def checkNextNoteQuantize(self):
-        if(self._nextNote.isUnquantized()):
-            return self._nextNote.getNote()
+        unquantizedNote = self._findUnquantizedNexNote()
+        if(unquantizedNote != None):
+            return unquantizedNote.getNote()
         return -1
 
     def printState(self, midiChannel):

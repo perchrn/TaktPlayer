@@ -10,7 +10,6 @@ import logging
 from utilities import MultiprocessLogger
 from multiprocessing import Process, Queue
 from Queue import Empty
-from midi.MidiStateHolder import MidiStateHolder
 
 def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
 #        while(True):

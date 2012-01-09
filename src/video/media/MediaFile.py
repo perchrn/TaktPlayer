@@ -7,6 +7,7 @@ import os.path
 import logging
 from cv2 import cv
 import numpy
+from midi.MidiModulation import MidiModulation
 
 def getEmptyImage(x, y):
     resizeMat = crateMat(x,y)
@@ -267,6 +268,20 @@ class ImageSequenceFile(MediaFile):
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceFile.Mode.Controller
         self.setQuantizeInBeats(1.0)
+        self._midiModulation = MidiModulation()
+        self._midiModulation.setModulationReceiver("PlayBack")
+        self._midiModulation.setModulationReceiver("EffectX")
+        self._midiModulation.setModulationReceiver("EffectY")
+        self._midiModulation.setModulationReceiver("EffectAmount")
+        self._midiModulation.setModulationReceiver("EffectAmountRatio")
+        self._midiModulation.setModulationReceiver("EffectExtraArgument")
+
+#        self._midiModulation.setDefaultModulation("PlayBack", "MidiChannel.Controller.ModWheel")
+
+        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiChannel.Controller.ModWheel")
+#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiChannel.Aftertouch")
+#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiNote.Velocity")
+#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiNote.NotePreasure")
 
     def restartSequence(self):
         self._firstTrigger = True
@@ -276,13 +291,14 @@ class ImageSequenceFile(MediaFile):
     def setStartPosition(self, startSpp):
         lastSpp = self._startSongPosition
         if(startSpp != lastSpp):
-            print "SPP: " + str(startSpp) + " Last: " + str(lastSpp)
             if(self._firstTrigger == True):
                 self._firstTrigger = False
             else:
-                print "Increase!!!"
                 self._triggerCounter += 1
         self._startSongPosition = startSpp
+
+    def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         lastFrame = self._currentFrame
@@ -292,7 +308,7 @@ class ImageSequenceFile(MediaFile):
         elif(self._sequenceMode == ImageSequenceFile.Mode.ReTrigger):
             self._currentFrame =  (self._triggerCounter % self._numberOfFrames) - 1
         elif(self._sequenceMode == ImageSequenceFile.Mode.Controller):
-            self._currentFrame = int(midiChannelState.getControllerValue(1) * self._numberOfFrames) - 1
+            self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames) - 1
 
         if(lastFrame != self._currentFrame):
             cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
@@ -325,12 +341,15 @@ class VideoLoopFile(MediaFile):
         self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames) - 1
 
         if(lastFrame != self._currentFrame):
+            cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
             if(self._currentFrame == -1):
                 self._captureImage = self._firstImage
 #                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, -1)
                 self._log.debug("Setting firstframe %d", self._currentFrame)
+            elif(self._currentFrame == 0):
+                self._captureImage = self._secondImage
+                self._log.debug("Setting secondframe %d", self._currentFrame)
             else:
-                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
                 self._captureImage = cv.QueryFrame(self._videoFile)
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage

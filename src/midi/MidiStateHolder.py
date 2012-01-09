@@ -6,7 +6,8 @@ Created on 20. des. 2011
 from midi import MidiUtilities
 
 class NoteState(object):
-    def __init__(self):
+    def __init__(self, parent):
+        self._parent = parent
         self._noteOn = False
         self._note = -1
         self._octav = -1
@@ -129,17 +130,19 @@ class MidiChannelStateHolder(object):
     def __init__(self, channelId):
         self._midiChannel = channelId
 
-#        self._nextNote = NoteState()
         self._activeNotes = []
         for i in range(128): #@UnusedVariable
-            self._activeNotes.append(NoteState())
+            self._activeNotes.append(NoteState(self))
         self._numberOfWaitingActiveNotes = 0
         self._nextNotes = []
         for i in range(128): #@UnusedVariable
-            self._nextNotes.append(NoteState())
+            self._nextNotes.append(NoteState(self))
         self._numberOfWaitingNextNotes = 0
         self._activeNote = self._activeNotes[0]
 
+        self._controllerValues = []
+        for i in range(128): #@UnusedVariable
+            self._controllerValues.append(0.0)
 
     def noteEvent(self, noteOn, note, velocity, songPosition):
         (midiSync, spp) = songPosition
@@ -151,7 +154,7 @@ class MidiChannelStateHolder(object):
                 nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
         else:
             if(velocity > 0): #NOTE ON!!!
-                nextNote = NoteState()#reset note
+                nextNote = NoteState(self)#reset note
                 nextNote.noteOn(note, velocity, songPosition, spp, midiSync)
                 self._nextNotes[note] = nextNote
                 self._numberOfWaitingNextNotes += 1
@@ -161,6 +164,24 @@ class MidiChannelStateHolder(object):
                     self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
                 elif(nextNote.isOn(note)):
                     nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+
+    def controllerChange(self, controllerId, value, songPosition):
+        self._controllerValues[controllerId] = (float(value) / 128)
+
+    def getControllerValue(self, controllerId):
+        return self._controllerValues[controllerId]
+
+    def getControllerValueAsPlussMinus(self, controllerId):
+        return (self._controllerValues[controllerId] * 2) - 1.0
+
+    def pitchBendChange(self, data1, data2, songPosition):
+        self._pitchBendValue = (float(data2) / 128) + (float(data1) / 16256)#(127*128)
+
+    def getPitchBendValue(self, controllerId):
+        return self._pitchBendValue
+
+    def getPitchBendValueAsPlussMinus(self, controllerId):
+        return (self._pitchBendValue * 2) - 1.0
 
     def _findWaitingActiveNote(self, spp):
         returnNote = None
@@ -218,24 +239,21 @@ class MidiChannelStateHolder(object):
                     self._activeNote = testNote
         return self._activeNote
 
-#    def getNextNote(self):
-#        return self._nextNote
-
     def _activateNextNote(self, nextNote):
         noteId = nextNote.getNote()
         print "Activate NextNote! " + str(noteId)
         self._activeNote = nextNote
         self._activeNotes[noteId] = nextNote
-        self._nextNotes[noteId] = NoteState()#reset note
+        self._nextNotes[noteId] = NoteState(self)#reset note
         self._numberOfWaitingNextNotes -= 1
         self._numberOfWaitingActiveNotes += 1
 
-    def quantizeNextNote(self, note, quantizeValue):
+    def quantizeWaitingNote(self, note, quantizeValue):
         testNote = self._nextNotes[note]
         if(testNote.getNote() == note):
             testNote.quantize(quantizeValue)
 
-    def checkNextNoteQuantize(self):
+    def checkIfNextNoteIsQuantized(self):
         unquantizedNote = self._findUnquantizedNexNote()
         if(unquantizedNote != None):
             return unquantizedNote.getNote()
@@ -260,7 +278,7 @@ class MidiStateHolder(object):
         pass
 
     def controller(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._midiChannelStateHolder[midiChannel].controllerChange(data1, data2, songPosition)
 
     def programChange(self, midiChannel, data1, data2, songPosition):
         pass
@@ -269,18 +287,20 @@ class MidiStateHolder(object):
         pass
 
     def pitchBend(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._midiChannelStateHolder[midiChannel].controllerChange(data1, data2, songPosition)
 
     def getActiveNote(self, midiChannel, spp):
         return self._midiChannelStateHolder[midiChannel].getActiveNote(spp)
 
     def checkForWaitingNote(self, midiChannel):
-        return self._midiChannelStateHolder[midiChannel].checkNextNoteQuantize()
+        return self._midiChannelStateHolder[midiChannel].checkIfNextNoteIsQuantized()
 
     def quantizeWaitingNote(self, midiChannel, note, quantizeValue):
-        self._midiChannelStateHolder[midiChannel].quantizeNextNote(note, quantizeValue)
+        self._midiChannelStateHolder[midiChannel].quantizeWaitingNote(note, quantizeValue)
 
     def printState(self):
         for i in range(16):
             self._midiChannelStateHolder[i].printState()
 
+    def getMidiChannelState(self, midiChannel):
+        return self._midiChannelStateHolder[midiChannel]

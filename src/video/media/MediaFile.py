@@ -18,6 +18,9 @@ def crateMat(width, heigth):
 def crateMask(width, heigth):
     return cv.CreateMat(heigth, width, cv.CV_8UC1)
 
+def copyImage(image):
+    return cv.CloneImage(image)
+
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
@@ -120,6 +123,7 @@ class MediaFile(object):
         self._image = None
         self._captureImage = None
         self._firstImage = None
+        self._secondImage = None
         self._numberOfFrames = 0
         self._originalFrameRate = 25
         self._originalTime = 0.0
@@ -160,6 +164,9 @@ class MediaFile(object):
     def getQuantize(self):
         return self._quantizeLength
 
+    def setQuantizeInBeats(self, midiLength):
+        self._quantizeLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+
     def setStartPosition(self, startSpp):
         self._startSongPosition = startSpp
 
@@ -179,25 +186,59 @@ class MediaFile(object):
 #        zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
 #        self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
         self._image = self.resizeImage(self._captureImage)
+#        self._image = self._captureImage
         
 
-    def skipFrames(self, currentSongPosition):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         pass
 
-    def openFile(self):
+    def openVideoFile(self, midiLength):
+        if (os.path.isfile(self._filename) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
+            raise MediaError("File does not exist!")
+        self._videoFile = cv.CaptureFromFile(self._filename)
+        try:
+            self._captureImage = cv.QueryFrame(self._videoFile)
+            self._firstImage = copyImage(self._captureImage)
+            self._captureImage = cv.QueryFrame(self._videoFile)
+            self._secondImage = copyImage(self._captureImage)
+            self._captureImage = self._firstImage
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
+            print "Exception while reading: " + os.path.basename(self._filename)
+            raise MediaError("File caused exception!")
+        if (self._captureImage == None):
+            self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
+            print "Could not read frames from: " + os.path.basename(self._filename)
+            raise MediaError("File could not be read!")
+        try:
+            self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
+            self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
+        except:
+            self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
+            raise MediaError("File caused exception!")
+        self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
+        if(midiLength <= 0.0):
+            self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
+        else:
+            self.setMidiLengthInBeats(midiLength)
+        self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
+        self._fileOk = True
+
+    def openFile(self, midiLength):
         pass
 
     def mixWithImage(self, image):
         return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
     
-class ImageFile:
+class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, windowSize):
         MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
 
-    def skipFrames(self, currentSongPosition):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         self._aplyEffects()
 
-    def openFile(self):
+    def openFile(self, midiLength):
         if (os.path.isfile(self._filename) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
             raise MediaError("File does not exist!")
@@ -216,17 +257,77 @@ class ImageFile:
         self._log.warning("Read image file %s", os.path.basename(self._filename))
         self._fileOk = True
 
+class ImageSequenceFile(MediaFile):
+    class Mode:
+        Time, ReTrigger, Controller = range(3)
+
+    def __init__(self, fileName, midiTimingClass, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
+        self._triggerCounter = 0
+        self._firstTrigger = True
+        self._sequenceMode = ImageSequenceFile.Mode.Controller
+        self.setQuantizeInBeats(1.0)
+
+    def restartSequence(self):
+        self._firstTrigger = True
+        self._startSongPosition = 0.0
+        self._triggerCounter = 0
+
+    def setStartPosition(self, startSpp):
+        lastSpp = self._startSongPosition
+        if(startSpp != lastSpp):
+            print "SPP: " + str(startSpp) + " Last: " + str(lastSpp)
+            if(self._firstTrigger == True):
+                self._firstTrigger = False
+            else:
+                print "Increase!!!"
+                self._triggerCounter += 1
+        self._startSongPosition = startSpp
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        lastFrame = self._currentFrame
+        
+        if(self._sequenceMode == ImageSequenceFile.Mode.Time):
+            self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames) - 1
+        elif(self._sequenceMode == ImageSequenceFile.Mode.ReTrigger):
+            self._currentFrame =  (self._triggerCounter % self._numberOfFrames) - 1
+        elif(self._sequenceMode == ImageSequenceFile.Mode.Controller):
+            self._currentFrame = int(midiChannelState.getControllerValue(1) * self._numberOfFrames) - 1
+
+        if(lastFrame != self._currentFrame):
+            cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
+            if(self._currentFrame == -1):
+                self._captureImage = self._firstImage
+                self._log.debug("Setting firstframe %d", self._currentFrame)
+            elif(self._currentFrame == 0):
+                self._captureImage = self._secondImage
+                self._log.debug("Setting secondframe %d", self._currentFrame)
+            else:
+                self._captureImage = cv.QueryFrame(self._videoFile)
+                if(self._captureImage == None):
+                    self._captureImage = self._firstImage
+            self._aplyEffects()
+            return True
+        else:
+            self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
+            self._aplyEffects()
+            return False
+
+    def openFile(self, midiLength):
+        self.openVideoFile(midiLength)
+
 class VideoLoopFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, windowSize):
         MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
 
-    def skipFrames(self, currentSongPosition):
-        lastFrame = self._currentFrame;
-        self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        lastFrame = self._currentFrame
+        self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames) - 1
 
         if(lastFrame != self._currentFrame):
-            if(self._currentFrame == 0):
+            if(self._currentFrame == -1):
                 self._captureImage = self._firstImage
+#                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, -1)
                 self._log.debug("Setting firstframe %d", self._currentFrame)
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
@@ -240,32 +341,8 @@ class VideoLoopFile(MediaFile):
             self._aplyEffects()
             return False
 
-    def openFile(self):
-        if (os.path.isfile(self._filename) == False):
-            self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
-            raise MediaError("File does not exist!")
-        self._videoFile = cv.CaptureFromFile(self._filename)
-        try:
-            self._captureImage = cv.QueryFrame(self._videoFile)
-        except:
-            self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
-            print "Exception while reading: " + os.path.basename(self._filename)
-            raise MediaError("File caused exception!")
-        if (self._captureImage == None):
-            self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
-            print "Could not read frames from: " + os.path.basename(self._filename)
-            raise MediaError("File could not be read!")
-        try:
-            self._firstImage = self._captureImage
-            self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
-            self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
-        except:
-            self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
-            raise MediaError("File caused exception!")
-        self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
-        self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
-        self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
-        self._fileOk = True
+    def openFile(self, midiLength):
+        self.openVideoFile(midiLength)
 
 class MediaError(Exception):
     def __init__(self, value):

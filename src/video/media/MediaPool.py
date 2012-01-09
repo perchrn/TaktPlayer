@@ -5,7 +5,7 @@ Created on 21. des. 2011
 '''
 import logging
 
-from video.media.MediaFile import VideoLoopFile, ImageFile, getEmptyImage
+from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile, getEmptyImage
 from midi import MidiUtilities
 
 class MediaPool(object):
@@ -30,21 +30,34 @@ class MediaPool(object):
         self._mediaTracks = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
-        mediaFile = VideoLoopFile("../../testFiles/basicVideo/herrang.jpg", self._midiTiming, self._currentWindowSize)
-        mediaFile.openFile()
-        print "Adding test NOTE: " + str(48)
-        self._mediaPool[48] = mediaFile
+
+    def _isFileNameAnImageName(self, filename):
+        if(filename.endswith(".png")):
+            return True
+        if(filename.endswith(".jpg")):
+            return True
+        return False
+
+    def _isFileNameAnImageSequenceName(self, filename):
+        if(filename.endswith("_sequence.avi")):
+            return True
+        return False
 
     def addMedia(self, fileName, noteLetter, midiLength):
         midiNote = MidiUtilities.noteStringToNoteNumber(noteLetter)
         self._log.info("Adding media \"%s\" to note number %d with length %f" %(fileName, midiNote, midiLength))
 
-        if(len(fileName) > 0):
-            mediaFile = VideoLoopFile(fileName, self._midiTiming, self._currentWindowSize)
-            mediaFile.openFile()
-            mediaFile.setMidiLengthInBeats(midiLength)
-        else:
+        if(len(fileName) <= 0):
             mediaFile = None
+        elif(self._isFileNameAnImageName(fileName)):
+            mediaFile = ImageFile(fileName, self._midiTiming, self._currentWindowSize)
+            mediaFile.openFile(midiLength)
+        elif(self._isFileNameAnImageSequenceName(fileName)):
+            mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._currentWindowSize)
+            mediaFile.openFile(midiLength)
+        else:
+            mediaFile = VideoLoopFile(fileName, self._midiTiming, self._currentWindowSize)
+            mediaFile.openFile(midiLength)
 
         print "Adding NOTE: " + str(midiNote)
         self._mediaPool[midiNote] = mediaFile
@@ -54,15 +67,16 @@ class MediaPool(object):
         for midiChannel in range(16):
             activeMedia = None
             quantizeValue = self._defaultQuantize
-            note = self._midiStateHolder.checkForWaitingNote(midiChannel)
+            midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
+            note = midiChannelState.checkIfNextNoteIsQuantized()
             if(note > -1):
                 noteMedia = self._mediaPool[note]
                 if(noteMedia != None):
                     quantizeValue = noteMedia.getQuantize()
-                self._midiStateHolder.quantizeWaitingNote(midiChannel, note, quantizeValue)
-            newNote = self._midiStateHolder.getActiveNote(midiChannel, midiTime)
-            if(newNote.isActive(midiTime)):
-                newMedia = self._mediaPool[newNote.getNote()]
+                midiChannelState.quantizeWaitingNote(note, quantizeValue)
+            midiNoteState = midiChannelState.getActiveNote(midiTime)
+            if(midiNoteState.isActive(midiTime)):
+                newMedia = self._mediaPool[midiNoteState.getNote()]
                 oldMedia = self._mediaTracks[midiChannel]
                 if(oldMedia == None):
                     self._mediaTracks[midiChannel] = newMedia
@@ -70,10 +84,10 @@ class MediaPool(object):
                     oldMedia.restartSequence()
                     self._mediaTracks[midiChannel] = newMedia
                 if(newMedia):
-                    newMedia.setStartPosition(newNote.getStartPosition())
+                    newMedia.setStartPosition(midiNoteState.getStartPosition())
                     activeMedia = newMedia
             if(activeMedia != None):
-                activeMedia.skipFrames(midiTime)
+                activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)
                 self._mediaMixer.gueueImage(activeMedia, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, midiChannel)

@@ -114,7 +114,7 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, windowSize):
+    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
         self._currentWindowWidth, self._currentWindowHeight = windowSize
@@ -130,8 +130,6 @@ class MediaFile(object):
         self._originalTime = 0.0
         self._currentFrame = 0;
         self._startSongPosition = 0.0
-        self._syncLength = self._midiTiming.getTicksPerQuarteNote() * 4#Default one bar (re calculated on load)
-        self._quantizeLength = self._midiTiming.getTicksPerQuarteNote() * 4#Default one bar
 
         self._minZoomPercent = 0.25
         self._maxZoomPercent = 4.0
@@ -140,6 +138,46 @@ class MediaFile(object):
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
+
+        self._configurationTree = configurationTree
+        self._configurationTree.addTextParameterStatic("Type", self._getType())
+        self._configurationTree.addTextParameterStatic("FileName", self._filename)
+        self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"))
+        self._setupConfiguration()
+        self._getConfiguration()
+
+    def _setupConfiguration(self):
+        self._midiModulation.setModulationReceiver("PlayBack", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("EffectX", "None")
+        self._midiModulation.setModulationReceiver("EffectY", "None")
+        self._midiModulation.setModulationReceiver("EffectAmount", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("EffectArgument1", "None")
+        self._midiModulation.setModulationReceiver("EffectArgument2", "None")
+        self._playbackModulationId = -1
+        self._effectXModulationId = -1
+        self._effectYModulationId = -1
+        self._effectAmountModulationId = -1
+        self._effectArgument1ModulationId = -1
+        self._effectArgument2ModulationId = -1
+
+        self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
+        self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
+        self._syncLength = -1.0
+        self._quantizeLength = -1.0
+
+    def _getConfiguration(self):
+        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
+        self._effectXModulationId = self._midiModulation.connectModulation("EffectX")
+        self._effectYModulationId = self._midiModulation.connectModulation("EffectY")
+        self._effectAmountModulationId = self._midiModulation.connectModulation("EffectAmount")
+        self._effectArgument1ModulationId = self._midiModulation.connectModulation("EffectArgument1")
+        self._effectArgument2ModulationId = self._midiModulation.connectModulation("EffectArgument2")
+
+        self._syncLength = self._configurationTree.getValue("SyncLength")
+        self._quantizeLength = self._configurationTree.getValue("QuantizeLength")
+
+    def _getType(self):
+        return "Unknown"
 
     def setFileName(self, fileName):
         self._filename = os.path.normcase(fileName)
@@ -160,12 +198,14 @@ class MediaFile(object):
         return self._originalFrameRate
 
     def setMidiLengthInBeats(self, midiLength):
+        self._configurationTree.setValue("SyncLength", midiLength)
         self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
 
     def getQuantize(self):
         return self._quantizeLength
 
     def setQuantizeInBeats(self, midiLength):
+        self._configurationTree.setValue("QuantizeLength", midiLength)
         self._quantizeLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
 
     def setStartPosition(self, startSpp):
@@ -220,9 +260,8 @@ class MediaFile(object):
             raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
         if(midiLength <= 0.0):
-            self._syncLength = self._midiTiming.guessMidiLength(self._originalTime)
-        else:
-            self.setMidiLengthInBeats(midiLength)
+            midiLength = self._midiTiming.guessMidiLength(self._originalTime)
+        self.setMidiLengthInBeats(midiLength)
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
@@ -233,8 +272,11 @@ class MediaFile(object):
         return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
+
+    def _getType(self):
+        return "Image"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         self._aplyEffects()
@@ -262,26 +304,15 @@ class ImageSequenceFile(MediaFile):
     class Mode:
         Time, ReTrigger, Controller = range(3)
 
-    def __init__(self, fileName, midiTimingClass, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceFile.Mode.Controller
         self.setQuantizeInBeats(1.0)
-        self._midiModulation = MidiModulation()
-        self._midiModulation.setModulationReceiver("PlayBack")
-        self._midiModulation.setModulationReceiver("EffectX")
-        self._midiModulation.setModulationReceiver("EffectY")
-        self._midiModulation.setModulationReceiver("EffectAmount")
-        self._midiModulation.setModulationReceiver("EffectAmountRatio")
-        self._midiModulation.setModulationReceiver("EffectExtraArgument")
 
-#        self._midiModulation.setDefaultModulation("PlayBack", "MidiChannel.Controller.ModWheel")
-
-        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiChannel.Controller.ModWheel")
-#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiChannel.Aftertouch")
-#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiNote.Velocity")
-#        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack", "MidiNote.NotePreasure")
+    def _getType(self):
+        return "ImageSequence"
 
     def restartSequence(self):
         self._firstTrigger = True
@@ -333,8 +364,11 @@ class ImageSequenceFile(MediaFile):
         self.openVideoFile(midiLength)
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
+
+    def _getType(self):
+        return "VideoLoop"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         lastFrame = self._currentFrame

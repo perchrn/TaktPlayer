@@ -15,8 +15,11 @@ from kivy.clock import Clock
 #pcn stuff
 from pcnKivy.pcnVideoWidget import PcnVideo
 
+from configuration.ConfigurationHolder import ConfigurationHolder
+
 from video.media.MediaMixer import MediaMixer
 from video.media.MediaPool import MediaPool
+
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
 from midi.MidiStateHolder import MidiStateHolder
@@ -37,11 +40,13 @@ class MyKivyApp(App):
 #        self._log.setLevel(logging.WARNING)
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
+        self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
         self._mediaMixer = MediaMixer()
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._multiprocessLogger, (800, 600))
+        confChild = self._configurationTree.addChildUnique("MediaPool")
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger, (800, 600))
         self._mediaPool.addMedia("", "0C", 1.0) #Blank media
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
         self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
@@ -58,6 +63,10 @@ class MyKivyApp(App):
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
+
+        xmlConfTree = self._configurationTree.getConfigurationXMLString()
+        print xmlConfTree
+
         return self._pcnVideoWidget
 
     def stopProcess(self):

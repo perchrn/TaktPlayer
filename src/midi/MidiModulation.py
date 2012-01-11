@@ -59,19 +59,22 @@ class ModulatiobReceiver(object):
         return self._name
 
 class MidiModulation(object):
-    def __init__(self):
+    def __init__(self, configurationTree):
         self._tmpMidiChClass = MidiChannelStateHolder(0)
         self._tmpMidiNoteClass = NoteState()
+
+        self._configurationTree = configurationTree
 
         self._modulationReceivers = []
         self._activeLfos = []
 
-    def setModulationReceiver(self, name):
+    def setModulationReceiver(self, name, defaultValue):
         if(self.findReceiver(name) == None):
             modId = len(self._modulationReceivers)
             self._modulationReceivers.append(ModulatiobReceiver(modId, name))
         else:
             print "Duplicate receiver configured... Ignored."
+        self._configurationTree.addTextParameter(name, defaultValue)
 
     def findReceiver(self, receiverName):
         for regReceiver in self._modulationReceivers:
@@ -79,11 +82,12 @@ class MidiModulation(object):
                 return regReceiver
         return None
 
-    def connectModulation(self, receiverName, sourceDescription):
+    def connectModulation(self, receiverName):
         receiver = self.findReceiver(receiverName)
         if(receiver == None):
             print "Unregistered receiver \"%s\"" % receiverName
             return None
+        sourceDescription = self._configurationTree.getValue(receiverName)
         sourceSplit = sourceDescription.split('.', 6)
         if( sourceSplit[0] == "MidiChannel" ):
             if(len(sourceSplit) > 1):
@@ -113,7 +117,8 @@ class MidiModulation(object):
                             if(tmpSPP >= 0.0):
                                 startSPP = tmpSPP
                     return (ModulationSources.Lfo, self.getLfoId(mode, midiLength, startSPP))
-        print "Invalid modulation description: \"%s\"" % sourceDescription
+        if(sourceDescription != "None"):
+            print "Invalid modulation description: \"%s\"" % sourceDescription
         return None
 
     def _getLfo(self, lfoConfig):

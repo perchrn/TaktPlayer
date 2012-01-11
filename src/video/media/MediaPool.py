@@ -9,7 +9,7 @@ from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile, g
 from midi import MidiUtilities
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, multiprocessLogger, windowSize):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, configurationTree, multiprocessLogger, windowSize):
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
@@ -17,6 +17,8 @@ class MediaPool(object):
         self._currentWindowSize = windowSize
 
         self._emptyImage = getEmptyImage(self._currentWindowSize[0], self._currentWindowSize[1])
+
+        self._configurationTree = configurationTree
 
         self._defaultQuantize = 24 * 4
 
@@ -50,13 +52,16 @@ class MediaPool(object):
         if(len(fileName) <= 0):
             mediaFile = None
         elif(self._isFileNameAnImageName(fileName)):
-            mediaFile = ImageFile(fileName, self._midiTiming, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
+            mediaFile = ImageFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
             mediaFile.openFile(midiLength)
         elif(self._isFileNameAnImageSequenceName(fileName)):
-            mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
+            mediaFile = ImageSequenceFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
             mediaFile.openFile(midiLength)
         else:
-            mediaFile = VideoLoopFile(fileName, self._midiTiming, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
+            mediaFile = VideoLoopFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
             mediaFile.openFile(midiLength)
 
         print "Adding NOTE: " + str(midiNote)

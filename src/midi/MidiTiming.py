@@ -122,11 +122,11 @@ class MidiTiming(object):
         #Use editor for more detailed timing options
         if(bars > 0.875):
             bars = int(bars + 0.5)
-            return self._midiTicksPerBar * bars
+            return float(4 * bars)
         elif(bars > .625):
-            return 3 * self._midiTicksPerQuarteNote
+            return 3.0
         elif(bars > .375):
-            return 2 * self._midiTicksPerQuarteNote
+            return 2.0
         else:
-            return self._midiTicksPerQuarteNote
+            return 1.0
             

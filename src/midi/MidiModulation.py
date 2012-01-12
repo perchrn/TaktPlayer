@@ -68,6 +68,14 @@ class MidiModulation(object):
         self._modulationReceivers = []
         self._activeLfos = []
 
+    def _getConfiguration(self):
+        pass
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            self._getConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
+
     def setModulationReceiver(self, name, defaultValue):
         if(self.findReceiver(name) == None):
             modId = len(self._modulationReceivers)

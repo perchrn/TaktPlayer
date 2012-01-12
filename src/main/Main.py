@@ -41,33 +41,45 @@ class MyKivyApp(App):
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._pcnVideoWidget = PcnVideo(resolution=(800, 600))
+        self._configurationTree.loadConfig("DefaultConfig.cfg")
+        globalConfig = self._configurationTree.addChildUnique("Global")
+        globalConfig.addIntParameter("ResolutionX", 800)
+        globalConfig.addIntParameter("ResolutionY", 600)
+
+        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
+        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        self._pcnVideoWidget = PcnVideo(resolution=(self._internalResolutionX, self._internalResolutionY))
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
         self._mediaMixer = MediaMixer()
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger, (800, 600))
-        self._mediaPool.addMedia("", "0C", 1.0) #Blank media
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C", 4.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1C#", 8.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_4-4_text_mjpeg.png.avi", "1D", 16.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1E", 12.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/Gutta_FlyingCombined_mjpeg.avi", "1F", 24.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/herrang.jpg", "2C", 1.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_8steps_sequence.avi", "0C", 1.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_8steps_sequence.avi", "0C#", 4.0)
-        self._mediaPool.addMedia("../../testFiles/basicVideo/testAnim_8steps_mjpeg.avi", "0D", 16.0)
-        
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger)
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
 
-        xmlConfTree = self._configurationTree.getConfigurationXMLString()
-        print xmlConfTree
+        self._configCheckEveryNRound = 60 * 5 #Every 5th second
+        self._configCheckCounter = 0
+
+        self._configurationTree.saveConfig("DefaultConfig2.cfg")
 
         return self._pcnVideoWidget
+
+    def _getConfiguration(self):
+        #TODO load new config
+        pass
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configCheckCounter >= self._configCheckEveryNRound):
+            if(self._configurationTree.isConfigurationUpdated()):
+                self._getConfiguration()
+                self._mediaPool.checkAndUpdateFromConfiguration()
+                self._configurationTree.resetConfigurationUpdated()
+            self._configCheckCounter = 0
+        else:
+            self._configCheckCounter += 1
 
     def stopProcess(self):
         self._log.info("Caught signal INT")
@@ -88,6 +100,7 @@ class MyKivyApp(App):
             self._midiListner.getData()
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()
+            self.checkAndUpdateFromConfiguration()
             timeUsed = time.time() - timeStamp
             if((timeUsed / self._lastDelta) > 0.9):
                 print "PCN time: " + str(timeUsed) + " last delta: " + str(self._lastDelta)

@@ -5,7 +5,9 @@ Created on 11. jan. 2012
 '''
 from xml.etree.ElementTree import Element, SubElement
 from xml.etree import ElementTree
+
 from BeautifulSoup import BeautifulStoneSoup
+import os
 
 class ParameterTypes():
     (Bool, Float, Int, Text) = range(4)
@@ -24,18 +26,58 @@ class Parameter(object):
     def getValue(self):
         return self._value
 
+    def getType(self):
+        return self._type
+
     def setValue(self, value):
         self._value = value
 
+    def setString(self, string):
+        if(self._type == ParameterTypes.Bool):
+            if((string.lower() == "true") or (string.lower() == "yes")):
+                self._value = True
+            else:
+                self._value = False
+        elif(self._type == ParameterTypes.Float):
+            self._value = float(string)
+        elif(self._type == ParameterTypes.Int):
+            self._value = int(string)
+        elif(self._type == ParameterTypes.Text):
+            self._value = string
+        else:
+            self._value = string
+
+    def setDefaultValue(self, defaultValue):
+        self._default = defaultValue
+
 class ConfigurationHolder(object):
-    def __init__(self, name, parent = None):
+    def __init__(self, name, parent = None, uniqueId = None):
         self._name = name
         self._parent = parent
 
         self._parameters = []
         self._children = []
+        self._uniqueId = uniqueId
+
+        self._loadedXML = None
 
         self._configIsUpdated = True
+
+    def addXml(self, xmlPart):
+        self._loadedXML = xmlPart
+
+    def loadConfig(self, configName):
+        filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
+        saveFile = open(filePath, 'r')
+        xmlString = saveFile.read()
+        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
+        self._loadedXML = ElementTree.XML(soup.prettify())
+
+    def saveConfig(self, configName):
+        xmlString = self.getConfigurationXMLString()
+        filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
+        saveFile = open(filePath, 'w')
+        saveFile.write(xmlString)
 
     def getName(self):
         return self._name
@@ -49,16 +91,22 @@ class ConfigurationHolder(object):
     def _addParameter(self, name, defaultValue, value, paramType):
         foundParam = self._findParameter(name)
         if(foundParam != None):
+            xmlValue = None
+            if(self._loadedXML != None):
+                xmlValue = self._getValueFromXml(self._loadedXML, name)
             if(foundParam.getType() == paramType):
                 self._configIsUpdated = True
                 foundParam.setDefaultValue(defaultValue)
-                print "Warning! Same parameter with same type added! Updating default value."
+                if(xmlValue == None):
+                    print "Warning! Same parameter with same type added! Updating default value."
             else:
                 print "Error! Same parameter with different type cannot be added!"
         else:
             self._configIsUpdated = True
             newParam = Parameter(name, defaultValue, value, paramType)
             self._parameters.append(newParam)
+            if(self._loadedXML != None):
+                self._getValueFromXml(self._loadedXML, name)
 
     def addBoolParameter(self, name, defaultValue):
         self._addParameter(name, defaultValue, defaultValue, ParameterTypes.Bool)
@@ -83,6 +131,17 @@ class ConfigurationHolder(object):
             print "Error! Could not find parameter \"" + name +  "\""
             return None
 
+    def _getValueFromXml(self, xml, name):
+        param = self._findParameter(name)
+        name = name.lower()
+        if(param != None):
+            value = xml.get(name)
+            param.setString(value)
+            return param.getValue()
+        else:
+            print "No param..."
+            return None
+
     def setValue(self, name, value):
         foundParameter = self._findParameter(name)
         if(foundParameter != None):
@@ -94,7 +153,6 @@ class ConfigurationHolder(object):
     def getConfigurationXML(self):
         root = Element("Configuration")
         if(self._parent != None):
-            print "Adding path!!!"
             parentPath = self._parent.getParentPath()
             root.attrib["path"] = parentPath
         self._addSelfToXML(root)
@@ -109,7 +167,7 @@ class ConfigurationHolder(object):
     def getConfigurationXMLString(self):
         root = self.getConfigurationXML()
         xmlString = ElementTree.tostring(root, encoding="utf-8", method="xml")
-        soup = BeautifulStoneSoup(xmlString)
+        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
         return soup.prettify()
 
     def _addSelfToXML(self, parentNode):
@@ -133,26 +191,81 @@ class ConfigurationHolder(object):
                         return child
         return None
 
-    def addChildUniqueId(self, name, idName, idValue):
+    def _findChildPath(self, path):
+        pathSplit = path.split('.', 32)#Max 32 levels
+        if(len(pathSplit) == 1):
+            return self.getValue(path)
+        else:
+            child = self._findChild(pathSplit[0])
+            if(child != None):
+                first = True
+                subPath = ""
+                for name in pathSplit:
+                    if(first == True):
+                        first = False
+                    else:
+                        subPath = subPath + name
+                return child._findChildPath(subPath)
+            print "Did not find: " + pathSplit[0]
+            return None
+        
+    def getValueFromPath(self, path):
+        if(self._parent != None):
+            return self._parent.getValueFromPath(path)
+        else:
+            return self._findChildPath(path)
+
+    def _findXmlChild(self, loadedXml, name, idName = None, idValue = None):
+        if(self._parent == None):
+            loadedXml = self._findXmlChildInternal(loadedXml, self._name, idName, idValue)
+        return self._findXmlChildInternal(loadedXml, name, idName, idValue)
+
+    def _findXmlChildInternal(self, loadedXml, name, idName = None, idValue = None):
+        name = name.lower()
+        if(idName != None):
+            idName = idName.lower()
+        if(loadedXml != None):
+            for xmlChild in loadedXml:#self._loadedXML.findall(name):
+                if(name == xmlChild.tag):
+                    if(idName != None):
+                        if(xmlChild.get(idName) == idValue):
+                            print "Found: " + name + " with id " + idName + " = " + str(idValue)
+                            return xmlChild
+                    else:
+                        print "Found: " + name
+                        return xmlChild
+        print "Could not find child with name: " + name
+        return None
+
+    def findXmlChildrenList(self, name):
+        name = name.lower()
+        return self._loadedXML.findall(name)
+
+    def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
-            print "Warning! Child exist already. Duplicate name?"
+            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name
             return foundChild
         else:
             self._configIsUpdated = True
-            newChild = ConfigurationHolder(name, self)
+            if(idRaw == None):
+                idRaw = idValue
+            newChild = ConfigurationHolder(name, self, idRaw)
             newChild.addTextParameterStatic(idName, idValue)
+            newChild.addXml(self._findXmlChild(self._loadedXML, name, idName, idValue))
             self._children.append(newChild)
+            self._children.sort(key=lambda x: x._uniqueId)
             return newChild
 
     def addChildUnique(self, name):
         foundChild = self._findChild(name)
         if(foundChild != None):
-            print "Warning! Child exist already. Duplicate name?"
+            print "Warning! addChildUnique: Child exist already. Duplicate name? " + name
             return foundChild
         else:
             self._configIsUpdated = True
             newChild = ConfigurationHolder(name, self)
+            newChild.addXml(self._findXmlChild(self._loadedXML, name))
             self._children.append(newChild)
             return newChild
 

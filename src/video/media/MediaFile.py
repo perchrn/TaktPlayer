@@ -114,12 +114,14 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
+    def __init__(self, fileName, midiTimingClass, configurationTree):
+        self._configurationTree = configurationTree
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
-        self._currentWindowWidth, self._currentWindowHeight = windowSize
-        self._tmpMat = crateMat(self._currentWindowWidth, self._currentWindowHeight)
-        self._tmpMask = crateMask(self._currentWindowWidth, self._currentWindowHeight)
+        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
+        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        self._tmpMat = crateMat(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMask = crateMask(self._internalResolutionX, self._internalResolutionY)
         self._fileOk = False
         self._image = None
         self._captureImage = None
@@ -139,7 +141,6 @@ class MediaFile(object):
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
-        self._configurationTree = configurationTree
         self._configurationTree.addTextParameterStatic("Type", self._getType())
         self._configurationTree.addTextParameterStatic("FileName", self._filename)
         self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"))
@@ -175,6 +176,12 @@ class MediaFile(object):
 
         self._syncLength = self._configurationTree.getValue("SyncLength")
         self._quantizeLength = self._configurationTree.getValue("QuantizeLength")
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            self._getConfiguration()
+            self._midiModulation.checkAndUpdateFromConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
 
     def _getType(self):
         return "Unknown"
@@ -259,9 +266,10 @@ class MediaFile(object):
             self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
             raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
-        if(midiLength <= 0.0):
-            midiLength = self._midiTiming.guessMidiLength(self._originalTime)
-        self.setMidiLengthInBeats(midiLength)
+        if(midiLength != None): # Else we get length from configuration or default.
+            if(midiLength <= 0.0):
+                midiLength = self._midiTiming.guessMidiLength(self._originalTime)
+            self.setMidiLengthInBeats(midiLength)
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
@@ -272,8 +280,8 @@ class MediaFile(object):
         return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
 
     def _getType(self):
         return "Image"
@@ -304,8 +312,8 @@ class ImageSequenceFile(MediaFile):
     class Mode:
         Time, ReTrigger, Controller = range(3)
 
-    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceFile.Mode.Controller
@@ -364,8 +372,8 @@ class ImageSequenceFile(MediaFile):
         self.openVideoFile(midiLength)
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, configurationTree, windowSize):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree, windowSize)
+    def __init__(self, fileName, midiTimingClass, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
 
     def _getType(self):
         return "VideoLoop"

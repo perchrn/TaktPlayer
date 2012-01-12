@@ -9,16 +9,18 @@ from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile, g
 from midi import MidiUtilities
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, configurationTree, multiprocessLogger, windowSize):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, configurationTree, multiprocessLogger):
+        self._configurationTree = configurationTree
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
 
-        self._currentWindowSize = windowSize
+        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
+        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
 
-        self._emptyImage = getEmptyImage(self._currentWindowSize[0], self._currentWindowSize[1])
+        print "DEBUG: " + str(type(self._internalResolutionX)) + " : " + str(self._internalResolutionX)
+        self._emptyImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
 
-        self._configurationTree = configurationTree
 
         self._defaultQuantize = 24 * 4
 
@@ -32,6 +34,19 @@ class MediaPool(object):
         self._mediaTracks = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
+        self.loadMediaFromConfiguration()
+
+    def _getConfiguration(self):
+        #TODO load new, free old and update existing media files
+        self.loadMediaFromConfiguration()
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            self._getConfiguration()
+            for mediaFile in self._mediaPool:
+                if(mediaFile != None):
+                    mediaFile.checkAndUpdateFromConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
 
     def _isFileNameAnImageName(self, filename):
         if(filename.endswith(".png")):
@@ -45,28 +60,40 @@ class MediaPool(object):
             return True
         return False
 
-    def addMedia(self, fileName, noteLetter, midiLength):
+    def loadMediaFromConfiguration(self):
+        for xmlConfig in self._configurationTree.findXmlChildrenList("MediaFile"):
+            self.addXmlMedia(xmlConfig)
+
+    def addXmlMedia(self, xmlConfig):
+#        fileName = self._configurationTree.getValueFromXml(xmlConfig, "FileName")
+#        noteLetter = self._configurationTree.getValueFromXml(xmlConfig, "Note")
+#        midiLength = self._configurationTree.getValueFromXml(xmlConfig, "SyncLengt")
+        fileName = xmlConfig.get("filename")
+        noteLetter = xmlConfig.get("note")
+        print "Debug: " + str(noteLetter) + " " + str(fileName)
+        self.addMedia(fileName, noteLetter, None)
+
+    def addMedia(self, fileName, noteLetter, midiLength = None):
         midiNote = MidiUtilities.noteStringToNoteNumber(noteLetter)
-        self._log.info("Adding media \"%s\" to note number %d with length %f" %(fileName, midiNote, midiLength))
 
         if(len(fileName) <= 0):
             mediaFile = None
         elif(self._isFileNameAnImageName(fileName)):
-            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
-            mediaFile = ImageFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+            mediaFile = ImageFile(fileName, self._midiTiming, clipConf)
             mediaFile.openFile(midiLength)
         elif(self._isFileNameAnImageSequenceName(fileName)):
-            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
-            mediaFile = ImageSequenceFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+            mediaFile = ImageSequenceFile(fileName, self._midiTiming, clipConf)
             mediaFile.openFile(midiLength)
         else:
-            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter)
-            mediaFile = VideoLoopFile(fileName, self._midiTiming, clipConf, self._currentWindowSize)
+            clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+            mediaFile = VideoLoopFile(fileName, self._midiTiming, clipConf)
             mediaFile.openFile(midiLength)
 
         print "Adding NOTE: " + str(midiNote)
         self._mediaPool[midiNote] = mediaFile
-
+        
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
         for midiChannel in range(16):

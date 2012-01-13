@@ -33,7 +33,10 @@ class Parameter(object):
         self._value = value
 
     def resetToDefault(self):
-        self._value = self._default
+        if(self._default == None):
+            print "ERROR! Cannot reset this value! No default configured. " + self._name
+        else:
+            self._value = self._default
 
     def setString(self, string):
         if(self._type == ParameterTypes.Bool):

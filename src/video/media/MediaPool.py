@@ -35,7 +35,6 @@ class MediaPool(object):
         self.loadMediaFromConfiguration()
 
     def _getConfiguration(self):
-        #TODO load new, free old and update existing media files
         self.loadMediaFromConfiguration()
 
     def checkAndUpdateFromConfiguration(self):
@@ -77,7 +76,6 @@ class MediaPool(object):
         noteLetter = xmlConfig.get("note")
         mediaType = xmlConfig.get("type")
         print "addXmlMedia: " + fileName + " note: " + noteLetter + " type: " + mediaType
-        print "DEBUG xml: " + self._configurationTree.getConfigurationXMLString()
         return self.addMedia(fileName, noteLetter, None, mediaType)
 
     def addMedia(self, fileName, noteLetter, midiLength = None, mediaType = None):

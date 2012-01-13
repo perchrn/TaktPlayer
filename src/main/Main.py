@@ -6,6 +6,7 @@ Created on 28. nov. 2011
 
 #Kivy imports
 import os
+from configuration.ConfigurationTemplates import ConfigurationTemplates
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -45,6 +46,7 @@ class MyKivyApp(App):
         self._globalConfig = self._configurationTree.addChildUnique("Global")
         self._globalConfig.addIntParameter("ResolutionX", 800)
         self._globalConfig.addIntParameter("ResolutionY", 600)
+        self._templateTree = ConfigurationTemplates(self._globalConfig)
 
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
         self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")

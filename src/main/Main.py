@@ -42,9 +42,9 @@ class MyKivyApp(App):
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._configurationTree.loadConfig("DefaultConfig.cfg")
-        globalConfig = self._configurationTree.addChildUnique("Global")
-        globalConfig.addIntParameter("ResolutionX", 800)
-        globalConfig.addIntParameter("ResolutionY", 600)
+        self._globalConfig = self._configurationTree.addChildUnique("Global")
+        self._globalConfig.addIntParameter("ResolutionX", 800)
+        self._globalConfig.addIntParameter("ResolutionY", 600)
 
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
         self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
@@ -63,20 +63,22 @@ class MyKivyApp(App):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
-        self._configurationTree.saveConfig("DefaultConfig2.cfg")
-
         return self._pcnVideoWidget
 
     def _getConfiguration(self):
-        #TODO load new config
-        pass
+        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
+        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
+            print "Check config!"
             if(self._configurationTree.isConfigurationUpdated()):
+                print "config is updated..."
                 self._getConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
+                self._globalConfig.resetConfigurationUpdated()
+                #TODO: autosave...
             self._configCheckCounter = 0
         else:
             self._configCheckCounter += 1

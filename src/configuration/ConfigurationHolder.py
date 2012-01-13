@@ -32,6 +32,9 @@ class Parameter(object):
     def setValue(self, value):
         self._value = value
 
+    def resetToDefault(self):
+        self._value = self._default
+
     def setString(self, string):
         if(self._type == ParameterTypes.Bool):
             if((string.lower() == "true") or (string.lower() == "yes")):
@@ -51,12 +54,13 @@ class Parameter(object):
         self._default = defaultValue
 
 class ConfigurationHolder(object):
-    def __init__(self, name, parent = None, uniqueId = None):
+    def __init__(self, name, parent = None, uniqueName = None, uniqueId = None):
         self._name = name
         self._parent = parent
 
         self._parameters = []
         self._children = []
+        self._uniqueName = uniqueName
         self._uniqueId = uniqueId
 
         self._loadedXML = None
@@ -72,6 +76,37 @@ class ConfigurationHolder(object):
         xmlString = saveFile.read()
         soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
         self._loadedXML = ElementTree.XML(soup.prettify())
+        self._updateFromXml(self._loadedXML)
+
+    def _updateParamsFromXml(self):
+        for param in self._parameters:
+            oldVal = param.getValue()
+            xmlValue = self._loadedXML.get(param.getName().lower())
+            if(xmlValue == None):
+                print "defaulting " + param.getName().lower()
+                param.resetToDefault()
+            else:
+                print "update: " + param.getName() + " val: " + xmlValue
+                param.setString(xmlValue)
+            if(oldVal != param.getValue()):
+                self._configIsUpdated = True
+
+    def _updateFromXml(self, xmlPart):
+        if(self._parent != None):
+#            xmlPart = xmlPart.get("musicalvideoplayer")
+#        else:
+            self._loadedXML = xmlPart
+            self._updateParamsFromXml()
+        for child in self._children:
+            childName = child.getName()
+            childUniqueId = child.getUniqueParameterName()
+            if(childUniqueId != None):
+                childUniqueValue = str(child._findParameter(childUniqueId).getValue())
+                childXmlPart = self._findXmlChild(xmlPart, childName, childUniqueId, childUniqueValue)
+            else:
+                childXmlPart = self._findXmlChild(xmlPart, childName)
+            if(childXmlPart != None):
+                child._updateFromXml(childXmlPart)
 
     def saveConfig(self, configName):
         xmlString = self.getConfigurationXMLString()
@@ -81,6 +116,9 @@ class ConfigurationHolder(object):
 
     def getName(self):
         return self._name
+
+    def getUniqueParameterName(self):
+        return self._uniqueName
 
     def _findParameter(self, name):
         for param in self._parameters:
@@ -170,6 +208,11 @@ class ConfigurationHolder(object):
         soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
         return soup.prettify()
 
+    def _printXml(self, xml):
+        xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")
+        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
+        print soup.prettify()
+
     def _addSelfToXML(self, parentNode):
         ourNode = SubElement(parentNode, self._name)
         self._addXMLAttributes(ourNode)
@@ -241,16 +284,31 @@ class ConfigurationHolder(object):
         name = name.lower()
         return self._loadedXML.findall(name)
 
+    def removeChildUniqueId(self, name, idName, idValue):
+        for i in range(len(self._children)):
+            child = self._children[i]
+            if(child.getName() == name):
+                if(idName == None):
+                    self._children.pop(i)
+                    return True
+                else:
+                    foundValue = child.getValue(idName)
+                    if(foundValue == idValue):
+                        self._children.pop(i)
+                        return True
+        return False
+
     def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
             print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name
             return foundChild
         else:
+            print "Add Child Unique: " + name
             self._configIsUpdated = True
             if(idRaw == None):
                 idRaw = idValue
-            newChild = ConfigurationHolder(name, self, idRaw)
+            newChild = ConfigurationHolder(name, self, idName, idRaw)
             newChild.addTextParameterStatic(idName, idValue)
             newChild.addXml(self._findXmlChild(self._loadedXML, name, idName, idValue))
             self._children.append(newChild)
@@ -263,6 +321,7 @@ class ConfigurationHolder(object):
             print "Warning! addChildUnique: Child exist already. Duplicate name? " + name
             return foundChild
         else:
+            print "Add Child: " + name
             self._configIsUpdated = True
             newChild = ConfigurationHolder(name, self)
             newChild.addXml(self._findXmlChild(self._loadedXML, name))

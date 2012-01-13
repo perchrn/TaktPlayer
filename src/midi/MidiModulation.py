@@ -7,6 +7,16 @@ import random
 import math
 from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 
+# Modulation examples:
+#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.ModWheel")
+#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.Volume")
+#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.Pan")
+#MidiModulation.connectModulation("PlayBack", "MidiChannel.PitchBend")
+#MidiModulation.connectModulation("PlayBack", "MidiChannel.Aftertouch")
+#MidiModulation.connectModulation("PlayBack", "MidiNote.Velocity")
+#MidiModulation.connectModulation("PlayBack", "MidiNote.ReleaseVelocity")
+#MidiModulation.connectModulation("PlayBack", "MidiNote.NotePreasure")
+
 class LowFrequencyOscilator(object):
     class Shape():
         Triangle, SawTooth, Ramp, Sine, Random = range(5)
@@ -73,6 +83,7 @@ class MidiModulation(object):
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
+            print "mediaMod config is updated..."
             self._getConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 

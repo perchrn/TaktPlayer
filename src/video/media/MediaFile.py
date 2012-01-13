@@ -141,7 +141,7 @@ class MediaFile(object):
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
-        self._configurationTree.addTextParameterStatic("Type", self._getType())
+        self._configurationTree.addTextParameterStatic("Type", self.getType())
         self._configurationTree.addTextParameterStatic("FileName", self._filename)
         self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"))
         self._setupConfiguration()
@@ -179,12 +179,22 @@ class MediaFile(object):
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
+            print "mediaFile config is updated..."
             self._getConfiguration()
             self._midiModulation.checkAndUpdateFromConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
-    def _getType(self):
+    def close(self):
+        pass
+
+    def getType(self):
         return "Unknown"
+
+    def equalFileName(self, fileName):
+        return self._filename == os.path.normcase(fileName)
+
+    def getFileName(self):
+        return self._filename
 
     def setFileName(self, fileName):
         self._filename = os.path.normcase(fileName)
@@ -283,8 +293,11 @@ class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
 
-    def _getType(self):
+    def getType(self):
         return "Image"
+
+    def close(self):
+        pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         self._aplyEffects()
@@ -319,7 +332,10 @@ class ImageSequenceFile(MediaFile):
         self._sequenceMode = ImageSequenceFile.Mode.Controller
         self.setQuantizeInBeats(1.0)
 
-    def _getType(self):
+    def close(self):
+        pass
+
+    def getType(self):
         return "ImageSequence"
 
     def restartSequence(self):
@@ -375,7 +391,10 @@ class VideoLoopFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
 
-    def _getType(self):
+    def close(self):
+        pass
+
+    def getType(self):
         return "VideoLoop"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):

@@ -36,6 +36,10 @@ def noteToOctavAndLetter(note):
     noteLetter = noteToLetter(note)
     return (octav, noteLetter)
 
+def noteToNoteString(note):
+    octav, noteLetter = noteToOctavAndLetter(note)
+    return str(octav) + noteLetter
+
 def letterToNote(letter):
     if(letter.startswith("C")):
         if(letter.startswith("C#")):
@@ -68,8 +72,11 @@ def letterToNote(letter):
         return 11
 
 def noteStringToNoteNumber(string):
-    octav = int(string[0:1])
-    note = letterToNote(string[1:])
+    split = 1
+    if(string[0:1] == "-"):
+        split = 2
+    octav = int(string[0:split])
+    note = letterToNote(string[split:])
     noteValue = (((octav + 2) * 12) + note) % 128
     return noteValue
 

@@ -75,6 +75,7 @@ class MediaPool(object):
         fileName = xmlConfig.get("filename")
         noteLetter = xmlConfig.get("note")
         mediaType = xmlConfig.get("type")
+#        midiLength = xmlConfig.get("synclength")
         print "addXmlMedia: " + fileName + " note: " + noteLetter + " type: " + mediaType
         return self.addMedia(fileName, noteLetter, None, mediaType)
 

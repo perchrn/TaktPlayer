@@ -177,10 +177,14 @@ class ConfigurationHolder(object):
         name = name.lower()
         if(param != None):
             value = xml.get(name)
-            param.setString(value)
-            return param.getValue()
+            if(value != None):
+                param.setString(value)
+                return param.getValue()
+            else:
+                print "No xml value found for name: %s" % name
+                return None
         else:
-            print "No param..."
+            print "No param for name: %s..." % name
             return None
 
     def setValue(self, name, value):

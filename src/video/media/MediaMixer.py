@@ -43,8 +43,6 @@ class MediaMixer(object):
                     imageMix = currenMedia.mixWithImage(imageMix)
         if(imageMix == None):
             imageMix = self._blankImage
-        else:
-            print "Mixed"
         self._nextImage = imageMix
         self._nextImageId += 1
         self._updateImage()

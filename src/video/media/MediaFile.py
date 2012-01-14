@@ -76,6 +76,10 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
+def fadeImage(image, value, tmpMat):
+    cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
+    return tmpMat
+
 def mixImageSelfMask(image1, image2, mixMask, mixMat):
     cv.Copy(image1, mixMat)
     cv.CmpS(image2, 0.1, mixMask, cv.CV_CMP_GT)
@@ -143,18 +147,22 @@ class MediaFile(object):
 
         self._configurationTree.addTextParameterStatic("Type", self.getType())
         self._configurationTree.addTextParameterStatic("FileName", self._filename)
-        self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"))
+        self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"), self._midiTiming)
         self._setupConfiguration()
         self._getConfiguration()
 
     def _setupConfiguration(self):
         self._midiModulation.setModulationReceiver("PlayBack", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("FadeInOut", "ADSR.AR.4.0|4.0")
+        self._midiModulation.setModulationReceiver("Level", "MidiChannel.Controller.ModWheel")
         self._midiModulation.setModulationReceiver("EffectX", "None")
         self._midiModulation.setModulationReceiver("EffectY", "None")
         self._midiModulation.setModulationReceiver("EffectAmount", "MidiChannel.Controller.ModWheel")
         self._midiModulation.setModulationReceiver("EffectArgument1", "None")
         self._midiModulation.setModulationReceiver("EffectArgument2", "None")
         self._playbackModulationId = -1
+        self._fadeModulationId = -1
+        self._levelModulationId = -1
         self._effectXModulationId = -1
         self._effectYModulationId = -1
         self._effectAmountModulationId = -1
@@ -166,16 +174,24 @@ class MediaFile(object):
         self._syncLength = -1.0
         self._quantizeLength = -1.0
 
+    def getFadeModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        return self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+
+    def getLevelModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        return self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+
     def _getConfiguration(self):
         self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
+        self._fadeModulationId = self._midiModulation.connectModulation("FadeInOut")
+        self._levelModulationId = self._midiModulation.connectModulation("Level")
         self._effectXModulationId = self._midiModulation.connectModulation("EffectX")
         self._effectYModulationId = self._midiModulation.connectModulation("EffectY")
         self._effectAmountModulationId = self._midiModulation.connectModulation("EffectAmount")
         self._effectArgument1ModulationId = self._midiModulation.connectModulation("EffectArgument1")
         self._effectArgument2ModulationId = self._midiModulation.connectModulation("EffectArgument2")
 
-        self._syncLength = self._configurationTree.getValue("SyncLength")
-        self._quantizeLength = self._configurationTree.getValue("QuantizeLength")
+        self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
+        self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -240,11 +256,21 @@ class MediaFile(object):
     def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
         return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpMat)
 
-    def _aplyEffects(self):
-#        zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-#        self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
-        self._image = self.resizeImage(self._captureImage)
-#        self._image = self._captureImage
+    def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState):
+        fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
+        levelValue = self.getLevelModulation(currentSongPosition, midiChannelState, midiNoteState)
+        fadeValue = fadeValue * levelValue
+        if(fadeValue < 0.01):
+            self._image = None
+        else:
+    
+#            zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
+#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
+            self._image = self.resizeImage(self._captureImage)
+#            self._image = self._captureImage
+    
+            if(fadeValue < 0.99):
+                self._image = fadeImage(self._image, fadeValue, self._tmpMat)
         
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
@@ -287,7 +313,10 @@ class MediaFile(object):
         pass
 
     def mixWithImage(self, image):
-        return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
+        if(self._image == None):
+            return image
+        else:
+            return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
     
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):
@@ -300,7 +329,7 @@ class ImageFile(MediaFile):
         pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        self._aplyEffects()
+        self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
 
     def openFile(self, midiLength):
         if (os.path.isfile(self._filename) == False):
@@ -377,11 +406,11 @@ class ImageSequenceFile(MediaFile):
                 self._captureImage = cv.QueryFrame(self._videoFile)
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage
-            self._aplyEffects()
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects()
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
             return False
 
     def openFile(self, midiLength):
@@ -414,11 +443,11 @@ class VideoLoopFile(MediaFile):
                 self._captureImage = cv.QueryFrame(self._videoFile)
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage
-            self._aplyEffects()
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects()
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
             return False
 
     def openFile(self, midiLength):

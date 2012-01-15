@@ -19,6 +19,7 @@ class NoteState(object):
         self._preasure = 0
         self._noteOnSPP = -1.0
         self._noteOffSPP = -1.0
+        self._noteLegth = 0.0
         self._noteOnQuantizedSPP = -1
         self._noteOffQuantizedSPP = -1
         self._noteOnInSync = False
@@ -81,6 +82,9 @@ class NoteState(object):
 
     def getStopPosition(self):
         return self._noteOffQuantizedSPP
+
+    def getNoteLength(self):
+        return self._noteLegth
 
     def isActive(self, spp):
         if(self._note == -1):
@@ -149,6 +153,11 @@ class NoteState(object):
         self._noteOffSPP = spp
         self._noteOffInSync = midiSync
         self._noteOffQuantizedSPP = self._quantize(spp, self._quantizeValue)
+        self._noteLegth = self._noteOffQuantizedSPP - self._noteOnQuantizedSPP
+        if(self._noteLegth == 0.0):
+            self._noteLegth = self._quantizeValue / 4.0
+        if(self._noteLegth == 0.0):
+            self._noteLegth = 6.0
         self._note = note
         (octav, noteLetter) = MidiUtilities.noteToOctavAndLetter(note)
         self._octav = octav
@@ -238,8 +247,8 @@ class MidiChannelStateHolder(object):
 
     def noteEvent(self, noteOn, note, velocity, songPosition):
         (midiSync, spp) = songPosition
+        nextNote = self._nextNotes[note]
         if(noteOn == False):
-            nextNote = self._nextNotes[note]
             if(self._activeNote.isOn(note)):
                 self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
             if(nextNote.isOn(note)):

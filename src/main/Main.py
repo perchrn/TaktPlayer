@@ -42,7 +42,8 @@ class MyKivyApp(App):
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._configurationTree.loadConfig("DefaultConfig.cfg")
+#        self._configurationTree.loadConfig("DefaultConfig.cfg")
+        self._configurationTree.loadConfig("NerverIEnBunt_1.cfg")
         self._globalConfig = self._configurationTree.addChildUnique("Global")
         self._globalConfig.addIntParameter("ResolutionX", 800)
         self._globalConfig.addIntParameter("ResolutionY", 600)
@@ -123,3 +124,5 @@ if __name__ in ('__android__', '__main__'):
     except:
         mainApp.stopProcess()
         raise
+    print "Exiting MAIN XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
+    mainApp.stopProcess()

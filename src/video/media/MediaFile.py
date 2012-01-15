@@ -153,8 +153,8 @@ class MediaFile(object):
 
     def _setupConfiguration(self):
         self._midiModulation.setModulationReceiver("PlayBack", "MidiChannel.Controller.ModWheel")
-        self._midiModulation.setModulationReceiver("FadeInOut", "ADSR.AR.4.0|4.0")
-        self._midiModulation.setModulationReceiver("Level", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("FadeInOut", "ADSR.AR.0.0|8.0")
+        self._midiModulation.setModulationReceiver("Level", "None")
         self._midiModulation.setModulationReceiver("EffectX", "None")
         self._midiModulation.setModulationReceiver("EffectY", "None")
         self._midiModulation.setModulationReceiver("EffectAmount", "MidiChannel.Controller.ModWheel")
@@ -259,7 +259,7 @@ class MediaFile(object):
     def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState):
         fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
         levelValue = self.getLevelModulation(currentSongPosition, midiChannelState, midiNoteState)
-        fadeValue = fadeValue * levelValue
+        fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         if(fadeValue < 0.01):
             self._image = None
         else:
@@ -358,8 +358,19 @@ class ImageSequenceFile(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
         self._triggerCounter = 0
         self._firstTrigger = True
-        self._sequenceMode = ImageSequenceFile.Mode.Controller
+        self._sequenceMode = ImageSequenceFile.Mode.Time
         self.setQuantizeInBeats(1.0)
+        self._configurationTree.addTextParameter("SequenceMode", "Time")
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        seqMode = self._configurationTree.getValue("SequenceMode")
+        if(seqMode == "ReTrigger"):
+            self._sequenceMode = ImageSequenceFile.Mode.ReTrigger
+        elif(seqMode == "Controller"):
+            self._sequenceMode = ImageSequenceFile.Mode.Controller
+        else:
+            self._sequenceMode = ImageSequenceFile.Mode.Time #Defaults to time
 
     def close(self):
         pass

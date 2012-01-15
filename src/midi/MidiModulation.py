@@ -19,8 +19,8 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 #MidiModulation.connectModulation("PlayBack", "LFO.Triangle.4.0|0.0")
 #MidiModulation.connectModulation("PlayBack", "ADSR.ADSR.4.0|0.0|1.0|4.0")
 #MidiModulation.connectModulation("PlayBack", "ADSR.AR.4.0|4.0")
+#MidiModulation.connectModulation("PlayBack", "None")#Always 0.0
 
-#MidiModulation.connectModulation("PlayBack", "Off")#Always 0.0
 #MidiModulation.connectModulation("PlayBack", "Value.1.0")
 
 class LowFrequencyOscilator(object):
@@ -28,6 +28,9 @@ class LowFrequencyOscilator(object):
         Triangle, SawTooth, Ramp, Sine, Random = range(5)
 
     def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0):
+        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
+        print "LowFrequencyOscilator: Len: %f, Start: %f S: %f R: %f" % (midiLength, startSPP)
+        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         self._midiTiming = midiTimingClass
         self._startSongPosition = startSPP
         self._midiLength = midiLength
@@ -78,6 +81,9 @@ class AttackDecaySustainRelease(object):
     def __init__(self, midiTimingClass, mode, attack, decay, sustain, release):
         self._midiTiming = midiTimingClass
 
+        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
+        print "AttackDecaySustainRelease: A: %f, D: %f S: %f R: %f" % (attack, decay, sustain, release)
+        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         self._attackLength = attack
         self._decayLength = decay
         self._sustainValue = sustain
@@ -89,23 +95,25 @@ class AttackDecaySustainRelease(object):
         self._shape = mode
 
     def getValue(self, songPosition, argument):
-        noteOnSPP, noteOffSPP = argument
-        if(noteOffSPP <= noteOnSPP):
-            if((songPosition - noteOnSPP) <= self._attackLengthCalc):
-                return (float(songPosition) - noteOnSPP) / self._attackLengthCalc
+        noteOnSPP, noteOffSPP, originalLength = argument
+        if((noteOffSPP <= noteOnSPP) and (originalLength > 0.0)):
+            if(songPosition < noteOnSPP):
+                return 0.0
+            elif((songPosition - noteOnSPP) < self._attackLengthCalc):
+                return 1.0 - ((float(songPosition) - noteOnSPP) / self._attackLengthCalc)
             else:
                 if(self._sustainValue >= 0.99):
-                    return 1.0
+                    return 0.0
                 else:
                     if((songPosition - noteOnSPP - self._attackLengthCalc) <= self._decayLengthCalc):
-                        return 1.0 - (((float(songPosition) - noteOnSPP - self._attackLengthCalc) / self._decayLengthCalc) * (1.0 - self._sustainValue))
+                        return (((float(songPosition) - noteOnSPP - self._attackLengthCalc) / self._decayLengthCalc) * (1.0 - self._sustainValue))
                     else:
-                        return self._sustainValue
+                        return 1.0 - self._sustainValue
         else:
             if((songPosition - noteOffSPP) <= self._releaseLengthCalc):
-                return 1.0 - ((float(songPosition) - noteOffSPP) / self._releaseLengthCalc)
+                return ((float(songPosition) - noteOffSPP) / self._releaseLengthCalc)
             else:
-                return 0.0
+                return 1.0
 
     def isEqual(self, mode, attack, decay, sustain, release):
         if(self._shape == mode):
@@ -198,8 +206,8 @@ class MidiModulation(object):
                     midiLength = 4.0
                     startSPP = 0.0
                     if(len(sourceSplit) > 2):
-                        newSplit = sourceDescription.split('.', 3)
-                        valuesSplit = newSplit[2].split('|', 4)
+                        newSplit = sourceDescription.split('.', 2)
+                        valuesSplit = newSplit[2].split('|', 5)
                         tmpLength = float(valuesSplit[0])
                         if(tmpLength > 0.0):
                             midiLength = tmpLength
@@ -217,10 +225,12 @@ class MidiModulation(object):
                     sustain = 1.0
                     release = 4.0
                     if(len(sourceSplit) > 2):
-                        newSplit = sourceDescription.split('.', 3)
+                        newSplit = sourceDescription.split('.', 2)
+                        print "DEBUG " + newSplit[2]
                         valuesSplit = newSplit[2].split('|', 5)
+                        print "DEBUG " + valuesSplit[0]
                         tmpAttack = float(valuesSplit[0])
-                        if(tmpAttack > 0.0):
+                        if(tmpAttack >= 0.0):
                             attack = tmpAttack
                         if(len(valuesSplit) > 1):
                             if(mode == AttackDecaySustainRelease.Shape.AR):
@@ -239,6 +249,7 @@ class MidiModulation(object):
                                         tmpRelease = float(valuesSplit[3])
                                         if(tmpRelease >= 0.0):
                                             release = tmpRelease
+                    print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
                     return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release))
         if(sourceDescription != "None"):
             print "Invalid modulation description: \"%s\"" % sourceDescription
@@ -274,7 +285,7 @@ class MidiModulation(object):
         foundAdsr = self._findAdsr(mode, attack, decay, sustain, release)
         if(foundAdsr == None):
             newAdsr = AttackDecaySustainRelease(self._midiTiming, mode, attack, decay, sustain, release)
-            self._activeLfos.append(newAdsr)
+            self._activeAdsrs.append(newAdsr)
             return newAdsr
         else:
             return foundAdsr
@@ -292,7 +303,7 @@ class MidiModulation(object):
             elif(sourceId == ModulationSources.Lfo):
                 return self._getLfo(subId).getValue(songPosition, argument)
             elif(sourceId == ModulationSources.ADSR):
-                return self._getAdsr(subId).getValue(songPosition, (midiNoteStateHolder.getStartPosition(), midiNoteStateHolder.getStopPosition()))
+                return self._getAdsr(subId).getValue(songPosition, (midiNoteStateHolder.getStartPosition(), midiNoteStateHolder.getStopPosition(), midiNoteStateHolder.getNoteLength()))
         #Return "0.0", if we don't find it.
         if(plussMinus == True):
             return 0.5

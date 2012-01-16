@@ -75,8 +75,8 @@ class ConfigurationHolder(object):
 
     def loadConfig(self, configName):
         filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
-        saveFile = open(filePath, 'r')
-        xmlString = saveFile.read()
+        loadFile = open(filePath, 'r')
+        xmlString = loadFile.read()
         soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
         self._loadedXML = ElementTree.XML(soup.prettify())
         self._updateFromXml(self._loadedXML)

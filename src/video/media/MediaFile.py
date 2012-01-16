@@ -95,7 +95,7 @@ def mixImagesAdd(image1, image2, mixMat):
     return mixMat
 
 def mixImagesMultiply(image1, image2, mixMat):
-    cv.Mul(image1, image2, mixMat, 0.002)
+    cv.Mul(image1, image2, mixMat, 0.003)
     return mixMat
 
 class MixMode:
@@ -131,6 +131,7 @@ class MediaFile(object):
         self._captureImage = None
         self._firstImage = None
         self._secondImage = None
+        self._bufferedImageList = None
         self._numberOfFrames = 0
         self._originalFrameRate = 25
         self._originalTime = 0.0
@@ -171,6 +172,7 @@ class MediaFile(object):
 
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
+        self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
         self._syncLength = -1.0
         self._quantizeLength = -1.0
 
@@ -192,6 +194,18 @@ class MediaFile(object):
 
         self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
+
+        mixMode = self._configurationTree.getValue("MixMode")
+        if(mixMode == "Add"):
+            self._mixMode = MixMode.Add
+        elif(mixMode == "Multiply"):
+            self._mixMode = MixMode.Multiply
+        elif(mixMode == "LumaKey"):
+            self._mixMode = MixMode.LumaKey
+        elif(mixMode == "Replace"):
+            self._mixMode = MixMode.Replace
+        else:
+            self._mixMode = MixMode.Add #Defaults to add
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -231,15 +245,21 @@ class MediaFile(object):
         return self._originalFrameRate
 
     def setMidiLengthInBeats(self, midiLength):
-        self._configurationTree.setValue("SyncLength", midiLength)
-        self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+        syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+        roundLength = round(syncLength)
+        if(abs(syncLength - roundLength) < 0.01):
+            syncLength = roundLength
+        self._syncLength = syncLength
 
     def getQuantize(self):
         return self._quantizeLength
 
     def setQuantizeInBeats(self, midiLength):
-        self._configurationTree.setValue("QuantizeLength", midiLength)
-        self._quantizeLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+        quantizeLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+        roundLength = round(quantizeLength)
+        if(abs(quantizeLength - roundLength) < 0.01):
+            quantizeLength = roundLength
+        self._quantizeLength = quantizeLength
 
     def setStartPosition(self, startSpp):
         self._startSongPosition = startSpp
@@ -301,6 +321,19 @@ class MediaFile(object):
         except:
             self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
             raise MediaError("File caused exception!")
+        if(self._numberOfFrames < 20):
+            try:
+                self._bufferedImageList = []
+                self._bufferedImageList.append(self._firstImage)
+                self._bufferedImageList.append(self._secondImage)
+                for i in range(self._numberOfFrames - 2): #@UnusedVariable
+                    self._captureImage = cv.QueryFrame(self._videoFile)
+                    self._bufferedImageList.append(copyImage(self._captureImage))
+            except:
+                self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
+                print "Exception while reading: " + os.path.basename(self._filename)
+                raise MediaError("File caused exception!")
+        self._captureImage = self._firstImage
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength <= 0.0):
@@ -359,7 +392,6 @@ class ImageSequenceFile(MediaFile):
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceFile.Mode.Time
-        self.setQuantizeInBeats(1.0)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
 
     def _getConfiguration(self):
@@ -386,10 +418,12 @@ class ImageSequenceFile(MediaFile):
     def setStartPosition(self, startSpp):
         lastSpp = self._startSongPosition
         if(startSpp != lastSpp):
+            print "Trigger "
             if(self._firstTrigger == True):
                 self._firstTrigger = False
             else:
                 self._triggerCounter += 1
+            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
         self._startSongPosition = startSpp
 
     def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
@@ -399,24 +433,28 @@ class ImageSequenceFile(MediaFile):
         lastFrame = self._currentFrame
         
         if(self._sequenceMode == ImageSequenceFile.Mode.Time):
-            self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames) - 1
+            self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceFile.Mode.ReTrigger):
-            self._currentFrame =  (self._triggerCounter % self._numberOfFrames) - 1
+            self._currentFrame =  (self._triggerCounter % self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceFile.Mode.Controller):
-            self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames) - 1
+            self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):
-            cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
-            if(self._currentFrame == -1):
-                self._captureImage = self._firstImage
-                self._log.debug("Setting firstframe %d", self._currentFrame)
-            elif(self._currentFrame == 0):
-                self._captureImage = self._secondImage
-                self._log.debug("Setting secondframe %d", self._currentFrame)
+            if(self._bufferedImageList != None):
+                self._captureImage = self._bufferedImageList[self._currentFrame]
+                print "Buffered image!!!"
             else:
-                self._captureImage = cv.QueryFrame(self._videoFile)
-                if(self._captureImage == None):
+                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
+                if(self._currentFrame == 0):
                     self._captureImage = self._firstImage
+                    self._log.debug("Setting firstframe %d", self._currentFrame)
+                elif(self._currentFrame == 1):
+                    self._captureImage = self._secondImage
+                    self._log.debug("Setting secondframe %d", self._currentFrame)
+                else:
+                    self._captureImage = cv.QueryFrame(self._videoFile)
+                    if(self._captureImage == None):
+                        self._captureImage = self._firstImage
             self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
             return True
         else:
@@ -439,15 +477,15 @@ class VideoLoopFile(MediaFile):
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         lastFrame = self._currentFrame
-        self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames) - 1
+        self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):
             cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
-            if(self._currentFrame == -1):
+            if(self._currentFrame == 0):
                 self._captureImage = self._firstImage
 #                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, -1)
                 self._log.debug("Setting firstframe %d", self._currentFrame)
-            elif(self._currentFrame == 0):
+            elif(self._currentFrame == 1):
                 self._captureImage = self._secondImage
                 self._log.debug("Setting secondframe %d", self._currentFrame)
             else:

@@ -96,7 +96,7 @@ class AttackDecaySustainRelease(object):
 
     def getValue(self, songPosition, argument):
         noteOnSPP, noteOffSPP, originalLength = argument
-        if((noteOffSPP <= noteOnSPP) and (originalLength > 0.0)):
+        if((originalLength < 0.001)):
             if(songPosition < noteOnSPP):
                 return 0.0
             elif((songPosition - noteOnSPP) < self._attackLengthCalc):
@@ -110,10 +110,16 @@ class AttackDecaySustainRelease(object):
                     else:
                         return 1.0 - self._sustainValue
         else:
-            if((songPosition - noteOffSPP) <= self._releaseLengthCalc):
-                return ((float(songPosition) - noteOffSPP) / self._releaseLengthCalc)
+            if((self._releaseLengthCalc > 0.0)):
+                if((songPosition - noteOffSPP) <= self._releaseLengthCalc):
+                    return ((float(songPosition) - noteOffSPP) / self._releaseLengthCalc)
+                else:
+                    return 1.0
             else:
-                return 1.0
+                if(self._sustainValue >= 0.99):
+                    return 0.0
+                else:
+                    return 1.0 - self._sustainValue
 
     def isEqual(self, mode, attack, decay, sustain, release):
         if(self._shape == mode):

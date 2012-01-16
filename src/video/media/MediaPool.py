@@ -148,6 +148,9 @@ class MediaPool(object):
                 noteMedia = self._mediaPool[note]
                 if(noteMedia != None):
                     quantizeValue = noteMedia.getQuantize()
+                    print "From media: q: " + str(quantizeValue)
+                else:
+                    print "Default: q: " + str(quantizeValue)
                 midiChannelState.quantizeWaitingNote(note, quantizeValue)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(midiNoteState.isActive(midiTime)):

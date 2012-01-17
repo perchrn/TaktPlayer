@@ -276,10 +276,13 @@ class MediaFile(object):
     def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
         return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpMat)
 
-    def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState):
+    def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
         levelValue = self.getLevelModulation(currentSongPosition, midiChannelState, midiNoteState)
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
+        return fadeValue
+
+    def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
         if(fadeValue < 0.01):
             self._image = None
         else:
@@ -362,7 +365,11 @@ class ImageFile(MediaFile):
         pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
+        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.01):
+            self._image = None
+            return
+        self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
 
     def openFile(self, midiLength):
         if (os.path.isfile(self._filename) == False):
@@ -430,6 +437,11 @@ class ImageSequenceFile(MediaFile):
         return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.01):
+            self._image = None
+            return
+
         lastFrame = self._currentFrame
         
         if(self._sequenceMode == ImageSequenceFile.Mode.Time):
@@ -455,19 +467,42 @@ class ImageSequenceFile(MediaFile):
                     self._captureImage = cv.QueryFrame(self._videoFile)
                     if(self._captureImage == None):
                         self._captureImage = self._firstImage
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return False
 
     def openFile(self, midiLength):
         self.openVideoFile(midiLength)
 
 class VideoLoopFile(MediaFile):
+    class Mode:
+        Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
+
     def __init__(self, fileName, midiTimingClass, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
+        self._loopMode = VideoLoopFile.Mode.Normal
+        self._configurationTree.addTextParameter("LoopMode", "Normal")
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        loopMode = self._configurationTree.getValue("LoopMode")
+        if(loopMode == "Normal"):
+            self._loopMode = VideoLoopFile.Mode.Normal
+        elif(loopMode == "Reverse"):
+            self._loopMode = VideoLoopFile.Mode.Reverse
+        elif(loopMode == "PingPong"):
+            self._loopMode = VideoLoopFile.Mode.PingPong
+        elif(loopMode == "PingPongReverse"):
+            self._loopMode = VideoLoopFile.Mode.PingPongReverse
+        elif(loopMode == "DontLoop"):
+            self._loopMode = VideoLoopFile.Mode.DontLoop
+        elif(loopMode == "DontLoopReverse"):
+            self._loopMode = VideoLoopFile.Mode.DontLoopReverse
+        else:
+            self._loopMode = VideoLoopFile.Mode.Normal #Defaults to normal
 
     def close(self):
         pass
@@ -476,8 +511,33 @@ class VideoLoopFile(MediaFile):
         return "VideoLoop"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.01):
+            self._image = None
+            return
         lastFrame = self._currentFrame
-        self._currentFrame = int((((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames) % self._numberOfFrames)
+
+        framePos = int(((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames)
+        if(self._loopMode == VideoLoopFile.Mode.Normal):
+            self._currentFrame = framePos % self._numberOfFrames
+        elif(self._loopMode == VideoLoopFile.Mode.Reverse):
+            self._currentFrame = -framePos % self._numberOfFrames
+        elif(self._loopMode == VideoLoopFile.Mode.PingPong):
+            self._currentFrame = abs(((framePos + self._numberOfFrames) % (2 * self._numberOfFrames)) - self._numberOfFrames)
+        elif(self._loopMode == VideoLoopFile.Mode.PingPongReverse):
+            self._currentFrame = abs((framePos % (2 * self._numberOfFrames)) - self._numberOfFrames)
+        elif(self._loopMode == VideoLoopFile.Mode.DontLoop):
+            if(framePos < self._numberOfFrames):
+                self._currentFrame = framePos
+            else:
+                self._image = None
+        elif(self._loopMode == VideoLoopFile.Mode.DontLoopReverse):
+            if(framePos < self._numberOfFrames):
+                self._currentFrame = self._numberOfFrames - 1 - framePos
+            else:
+                self._image = None
+        else: #Normal
+            self._currentFrame = framePos % self._numberOfFrames
 
         if(lastFrame != self._currentFrame):
             cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, self._currentFrame)
@@ -492,11 +552,11 @@ class VideoLoopFile(MediaFile):
                 self._captureImage = cv.QueryFrame(self._videoFile)
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState)
+            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return False
 
     def openFile(self, midiLength):

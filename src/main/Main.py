@@ -43,7 +43,9 @@ class MyKivyApp(App):
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
 #        self._configurationTree.loadConfig("DefaultConfig.cfg")
-        self._configurationTree.loadConfig("NerverIEnBunt_1.cfg")
+#        self._configurationTree.loadConfig("NerverIEnBunt_1.cfg")
+#        self._configurationTree.loadConfig("HongKong_1.cfg")
+        self._configurationTree.loadConfig("Baertur_1.cfg")
         self._globalConfig = self._configurationTree.addChildUnique("Global")
         self._globalConfig.addIntParameter("ResolutionX", 800)
         self._globalConfig.addIntParameter("ResolutionY", 600)
@@ -66,6 +68,8 @@ class MyKivyApp(App):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
+        print self._configurationTree.getConfigurationXMLString()
+
         return self._pcnVideoWidget
 
     def _getConfiguration(self):
@@ -74,7 +78,6 @@ class MyKivyApp(App):
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
-            print "Check config!"
             if(self._configurationTree.isConfigurationUpdated()):
                 print "config is updated..."
                 self._getConfiguration()
@@ -99,16 +102,16 @@ class MyKivyApp(App):
 
     def getNextFrame(self, dt):
         try:
-            if (dt > self._timingThreshold):
-                self._log.info("Too slow main schedule " + str(dt))
+#            if (dt > self._timingThreshold):
+#                self._log.info("Too slow main schedule " + str(dt))
             timeStamp = time.time()
             self._midiListner.getData()
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()
             self.checkAndUpdateFromConfiguration()
-            timeUsed = time.time() - timeStamp
-            if((timeUsed / self._lastDelta) > 0.9):
-                print "PCN time: " + str(timeUsed) + " last delta: " + str(self._lastDelta)
+#            timeUsed = time.time() - timeStamp
+#            if((timeUsed / self._lastDelta) > 0.9):
+#                print "PCN time: " + str(timeUsed) + " last delta: " + str(self._lastDelta)
             self._lastDelta = dt
         except:
             self.stopProcess()

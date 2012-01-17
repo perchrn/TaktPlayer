@@ -75,8 +75,6 @@ class MediaPool(object):
         fileName = xmlConfig.get("filename")
         noteLetter = xmlConfig.get("note")
         mediaType = xmlConfig.get("type")
-#        midiLength = xmlConfig.get("synclength")
-        print "addXmlMedia: " + fileName + " note: " + noteLetter + " type: " + mediaType
         return self.addMedia(fileName, noteLetter, None, mediaType)
 
     def addMedia(self, fileName, noteLetter, midiLength = None, mediaType = None):
@@ -95,7 +93,6 @@ class MediaPool(object):
             mediaFile = None
         else:
             if(mediaType == None):
-                print "Non XML media add!!! !!! !!! !!! !!! !!! !!! ;-)"
                 if(self._isFileNameAnImageName(fileName)):
                     mediaType = "Image"
                 elif(self._isFileNameAnImageSequenceName(fileName)):
@@ -117,7 +114,6 @@ class MediaPool(object):
                     print "Removing old media. " + noteLetter + " filename: " + oldMedia.getFileName()
                     if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
                         print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
-                        print "DEBUG xml: " + self._configurationTree.getConfigurationXMLString()
                     else:
                         print "Config child removed OK"
                     oldMedia.close()
@@ -148,9 +144,6 @@ class MediaPool(object):
                 noteMedia = self._mediaPool[note]
                 if(noteMedia != None):
                     quantizeValue = noteMedia.getQuantize()
-                    print "From media: q: " + str(quantizeValue)
-                else:
-                    print "Default: q: " + str(quantizeValue)
                 midiChannelState.quantizeWaitingNote(note, quantizeValue)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(midiNoteState.isActive(midiTime)):

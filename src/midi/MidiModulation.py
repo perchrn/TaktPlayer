@@ -21,6 +21,8 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 #MidiModulation.connectModulation("PlayBack", "ADSR.AR.4.0|4.0")
 #MidiModulation.connectModulation("PlayBack", "None")#Always 0.0
 
+#MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Contoller.ModWheel")
+#MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Note.1C.ADSR")
 #MidiModulation.connectModulation("PlayBack", "Value.1.0")
 
 class LowFrequencyOscilator(object):

@@ -76,19 +76,85 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
-def fadeImage(image, value, tmpMat):
-    cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
+class FadeMode():
+    Black, White = range(2)
+
+def fadeImage(image, value, mode, tmpMat):
+    if(mode == FadeMode.White):
+        cv.ConvertScaleAbs(image, tmpMat, value, (1.0-value) * 256)
+    else: #FadeMode.Black
+        cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
     return tmpMat
 
-def mixImageSelfMask(image1, image2, mixMask, mixMat):
-    cv.Copy(image1, mixMat)
-    cv.CmpS(image2, 0.1, mixMask, cv.CV_CMP_GT)
-    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
-    tmpMat = crateMat(800, 600)
-    cv.ConvertScale(mixMat, tmpMat, 255)
+def contrastBrightness(image, contrast, brightness, tmpMat):
+    contrast = (2 * contrast) -1.0
+    brightnessVal = 256 * brightness
+    if(contrast < 0.0):
+        contrastVal = 1.0 + contrast
+    elif(contrast > 0.0):
+        contrastVal = 1.0 + (9 * contrast)
+    else:
+        contrastVal = 1.0
+    if((contrast > -0.01) and (contrast < 0.01) and (brightness < 0.1) and (brightness > -0.1)):
+        return image
+    else:
+        cv.ConvertScaleAbs(image, tmpMat, contrastVal, brightnessVal)
+        return tmpMat
+
+class ColorizeMode():
+    Add, Subtract, SubtractFrom, Multiply = range(4)
+
+def colorize(image, red, green, blue, mode, amount, tmpMat):
+    if((mode == ColorizeMode.Add) or (mode == ColorizeMode.Subtract)):
+        redCalc = 256 * (red * amount)
+        greenCalc = 256 * (green * amount)
+        blueCalc = 256 * (blue * amount)
+    else:
+        amount = 1.0 - amount
+        redCalc = 256 * (red + ((1.0 - red) * amount))
+        greenCalc = 256 * (green  + ((1.0 - green) * amount))
+        blueCalc = 256 * (blue  + ((1.0 - blue) * amount))
+    rgbColor = cv.CV_RGB(redCalc, greenCalc, blueCalc)
+
+    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
+
+    if(mode == ColorizeMode.Subtract):
+        cv.AddS(image, rgbColor, tmpMat)
+    elif(mode == ColorizeMode.Subtract):
+        cv.SubS(image, rgbColor, tmpMat)
+    elif(mode == ColorizeMode.SubtractFrom):
+        cv.SubRS(image, rgbColor, tmpMat)
+    elif(mode == ColorizeMode.Multiply):
+        cv.Set(tmpMat, rgbColor)
+        cv.Mul(image, tmpMat, tmpMat, 0.003)
     return tmpMat
-    cv.Copy(image2, mixMat, mixMask)
+
+def invert(image, amount, tmpMat):
+    brightnessVal = -256 * amount
+    if((brightnessVal > -0.01) and (brightnessVal < 0.01)):
+        return image
+    else:
+        cv.ConvertScaleAbs(image, tmpMat, 1.0, brightnessVal)
+        return tmpMat
+
+def blackAndWhite(image1, threshold, mixMask, mixMat):
+    threshold = 256 * threshold
+    cv.CvtColor(image1, mixMask, cv.CV_BGR2GRAY);
+    cv.CmpS(mixMask, threshold, mixMask, cv.CV_CMP_GT)
+    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
     return mixMat
+
+def mixImageSelfMask(image1, image2, mixMask, mixMat):
+    imageCopy = crateMat(800, 600)
+    cv.Copy(image2, imageCopy)
+    cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
+    cv.CmpS(mixMask, 10, mixMask, cv.CV_CMP_GT)
+#    cv.Copy(imageCopy, image1, mixMask)
+#    return imageCopy
+    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
+    cv.Sub(image1, mixMat, mixMat)
+    cv.Add(mixMat, imageCopy, image2)
+    return image2
 
 def mixImagesAdd(image1, image2, mixMat):
     cv.Add(image1, image2, mixMat)
@@ -124,7 +190,8 @@ class MediaFile(object):
         self._midiTiming = midiTimingClass
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
         self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
-        self._tmpMat = crateMat(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMat1 = crateMat(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMat2 = crateMat(self._internalResolutionX, self._internalResolutionY)
         self._tmpMask = crateMask(self._internalResolutionX, self._internalResolutionY)
         self._fileOk = False
         self._image = None
@@ -141,8 +208,6 @@ class MediaFile(object):
         self._minZoomPercent = 0.25
         self._maxZoomPercent = 4.0
 
-        self._mixMode = MixMode.Add
-
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
@@ -153,8 +218,8 @@ class MediaFile(object):
         self._getConfiguration()
 
     def _setupConfiguration(self):
-        self._midiModulation.setModulationReceiver("PlayBack", "MidiChannel.Controller.ModWheel")
-        self._midiModulation.setModulationReceiver("FadeInOut", "ADSR.AR.0.0|8.0")
+        self._midiModulation.setModulationReceiver("PlayBack", "None")
+        self._midiModulation.setModulationReceiver("FadeInOut", "None")
         self._midiModulation.setModulationReceiver("Level", "None")
         self._midiModulation.setModulationReceiver("EffectX", "None")
         self._midiModulation.setModulationReceiver("EffectY", "None")
@@ -173,14 +238,25 @@ class MediaFile(object):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
+        self._configurationTree.addTextParameter("FadeMode", "Black")#Default Add
         self._syncLength = -1.0
         self._quantizeLength = -1.0
+        self._mixMode = MixMode.Add
+        self._fadeMode = FadeMode.Black
 
     def getFadeModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
         return self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def getLevelModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
         return self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+
+    def getEffectModulations(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg1 =  self._midiModulation.getModlulationValue(self._effectArgument1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg2 =  self._midiModulation.getModlulationValue(self._effectArgument2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        xval =  self._midiModulation.getModlulationValue(self._effectXModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        yval =  self._midiModulation.getModlulationValue(self._effectYModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        return (amount, arg1, arg2, xval, yval)
 
     def _getConfiguration(self):
         self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
@@ -206,6 +282,14 @@ class MediaFile(object):
             self._mixMode = MixMode.Replace
         else:
             self._mixMode = MixMode.Add #Defaults to add
+
+        fadeMode = self._configurationTree.getValue("FadeMode")
+        if(fadeMode == "Black"):
+            self._fadeMode = FadeMode.Black
+        elif(fadeMode == "White"):
+            self._fadeMode = FadeMode.White
+        else:
+            self._fadeMode = FadeMode.Black #Defaults to add
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -270,11 +354,8 @@ class MediaFile(object):
     def getCurrentFramePos(self):
         return self._currentFrame
 
-    def resizeImage(self, image):
-        return resizeImage(image, self._tmpMat)
-
-    def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom):
-        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, self._tmpMat)
+    def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom, tmpMat):
+        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, tmpMat)
 
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
@@ -283,17 +364,22 @@ class MediaFile(object):
         return fadeValue
 
     def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
-        if(fadeValue < 0.01):
+        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
         else:
-    
+
+            effectAmount, effectArg1, effectArg2, effectX, effectY = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+
 #            zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom)
-            self._image = self.resizeImage(self._captureImage)
-#            self._image = self._captureImage
+#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom, self._tmpMat1)
+            self._image = resizeImage(self._captureImage, self._tmpMat1)
+            self._image = colorize(self._image, effectArg1, effectArg2, effectX, ColorizeMode.Multiply, effectAmount, self._tmpMat2)
+#            self._image = contrastBrightness(self._image, effectAmount, effectArg1, self._tmpMat1)
+#            self._image = invert(self._image, effectArg1, self._tmpMat1)
+#            self._image = blackAndWhite(self._image, effectArg1, self._tmpMask, self._tmpMat1)
     
             if(fadeValue < 0.99):
-                self._image = fadeImage(self._image, fadeValue, self._tmpMat)
+                self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._tmpMat1)
         
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
@@ -352,7 +438,7 @@ class MediaFile(object):
         if(self._image == None):
             return image
         else:
-            return mixImages(self._mixMode, image, self._image, self._tmpMat, self._tmpMask)
+            return mixImages(self._mixMode, image, self._image, self._tmpMat1, self._tmpMask)
     
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):
@@ -438,7 +524,7 @@ class ImageSequenceFile(MediaFile):
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if(fadeValue < 0.01):
+        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
 
@@ -512,7 +598,7 @@ class VideoLoopFile(MediaFile):
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if(fadeValue < 0.01):
+        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
         lastFrame = self._currentFrame

@@ -159,13 +159,13 @@ def getLowControllerName(controllerId):
     elif(controllerId == Controllers.ExpressionController):
         return "ExpressionController"
     elif(controllerId == Controllers.Controller11):
-        return "Controller12"
+        return "Controller11"
     elif(controllerId == Controllers.Controller12):
-        return "Controller13"
+        return "Controller12"
     elif(controllerId == Controllers.Controller13):
-        return "Controller14"
+        return "Controller13"
     elif(controllerId == Controllers.Controller14):
-        return "Controller15"
+        return "Controller14"
     elif(controllerId == Controllers.GeneralPurpose1):
         return "GeneralPurpose1"
     elif(controllerId == Controllers.GeneralPurpose2):
@@ -357,13 +357,13 @@ def getLowControllerId(controllerName):
     elif(controllerName == "ExpressionController"):
         return Controllers.ExpressionController
     elif(controllerName == "Controller11"):
-        return Controllers.Controller12
+        return Controllers.Controller11
     elif(controllerName == "Controller12"):
-        return Controllers.Controller13
+        return Controllers.Controller12
     elif(controllerName == "Controller13"):
-        return Controllers.Controller14
+        return Controllers.Controller13
     elif(controllerName == "Controller14"):
-        return Controllers.Controller15
+        return Controllers.Controller14
     elif(controllerName == "GeneralPurpose1"):
         return Controllers.GeneralPurpose1
     elif(controllerName == "GeneralPurpose2"):

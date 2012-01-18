@@ -321,3 +321,6 @@ class MidiModulation(object):
     def getModlulationValueAsPlussMinus(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, argument = 0.0):
         value = self.getModlulationValue(combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, argument, True)
         return (value * 2) - 1.0
+
+    def convertToPlussMinus(self, value):
+        return (value * 2) - 1.0

@@ -6,7 +6,7 @@ Created on 20. des. 2011
 from midi import MidiUtilities
 from midi import MidiController
 import logging
-from midi.MidiController import getControllerId
+from midi.MidiController import getControllerId, getControllerName
 
 class NoteState(object):
     def __init__(self):
@@ -232,6 +232,7 @@ class MidiChannelStateHolder(object):
         isInt = isinstance(modId, int)
         if((isInt == False) and (len(modId) == 2)):
             if(modId[0] == MidiChannelStateHolder.ModulationSources.Controller):
+                print "DEBUG get value: " + str(modId)
                 return self._controllerValues[modId[1]]
         elif(isInt == True):
             if(modId == MidiChannelStateHolder.ModulationSources.PitchBend):
@@ -271,12 +272,13 @@ class MidiChannelStateHolder(object):
         self._activeNotes[note].setPreasure(preasure)
 
     def controllerChange(self, controllerId, value, songPosition):
+        print "DEBUG got controller: " + getControllerName(controllerId) + " (id: " + str(controllerId) + ")"
         if(controllerId == MidiController.Controllers.ResetAllControllers):
             self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
             for i in range(128):
                 self._controllerValues[i] = 0.0
         else:
-            self._controllerValues[controllerId] = (float(value) / 128)
+            self._controllerValues[controllerId] = (float(value) / 127)
 
     def pitchBendChange(self, data1, data2, songPosition):
         self._pitchBendValue = (float(data2) / 128) + (float(data1) / 16256)#(127*128)
@@ -388,7 +390,7 @@ class MidiStateHolder(object):
         self._midiChannelStateHolder[midiChannel].aftertouchChange(data1, data2, songPosition)
 
     def pitchBend(self, midiChannel, data1, data2, songPosition):
-        self._midiChannelStateHolder[midiChannel].controllerChange(data1, data2, songPosition)
+        self._midiChannelStateHolder[midiChannel].pitchBendChange(data1, data2, songPosition)
 
     def getActiveNote(self, midiChannel, spp):
         return self._midiChannelStateHolder[midiChannel].getActiveNote(spp)

@@ -76,6 +76,23 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
+def blurImage(image, value, tmpMat):
+    if(value < 0.01):
+        return image
+    xSize = 2 + int(value * 8)
+    ySize = 2 + int(value * 6)
+    cv.Smooth(image, tmpMat, cv.CV_BLUR, xSize, ySize)
+    return tmpMat
+
+def blurMultiply(image, value, tmpMat1, tmpMat2):
+    if(value < 0.01):
+        return image
+    xSize = 2 + int(value * 8)
+    ySize = 2 + int(value * 6)
+    cv.Smooth(image, tmpMat1, cv.CV_BLUR, xSize, ySize)
+    cv.Mul(image, tmpMat1, tmpMat2, 0.006)
+    return tmpMat2
+
 class FadeMode():
     Black, White = range(2)
 
@@ -101,6 +118,16 @@ def contrastBrightness(image, contrast, brightness, tmpMat):
         cv.ConvertScaleAbs(image, tmpMat, contrastVal, brightnessVal)
         return tmpMat
 
+def hueSaturationBrightness(image, rotate, saturation, brightness, tmpMat):
+    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
+    rotCalc = (rotate * 512) - 256
+    satCalc = (saturation * 512) - 256
+    brightCalc = (brightness * 512) - 256
+    rgbColor = cv.CV_RGB(rotCalc, satCalc, brightCalc)
+    cv.SubS(tmpMat, rgbColor, image)
+    cv.CvtColor(image, tmpMat, cv.CV_HSV2RGB)
+    return tmpMat
+
 class ColorizeMode():
     Add, Subtract, SubtractFrom, Multiply = range(4)
 
@@ -115,10 +142,9 @@ def colorize(image, red, green, blue, mode, amount, tmpMat):
         greenCalc = 256 * (green  + ((1.0 - green) * amount))
         blueCalc = 256 * (blue  + ((1.0 - blue) * amount))
     rgbColor = cv.CV_RGB(redCalc, greenCalc, blueCalc)
+#    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
 
-    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
-
-    if(mode == ColorizeMode.Subtract):
+    if(mode == ColorizeMode.Add):
         cv.AddS(image, rgbColor, tmpMat)
     elif(mode == ColorizeMode.Subtract):
         cv.SubS(image, rgbColor, tmpMat)
@@ -127,6 +153,8 @@ def colorize(image, red, green, blue, mode, amount, tmpMat):
     elif(mode == ColorizeMode.Multiply):
         cv.Set(tmpMat, rgbColor)
         cv.Mul(image, tmpMat, tmpMat, 0.003)
+    else:
+        cv.AddS(image, rgbColor, tmpMat)
     return tmpMat
 
 def invert(image, amount, tmpMat):
@@ -373,10 +401,13 @@ class MediaFile(object):
 #            zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
 #            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom, self._tmpMat1)
             self._image = resizeImage(self._captureImage, self._tmpMat1)
-            self._image = colorize(self._image, effectArg1, effectArg2, effectX, ColorizeMode.Multiply, effectAmount, self._tmpMat2)
+#            self._image = blurImage(self._image, effectAmount, self._tmpMat2)
+            self._image = blurMultiply(self._image, effectAmount, self._tmpMat2, self._tmpMat1)
+#            self._image = hueSaturationBrightness(self._image, effectArg1, effectArg2, effectX, self._tmpMat2)
+#            self._image = colorize(self._image, effectArg1, effectArg2, effectX, ColorizeMode.Add, effectAmount, self._tmpMat2)
 #            self._image = contrastBrightness(self._image, effectAmount, effectArg1, self._tmpMat1)
-#            self._image = invert(self._image, effectArg1, self._tmpMat1)
-#            self._image = blackAndWhite(self._image, effectArg1, self._tmpMask, self._tmpMat1)
+#            self._image = invert(self._image, effectAmount, self._tmpMat1)
+#            self._image = blackAndWhite(self._image, effectAmount, self._tmpMask, self._tmpMat1)
     
             if(fadeValue < 0.99):
                 self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._tmpMat1)

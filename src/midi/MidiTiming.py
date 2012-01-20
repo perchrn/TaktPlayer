@@ -110,9 +110,13 @@ class MidiTiming(object):
                 self._midiBpm = 60 * self._midiTicksTimestampsLength / (self._midiTicksPerQuarteNote * (dataTimeStamp - startPosTimeStamp))
         else:
             sppValue = int(data1)+(int(data2 << 7))
+            oldSpp = self._midiOurSongPosition
             self._midiOurSongPosition = sppValue
             self._midiLastTimeEventWasSPP = True
             self._log.info("Got Song Position Pointer from host. SPP %d" %(self._midiOurSongPosition))
+            if(abs(oldSpp - sppValue) > self._midiTicksPerQuarteNote):
+                return True
+        return False
 #        if((self._midiOurSongPosition % self._midiTicksPerQuarteNote) == 0):
 #            self.printMidiPosition()
 

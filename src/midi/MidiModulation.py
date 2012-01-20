@@ -234,9 +234,7 @@ class MidiModulation(object):
                     release = 4.0
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
-                        print "DEBUG " + newSplit[2]
                         valuesSplit = newSplit[2].split('|', 5)
-                        print "DEBUG " + valuesSplit[0]
                         tmpAttack = float(valuesSplit[0])
                         if(tmpAttack >= 0.0):
                             attack = tmpAttack

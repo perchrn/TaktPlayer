@@ -122,6 +122,13 @@ class NoteState(object):
         if(self._noteOnQuantizedSPP == -1):
             return True
 
+    def isFarAway(self, songPosition, timeLimit):
+        if(self._note == -1):
+            return False
+        if(abs(self._noteOnSPP - songPosition) > timeLimit):
+            return True
+        return False
+
     def isOn(self, note):
         if(note != -1):
             if(self._note == note):
@@ -232,7 +239,6 @@ class MidiChannelStateHolder(object):
         isInt = isinstance(modId, int)
         if((isInt == False) and (len(modId) == 2)):
             if(modId[0] == MidiChannelStateHolder.ModulationSources.Controller):
-                print "DEBUG get value: " + str(modId)
                 return self._controllerValues[modId[1]]
         elif(isInt == True):
             if(modId == MidiChannelStateHolder.ModulationSources.PitchBend):
@@ -272,7 +278,7 @@ class MidiChannelStateHolder(object):
         self._activeNotes[note].setPreasure(preasure)
 
     def controllerChange(self, controllerId, value, songPosition):
-        print "DEBUG got controller: " + getControllerName(controllerId) + " (id: " + str(controllerId) + ")"
+#        print "DEBUG got controller: " + getControllerName(controllerId) + " (id: " + str(controllerId) + ")"
         if(controllerId == MidiController.Controllers.ResetAllControllers):
             self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
             for i in range(128):
@@ -361,6 +367,12 @@ class MidiChannelStateHolder(object):
             return unquantizedNote.getNote()
         return -1
 
+    def cleanupFutureNotes(self, songPosition, timeLimit):
+        for note in range(128):
+            testNote = self._nextNotes[note]
+            if(testNote.isFarAway(songPosition, timeLimit)):
+                self._nextNotes[note] = NoteState()#reset note
+
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)
 
@@ -401,6 +413,10 @@ class MidiStateHolder(object):
     def quantizeWaitingNote(self, midiChannel, note, quantizeValue):
         self._midiChannelStateHolder[midiChannel].quantizeWaitingNote(note, quantizeValue)
 
+    def cleanupFutureNotes(self, songPosition, timeLimit):
+        for i in range(16):
+            self._midiChannelStateHolder[i].cleanupFutureNotes(songPosition, timeLimit)
+        
     def printState(self):
         for i in range(16):
             self._midiChannelStateHolder[i].printState()

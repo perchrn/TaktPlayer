@@ -76,6 +76,11 @@ def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeM
         return resizeMat
     return resizeImage(src_region, resizeMat)
 
+def flipImage(image, mode, tmpMat):
+    flipMode = int(mode * 2.99) - 1
+    cv.Flip(image, tmpMat, flipMode)
+    return tmpMat
+
 def blurImage(image, value, tmpMat):
     if(value < 0.01):
         return image
@@ -92,6 +97,90 @@ def blurMultiply(image, value, tmpMat1, tmpMat2):
     cv.Smooth(image, tmpMat1, cv.CV_BLUR, xSize, ySize)
     cv.Mul(image, tmpMat1, tmpMat2, 0.006)
     return tmpMat2
+
+def dilateErode(image, value, tmpMat):
+    itterations = int(value * 128) - 64
+    if(itterations == 0):
+        return image
+    if(itterations < 0):
+        cv.Erode(image, tmpMat, None, -itterations)
+    else:
+        cv.Dilate(image, tmpMat, None, itterations)
+    return tmpMat
+
+def drawEdges(image, value, hsv, mode, tmpMat, tmpMask):
+    modeSelected = int(mode*3.99)
+    if(modeSelected < 2):
+        hsvSelected = int(hsv*2.99)
+    else:
+        hsvSelected = 0
+    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
+    splited = crateMask(800, 600)
+    if(hsvSelected < 1):
+        cv.Split(tmpMat, None, None, splited, None)
+    elif(hsvSelected < 2):
+        cv.Split(tmpMat, None, splited, None, None)
+    else:
+        cv.Split(tmpMat, splited, None, None, None)
+    if(modeSelected < 2):
+        threshold = 256 - int(value * 256)
+        cv.Canny(splited, tmpMask, threshold, threshold * 2, 3)
+        if(modeSelected < 1):
+            storage = cv.CreateMemStorage(0)
+            contour = cv.FindContours(tmpMask, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
+            cv.DrawContours(image, contour, cv.RGB(0, 255, 0), cv.RGB(0, 200, 55), 6)
+            return image
+        else:
+            cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
+            return tmpMat
+    else:
+        edgeMat = cv.CreateMat(600, 800, cv.CV_16SC1)
+        if(modeSelected < 3):
+            mode = int(value * 3.99)
+            if(mode == 0):
+                (sobelX, sobelY) = (1, 0)
+                order = 5
+            elif(mode == 1):
+                (sobelX, sobelY) = (1, 0)
+                order = 3
+            elif(mode == 2):
+                (sobelX, sobelY) = (0, 1)
+                order = 3
+            else:
+                (sobelX, sobelY) = (0, 1)
+                order = 5
+            cv.Sobel(splited, edgeMat, sobelX, sobelY, order)
+        else:
+            aparture = 1 + (2 * int(value * 5.99))
+            cv.Laplace(splited, edgeMat, aparture)                
+        cv.ConvertScale(edgeMat, tmpMask, 0.5)
+        cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
+        return tmpMat
+
+def selectiveDesaturate(image, value, valRange, mode, tmpMat, tmpMask):
+    modeSelected = int(mode*2.99)
+    hueValue = (value * 180)
+    huePlussMinus = 1 + (valRange * 19)
+    hueMin = max(0, hueValue - huePlussMinus)
+    hueMax = min(256, hueValue + huePlussMinus)
+    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
+    cv.InRangeS(tmpMat, (hueMin, 160, 32), (hueMax, 255, 255), tmpMask)
+    if(modeSelected < 2):
+        hue = crateMask(800, 600)
+        sat = crateMask(800, 600)
+        sat2 = crateMask(800, 600)
+        val = crateMask(800, 600)
+        cv.Split(tmpMat, hue, sat, val, None)
+        if(modeSelected < 1):
+            cv.Mul(sat, tmpMask, sat2, 0.005)
+        else:
+            cv.Sub(sat, tmpMask, sat2)
+        cv.Smooth(sat2, sat, cv.CV_BLUR, 8, 6)
+        cv.Merge(hue, sat, val, None, image)
+        cv.CvtColor(image, tmpMat, cv.CV_HSV2RGB)
+    else:
+        cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
+    return tmpMat
 
 class FadeMode():
     Black, White = range(2)
@@ -398,16 +487,25 @@ class MediaFile(object):
 
             effectAmount, effectArg1, effectArg2, effectX, effectY = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
 
-#            zoom = abs((2 * float(self._currentFrame) / self._numberOfFrames) -1.0)
-#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom, self._tmpMat1)
             self._image = resizeImage(self._captureImage, self._tmpMat1)
+
+#Blur/Distort
+            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
+#            self._image = dilateErode(self._image, effectAmount, self._tmpMat2)
 #            self._image = blurImage(self._image, effectAmount, self._tmpMat2)
-            self._image = blurMultiply(self._image, effectAmount, self._tmpMat2, self._tmpMat1)
+#            self._image = blurMultiply(self._image, effectAmount, self._tmpMat2, self._tmpMat1)
+
+#Change
+#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom, self._tmpMat1)
+#            self._image = flipImage(self._image, effectArg1, self._tmpMat2)
+
+#Color filters
 #            self._image = hueSaturationBrightness(self._image, effectArg1, effectArg2, effectX, self._tmpMat2)
 #            self._image = colorize(self._image, effectArg1, effectArg2, effectX, ColorizeMode.Add, effectAmount, self._tmpMat2)
 #            self._image = contrastBrightness(self._image, effectAmount, effectArg1, self._tmpMat1)
 #            self._image = invert(self._image, effectAmount, self._tmpMat1)
 #            self._image = blackAndWhite(self._image, effectAmount, self._tmpMask, self._tmpMat1)
+#            self._image = selectiveDesaturate(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
     
             if(fadeValue < 0.99):
                 self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._tmpMat1)

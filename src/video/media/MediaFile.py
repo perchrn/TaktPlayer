@@ -8,16 +8,10 @@ import logging
 from cv2 import cv
 import numpy
 from midi.MidiModulation import MidiModulation
-
-def getEmptyImage(x, y):
-    resizeMat = crateMat(x,y)
-    return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
-
-def crateMat(width, heigth):
-    return cv.CreateMat(heigth, width, cv.CV_8UC3)
-
-def crateMask(width, heigth):
-    return cv.CreateMat(heigth, width, cv.CV_8UC1)
+from video.Effects import createMat, ZoomEffect, FlipEffect,\
+    BlurEffect, BluredContrastEffect, DistortionEffect, EdgeEffect,\
+    DesaturateEffect, ContrastBrightnessEffect, HueSaturationEffect,\
+    InvertEffect, ThresholdEffect, ColorizeEffect
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -25,162 +19,6 @@ def copyImage(image):
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
-
-def zoomImage(image, xcenter, ycenter, zoomX, zoomY, minRange, maxRange, resizeMat):
-    originalWidth, originalHeight = cv.GetSize(image)
-    rangeFraction = maxRange - minRange
-    zoomXFraction = minRange + (rangeFraction * zoomX)
-    zoomYFraction = minRange + (rangeFraction * zoomY)
-    width = int(float(originalWidth) * zoomXFraction)
-    height = int(float(originalHeight) * zoomYFraction)
-    left = int((originalWidth / 2) + (originalWidth * xcenter / 2) - (width / 2))
-    top = int((originalHeight / 2) + (originalHeight * ycenter / 2) - (height / 2))
-    right = left + width
-    bottom = top + height
-    outputRect = False
-    outPutLeft = 0
-    outPutWidth = -1
-    outPutTop = 0
-    outPutHeight = -1
-    if(left < 0):
-        outPutLeft = -int(float(left) / zoomXFraction)
-        width = width + left
-        left = 0
-        outputRect = True
-    if(right > originalWidth):
-        outPutWidth = originalWidth+int(float(originalWidth - right) / zoomXFraction) - outPutLeft
-        width = originalWidth - left
-        outputRect = True
-    if(top < 0):
-        outPutTop = -int(float(top) / zoomYFraction)
-        height = height + top
-        top = 0
-        outputRect = True
-    if(bottom > originalHeight):
-        outPutHeight = originalHeight+int(float(originalHeight - bottom) / zoomYFraction) - outPutTop
-        height = originalHeight - top
-        outputRect = True
-#    print "Zoom: " + str(zoomX) + " M: " + str(minRange) + " R:(+) " + str(rangeFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
-    src_region = cv.GetSubRect(image, (left, top, width, height) )
-    if(outputRect):
-        if(outPutWidth < 0):
-            outPutWidth = originalWidth - outPutLeft
-        if(outPutHeight < 0):
-            outPutHeight = originalHeight - outPutTop
-#        print "Zoom OUT: " + str(outPutWidth) + " h: " + str(outPutHeight) + " l: " + str(outPutLeft) + " t: " + str(outPutTop)
-        tmpMat = crateMat(outPutWidth, outPutHeight)
-        resized = resizeImage(src_region, tmpMat)
-        cv.SetZero(resizeMat)
-        dst_region = cv.GetSubRect(resizeMat, (outPutLeft, outPutTop, outPutWidth, outPutHeight) )
-        cv.Copy(resized, dst_region)
-        return resizeMat
-    return resizeImage(src_region, resizeMat)
-
-def flipImage(image, mode, tmpMat):
-    flipMode = int(mode * 2.99) - 1
-    cv.Flip(image, tmpMat, flipMode)
-    return tmpMat
-
-def blurImage(image, value, tmpMat):
-    if(value < 0.01):
-        return image
-    xSize = 2 + int(value * 8)
-    ySize = 2 + int(value * 6)
-    cv.Smooth(image, tmpMat, cv.CV_BLUR, xSize, ySize)
-    return tmpMat
-
-def blurMultiply(image, value, tmpMat1, tmpMat2):
-    if(value < 0.01):
-        return image
-    xSize = 2 + int(value * 8)
-    ySize = 2 + int(value * 6)
-    cv.Smooth(image, tmpMat1, cv.CV_BLUR, xSize, ySize)
-    cv.Mul(image, tmpMat1, tmpMat2, 0.006)
-    return tmpMat2
-
-def dilateErode(image, value, tmpMat):
-    itterations = int(value * 128) - 64
-    if(itterations == 0):
-        return image
-    if(itterations < 0):
-        cv.Erode(image, tmpMat, None, -itterations)
-    else:
-        cv.Dilate(image, tmpMat, None, itterations)
-    return tmpMat
-
-def drawEdges(image, value, hsv, mode, tmpMat, tmpMask):
-    modeSelected = int(mode*3.99)
-    if(modeSelected < 2):
-        hsvSelected = int(hsv*2.99)
-    else:
-        hsvSelected = 0
-    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
-    splited = crateMask(800, 600)
-    if(hsvSelected < 1):
-        cv.Split(tmpMat, None, None, splited, None)
-    elif(hsvSelected < 2):
-        cv.Split(tmpMat, None, splited, None, None)
-    else:
-        cv.Split(tmpMat, splited, None, None, None)
-    if(modeSelected < 2):
-        threshold = 256 - int(value * 256)
-        cv.Canny(splited, tmpMask, threshold, threshold * 2, 3)
-        if(modeSelected < 1):
-            storage = cv.CreateMemStorage(0)
-            contour = cv.FindContours(tmpMask, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
-            cv.DrawContours(image, contour, cv.RGB(0, 255, 0), cv.RGB(0, 200, 55), 6)
-            return image
-        else:
-            cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
-            return tmpMat
-    else:
-        edgeMat = cv.CreateMat(600, 800, cv.CV_16SC1)
-        if(modeSelected < 3):
-            mode = int(value * 3.99)
-            if(mode == 0):
-                (sobelX, sobelY) = (1, 0)
-                order = 5
-            elif(mode == 1):
-                (sobelX, sobelY) = (1, 0)
-                order = 3
-            elif(mode == 2):
-                (sobelX, sobelY) = (0, 1)
-                order = 3
-            else:
-                (sobelX, sobelY) = (0, 1)
-                order = 5
-            cv.Sobel(splited, edgeMat, sobelX, sobelY, order)
-        else:
-            aparture = 1 + (2 * int(value * 5.99))
-            cv.Laplace(splited, edgeMat, aparture)                
-        cv.ConvertScale(edgeMat, tmpMask, 0.5)
-        cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
-        return tmpMat
-
-def selectiveDesaturate(image, value, valRange, mode, tmpMat, tmpMask):
-    modeSelected = int(mode*2.99)
-    hueValue = (value * 180)
-    huePlussMinus = 1 + (valRange * 19)
-    hueMin = max(0, hueValue - huePlussMinus)
-    hueMax = min(256, hueValue + huePlussMinus)
-    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
-    cv.InRangeS(tmpMat, (hueMin, 160, 32), (hueMax, 255, 255), tmpMask)
-    if(modeSelected < 2):
-        hue = crateMask(800, 600)
-        sat = crateMask(800, 600)
-        sat2 = crateMask(800, 600)
-        val = crateMask(800, 600)
-        cv.Split(tmpMat, hue, sat, val, None)
-        if(modeSelected < 1):
-            cv.Mul(sat, tmpMask, sat2, 0.005)
-        else:
-            cv.Sub(sat, tmpMask, sat2)
-        cv.Smooth(sat2, sat, cv.CV_BLUR, 8, 6)
-        cv.Merge(hue, sat, val, None, image)
-        cv.CvtColor(image, tmpMat, cv.CV_HSV2RGB)
-    else:
-        cv.CvtColor(tmpMask, tmpMat, cv.CV_GRAY2RGB)
-    return tmpMat
 
 class FadeMode():
     Black, White = range(2)
@@ -192,85 +30,15 @@ def fadeImage(image, value, mode, tmpMat):
         cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
     return tmpMat
 
-def contrastBrightness(image, contrast, brightness, tmpMat):
-    contrast = (2 * contrast) -1.0
-    brightnessVal = 256 * brightness
-    if(contrast < 0.0):
-        contrastVal = 1.0 + contrast
-    elif(contrast > 0.0):
-        contrastVal = 1.0 + (9 * contrast)
-    else:
-        contrastVal = 1.0
-    if((contrast > -0.01) and (contrast < 0.01) and (brightness < 0.1) and (brightness > -0.1)):
-        return image
-    else:
-        cv.ConvertScaleAbs(image, tmpMat, contrastVal, brightnessVal)
-        return tmpMat
-
-def hueSaturationBrightness(image, rotate, saturation, brightness, tmpMat):
-    cv.CvtColor(image, tmpMat, cv.CV_RGB2HSV)
-    rotCalc = (rotate * 512) - 256
-    satCalc = (saturation * 512) - 256
-    brightCalc = (brightness * 512) - 256
-    rgbColor = cv.CV_RGB(rotCalc, satCalc, brightCalc)
-    cv.SubS(tmpMat, rgbColor, image)
-    cv.CvtColor(image, tmpMat, cv.CV_HSV2RGB)
-    return tmpMat
-
-class ColorizeMode():
-    Add, Subtract, SubtractFrom, Multiply = range(4)
-
-def colorize(image, red, green, blue, mode, amount, tmpMat):
-    if((mode == ColorizeMode.Add) or (mode == ColorizeMode.Subtract)):
-        redCalc = 256 * (red * amount)
-        greenCalc = 256 * (green * amount)
-        blueCalc = 256 * (blue * amount)
-    else:
-        amount = 1.0 - amount
-        redCalc = 256 * (red + ((1.0 - red) * amount))
-        greenCalc = 256 * (green  + ((1.0 - green) * amount))
-        blueCalc = 256 * (blue  + ((1.0 - blue) * amount))
-    rgbColor = cv.CV_RGB(redCalc, greenCalc, blueCalc)
-#    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
-
-    if(mode == ColorizeMode.Add):
-        cv.AddS(image, rgbColor, tmpMat)
-    elif(mode == ColorizeMode.Subtract):
-        cv.SubS(image, rgbColor, tmpMat)
-    elif(mode == ColorizeMode.SubtractFrom):
-        cv.SubRS(image, rgbColor, tmpMat)
-    elif(mode == ColorizeMode.Multiply):
-        cv.Set(tmpMat, rgbColor)
-        cv.Mul(image, tmpMat, tmpMat, 0.003)
-    else:
-        cv.AddS(image, rgbColor, tmpMat)
-    return tmpMat
-
-def invert(image, amount, tmpMat):
-    brightnessVal = -256 * amount
-    if((brightnessVal > -0.01) and (brightnessVal < 0.01)):
-        return image
-    else:
-        cv.ConvertScaleAbs(image, tmpMat, 1.0, brightnessVal)
-        return tmpMat
-
-def blackAndWhite(image1, threshold, mixMask, mixMat):
-    threshold = 256 * threshold
-    cv.CvtColor(image1, mixMask, cv.CV_BGR2GRAY);
-    cv.CmpS(mixMask, threshold, mixMask, cv.CV_CMP_GT)
-    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
-    return mixMat
-
-def mixImageSelfMask(image1, image2, mixMask, mixMat):
-    imageCopy = crateMat(800, 600)
-    cv.Copy(image2, imageCopy)
+def mixImageSelfMask(image1, image2, mixMask, mixMat1, mixMat2):
+    cv.Copy(image2, mixMat2)
     cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
     cv.CmpS(mixMask, 10, mixMask, cv.CV_CMP_GT)
-#    cv.Copy(imageCopy, image1, mixMask)
-#    return imageCopy
-    cv.Merge(mixMask, mixMask, mixMask, None, mixMat)
-    cv.Sub(image1, mixMat, mixMat)
-    cv.Add(mixMat, imageCopy, image2)
+#    cv.Copy(mixMat2, image1, mixMask)
+#    return mixMat2
+    cv.Merge(mixMask, mixMask, mixMask, None, mixMat1)
+    cv.Sub(image1, mixMat1, mixMat1)
+    cv.Add(mixMat1, mixMat2, image2)
     return image2
 
 def mixImagesAdd(image1, image2, mixMat):
@@ -284,13 +52,13 @@ def mixImagesMultiply(image1, image2, mixMat):
 class MixMode:
     (Add, Multiply, LumaKey, Replace) = range(4)
 
-def mixImages(mode, image1, image2, mixMat, mixMask):
+def mixImages(mode, image1, image2, mixMat1, mixMat2, mixMask):
     if(mode == MixMode.Add):
-        return mixImagesAdd(image1, image2, mixMat)
+        return mixImagesAdd(image1, image2, mixMat1)
     if(mode == MixMode.Multiply):
-        return mixImagesMultiply(image1, image2, mixMat)
+        return mixImagesMultiply(image1, image2, mixMat1)
     if(mode == MixMode.LumaKey):
-        return mixImageSelfMask(image1, image2, mixMask, mixMat)
+        return mixImageSelfMask(image1, image2, mixMask, mixMat1, mixMat2)
     if(mode == MixMode.Replace):
         return image2
 
@@ -307,9 +75,8 @@ class MediaFile(object):
         self._midiTiming = midiTimingClass
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
         self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
-        self._tmpMat1 = crateMat(self._internalResolutionX, self._internalResolutionY)
-        self._tmpMat2 = crateMat(self._internalResolutionX, self._internalResolutionY)
-        self._tmpMask = crateMask(self._internalResolutionX, self._internalResolutionY)
+        self._resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._fadeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._fileOk = False
         self._image = None
         self._captureImage = None
@@ -322,8 +89,8 @@ class MediaFile(object):
         self._currentFrame = 0;
         self._startSongPosition = 0.0
 
-        self._minZoomPercent = 0.25
-        self._maxZoomPercent = 4.0
+        self._effect1 = EdgeEffect(self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        self._effect2 = InvertEffect(self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
@@ -338,19 +105,29 @@ class MediaFile(object):
         self._midiModulation.setModulationReceiver("PlayBack", "None")
         self._midiModulation.setModulationReceiver("FadeInOut", "None")
         self._midiModulation.setModulationReceiver("Level", "None")
-        self._midiModulation.setModulationReceiver("EffectX", "None")
-        self._midiModulation.setModulationReceiver("EffectY", "None")
-        self._midiModulation.setModulationReceiver("EffectAmount", "MidiChannel.Controller.ModWheel")
-        self._midiModulation.setModulationReceiver("EffectArgument1", "None")
-        self._midiModulation.setModulationReceiver("EffectArgument2", "None")
+        self._midiModulation.setModulationReceiver("EffectAAmount", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("EffectAArg1", "None")
+        self._midiModulation.setModulationReceiver("EffectAArg2", "None")
+        self._midiModulation.setModulationReceiver("EffectAArg3", "None")
+        self._midiModulation.setModulationReceiver("EffectAArg4", "None")
+        self._midiModulation.setModulationReceiver("EffectBAmount", "MidiChannel.Controller.ModWheel")
+        self._midiModulation.setModulationReceiver("EffectBArg1", "None")
+        self._midiModulation.setModulationReceiver("EffectBArg2", "None")
+        self._midiModulation.setModulationReceiver("EffectBArg3", "None")
+        self._midiModulation.setModulationReceiver("EffectBArg4", "None")
         self._playbackModulationId = -1
         self._fadeModulationId = -1
         self._levelModulationId = -1
-        self._effectXModulationId = -1
-        self._effectYModulationId = -1
-        self._effectAmountModulationId = -1
-        self._effectArgument1ModulationId = -1
-        self._effectArgument2ModulationId = -1
+        self._effectAAmountModulationId = -1
+        self._effectAArg1ModulationId = -1
+        self._effectAArg2ModulationId = -1
+        self._effectAArg3ModulationId = -1
+        self._effectAArg4ModulationId = -1
+        self._effectBAmountModulationId = -1
+        self._effectBArg1ModulationId = -1
+        self._effectBArg2ModulationId = -1
+        self._effectBArg3ModulationId = -1
+        self._effectBArg4ModulationId = -1
 
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
@@ -368,22 +145,32 @@ class MediaFile(object):
         return self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def getEffectModulations(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
-        amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        arg1 =  self._midiModulation.getModlulationValue(self._effectArgument1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        arg2 =  self._midiModulation.getModlulationValue(self._effectArgument2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        xval =  self._midiModulation.getModlulationValue(self._effectXModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        yval =  self._midiModulation.getModlulationValue(self._effectYModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        return (amount, arg1, arg2, xval, yval)
+        aamount =  self._midiModulation.getModlulationValue(self._effectAAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        aarg1 =  self._midiModulation.getModlulationValue(self._effectAArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        aarg2 =  self._midiModulation.getModlulationValue(self._effectAArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        aarg3 =  self._midiModulation.getModlulationValue(self._effectAArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        aarg4 =  self._midiModulation.getModlulationValue(self._effectAArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        bamount =  self._midiModulation.getModlulationValue(self._effectBAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        barg1 =  self._midiModulation.getModlulationValue(self._effectBArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        barg2 =  self._midiModulation.getModlulationValue(self._effectBArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        barg3 =  self._midiModulation.getModlulationValue(self._effectBArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        barg4 =  self._midiModulation.getModlulationValue(self._effectBArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        return (aamount, aarg1, aarg2, aarg3, aarg4, bamount, barg1, barg2, barg3, barg4)
 
     def _getConfiguration(self):
         self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
         self._fadeModulationId = self._midiModulation.connectModulation("FadeInOut")
         self._levelModulationId = self._midiModulation.connectModulation("Level")
-        self._effectXModulationId = self._midiModulation.connectModulation("EffectX")
-        self._effectYModulationId = self._midiModulation.connectModulation("EffectY")
-        self._effectAmountModulationId = self._midiModulation.connectModulation("EffectAmount")
-        self._effectArgument1ModulationId = self._midiModulation.connectModulation("EffectArgument1")
-        self._effectArgument2ModulationId = self._midiModulation.connectModulation("EffectArgument2")
+        self._effectAAmountModulationId = self._midiModulation.connectModulation("EffectAAmount")
+        self._effectAArg1ModulationId = self._midiModulation.connectModulation("EffectAArg1")
+        self._effectAArg2ModulationId = self._midiModulation.connectModulation("EffectAArg2")
+        self._effectAArg3ModulationId = self._midiModulation.connectModulation("EffectAArg3")
+        self._effectAArg4ModulationId = self._midiModulation.connectModulation("EffectAArg4")
+        self._effectBAmountModulationId = self._midiModulation.connectModulation("EffectBAmount")
+        self._effectBArg1ModulationId = self._midiModulation.connectModulation("EffectBArg1")
+        self._effectBArg2ModulationId = self._midiModulation.connectModulation("EffectBArg2")
+        self._effectBArg3ModulationId = self._midiModulation.connectModulation("EffectBArg3")
+        self._effectBArg4ModulationId = self._midiModulation.connectModulation("EffectBArg4")
 
         self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
@@ -471,9 +258,6 @@ class MediaFile(object):
     def getCurrentFramePos(self):
         return self._currentFrame
 
-    def zoomImage(self, image, xcenter, ycenter, xzoom, yzoom, tmpMat):
-        return zoomImage(image, xcenter, ycenter, xzoom, yzoom, self._minZoomPercent, self._maxZoomPercent, tmpMat)
-
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
         levelValue = self.getLevelModulation(currentSongPosition, midiChannelState, midiNoteState)
@@ -485,12 +269,22 @@ class MediaFile(object):
             self._image = None
         else:
 
-            effectAmount, effectArg1, effectArg2, effectX, effectY = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            aEffectAmount, aEffectArg1, aEffectArg2, aEffectArg3, aEffectArg4, bEffectAmount, bEffectArg1, bEffectArg2, bEffectArg3, bEffectArg4 = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
 
-            self._image = resizeImage(self._captureImage, self._tmpMat1)
+            imageSize = cv.GetSize(self._captureImage)
+            if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
+                print "DEBUG: Needs resize because of size"
+                self._image = resizeImage(self._captureImage, self._resizeMat)
+            else:
+                self._image = copyImage(self._captureImage)
+
+            if(self._effect1 != None):
+                self._image = self._effect1.applyEffect(self._image, aEffectAmount, aEffectArg1, aEffectArg2, aEffectArg3, aEffectArg4)
+            if(self._effect2 != None):
+                self._image = self._effect2.applyEffect(self._image, bEffectAmount, bEffectArg1, bEffectArg2, bEffectArg3, bEffectArg4)
 
 #Blur/Distort
-            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
+#            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
 #            self._image = dilateErode(self._image, effectAmount, self._tmpMat2)
 #            self._image = blurImage(self._image, effectAmount, self._tmpMat2)
 #            self._image = blurMultiply(self._image, effectAmount, self._tmpMat2, self._tmpMat1)
@@ -508,7 +302,7 @@ class MediaFile(object):
 #            self._image = selectiveDesaturate(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
     
             if(fadeValue < 0.99):
-                self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._tmpMat1)
+                self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
         
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
@@ -563,11 +357,11 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image):
+    def mixWithImage(self, image, mixMat1, mixMat2, mixMask):
         if(self._image == None):
             return image
         else:
-            return mixImages(self._mixMode, image, self._image, self._tmpMat1, self._tmpMask)
+            return mixImages(self._mixMode, image, self._image, mixMat1, mixMat2, mixMask)
     
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):

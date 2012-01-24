@@ -4,14 +4,24 @@ Created on 21. des. 2011
 @author: pcn
 '''
 import logging
+from video.Effects import getEmptyImage, createMask, createMat
 
-from video.media.MediaFile import getEmptyImage
 
 class MediaMixer(object):
-    def __init__(self):
+    def __init__(self, configurationTree):
+        self._configurationTree = configurationTree
+        #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
-        self._blankImage = getEmptyImage(800, 600)
+        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
+        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+
+        self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mixMat3 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._currentImage = self._blankImage
         self._currentImageId = 0
         self._nextImage = self._currentImage
@@ -40,7 +50,10 @@ class MediaMixer(object):
                 if(imageMix == None):
                     imageMix = currenMedia.getImage()
                 else:
-                    imageMix = currenMedia.mixWithImage(imageMix)
+                    if(imageMix == self._mixMat1):
+                        imageMix = currenMedia.mixWithImage(imageMix, self._mixMat1, self._mixMat2, self._mixMask)
+                    else:
+                        imageMix = currenMedia.mixWithImage(imageMix, self._mixMat2, self._mixMat3, self._mixMask)
         if(imageMix == None):
             imageMix = self._blankImage
         self._nextImage = imageMix

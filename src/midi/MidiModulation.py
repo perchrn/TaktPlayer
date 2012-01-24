@@ -16,50 +16,55 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 #MidiModulation.connectModulation("PlayBack", "MidiNote.Velocity")
 #MidiModulation.connectModulation("PlayBack", "MidiNote.ReleaseVelocity")
 #MidiModulation.connectModulation("PlayBack", "MidiNote.NotePreasure")
-#MidiModulation.connectModulation("PlayBack", "LFO.Triangle.4.0|0.0")
+#MidiModulation.connectModulation("PlayBack", "LFO.Triangle.4.0|0.0|0.25|0.75")
 #MidiModulation.connectModulation("PlayBack", "ADSR.ADSR.4.0|0.0|1.0|4.0")
 #MidiModulation.connectModulation("PlayBack", "ADSR.AR.4.0|4.0")
 #MidiModulation.connectModulation("PlayBack", "None")#Always 0.0
+#MidiModulation.connectModulation("PlayBack", "Value.1.0")
 
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Contoller.ModWheel")
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Note.1C.ADSR")
-#MidiModulation.connectModulation("PlayBack", "Value.1.0")
 
 class LowFrequencyOscilator(object):
     class Shape():
         Triangle, SawTooth, Ramp, Sine, Random = range(5)
 
-    def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0):
+    def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
         print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
-        print "LowFrequencyOscilator: Len: %f, Start: %f S: %f R: %f" % (midiLength, startSPP)
+        print "LowFrequencyOscilator: Len: %f, Start: %f" % (midiLength, startSPP)
         print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         self._midiTiming = midiTimingClass
         self._startSongPosition = startSPP
         self._midiLength = midiLength
         self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
         self._shape = mode
+        self._minVal = minVal
+        self._maxVal = maxVal
+        self._valRange = maxVal - minVal
         random.seed(self._midiTiming.getTime())
         self._radians360 = math.radians(360)
 
     def getValue(self, songPosition, argument):
         if(self._shape == LowFrequencyOscilator.Shape.Random):
-            return random.random()
+            return self._minVal + (random.random() * self._valRange)
         else:
             phase = ((songPosition - self._startSongPosition) / self._syncLength) % 1.0
             if(self._shape == LowFrequencyOscilator.Shape.Triangle):
-                return abs((phase * 2) - 1.0)
+                return self._minVal + (abs((phase * 2) - 1.0) * self._valRange)
             elif(self._shape == LowFrequencyOscilator.Shape.SawTooth):
-                return phase
+                return self._minVal + (phase * self._valRange)
             elif(self._shape == LowFrequencyOscilator.Shape.Ramp):
-                return 1.0 - phase
+                return self._minVal + (1.0 - phase * self._valRange)
             elif(self._shape == LowFrequencyOscilator.Shape.Sine):
-                return math.sin(self._radians360 * phase)
+                return self._minVal + ((1.0 + math.sin(self._radians360 * phase)) / 2 * self._valRange)
 
-    def isEqual(self, mode, midiLength, startSPP):
+    def isEqual(self, mode, midiLength, startSPP, minVal, maxVal):
         if(self._shape == mode):
             if(self._midiLength == midiLength):
                 if(self._startSongPosition == startSPP):
-                    return True
+                    if(self._minVal == minVal):
+                        if(self._maxVal == maxVal):
+                            return True
         return False
 
 def getLfoShapeId(shapeName):
@@ -142,7 +147,7 @@ def getAdsrShapeId(shapeName):
         return None
 
 class ModulationSources():
-    MidiChannel, MidiNote, Lfo, ADSR = range(4)
+    MidiChannel, MidiNote, Lfo, ADSR, Value = range(5)
 
 class ModulatiobReceiver(object):
     def __init__(self, modId, name):
@@ -213,6 +218,8 @@ class MidiModulation(object):
                 if(mode != None):
                     midiLength = 4.0
                     startSPP = 0.0
+                    minVal = 0.0
+                    maxVal = 1.0
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
                         valuesSplit = newSplit[2].split('|', 5)
@@ -223,7 +230,20 @@ class MidiModulation(object):
                             tmpSPP = float(valuesSplit[1])
                             if(tmpSPP >= 0.0):
                                 startSPP = tmpSPP
-                    return (ModulationSources.Lfo, self._getLfoId(mode, midiLength, startSPP))
+                            if(len(valuesSplit) > 2):
+                                tmpMin = float(valuesSplit[2])
+                                if(tmpMin >= 0.0):
+                                    minVal = tmpMin
+                                if(len(valuesSplit) > 3):
+                                    tmpMax = float(valuesSplit[3])
+                                    if(tmpMax >= 0.0):
+                                        maxVal = tmpMax
+                    return (ModulationSources.Lfo, self._getLfoId(mode, midiLength, startSPP, minVal, maxVal))
+        elif( sourceSplit[0] == "Value" ):
+            if(len(sourceSplit) > 1):
+                newSplit = sourceDescription.split('.', 1)
+                value = float(newSplit[1])
+                return (ModulationSources.Value, value)
         elif( sourceSplit[0] == "ADSR" ):
             if(len(sourceSplit) > 1):
                 mode = getAdsrShapeId(sourceSplit[1])
@@ -261,24 +281,24 @@ class MidiModulation(object):
             print "Invalid modulation description: \"%s\"" % sourceDescription
         return None
 
-    def _findLfo(self, mode, midiLength, startSPP):
+    def _findLfo(self, mode, midiLength, startSPP, minVal, maxVal):
         for lfo in self._activeLfos:
-            if(lfo.isEqual(mode, midiLength, startSPP)):
+            if(lfo.isEqual(mode, midiLength, startSPP, minVal, maxVal)):
                 return lfo
         return None
 
     def _getLfo(self, lfoConfig):
-        mode, startSPP, midiLength = lfoConfig
-        foundLfo = self._findLfo(mode, midiLength, startSPP)
+        mode, midiLength, startSPP, minVal, maxVal = lfoConfig
+        foundLfo = self._findLfo(mode, midiLength, startSPP, minVal, maxVal)
         if(foundLfo == None):
-            newLfo = LowFrequencyOscilator(self._midiTiming, mode, midiLength, startSPP)
+            newLfo = LowFrequencyOscilator(self._midiTiming, mode, midiLength, startSPP, minVal, maxVal)
             self._activeLfos.append(newLfo)
             return newLfo
         else:
             return foundLfo
 
-    def _getLfoId(self, mode, midiLength = 4.0 , startSPP = 0.0):
-        return (mode, midiLength, startSPP)
+    def _getLfoId(self, mode, midiLength = 4.0 , startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
+        return (mode, midiLength, startSPP, minVal, maxVal)
 
     def _findAdsr(self, mode, attack, decay, sustain, release):
         for adsr in self._activeAdsrs:
@@ -301,6 +321,7 @@ class MidiModulation(object):
 
     def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, argument = 0.0, plussMinus = False):
         if(combinedId != None):
+            print str(combinedId)
             sourceId, subId = combinedId
             if(sourceId == ModulationSources.MidiChannel):
                 return midiChannelStateHolder.getModulationValue(subId, argument)
@@ -310,6 +331,8 @@ class MidiModulation(object):
                 return self._getLfo(subId).getValue(songPosition, argument)
             elif(sourceId == ModulationSources.ADSR):
                 return self._getAdsr(subId).getValue(songPosition, (midiNoteStateHolder.getStartPosition(), midiNoteStateHolder.getStopPosition(), midiNoteStateHolder.getNoteLength()))
+            elif(sourceId == ModulationSources.Value):
+                return subId
         #Return "0.0", if we don't find it.
         if(plussMinus == True):
             return 0.5

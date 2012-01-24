@@ -5,8 +5,9 @@ Created on 21. des. 2011
 '''
 import logging
 
-from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile, getEmptyImage
+from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile
 from midi import MidiUtilities
+from video.Effects import getEmptyImage
 
 class MediaPool(object):
     def __init__(self, midiTiming, midiStateHolder, mediaMixer, configurationTree, multiprocessLogger):

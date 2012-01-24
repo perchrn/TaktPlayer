@@ -57,7 +57,8 @@ class MyKivyApp(App):
         self._pcnVideoWidget = PcnVideo(resolution=(self._internalResolutionX, self._internalResolutionY))
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
-        self._mediaMixer = MediaMixer()
+        confChild = self._configurationTree.addChildUnique("MediaMixer")
+        self._mediaMixer = MediaMixer(confChild)
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger)
 

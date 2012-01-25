@@ -71,8 +71,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, configurationTree):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
         self._configurationTree = configurationTree
+        self._effectsConfigurationTemplates = effectsConfiguration
+        self._mediaFadeConfigurationTemplates = fadeConfiguration
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
@@ -99,80 +101,39 @@ class MediaFile(object):
 
         self._configurationTree.addTextParameterStatic("Type", self.getType())
         self._configurationTree.addTextParameterStatic("FileName", self._filename)
-        self._midiModulation = MidiModulation(self._configurationTree.addChildUnique("Modulation"), self._midiTiming)
+        self._midiModulation = None
         self._setupConfiguration()
         self._getConfiguration()
 
     def _setupConfiguration(self):
-        self._midiModulation.setModulationReceiver("PlayBack", "None")
-        self._midiModulation.setModulationReceiver("FadeInOut", "None")
-        self._midiModulation.setModulationReceiver("Level", "None")
-        self._midiModulation.setModulationReceiver("EffectAAmount", "MidiChannel.Controller.ModWheel")
-        self._midiModulation.setModulationReceiver("EffectAArg1", "None")
-        self._midiModulation.setModulationReceiver("EffectAArg2", "None")
-        self._midiModulation.setModulationReceiver("EffectAArg3", "None")
-        self._midiModulation.setModulationReceiver("EffectAArg4", "None")
-        self._midiModulation.setModulationReceiver("EffectBAmount", "MidiChannel.Controller.ModWheel")
-        self._midiModulation.setModulationReceiver("EffectBArg1", "None")
-        self._midiModulation.setModulationReceiver("EffectBArg2", "None")
-        self._midiModulation.setModulationReceiver("EffectBArg3", "None")
-        self._midiModulation.setModulationReceiver("EffectBArg4", "None")
-        self._playbackModulationId = -1
-        self._fadeModulationId = -1
-        self._levelModulationId = -1
-        self._effectAAmountModulationId = -1
-        self._effectAArg1ModulationId = -1
-        self._effectAArg2ModulationId = -1
-        self._effectAArg3ModulationId = -1
-        self._effectAArg4ModulationId = -1
-        self._effectBAmountModulationId = -1
-        self._effectBArg1ModulationId = -1
-        self._effectBArg2ModulationId = -1
-        self._effectBArg3ModulationId = -1
-        self._effectBArg4ModulationId = -1
-
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
-        self._configurationTree.addTextParameter("FadeMode", "Black")#Default Add
+        self._defaultEffect1SettingsName = "MediaDefault1"
+        self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
+        self._defaultEffect2SettingsName = "MediaDefault2"
+        self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
+        self._defaultFadeSettingsName = "Default"
+        self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+        
         self._syncLength = -1.0
         self._quantizeLength = -1.0
         self._mixMode = MixMode.Add
-        self._fadeMode = FadeMode.Black
-
-    def getFadeModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
-        return self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-
-    def getLevelModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
-        return self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-
-    def getEffectModulations(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
-        aamount =  self._midiModulation.getModlulationValue(self._effectAAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        aarg1 =  self._midiModulation.getModlulationValue(self._effectAArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        aarg2 =  self._midiModulation.getModlulationValue(self._effectAArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        aarg3 =  self._midiModulation.getModlulationValue(self._effectAArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        aarg4 =  self._midiModulation.getModlulationValue(self._effectAArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        bamount =  self._midiModulation.getModlulationValue(self._effectBAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        barg1 =  self._midiModulation.getModlulationValue(self._effectBArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        barg2 =  self._midiModulation.getModlulationValue(self._effectBArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        barg3 =  self._midiModulation.getModlulationValue(self._effectBArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        barg4 =  self._midiModulation.getModlulationValue(self._effectBArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        return ((aamount, aarg1, aarg2, aarg3, aarg4), (bamount, barg1, barg2, barg3, barg4))
 
     def _getConfiguration(self):
-        self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
-        self._fadeModulationId = self._midiModulation.connectModulation("FadeInOut")
-        self._levelModulationId = self._midiModulation.connectModulation("Level")
-        self._effectAAmountModulationId = self._midiModulation.connectModulation("EffectAAmount")
-        self._effectAArg1ModulationId = self._midiModulation.connectModulation("EffectAArg1")
-        self._effectAArg2ModulationId = self._midiModulation.connectModulation("EffectAArg2")
-        self._effectAArg3ModulationId = self._midiModulation.connectModulation("EffectAArg3")
-        self._effectAArg4ModulationId = self._midiModulation.connectModulation("EffectAArg4")
-        self._effectBAmountModulationId = self._midiModulation.connectModulation("EffectBAmount")
-        self._effectBArg1ModulationId = self._midiModulation.connectModulation("EffectBArg1")
-        self._effectBArg2ModulationId = self._midiModulation.connectModulation("EffectBArg2")
-        self._effectBArg3ModulationId = self._midiModulation.connectModulation("EffectBArg3")
-        self._effectBArg4ModulationId = self._midiModulation.connectModulation("EffectBArg4")
+        self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
+        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
+        if(self._effect1Settings == None):
+            self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
+        self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
+        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
+        if(self._effect1Settings == None):
+            self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
+
+        self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
+        self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
+        if(self._fadeAndLevelSettings == None):
+            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
 
         self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
@@ -189,19 +150,12 @@ class MediaFile(object):
         else:
             self._mixMode = MixMode.Add #Defaults to add
 
-        fadeMode = self._configurationTree.getValue("FadeMode")
-        if(fadeMode == "Black"):
-            self._fadeMode = FadeMode.Black
-        elif(fadeMode == "White"):
-            self._fadeMode = FadeMode.White
-        else:
-            self._fadeMode = FadeMode.Black #Defaults to add
-
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
             print "mediaFile config is updated..."
             self._getConfiguration()
-            self._midiModulation.checkAndUpdateFromConfiguration()
+            if(self._midiModulation != None):
+                self._midiModulation.checkAndUpdateFromConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
     def close(self):
@@ -261,34 +215,30 @@ class MediaFile(object):
         return self._currentFrame
 
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeValue = self.getFadeModulation(currentSongPosition, midiChannelState, midiNoteState)
-        levelValue = self.getLevelModulation(currentSongPosition, midiChannelState, midiNoteState)
+        fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
-        return fadeValue
+        return fadeMode, fadeValue
 
-    def _applyOneEffect(self, image, effect, effectArgs):
-        if(effect != None):
-            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectArgs
-            return effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+    def _applyOneEffect(self, image, effectSettings, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        if(effectSettings != None):
+            effect, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            if(effect != None):
+                return effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+            else:
+                return image
         else:
             return image
 
     def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
-        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
-            self._image = None
+        imageSize = cv.GetSize(self._captureImage)
+        if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
+            print "DEBUG: Needs resize because of size"
+            self._image = resizeImage(self._captureImage, self._resizeMat)
         else:
+            self._image = copyImage(self._captureImage)
 
-            effect1Args, efect2Args = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
-
-            imageSize = cv.GetSize(self._captureImage)
-            if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
-                print "DEBUG: Needs resize because of size"
-                self._image = resizeImage(self._captureImage, self._resizeMat)
-            else:
-                self._image = copyImage(self._captureImage)
-
-            self._image = self._applyOneEffect(self._image, self._effect1, effect1Args)
-            self._image = self._applyOneEffect(self._image, self._effect2, efect2Args)
+        self._image = self._applyOneEffect(self._image, self._effect1Settings, currentSongPosition, midiChannelState, midiNoteState)
+        self._image = self._applyOneEffect(self._image, self._effect2Settings, currentSongPosition, midiChannelState, midiNoteState)
 
 #Blur/Distort
 #            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
@@ -307,9 +257,9 @@ class MediaFile(object):
 #            self._image = invert(self._image, effectAmount, self._tmpMat1)
 #            self._image = blackAndWhite(self._image, effectAmount, self._tmpMask, self._tmpMat1)
 #            self._image = selectiveDesaturate(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
-    
-            if(fadeValue < 0.99):
-                self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
+
+        if(fadeValue < 0.99):
+            self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
         
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
@@ -371,17 +321,17 @@ class MediaFile(object):
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
             if(effects != None):
-                preEffect, preEffectArgs, postEffect, postEffectArgs = effects
+                preEffect, postEffect = effects
             else:
-                preEffect, preEffectArgs, postEffect, postEffectArgs = (None, None, None, None)
-            self._image = self._applyOneEffect(self._image, preEffect, preEffectArgs)
+                preEffect, postEffect = (None, None)
+            self._image = self._applyOneEffect(self._image, preEffect)
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            mixedImage = self._applyOneEffect(mixedImage, postEffect, postEffectArgs)
+            mixedImage = self._applyOneEffect(mixedImage, postEffect)
             return mixedImage
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
 
     def getType(self):
         return "Image"
@@ -390,8 +340,8 @@ class ImageFile(MediaFile):
         pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if(fadeValue < 0.01):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
@@ -419,15 +369,19 @@ class ImageSequenceFile(MediaFile):
     class Mode:
         Time, ReTrigger, Controller = range(3)
 
-    def __init__(self, fileName, midiTimingClass, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceFile.Mode.Time
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
+        self._midiModulation.setModulationReceiver("PlayBackModulation", "None")
+        self._playbackModulationId = -1
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
+        self._playbackModulationId = self._midiModulation.connectModulation("PlayBackModulation")
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
             self._sequenceMode = ImageSequenceFile.Mode.ReTrigger
@@ -462,8 +416,8 @@ class ImageSequenceFile(MediaFile):
         return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
 
@@ -506,8 +460,8 @@ class VideoLoopFile(MediaFile):
     class Mode:
         Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
 
-    def __init__(self, fileName, midiTimingClass, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
         self._loopMode = VideoLoopFile.Mode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
 
@@ -536,8 +490,8 @@ class VideoLoopFile(MediaFile):
         return "VideoLoop"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
         lastFrame = self._currentFrame

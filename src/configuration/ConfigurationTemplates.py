@@ -8,7 +8,7 @@ class TemplateList(object):
     def __init__(self):
         pass
 
-class ConfigurationTemplates(object):
+class ConfigurationTemplatesX(object):
     def __init__(self, configurationTree):
         self._configurationTree = configurationTree
 

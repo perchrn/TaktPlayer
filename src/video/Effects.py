@@ -4,7 +4,7 @@ Created on 24. jan. 2012
 @author: pcn
 '''
 from cv2 import cv
-
+        
 def getEmptyImage(x, y):
     resizeMat = createMat(x,y)
     return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
@@ -21,6 +21,68 @@ def copyImage(image):
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
+
+class EffectTypes():
+    Zoom, Flip, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(12)
+
+def getEffectId(name):
+    lowername = name.lower()
+    if(lowername == "zoom"):
+        return EffectTypes.Zoom
+    elif(lowername == "flip"):
+        return EffectTypes.Flip
+    elif(lowername == "blur"):
+        return EffectTypes.Blur
+    elif(lowername == "blurContrast"):
+        return EffectTypes.BlurContrast
+    elif(lowername == "distortion"):
+        return EffectTypes.Distortion
+    elif(lowername == "edge"):
+        return EffectTypes.Edge
+    elif(lowername == "desaturate"):
+        return EffectTypes.Desaturate
+    elif(lowername == "contrast"):
+        return EffectTypes.Contrast
+    elif(lowername == "huesaturation"):
+        return EffectTypes.HueSaturation
+    elif(lowername == "colorize"):
+        return EffectTypes.Colorize
+    elif(lowername == "invert"):
+        return EffectTypes.Invert
+    elif(lowername == "threshold"):
+        return EffectTypes.Threshold
+
+def getEffectById(effectType, configurationTree, internalResX, internalResY):
+    if(effectType == EffectTypes.Zoom):
+        return ZoomEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Flip):
+        return FlipEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Blur):
+        return BlurEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.BlurContrast):
+        return BluredContrastEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Distortion):
+        return DistortionEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Edge):
+        return EdgeEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Desaturate):
+        return DesaturateEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Contrast):
+        return ContrastBrightnessEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.HueSaturation):
+        return HueSaturationEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Colorize):
+        return ColorizeEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Invert):
+        return InvertEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Threshold):
+        return ThresholdEffect(configurationTree, internalResX, internalResY)
+    else:
+        return None
+
+def getEffectByName(name, configurationTree, internalResX, internalResY):
+    fxid = getEffectId(name)
+    return getEffectById(fxid, configurationTree, internalResX, internalResY)
 
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -583,3 +645,4 @@ class ThresholdEffect(object):
 
 #class MirrorEffect(object):
 #class StutterEffect(object):
+#class RotateEffect(object):

@@ -6,7 +6,7 @@ Created on 28. nov. 2011
 
 #Kivy imports
 import os
-from configuration.ConfigurationTemplates import ConfigurationTemplates
+from configuration.EffectSettings import EffectTemplates, FadeTemplates
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -50,17 +50,20 @@ class MyKivyApp(App):
         self._globalConfig = self._configurationTree.addChildUnique("Global")
         self._globalConfig.addIntParameter("ResolutionX", 800)
         self._globalConfig.addIntParameter("ResolutionY", 600)
-        self._templateTree = ConfigurationTemplates(self._globalConfig)
 
         self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
         self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
         self._pcnVideoWidget = PcnVideo(resolution=(self._internalResolutionX, self._internalResolutionY))
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
+
+        self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
+        self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)
+
         confChild = self._configurationTree.addChildUnique("MediaMixer")
-        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder)
+        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger)
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger)
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)

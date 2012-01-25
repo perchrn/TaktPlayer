@@ -9,9 +9,10 @@ from video.media.MediaFile import MixMode
 
 
 class MediaMixer(object):
-    def __init__(self, configurationTree, midiStateHolder):
+    def __init__(self, configurationTree, midiStateHolder, effectsConfiguration):
         self._configurationTree = configurationTree
         self._midiStateHolder = midiStateHolder
+        self._effectsConfigurationTemplates = effectsConfiguration
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 

@@ -241,10 +241,13 @@ class ConfigurationHolder(object):
                         return child
         return None
 
-    def _findChildPath(self, path):
+    def _findChildPath(self, path, getValue):
         pathSplit = path.split('.', 32)#Max 32 levels
         if(len(pathSplit) == 1):
-            return self.getValue(path)
+            if(getValue == True):
+                return self.getValue(path)
+            else:
+                return self
         else:
             child = self._findChild(pathSplit[0])
             if(child != None):
@@ -255,15 +258,21 @@ class ConfigurationHolder(object):
                         first = False
                     else:
                         subPath = subPath + name
-                return child._findChildPath(subPath)
+                return child._findChildPath(subPath, getValue)
             print "Did not find: " + pathSplit[0]
             return None
         
+    def getPath(self, path):
+        if(self._parent != None):
+            return self._parent.getPath(path)
+        else:
+            return self._findChildPath(path, False)
+
     def getValueFromPath(self, path):
         if(self._parent != None):
             return self._parent.getValueFromPath(path)
         else:
-            return self._findChildPath(path)
+            return self._findChildPath(path, True)
 
     def _findXmlChild(self, loadedXml, name, idName = None, idValue = None):
         if(self._parent == None):
@@ -304,6 +313,14 @@ class ConfigurationHolder(object):
                         self._children.pop(i)
                         return True
         return False
+
+    def findChildUniqueId(self, name, idName, idValue):
+        foundChild = self._findChild(name, idName, idValue)
+        if(foundChild != None):
+            print "findChildUniqueId: Child found. " + name
+            return foundChild
+        else:
+            return None
 
     def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)

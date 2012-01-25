@@ -164,6 +164,6 @@ class MediaPool(object):
             else:
                 self._mediaMixer.gueueImage(None, midiChannel)
         #TODO: Make sure we only use the same VideoLoopFile instance once.
-        self._mediaMixer.mixImages()
+        self._mediaMixer.mixImages(midiTime)
 
 

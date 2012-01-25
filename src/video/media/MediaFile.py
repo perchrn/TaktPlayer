@@ -50,17 +50,19 @@ def mixImagesMultiply(image1, image2, mixMat):
     return mixMat
 
 class MixMode:
-    (Add, Multiply, LumaKey, Replace) = range(4)
+    (Default, Add, Multiply, LumaKey, Replace) = range(5)
 
 def mixImages(mode, image1, image2, mixMat1, mixMat2, mixMask):
     if(mode == MixMode.Add):
         return mixImagesAdd(image1, image2, mixMat1)
-    if(mode == MixMode.Multiply):
+    elif(mode == MixMode.Multiply):
         return mixImagesMultiply(image1, image2, mixMat1)
-    if(mode == MixMode.LumaKey):
+    elif(mode == MixMode.LumaKey):
         return mixImageSelfMask(image1, image2, mixMask, mixMat1, mixMat2)
-    if(mode == MixMode.Replace):
+    elif(mode == MixMode.Replace):
         return image2
+    else:
+        return mixImagesAdd(image1, image2, mixMat1)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -155,7 +157,7 @@ class MediaFile(object):
         barg2 =  self._midiModulation.getModlulationValue(self._effectBArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         barg3 =  self._midiModulation.getModlulationValue(self._effectBArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         barg4 =  self._midiModulation.getModlulationValue(self._effectBArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-        return (aamount, aarg1, aarg2, aarg3, aarg4, bamount, barg1, barg2, barg3, barg4)
+        return ((aamount, aarg1, aarg2, aarg3, aarg4), (bamount, barg1, barg2, barg3, barg4))
 
     def _getConfiguration(self):
         self._playbackModulationId = self._midiModulation.connectModulation("PlayBack")
@@ -264,12 +266,19 @@ class MediaFile(object):
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         return fadeValue
 
-    def _aplyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
+    def _applyOneEffect(self, image, effect, effectArgs):
+        if(effect != None):
+            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectArgs
+            return effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+        else:
+            return image
+
+    def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
         if((self._fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
         else:
 
-            aEffectAmount, aEffectArg1, aEffectArg2, aEffectArg3, aEffectArg4, bEffectAmount, bEffectArg1, bEffectArg2, bEffectArg3, bEffectArg4 = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            effect1Args, efect2Args = self.getEffectModulations(currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
 
             imageSize = cv.GetSize(self._captureImage)
             if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
@@ -278,10 +287,8 @@ class MediaFile(object):
             else:
                 self._image = copyImage(self._captureImage)
 
-            if(self._effect1 != None):
-                self._image = self._effect1.applyEffect(self._image, aEffectAmount, aEffectArg1, aEffectArg2, aEffectArg3, aEffectArg4)
-            if(self._effect2 != None):
-                self._image = self._effect2.applyEffect(self._image, bEffectAmount, bEffectArg1, bEffectArg2, bEffectArg3, bEffectArg4)
+            self._image = self._applyOneEffect(self._image, self._effect1, effect1Args)
+            self._image = self._applyOneEffect(self._image, self._effect2, efect2Args)
 
 #Blur/Distort
 #            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
@@ -357,11 +364,20 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMat1, mixMat2, mixMask):
+    def mixWithImage(self, image, mixMode, effects, mixMat1, mixMat2, mixMask):
         if(self._image == None):
             return image
         else:
-            return mixImages(self._mixMode, image, self._image, mixMat1, mixMat2, mixMask)
+            if(mixMode == MixMode.Default):
+                mixMode = self._mixMode
+            if(effects != None):
+                preEffect, preEffectArgs, postEffect, postEffectArgs = effects
+            else:
+                preEffect, preEffectArgs, postEffect, postEffectArgs = (None, None, None, None)
+            self._image = self._applyOneEffect(self._image, preEffect, preEffectArgs)
+            mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
+            mixedImage = self._applyOneEffect(mixedImage, postEffect, postEffectArgs)
+            return mixedImage
     
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, configurationTree):
@@ -378,7 +394,7 @@ class ImageFile(MediaFile):
         if(fadeValue < 0.01):
             self._image = None
             return
-        self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
 
     def openFile(self, midiLength):
         if (os.path.isfile(self._filename) == False):
@@ -476,11 +492,11 @@ class ImageSequenceFile(MediaFile):
                     self._captureImage = cv.QueryFrame(self._videoFile)
                     if(self._captureImage == None):
                         self._captureImage = self._firstImage
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+            self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+            self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return False
 
     def openFile(self, midiLength):
@@ -561,11 +577,11 @@ class VideoLoopFile(MediaFile):
                 self._captureImage = cv.QueryFrame(self._videoFile)
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+            self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return True
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
-            self._aplyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+            self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
             return False
 
     def openFile(self, midiLength):

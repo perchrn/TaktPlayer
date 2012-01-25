@@ -321,7 +321,6 @@ class MidiModulation(object):
 
     def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, argument = 0.0, plussMinus = False):
         if(combinedId != None):
-            print str(combinedId)
             sourceId, subId = combinedId
             if(sourceId == ModulationSources.MidiChannel):
                 return midiChannelStateHolder.getModulationValue(subId, argument)

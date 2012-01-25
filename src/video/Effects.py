@@ -352,12 +352,12 @@ class EdgeEffect(object):
         if((edgeMode == EdgeEffect.Modes.CannyOnTop) or (edgeMode == EdgeEffect.Modes.Canny)):
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
-            if(edgeMode == EdgeEffect.Modes.Canny):
+            if(edgeMode == EdgeEffect.Modes.CannyOnTop):
                 storage = cv.CreateMemStorage(0)
                 contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
                 cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 3)
                 return image
-            else:
+            else: # Canny
                 cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
                 return self._colorMat
         else:

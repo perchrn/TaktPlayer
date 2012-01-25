@@ -58,7 +58,7 @@ class MyKivyApp(App):
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
         confChild = self._configurationTree.addChildUnique("MediaMixer")
-        self._mediaMixer = MediaMixer(confChild)
+        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder)
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, confChild, self._multiprocessLogger)
 

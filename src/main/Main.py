@@ -7,6 +7,7 @@ Created on 28. nov. 2011
 #Kivy imports
 import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
+from configuration.GuiServer import GuiServer
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -35,6 +36,9 @@ import logging
 logging.root.setLevel(logging.ERROR)
 
 class MyKivyApp(App):
+#    icon = 'custom-kivy-icon.png'
+    title = 'Musical Video Player'
+
     def build(self):
         #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -73,6 +77,8 @@ class MyKivyApp(App):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
+        self._guiServer = GuiServer(self._configurationTree, self._mediaPool)
+        self._guiServer.startGuiServerProcess("0.0.0.0", 2021)
         print self._configurationTree.getConfigurationXMLString()
 
         return self._pcnVideoWidget
@@ -101,6 +107,7 @@ class MyKivyApp(App):
     def on_stop(self):
         self._log.info("Close applicaton")
         self._midiListner.stopDaemon()
+        self._guiServer.stopGuiServerProcess()
 
     def frameReady(self, dt):
         pass

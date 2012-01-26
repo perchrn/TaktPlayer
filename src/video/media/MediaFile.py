@@ -8,10 +8,7 @@ import logging
 from cv2 import cv
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat, ZoomEffect, FlipEffect,\
-    BlurEffect, BluredContrastEffect, DistortionEffect, EdgeEffect,\
-    DesaturateEffect, ContrastBrightnessEffect, HueSaturationEffect,\
-    InvertEffect, ThresholdEffect, ColorizeEffect
+from video.Effects import createMat
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -92,9 +89,6 @@ class MediaFile(object):
         self._originalTime = 0.0
         self._currentFrame = 0;
         self._startSongPosition = 0.0
-
-        self._effect1 = EdgeEffect(self._configurationTree, self._internalResolutionX, self._internalResolutionY)
-        self._effect2 = InvertEffect(self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)

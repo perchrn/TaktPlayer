@@ -49,21 +49,33 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.startGuiClientProcess("127.0.0.1", 2021)
 
     def _timedUpdate(self, event):
+        result = self._guiClient.getServerResponse()
+        if(result != None):
+            destWidth, destHeight = self._testButton.getBitmapSize()
+            resultImage = cv.CreateImageHeader((destWidth, destHeight), cv.IPL_DEPTH_8U, 3)
+            cv.SetData(resultImage, result)
+            print "resultImage: " + str(resultImage)
+            imageArray = numpy.asarray(resultImage)
+            print "imageArray: " + str(imageArray)
+            print "Setting new image"
+            self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
+            print "done."
         pass
 
     def _onButton(self, event):
         print "Button pressed!"
-        cvImage = cv.LoadImage("..\..\..\Video\BursdagenMin_005.jpg")
-        destWidth, destHeight = self._testButton.getBitmapSize()
-        resizeMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
-        cv.Resize(cvImage, resizeMat)
-        colorMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
-        cv.CvtColor(resizeMat, colorMat, cv.CV_BGR2RGB)
-        imageArray = numpy.asarray(colorMat)
-        #Transport...
-        self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
+#        cvImage = cv.LoadImage("..\..\..\Video\BursdagenMin_005.jpg")
+#        destWidth, destHeight = self._testButton.getBitmapSize()
+#        resizeMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
+#        cv.Resize(cvImage, resizeMat)
+#        colorMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
+#        cv.CvtColor(resizeMat, colorMat, cv.CV_BGR2RGB)
+#        imageArray = numpy.asarray(colorMat)
+#        print "type: " + str(type(imageArray))
+#        #Transport...
+#        self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
 
-        print self._guiClient.sendCommando("Testing 1.2.")
+        print self._guiClient.requestImage(24, 0.0)
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

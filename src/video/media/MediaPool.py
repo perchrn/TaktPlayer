@@ -5,7 +5,8 @@ Created on 21. des. 2011
 '''
 import logging
 
-from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile
+from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
+    CameraInput
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 
@@ -128,6 +129,10 @@ class MediaPool(object):
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                     mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
                     mediaFile.openFile(midiLength)
+                elif(mediaType == "Camera"):
+                    clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                    mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
+                    mediaFile.openFile(midiLength)
                 else:
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                     mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
@@ -135,7 +140,14 @@ class MediaPool(object):
 
         self._mediaPool[midiNote] = mediaFile
         return midiNote
-        
+
+    def getVideoThumbnail(self, noteId, videoPosition):
+        noteMedia = self._mediaPool[noteId]
+        if(noteMedia != None):
+            return noteMedia.getThumbnail(videoPosition)
+        else:
+            return ""
+
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
         for midiChannel in range(16):

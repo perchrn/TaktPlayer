@@ -121,8 +121,8 @@ class MediaFile(object):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
         self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
-        if(self._effect1Settings == None):
-            self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
+        if(self._effect2Settings == None):
+            self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
 
         self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
         self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
@@ -226,7 +226,6 @@ class MediaFile(object):
     def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
         imageSize = cv.GetSize(self._captureImage)
         if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
-            print "DEBUG: Needs resize because of size"
             self._image = resizeImage(self._captureImage, self._resizeMat)
         else:
             self._image = copyImage(self._captureImage)
@@ -305,6 +304,21 @@ class MediaFile(object):
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
+    def getThumbnail(self, videoPosition):
+        image = self._firstImage
+#        if(videoPosition > 0.0):
+#            skipFrames etc.
+        destWidth, destHeight = (40, 30)
+        resizeMat = createMat(destWidth, destHeight)
+        colorMat = createMat(destWidth, destHeight)
+        cv.Resize(image, resizeMat)
+        cv.CvtColor(resizeMat, colorMat, cv.CV_BGR2RGB)
+        return colorMat.tostring()
+#        imageArray = numpy.asarray(colorMat)
+#        print "imageArray: " + str(imageArray)
+#        return imageArray.tostring()
+
+    
     def openFile(self, midiLength):
         pass
 
@@ -357,6 +371,45 @@ class ImageFile(MediaFile):
         self._firstImage = self._captureImage
         self._originalTime = 1.0
         self._log.warning("Read image file %s", os.path.basename(self._filename))
+        self._fileOk = True
+
+class CameraInput(MediaFile):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+        self._cameraId = int(fileName)
+
+    def getType(self):
+        return "Camera"
+
+    def close(self):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+            self._image = None
+            return
+        self._captureImage = cv.QueryFrame(self._videoFile)
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
+
+    def openFile(self, midiLength):
+        self._videoFile = cv.CaptureFromCAM(self._cameraId)
+        try:
+            self._captureImage = cv.QueryFrame(self._videoFile)
+        except:
+            self._log.warning("Exception while reading: %d", self._cameraId)
+            print "Exception while reading: " + str(self._cameraId)
+            raise MediaError("File caused exception!")
+        if (self._captureImage == None):
+            self._log.warning("Could not read frames from: %d", self._cameraId)
+            print "Could not read frames from: " + str(self._cameraId)
+            raise MediaError("File could not be read!")
+        try:
+            self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
+        except:
+            self._log.warning("Exception while getting number of frames per second from: %d", self._cameraId)
+            raise MediaError("File caused exception!")
+        self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):

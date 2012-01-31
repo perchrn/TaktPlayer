@@ -71,6 +71,7 @@ class TcpMidiListner(object):
         self._multiprocessLogger = multiprocessLogger
 
         #Daemon variables:
+        self._midiListnerProcess = None
         self._midiQueue = Queue(1024)
         self._midiListnerCommandQueue = Queue(-1)
         self.startDaemon('', 2020)
@@ -92,10 +93,14 @@ class TcpMidiListner(object):
         self._midiListnerProcess.start()
 
     def stopDaemon(self):
-        self._log.debug("Stopping TcpMidiListner daemon")
-        self._midiListnerCommandQueue.put(("QUIT", None))
-        self._midiListnerProcess.join(10.0)
-
+        if(self._midiListnerProcess != None):
+            self._log.debug("Stopping TcpMidiListner daemon")
+            self._midiListnerCommandQueue.put(("QUIT", None))
+            self._midiListnerProcess.join(20.0)
+            if(self._midiListnerProcess.is_alive()):
+                print "TcpMidiListner did not respond to quit command. Terminating."
+                self._midiListnerProcess.terminate()
+            self._midiListnerProcess = None
 
     def _decodeMidiEvent(self, dataTimeStamp, command, data1, data2, data3 = 0x00):
         sysexEvent = False

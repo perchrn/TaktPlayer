@@ -77,7 +77,7 @@ class ConfigurationHolder(object):
         filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
         loadFile = open(filePath, 'r')
         xmlString = loadFile.read()
-        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
+        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
         self._loadedXML = ElementTree.XML(soup.prettify())
         self._updateFromXml(self._loadedXML)
 
@@ -96,8 +96,6 @@ class ConfigurationHolder(object):
 
     def _updateFromXml(self, xmlPart):
         if(self._parent != None):
-#            xmlPart = xmlPart.get("musicalvideoplayer")
-#        else:
             self._loadedXML = xmlPart
             self._updateParamsFromXml()
         for child in self._children:
@@ -212,12 +210,12 @@ class ConfigurationHolder(object):
     def getConfigurationXMLString(self):
         root = self.getConfigurationXML()
         xmlString = ElementTree.tostring(root, encoding="utf-8", method="xml")
-        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
+        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
         return soup.prettify()
 
     def _printXml(self, xml):
         xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")
-        soup = BeautifulStoneSoup(xmlString, selfClosingTags=['global'])
+        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
         print soup.prettify()
 
     def _addSelfToXML(self, parentNode):
@@ -285,6 +283,7 @@ class ConfigurationHolder(object):
             idName = idName.lower()
         if(loadedXml != None):
             for xmlChild in loadedXml:#self._loadedXML.findall(name):
+                print "tag: " + str(xmlChild.tag)
                 if(name == xmlChild.tag):
                     if(idName != None):
                         if(xmlChild.get(idName) == idValue):
@@ -328,7 +327,7 @@ class ConfigurationHolder(object):
             print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name
             return foundChild
         else:
-            print "Add Child Unique: " + name
+            print "Add Child Unique: " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
             self._configIsUpdated = True
             if(idRaw == None):
                 idRaw = idValue

@@ -85,6 +85,9 @@ class PcnVideo(Image):
         super(PcnVideo, self).__init__(**kwargs)
         if self.index == -1:
             self.index = 0
+        kwargs.setdefault('internalResolution', (800, 600))
+        self._internalResolution = kwargs.get('internalResolution')
+
         self.bind(index=self._on_index,
                   resolution=self._on_index)
         self._on_index()
@@ -101,7 +104,7 @@ class PcnVideo(Image):
         if self.index < 0:
             return
         self._pcnVideo = CorePcnVideo(index=self.index,
-            resolution=self.resolution, stopped=False)
+            resolution=self.resolution, stopped=False, internalResolution=self._internalResolution)
         self._pcnVideo.bind(on_load=self._camera_loaded)
         if self.play:
             self._pcnVideo.start()
@@ -113,6 +116,9 @@ class PcnVideo(Image):
 
     def setFrameProviderClass(self, providerClass):
         self._pcnVideo.setFrameProviderClass(providerClass)
+
+    def updateShader(self, shader):
+        self._pcnVideo.updateShader(shader)
 
 #    def frameUpdated(self):
 #        self.dispatch('on_frame')

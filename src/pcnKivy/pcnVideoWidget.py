@@ -117,9 +117,6 @@ class PcnVideo(Image):
     def setFrameProviderClass(self, providerClass):
         self._pcnVideo.setFrameProviderClass(providerClass)
 
-    def updateShader(self, shader):
-        self._pcnVideo.updateShader(shader)
-
 #    def frameUpdated(self):
 #        self.dispatch('on_frame')
 

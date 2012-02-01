@@ -8,13 +8,9 @@ OpenCV Camera: Implement CameraBase with OpenCV
 
 __all__ = ('PcnVideo')
 
-import kivy
 from kivy.graphics.texture import Texture
 from kivy.core.camera import CameraBase
 from kivy.clock import Clock
-
-from kivy.properties import StringProperty, ObjectProperty
-from kivy.graphics import RenderContext, Fbo, Color, Rectangle
 
 import logging
 log = logging.getLogger('pcnKivy.PcnVideo')
@@ -22,12 +18,6 @@ log = logging.getLogger('pcnKivy.PcnVideo')
 class PcnVideo(CameraBase):
     '''Implementation of CameraBase using OpenCV
     '''
-    # property to set the source code for fragment shader
-    fs = StringProperty(None)
-
-    # texture of the framebuffer
-    texture = ObjectProperty(None)
-
 
     def __init__(self, **kwargs):
         self._device = None
@@ -35,49 +25,11 @@ class PcnVideo(CameraBase):
         kwargs.setdefault('internalResolution', (800, 600))
         self._internalResolution = kwargs.get('internalResolution')
 
-        # Instead of using canvas, we will use a RenderContext,
-        # and change the default shader used.
-        self.canvas = RenderContext()
-
-        # We create a framebuffer at the size of the window
-        # FIXME: this should be created at the size of the widget
-        with self.canvas:
-            self.fbo = Fbo(size=self._internalResolution)
-
-        # Set the fbo background to black.
-        with self.fbo:
-            Color(0, 0, 0)
-            Rectangle(size=self._internalResolution)
-
         super(PcnVideo, self).__init__(**kwargs)
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
-        # We'll update our glsl variables in a clock
-        Clock.schedule_interval(self.update_glsl, 0)
-
-        # Don't forget to set the texture property to the texture of framebuffer
-        self.texture = self.fbo.texture
-
-    def update_glsl(self, *largs):
-        self.canvas['time'] = Clock.get_boottime()
-        self.canvas['resolution'] = map(float, self._internalResolution)
-        # This is needed for the default vertex shader.
-        self.fbo['projection_mat'] = kivy.core.window.Window.render_context['projection_mat']
-        self.canvas['projection_mat'] = kivy.core.window.Window.render_context['projection_mat']
-
-    def on_fs(self, instance, value):
-        # set the fragment shader to our source code
-        shader = self.canvas.shader
-        old_value = shader.fs
-        shader.fs = value
-        if not shader.success:
-            shader.fs = old_value
-            raise Exception('failed')
-
-    def updateShader(self, shader):
-        self.fs = shader
 
     def init_camera(self):
         # create the device

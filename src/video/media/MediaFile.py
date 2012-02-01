@@ -9,6 +9,7 @@ from cv2 import cv
 import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat
+import hashlib
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -304,19 +305,33 @@ class MediaFile(object):
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
-    def getThumbnail(self, videoPosition):
+    def getThumbnailId(self, videoPosition):
         image = self._firstImage
-#        if(videoPosition > 0.0):
-#            skipFrames etc.
-        destWidth, destHeight = (40, 30)
-        resizeMat = createMat(destWidth, destHeight)
-        colorMat = createMat(destWidth, destHeight)
-        cv.Resize(image, resizeMat)
-        cv.CvtColor(resizeMat, colorMat, cv.CV_BGR2RGB)
-        return colorMat.tostring()
-#        imageArray = numpy.asarray(colorMat)
-#        print "imageArray: " + str(imageArray)
-#        return imageArray.tostring()
+        if(videoPosition > 0.0):
+            if(videoPosition < 0.28):
+                videoPosition = 0.25
+            elif(videoPosition < 0.41):
+                videoPosition = 0.33
+            elif(videoPosition < 0.66):
+                videoPosition = 0.50
+            else:
+                videoPosition = 0.75
+            #TODO: skipFrames etc.
+        else:
+            videoPosition = 0.0
+
+        filenameHash = hashlib.sha224(self._filename).hexdigest()
+        thumbnailName = "thumbs/%s_%0.2f.jpg" % (filenameHash, videoPosition)
+        osFileName = os.path.normcase(thumbnailName)
+        if (os.path.isfile(osFileName) == False):
+            print "Thumb file does not exist. Generating... " + thumbnailName
+            destWidth, destHeight = (40, 30)
+            resizeMat = createMat(destWidth, destHeight)
+            cv.Resize(image, resizeMat)
+            cv.SaveImage(osFileName, resizeMat)
+        else:
+            print "Thumb file already exist. " + thumbnailName
+        return thumbnailName
 
     
     def openFile(self, midiLength):

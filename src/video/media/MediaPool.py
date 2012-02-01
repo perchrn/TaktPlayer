@@ -141,12 +141,13 @@ class MediaPool(object):
         self._mediaPool[midiNote] = mediaFile
         return midiNote
 
-    def getVideoThumbnail(self, noteId, videoPosition):
+    def requestVideoThumbnail(self, noteLetter, videoPosition):
+        noteId = MidiUtilities.noteStringToNoteNumber(noteLetter)
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):
-            return noteMedia.getThumbnail(videoPosition)
+            return noteMedia.getThumbnailId(videoPosition)
         else:
-            return ""
+            return None
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable

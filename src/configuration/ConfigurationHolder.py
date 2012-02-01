@@ -196,7 +196,7 @@ class ConfigurationHolder(object):
     def getConfigurationXML(self):
         root = Element("Configuration")
         if(self._parent != None):
-            parentPath = self._parent.getParentPath()
+            parentPath = self.getParentPath()
             root.attrib["path"] = parentPath
         self._addSelfToXML(root)
         return root
@@ -229,8 +229,9 @@ class ConfigurationHolder(object):
             node.attrib[param.getName()] = str(param.getValue())
 
     def _findChild(self, name, idName = None, idValue = None):
+        lowername = name.lower()
         for child in self._children:
-            if(child.getName() == name):
+            if(child.getName().lower() == lowername):
                 if(idName == None):
                     return child
                 else:
@@ -245,9 +246,16 @@ class ConfigurationHolder(object):
             if(getValue == True):
                 return self.getValue(path)
             else:
-                return self
+                print "path.lower() == self._name.lower(): " + str(path) + " - " + str(self._name)
+                if(path.lower() == self._name.lower()):
+                    return self
+                else:
+                    return self._findChild(path)
         else:
-            child = self._findChild(pathSplit[0])
+            if(pathSplit[0].lower() == self._name.lower()):
+                child = self
+            else:
+                child = self._findChild(pathSplit[0])
             if(child != None):
                 first = True
                 subPath = ""
@@ -255,10 +263,12 @@ class ConfigurationHolder(object):
                     if(first == True):
                         first = False
                     else:
+                        if(subPath != ""):
+                            subPath += "."
                         subPath = subPath + name
                 return child._findChildPath(subPath, getValue)
-            print "Did not find: " + pathSplit[0]
-            return None
+        print "Did not find: " + pathSplit[0] + " in " + self._name + (len)
+        return None
         
     def getPath(self, path):
         if(self._parent != None):

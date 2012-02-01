@@ -4,14 +4,13 @@ Created on 26. jan. 2012
 @author: pcn
 '''
 
-import time
-
-import socket
 from multiprocessing import Process, Queue
 from Queue import Empty
-from xml.etree import ElementTree
 import base64
 import hashlib
+from utilities.MiniXml import MiniXml, stringToXml
+import httplib
+import time
 
 class UrlSignature(object):
     def __init__(self, passwd = "GoGoGrillazEatingBananasFtw"):
@@ -27,60 +26,29 @@ class UrlSignature(object):
 
 
 def guiNetworkClientProcess(host, port, commandQueue, resultQueue):
-    bufferSize = 1024
-    tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcpClientSocket.settimeout(10.0)
     run = True
     while(run):
-        try:
-            tcpClientSocket.connect((host, port))
-            resultQueue.put("<clientmessage message=\"connecting to " + str(host) + ":" + str(port) + "\"/>")
-            while(run):
-                try:
-                    command = commandQueue.get_nowait()
-                    if(command == "QUIT"):
-                        run = False
-                    else:
-                        try:
-                            tcpClientSocket.settimeout(5.0)
-                            tcpClientSocket.send(command)
-                            waitingForAnswer = True
-                            dataReceived = ""
-                            while(waitingForAnswer):
-                                try:
-                                    dataPart = tcpClientSocket.recv(bufferSize)
-                                    if(len(dataPart) <= 0):
-                                        waitingForAnswer = False
-                                        if(len(dataReceived) > 0):
-                                            resultQueue.put(dataReceived)
-                                    elif(len(dataPart) < bufferSize):
-                                        waitingForAnswer = False
-                                        resultQueue.put(dataReceived + dataPart)
-                                        resultQueue.put("<clientmessage message=\"Got a short message.\"/>")
-                                    else:
-                                        resultQueue.put("<clientmessage message=\"Got some data. len = " + str(len(dataPart)) + "\"/>")
-                                        dataReceived += dataPart
-                                except socket.timeout:
-                                    resultQueue.put("<clientmessage message=\"Got a socket timeout exception while waiting for answer.\"/>")
-                                    if(len(dataReceived) > 0):
-                                        waitingForAnswer = False
-                                        resultQueue.put(dataReceived)
-                        except socket.timeout:
-                            pass
-                except Empty:
-                    time.sleep(0.05)
-        except socket.error:
-            pass
-        except socket.timeout:
-            pass
         try:
             command = commandQueue.get_nowait()
             if(command == "QUIT"):
                 run = False
             else:
-                resultQueue.put("<clienterror message=\"Network trouble. Cannot connect to server. Please try again later.\"/>")
+                httpConnection = httplib.HTTPConnection("127.0.0.1:2021")
+#                httpConnection.request("GET", "?imageThumb=0C&time=0.0")
+#                httpConnection.request("GET", "?configPath=root")
+                httpConnection.request("GET", "?configPath=musicalvideoplayer.global.effectmodulation")
+#                httpConnection.request("GET", "thumbs/6e5b995f7ac65a36ae54edfd28dcdf0fc729b79d021a65360d9b4a79_0.00.jpg")
+                serverResponse = httpConnection.getresponse()
+                if(serverResponse.status == 200):
+                    resposeType = serverResponse.getheader("Content-type")
+                    serverResponseData = serverResponse.read()
+                    clientMessageXml = MiniXml("clientmessage", "Got response from server. Type: %s content: %s" % (resposeType, str(serverResponseData)))
+                    resultQueue.put(clientMessageXml.getXmlString())
+                else:
+                    clientMessageXml = MiniXml("clientmessage", "Server trouble. Server returned status: %d Reson: %s" %(serverResponse.status, serverResponse.reason))
+                    resultQueue.put(clientMessageXml.getXmlString())
         except Empty:
-            pass
+            time.sleep(0.05)
 
 
 class GuiClient(object):
@@ -105,23 +73,28 @@ class GuiClient(object):
                 self._guiClientProcess.terminate()
         self._guiClientProcess = None
 
-    def requestImage(self, noteId, videoPos = 0.0):
-        command = "<thumbnailrequest note=\"" + str(noteId) + "\" videoPosition=\"" + str(videoPos) + "\"/>"
-        self._commandQueue.put(command)
+    def requestImage(self, noteTxt, videoPos = 0.0):
+        commandXml = MiniXml("thumbnailrequest")
+        commandXml.addAttribute("note", noteTxt)
+        commandXml.addAttribute("time", "%.2f" % videoPos)
+        self._commandQueue.put(commandXml.getXmlString())
 
     def getServerResponse(self):
         try:
             serverResponse = self._resultQueue.get_nowait()
             print "ServerResponse: " + str(serverResponse)
-            serverXml = ElementTree.XML(serverResponse)
-            if(serverXml.tag == "servermessage"):
-                print "GuiClient Message: " + serverXml.get("message")
-            elif(serverXml.tag == "thumbnailresponse"):
-                noteId = int(serverXml.get("note"))
-                videoPosition = float(serverXml.get("videoPosition"))
-                thumbnailData = base64.b64decode(serverXml.get("data"))
-#                thumbArray = numpy.fromstring(thumbnailData, dtype='uint8')
-#                print "Returning... " + str(thumbArray)
-                return thumbnailData
+            serverXml = stringToXml(serverResponse)
+            if(serverXml != None):
+                if(serverXml.tag == "servermessage"):
+                    print "GuiClient Message: " + serverXml.get("message")
+                elif(serverXml.tag == "thumbnailresponse"):
+                    noteId = int(serverXml.get("note"))
+                    videoPosition = float(serverXml.get("videoPosition"))
+                    thumbnailData = base64.b64decode(serverXml.get("data"))
+    #                thumbArray = numpy.fromstring(thumbnailData, dtype='uint8')
+    #                print "Returning... " + str(thumbArray)
+                    return thumbnailData
+            else:
+                print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:
             pass

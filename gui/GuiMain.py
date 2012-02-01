@@ -75,7 +75,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 #        #Transport...
 #        self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
 
-        print self._guiClient.requestImage(24, 0.0)
+        print self._guiClient.requestImage("0C", 0.0)
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

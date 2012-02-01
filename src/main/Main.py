@@ -62,7 +62,7 @@ class MyKivyApp(App):
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
-        self._midiStateHolder.noteOn(0, 0x18, 0x40, (True, 0.0))
+#        self._midiStateHolder.noteOn(0, 0x18, 0x40, (True, 0.0))
 
         self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)

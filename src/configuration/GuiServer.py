@@ -44,14 +44,17 @@ class PcnWebHandler(BaseHTTPRequestHandler):
 
         if(parsed_path.path.endswith(".jpg")):
             pathDir = os.path.dirname(parsed_path.path)
+            pathFile = os.path.basename(parsed_path.path)
+            filePath = ""
             dirOk = False
-            if(pathDir == "/thumbs"):
+            if((pathDir == "/thumbs") or (pathDir == "thumbs")):
                 dirOk = True
+                filePath = "thumbs/%s" % pathFile
             else:
                 serverMessageXml = MiniXml("servermessage", "Bad directory request sending 404: %s" % pathDir)
                 webInputQueue.put(serverMessageXml.getXmlString())
             if(dirOk == True):
-                self._returnFile(parsed_path.path, "image/jpg")
+                self._returnFile(filePath, "image/jpg")
             else:
                 serverMessageXml = MiniXml("servermessage", "Bad file request sending 404: %s" % parsed_path.path)
                 self.send_error(404)
@@ -104,9 +107,8 @@ class PcnWebHandler(BaseHTTPRequestHandler):
         self.wfile.write(message)
 
     def _returnFile(self, fileName, mime):
-        fullFileName = "." + fileName
-        if(os.path.isfile(fullFileName)):
-            f=open(fullFileName, 'rb')
+        if(os.path.isfile(fileName)):
+            f=open(fileName, 'rb')
             self.send_response(200)
             self.send_header('Content-type', mime)
             self.end_headers()

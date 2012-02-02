@@ -51,32 +51,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         result = self._guiClient.getServerResponse()
         if(result != None):
             if(os.path.isfile(result)):
-                print "Setting new image"
                 self._testButton.setBitmapFile(result)
-#            destWidth, destHeight = self._testButton.getBitmapSize()
-#            resultImage = cv.CreateImageHeader((destWidth, destHeight), cv.IPL_DEPTH_8U, 3)
-#            cv.SetData(resultImage, result)
-#            print "resultImage: " + str(resultImage)
-#            imageArray = numpy.asarray(resultImage)
-#            print "imageArray: " + str(imageArray)
-#            self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
-            print "done."
-        pass
 
     def _onButton(self, event):
-        print "Button pressed!"
-#        cvImage = cv.LoadImage("..\..\..\Video\BursdagenMin_005.jpg")
-#        destWidth, destHeight = self._testButton.getBitmapSize()
-#        resizeMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
-#        cv.Resize(cvImage, resizeMat)
-#        colorMat = cv.CreateMat(destHeight, destWidth, cv.CV_8UC3)
-#        cv.CvtColor(resizeMat, colorMat, cv.CV_BGR2RGB)
-#        imageArray = numpy.asarray(colorMat)
-#        print "type: " + str(type(imageArray))
-#        #Transport...
-#        self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
-
-        print self._guiClient.requestImage("0C", 0.0)
+        self._guiClient.requestImage("0C", 0.0)
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

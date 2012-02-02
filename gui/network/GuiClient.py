@@ -115,7 +115,6 @@ class GuiClient(object):
     def getServerResponse(self):
         try:
             serverResponse = self._resultQueue.get_nowait()
-            print "ServerResponse: " + str(serverResponse)
             serverXml = stringToXml(serverResponse)
             if(serverXml != None):
                 if(serverXml.tag == "servermessage"):

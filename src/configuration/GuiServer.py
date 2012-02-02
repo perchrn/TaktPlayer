@@ -5,33 +5,46 @@ Created on 26. jan. 2012
 '''
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import socket
 import urlparse
 from multiprocessing import Process, Queue
 from Queue import Empty
 from utilities.MiniXml import MiniXml, stringToXml, getFromXml
 import os
+import sys
+import socket
+from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
+import time
 
 
 webInputQueue = None
 webOutputQueue = None
+urlSignaturer = None
 
-class StoppableHTTPServer(HTTPServer):
-    """HTTPServer class with timeout."""
-
-    def get_request(self):
-        """Get the request and client address from the socket."""
-        # 10 second timeout
-        self.socket.settimeout(10.0)
-        result = None
-        while result is None:
+class ErrorHandelingHTTPServer(HTTPServer):
+    def handle_error(self, request, client_address):
+        """Handle socket errors.    """
+        import traceback
+        cla, exc, trbk = sys.exc_info()
+        if(cla == socket.error):
+            cla, exc, trbk = sys.exc_info()
             try:
-                result = self.socket.accept()
-            except socket.timeout:
-                pass
-        # Reset timeout on the new socket
-        result[0].settimeout(None)
-        return result
+                excArgs = exc.args
+            except KeyError:
+                excArgs = "<no args>"
+            excTb = traceback.format_tb(trbk, 5)
+            if(webOutputQueue != None):
+                serverExceptionXml = MiniXml("serverException")
+                serverExceptionXml.addAttribute("client", str(client_address))
+                serverExceptionXml.addAttribute("type", "socket.error")
+                serverExceptionXml.addAttribute("id", str(excArgs[0]))
+                serverExceptionXml.addAttribute("description", str(excArgs[1]))
+                serverExceptionXml.addAttribute("traceback", excTb)
+                webInputQueue.put(serverExceptionXml.getXmlString())
+        else:
+            print '-'*40
+            print 'Exception happened during processing of request from' + str(client_address)
+            traceback.print_exc() # XXX But this goes to stderr!
+            print '-'*40
 
 class PcnWebHandler(BaseHTTPRequestHandler):
     def setup(self):
@@ -40,7 +53,6 @@ class PcnWebHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed_path = urlparse.urlparse(self.path)
-        queryDict = urlparse.parse_qsl(parsed_path.query)
 
         if(parsed_path.path.endswith(".jpg")):
             pathDir = os.path.dirname(parsed_path.path)
@@ -61,42 +73,53 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 webInputQueue.put(serverMessageXml.getXmlString())
 
         else:
-            imageThumbNote = self._getKeyValueFromList(queryDict, 'imageThumb', None)
-            configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
-            testString = self._getKeyValueFromList(queryDict, 'test', None)
-    
-            if(imageThumbNote != None):
-                thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
-                thumbRequestXml = MiniXml("thumbRequest")
-                thumbRequestXml.addAttribute("note", imageThumbNote)
-                thumbRequestXml.addAttribute("time", "%.2f" % thumbTime)
-                webInputQueue.put(thumbRequestXml.getXmlString())
-                try:
-                    configXmlString = webOutputQueue.get(True, 5.0)
-                    self._returnXmlRespose(configXmlString)
-                except:
-                    serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
-                    self.send_error(500)
-                    webInputQueue.put(serverMessageXml.getXmlString())
-            if(configRequestPath != None):
-                configRequestXml = MiniXml("configRequest")
-                configRequestXml.addAttribute("path", configRequestPath)
-                webInputQueue.put(configRequestXml.getXmlString())
-                try:
-                    configXmlString = webOutputQueue.get(True, 5.0)
-                    self._returnXmlRespose(configXmlString)
-                except:
-                    serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
-                    self.send_error(500)
-                    webInputQueue.put(serverMessageXml.getXmlString())
-            elif(testString != None):
-                serverMessageXml = MiniXml("servermessage", "Testing 1 2: %s" % testString)
+            verifiedQuery = urlSignaturer.verifySignature(parsed_path.query)
+            if(verifiedQuery == None):
+                serverMessageXml = MiniXml("unauthorizedAccess")
+                serverMessageXml.addAttribute("client", "%s:%d" % (self.client_address[0], self.client_address[1]))
+                serverMessageXml.addAttribute("timeStamp", str(time.time()))
                 self._returnXmlRespose(serverMessageXml.getXmlString())
                 webInputQueue.put(serverMessageXml.getXmlString())
+
             else:
-                serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (parsed_path.query, self.client_address[0], self.client_address[1]))
-                self.send_error(404)
-                webInputQueue.put(serverMessageXml.getXmlString())
+                queryDict = urlparse.parse_qsl(verifiedQuery)
+
+                imageThumbNote = self._getKeyValueFromList(queryDict, 'imageThumb', None)
+                configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
+                testString = self._getKeyValueFromList(queryDict, 'test', None)
+    
+                if(imageThumbNote != None):
+                    thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
+                    thumbRequestXml = MiniXml("thumbRequest")
+                    thumbRequestXml.addAttribute("note", imageThumbNote)
+                    thumbRequestXml.addAttribute("time", "%.2f" % thumbTime)
+                    webInputQueue.put(thumbRequestXml.getXmlString())
+                    try:
+                        configXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(configXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                if(configRequestPath != None):
+                    configRequestXml = MiniXml("configRequest")
+                    configRequestXml.addAttribute("path", configRequestPath)
+                    webInputQueue.put(configRequestXml.getXmlString())
+                    try:
+                        configXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(configXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(testString != None):
+                    serverMessageXml = MiniXml("servermessage", "Testing 1 2: %s" % testString)
+                    self._returnXmlRespose(serverMessageXml.getXmlString())
+                    webInputQueue.put(serverMessageXml.getXmlString())
+                else:
+                    serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (verifiedQuery, self.client_address[0], self.client_address[1]))
+                    self.send_error(404)
+                    webInputQueue.put(serverMessageXml.getXmlString())
         return
 
     def _returnXmlRespose(self, message):
@@ -108,12 +131,12 @@ class PcnWebHandler(BaseHTTPRequestHandler):
 
     def _returnFile(self, fileName, mime):
         if(os.path.isfile(fileName)):
-            f=open(fileName, 'rb')
+            fileHandle=open(fileName, 'rb')
             self.send_response(200)
             self.send_header('Content-type', mime)
             self.end_headers()
-            self.wfile.write(f.read())
-            f.close()
+            self.wfile.write(fileHandle.read())
+            fileHandle.close()
         else:
             serverMessageXml = MiniXml("servermessage", "File not found sending 404: %s" % fileName)
             self.send_error(404)
@@ -125,17 +148,37 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 return keyValue[1]
         return default
 
-def guiWebServerProcess(host, port, serverMessageQueue, serverCommandQueue, webIQ, webOQ):
+    def log_message(self, formatString, *args):
+        """Log an arbitrary message.
+
+        This is used by all other logging functions.  Override
+        it if you have specific logging wishes.
+        """
+
+        serverLogXml = MiniXml("serverLog")
+        serverLogXml.addAttribute("server", self.address_string())
+        serverLogXml.addAttribute("timeStamp", self.log_date_time_string())
+        serverLogXml.addAttribute("message", formatString%args)
+        webInputQueue.put(serverLogXml.getXmlString())
+
+
+def guiWebServerProcess(host, port, passwd, serverMessageQueue, serverCommandQueue, webIQ, webOQ):
     global webInputQueue
     global webOutputQueue
+    global urlSignaturer
     webInputQueue = webIQ
     webOutputQueue = webOQ
-    server = StoppableHTTPServer((host, port), PcnWebHandler)
+    urlSignaturer = UrlSignature(passwd)
+    server = ErrorHandelingHTTPServer((host, port), PcnWebHandler)
+    server.timeout = 10.0
     serverMessageXml = MiniXml("servermessage", "Started Web server.")
     serverMessageQueue.put(serverMessageXml.getXmlString())
     run = True
     while run:
-        server.handle_request()
+        try:
+            server.handle_request()
+        except:
+            pass
         try:
             result = serverCommandQueue.get_nowait()
             if(result == "QUIT"):
@@ -157,10 +200,12 @@ class GuiServer(object):
         self._webOutputQueue = Queue(256)
         self._guiServerProcess = None
 
-    def startGuiServerProcess(self, host, port):
+    def startGuiServerProcess(self, host, port, passwd):
+        if(passwd == None):
+            passwd = getDefaultUrlSignaturePasswd()
         self._serverMessageQueue = Queue(256)
         self._serverCommandQueue = Queue(256)
-        self._guiServerProcess = Process(target=guiWebServerProcess, args=(host, port, self._serverMessageQueue, self._serverCommandQueue, self._webInputQueue, self._webOutputQueue))
+        self._guiServerProcess = Process(target=guiWebServerProcess, args=(host, port, passwd, self._serverMessageQueue, self._serverCommandQueue, self._webInputQueue, self._webOutputQueue))
         self._guiServerProcess.name = "guiNetworkServer"
         self._guiServerProcess.start()
 
@@ -190,6 +235,10 @@ class GuiServer(object):
             if(webCommandXml != None):
                 if(webCommandXml.tag == "servermessage"):
                     print "GuiServer Message: " + webCommandXml.get("message")
+                elif(webCommandXml.tag == "serverLog"):
+                    print "%s - - [%s] %s" % (webCommandXml.get("server"), webCommandXml.get("timeStamp"), webCommandXml.get("message"))
+                elif(webCommandXml.tag == "serverException"):
+                    print "GuiServer Socket Exception caught when communicationg with: %s [%s] %s" % (webCommandXml.get("client"), webCommandXml.get("id"), webCommandXml.get("description"))
                 elif(webCommandXml.tag == "thumbRequest"):
                     noteText = getFromXml(webCommandXml, "note", "0C")
                     imageTime = float(getFromXml(webCommandXml, "time", "0.0"))
@@ -212,6 +261,8 @@ class GuiServer(object):
                         resposeXml = MiniXml("configRequest", "Could not find path: %s" % path)
                         self._webOutputQueue.put(resposeXml.getXmlString())
                     print "XML: " + xmlTree.getConfigurationXMLString()
+                elif(webCommandXml.tag == "unauthorizedAccess"):
+                    print "Unauthorized access from client: %s at %s" %(webCommandXml.get("client"), webCommandXml.get("timeStamp"))
                 else:
                     print "ERROR! Unknown command from web server: " + str(webCommand)
             else:

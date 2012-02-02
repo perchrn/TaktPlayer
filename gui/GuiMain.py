@@ -8,8 +8,6 @@ import sys
 import wx
 from widgets.PcnImageButton import PcnImageButton
 
-from cv2 import cv
-import numpy
 from network.GuiClient import GuiClient
 
 APP_NAME = "MusicalVideoPlayer"
@@ -42,23 +40,26 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
         self.Show()
+
         self.setupClientProcess()
 
     def setupClientProcess(self):
         self._guiClient = GuiClient()
-        self._guiClient.startGuiClientProcess("127.0.0.1", 2021)
+        self._guiClient.startGuiClientProcess("127.0.0.1", 2021, None)
 
     def _timedUpdate(self, event):
         result = self._guiClient.getServerResponse()
         if(result != None):
-            destWidth, destHeight = self._testButton.getBitmapSize()
-            resultImage = cv.CreateImageHeader((destWidth, destHeight), cv.IPL_DEPTH_8U, 3)
-            cv.SetData(resultImage, result)
-            print "resultImage: " + str(resultImage)
-            imageArray = numpy.asarray(resultImage)
-            print "imageArray: " + str(imageArray)
-            print "Setting new image"
-            self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
+            if(os.path.isfile(result)):
+                print "Setting new image"
+                self._testButton.setBitmapFile(result)
+#            destWidth, destHeight = self._testButton.getBitmapSize()
+#            resultImage = cv.CreateImageHeader((destWidth, destHeight), cv.IPL_DEPTH_8U, 3)
+#            cv.SetData(resultImage, result)
+#            print "resultImage: " + str(resultImage)
+#            imageArray = numpy.asarray(resultImage)
+#            print "imageArray: " + str(imageArray)
+#            self._testButton.setFromNumPyArray(imageArray, destWidth, destHeight)
             print "done."
         pass
 

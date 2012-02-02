@@ -48,11 +48,12 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
         self._normal = self.addButtonFrame(bitmap, False)
         self._pressed = self.addButtonFrame(bitmap, True)
 
-    def setFromNumPyArray(self, array, width, height):
-        wxImage = wx.EmptyImage(width, height) #@UndefinedVariable
-        wxImage.SetData( array.tostring() )
-        wxBitmap = wxImage.ConvertToBitmap()
-        self.setBitmap(wxBitmap)
+    def setBitmapFile(self, fileName):
+        try:
+            newBitmap = wx.Bitmap(fileName) #@UndefinedVariable
+            self.setBitmap(newBitmap)
+        except:
+            print "Bitmap setting failed... %s" % fileName
 
     def getBitmapSize(self):
         return self._bitmap.GetSize()

@@ -81,7 +81,7 @@ class MyKivyApp(App):
         self._configCheckCounter = 0
 
         self._guiServer = GuiServer(self._configurationTree, self._mediaPool)
-        self._guiServer.startGuiServerProcess("0.0.0.0", 2021)
+        self._guiServer.startGuiServerProcess("0.0.0.0", 2021, None)
         print self._configurationTree.getConfigurationXMLString()
 
         return self._pcnVideoWidget

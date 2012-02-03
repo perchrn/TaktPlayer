@@ -6,7 +6,8 @@ Created on 26. jan. 2012
 import os
 import sys
 import wx
-from widgets.PcnImageButton import PcnImageButton
+from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
+from widgets.PcnImageButton import PcnKeyboardButton
 
 from network.GuiClient import GuiClient
 
@@ -20,14 +21,36 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             size=(350, 210))
         self.SetBackgroundColour((120,120,120))
 
-        panel = wx.Panel(self, -1) #@UndefinedVariable
-        testText = wx.StaticText(panel, -1, "Input:") #@UndefinedVariable
-        emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
-        self._testButton = PcnImageButton(panel, emptyBitMap, -1) #@UndefinedVariable
-        self._testButton.Bind(wx.EVT_BUTTON, self._onButton) #@UndefinedVariable
+        panel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
+#        testText1 = wx.StaticText(panel, wx.ID_ANY, "Input:") #@UndefinedVariable
+#        self._testButton = PcnKeyboardButton(panel, emptyBitMap, (-1,-1), wx.ID_ANY) #@UndefinedVariable
+#        self._testButton.Bind(wx.EVT_BUTTON, self._onButton) #@UndefinedVariable
+
+        testText2 = wx.StaticText(panel, wx.ID_ANY, "Test:") #@UndefinedVariable
+        scrollPanel = ScrolledPanel(panel, wx.ID_ANY, style=wx.HSCROLL, size=(3082,70)) #@UndefinedVariable
+        scrollPanel.SetupScrolling()
+        scrollPanel.SetBackgroundColour(wx.Colour(128,128,128)) #@UndefinedVariable
+        self._keyboardPanel = wx.Panel(scrollPanel, wx.ID_ANY, size=(1980,70)) #@UndefinedVariable
+        self._keyboardPanel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
+        hbox = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        self._keyboardPanel.SetSizer(hbox)
+
+        self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
+        self._blackNoteBitmapRight = wx.Bitmap("graphics/blackNoteRight.png") #@UndefinedVariable
+        self._blackNoteBitmap = wx.Bitmap("graphics/blackNote.png") #@UndefinedVariable
+        self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
+
+        self._noteWidgets = []
+        for note in range(128):
+            octav = int(note / 12)
+            octavNote = note % 12
+            baseX = 1 + 308 * octav
+            keyboardButton = self.createNoteWidget(octavNote, baseX)
+            self._noteWidgets.append(keyboardButton)
 
         sizer = wx.FlexGridSizer(cols=2, hgap=12, vgap=12) #@UndefinedVariable
-        sizer.AddMany([testText, self._testButton])
+        sizer.AddMany([testText2, scrollPanel])
         border = wx.BoxSizer() #@UndefinedVariable
         border.Add(sizer, 0, wx.ALL, 10) #@UndefinedVariable
         panel.SetSizerAndFit(border)
@@ -42,6 +65,55 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.Show()
 
         self.setupClientProcess()
+
+    def createNoteWidget(self, noteId, baseX):
+        buttonPos = None
+        bitmap = None
+        if(noteId == 0):
+            buttonPos = ( 0+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=self._blackNoteBitmapLeft, id=wx.ID_ANY) #@UndefinedVariable
+        elif(noteId == 1):
+            buttonPos = (22+baseX,  1)
+            bitmap = self._blackNoteBitmap
+        elif(noteId == 2):
+            buttonPos = (44+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+        elif(noteId == 3):
+            buttonPos = (66+baseX,  1)
+            bitmap = self._blackNoteBitmap
+        elif(noteId == 4):
+            buttonPos = (88+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+        elif(noteId == 5):
+            buttonPos = (132+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=self._blackNoteBitmapLeft, id=wx.ID_ANY) #@UndefinedVariable
+        elif(noteId == 6):
+            buttonPos = (154+baseX,  1)
+            bitmap = self._blackNoteBitmap
+        elif(noteId == 7):
+            buttonPos = (176+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+        elif(noteId == 8):
+            buttonPos = (198+baseX,  1)
+            bitmap = self._blackNoteBitmap
+        elif(noteId == 9):
+            buttonPos = (220+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+        elif(noteId == 10):
+            buttonPos = (242+baseX,  1)
+            bitmap = self._blackNoteBitmap
+        elif(noteId == 11):
+            buttonPos = (264+baseX, 36)
+            bitmap = self._whiteNoteBitmap
+            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+        else:
+            return None
+        keyboardButton = PcnKeyboardButton(self._keyboardPanel, bitmap, buttonPos, wx.ID_ANY, size=(44, 35), isBlack=(buttonPos[1]==1)) #@UndefinedVariable
+        keyboardButton.setBitmap(self._emptyBitMap)
+        return keyboardButton
 
     def setupClientProcess(self):
         self._guiClient = GuiClient()

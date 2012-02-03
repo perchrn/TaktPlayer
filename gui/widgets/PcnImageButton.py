@@ -5,11 +5,14 @@ Created on 26. jan. 2012
 '''
 import wx
 
-class PcnImageButton(wx.PyControl): #@UndefinedVariable
-    def __init__(self, parent, bitmap, bid = -1):
-        super(PcnImageButton, self).__init__(parent, bid, style=wx.BORDER_NONE) #@UndefinedVariable
+class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
+    def __init__(self, parent, bitmap, pos, bid = -1, size=(-1,-1), isBlack=False):
+        super(PcnKeyboardButton, self).__init__(parent, bid, style=wx.BORDER_NONE, pos=pos, size=size) #@UndefinedVariable
         self._clicked = False
-        self.setBitmap(bitmap)
+        self._isBlack = isBlack
+        self._baseBitmap = bitmap
+        self._normal = self._baseBitmap
+        self._pressed = self._baseBitmap
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM) #@UndefinedVariable
         self.Bind(wx.EVT_SIZE, self.on_size) #@UndefinedVariable
         self.Bind(wx.EVT_PAINT, self.on_paint) #@UndefinedVariable
@@ -20,26 +23,28 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
         self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window) #@UndefinedVariable
 
     def addButtonFrame(self, bitmap, isPressed):
-        oldX, oldY = bitmap.GetSize()
-        newX = oldX + 2
-        newY = oldY + 2
-        framedBitmap = wx.EmptyBitmap(newX, newY) #@UndefinedVariable
+        oldX, oldY = self._baseBitmap.GetSize()
+        
+        framedBitmap = wx.EmptyBitmap(oldX, oldY) #@UndefinedVariable
         dc = wx.MemoryDC() #@UndefinedVariable
         dc.SelectObject(framedBitmap)
-#        dc.SetTextForeground(self._parent.colorFont)
-        if(isPressed == True):
+        dc.DrawBitmap(self._baseBitmap, 0, 0, True)
+        if(self._isBlack == True):
+            extraY = 2
+        else:
+            extraY = 0
+        dc.DrawBitmap(bitmap, 2, 1 + extraY, True)
+        print "b: " + str(self._isBlack) + " p: " + str(isPressed)
+        if((self._isBlack == False) and (isPressed != True)):
+            dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
+        elif((self._isBlack == True) and (isPressed == True)):
             dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
         else:
             dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
-        dc.DrawLine(0, newY-1, newX, newY-1)
-        dc.DrawLine(newX-1, 0, newX-1, newY)
-        if(isPressed == True):
-            dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
-        else:
-            dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
-        dc.DrawLine(0, 0, newX, 0)
-        dc.DrawLine(0, 0, 0, newY)
-        dc.DrawBitmap(bitmap, 1, 1, True)
+        dc.DrawLine(4, oldY-2, oldX-4, oldY-2)
+        dc.DrawLine(oldX-2, extraY, oldX-2, oldY-4)
+        dc.DrawLine(2, extraY, oldX-2, extraY)
+        dc.DrawLine(1, extraY, 1, oldY-4)
         dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
         return framedBitmap
 
@@ -61,10 +66,10 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
     def DoGetBestSize(self):
         return self._normal.GetSize()
     def Enable(self, *args, **kwargs):
-        super(PcnImageButton, self).Enable(*args, **kwargs)
+        super(PcnKeyboardButton, self).Enable(*args, **kwargs)
         self.Refresh()
     def Disable(self, *args, **kwargs):
-        super(PcnImageButton, self).Disable(*args, **kwargs)
+        super(PcnKeyboardButton, self).Disable(*args, **kwargs)
         self.Refresh()
     def post_event(self):
         event = wx.CommandEvent() #@UndefinedVariable

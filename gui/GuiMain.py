@@ -10,7 +10,7 @@ from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
 from widgets.PcnImageButton import PcnKeyboardButton
 
 from network.GuiClient import GuiClient
-from midi.MidiUtilities import noteToNoteString
+from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -19,7 +19,7 @@ APP_NAME = "MusicalVideoPlayer"
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
-            size=(350, 210))
+            size=(1400, 600))
         self.SetBackgroundColour((120,120,120))
 
         mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -79,6 +79,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.Show()
 
         self.setupClientProcess()
+        self.updateKeyboardImages()
 
     def createNoteWidget(self, noteId, baseX, lastNote=False):
         buttonPos = None
@@ -137,13 +138,41 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def updateKeyboardImages(self):
         self._guiClient.requestActiveNoteList()
-#        self._guiClient.requestImage("0C", 0.0)
+#        self._guiClient.requestImage(24, 0.0)
 
     def _timedUpdate(self, event):
         result = self._guiClient.getServerResponse()
-        if(result != None):
-            if(os.path.isfile(result)):
-                self._testButton.setBitmapFile(result)
+        if(result[0] != None):
+            if(result[0] == GuiClient.ResponseTypes.FileDownload):
+                print "GuiClient.ResponseTypes.FileDownload"
+                if(result[1] != None):
+                    if(os.path.isfile(result[1])):
+                        pass
+        #TODO: find widgets an update...                for witingFile in self._waitFiles:
+        #                    pass
+            if(result[0] == GuiClient.ResponseTypes.ThumbRequest):
+                print "GuiClient.ResponseTypes.ThumbRequest"
+                if(result[1] != None):
+                    noteTxt, noteTime, fileName = result[1] #@UnusedVariable
+                    if(os.path.isfile(fileName)):
+                        noteId = max(min(int(noteTxt), 127), 0)
+                        self._noteWidgets[noteId].setBitmapFile(fileName)
+                    else:
+                        self._guiClient.requestImageFile(fileName)
+                        #TODO: Queue in waiting files etc...
+            if(result[0] == GuiClient.ResponseTypes.NoteList):
+                print "GuiClient.ResponseTypes.NoteList"
+                if(result[1] != None):
+                    noteList = result[1]
+                    for i in range(128):
+                        found = False
+                        for listEntryTxt in noteList:
+                            if(int(listEntryTxt) == i):
+                                print "requesting i= " + str(i)
+                                self._guiClient.requestImage(i, 0.0)
+                        if(found == False):
+                            widget = self._noteWidgets[i]
+                            widget.setBitmap(self._emptyBitMap)
 
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()

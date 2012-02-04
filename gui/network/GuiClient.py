@@ -110,9 +110,9 @@ class GuiClient(object):
         commandXml = MiniXml("noteListRequest")
         self._commandQueue.put(commandXml.getXmlString())
 
-    def requestImage(self, noteTxt, videoPos = 0.0):
+    def requestImage(self, noteId, videoPos = 0.0):
         commandXml = MiniXml("thumbnailRequest")
-        commandXml.addAttribute("note", noteTxt)
+        commandXml.addAttribute("note", str(noteId))
         commandXml.addAttribute("time", "%.2f" % videoPos)
         self._commandQueue.put(commandXml.getXmlString())
 
@@ -121,46 +121,43 @@ class GuiClient(object):
         commandXml.addAttribute("fileName", fileName)
         self._commandQueue.put(commandXml.getXmlString())
 
+    class ResponseTypes():
+        FileDownload, ThumbRequest, NoteList, Configuration = range(4)
+
     def getServerResponse(self):
+        returnValue = (None, None)
         try:
             serverResponse = self._resultQueue.get_nowait()
             serverXml = stringToXml(serverResponse)
             if(serverXml != None):
                 if(serverXml.tag == "servermessage"):
                     print "GuiClient Message: " + serverXml.get("message")
-                    return None
                 elif(serverXml.tag == "fileDownloaded"):
                     fileName = serverXml.get("fileName")
                     if(fileName == None):
                         print "ERRORRRRRRR!!!!! file"
-                        return None
-                    fileName = os.path.normcase(fileName)
-                    return fileName
+                        returnValue = (self.ResponseTypes.FileDownload, None)
+                    else:
+                        fileName = os.path.normcase(fileName)
+                        returnValue = (self.ResponseTypes.FileDownload, fileName)
                 elif(serverXml.tag == "thumbRequest"):
                     noteTxt = serverXml.get("note")
                     noteTime = float(serverXml.get("time", "0.0"))
                     fileName = serverXml.get("fileName")
                     if((noteTxt == None) or (fileName == None)):
                         print "ERRORRRRRRR!!!!! note"
-                        return None
+                        return (self.ResponseTypes.ThumbRequest, None)
+                    noteId = max(min(int(noteTxt), 127), 0)
                     print "Got thumbRequest response: %s at %.2f with filename: %s" % (noteTxt, noteTime, fileName)
                     fileName = os.path.normcase(fileName)
-                    if(os.path.isfile(fileName)):
-                        print "File already chached: %s" % (fileName)
-                        return fileName
-                    else:
-                        self.requestImageFile(fileName)
-                    return None
+                    returnValue = (self.ResponseTypes.ThumbRequest, (noteId, noteTime, fileName))
                 elif(serverXml.tag == "noteListRequest"):
+                    returnValue = (self.ResponseTypes.NoteList, None)
                     listTxt = serverXml.get("list")
                     print "Got noteListRequest response: list: %s" % (listTxt)
-                    if(os.path.isfile(fileName)):
-                        print "File already chached: %s" % (fileName)
-                        return fileName
-                    else:
-                        self.requestImageFile(fileName)
-                    return None
+                    returnValue = (self.ResponseTypes.NoteList, listTxt.split(',', 128))
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:
             pass
+        return returnValue

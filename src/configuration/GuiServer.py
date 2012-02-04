@@ -246,12 +246,13 @@ class GuiServer(object):
                 elif(webCommandXml.tag == "serverException"):
                     print "GuiServer Socket Exception caught when communicationg with: %s [%s] %s" % (webCommandXml.get("client"), webCommandXml.get("id"), webCommandXml.get("description"))
                 elif(webCommandXml.tag == "thumbRequest"):
-                    noteText = getFromXml(webCommandXml, "note", "0C")
+                    noteText = getFromXml(webCommandXml, "note", "24")
                     imageTime = float(getFromXml(webCommandXml, "time", "0.0"))
                     print "GuiServer client request for note: %s at %f" % (noteText, imageTime)
-                    thumbnailFileName = self._mediaPool.requestVideoThumbnail(noteText, imageTime)
+                    noteId = max(min(int(noteText), 127), 0)
+                    thumbnailFileName = self._mediaPool.requestVideoThumbnail(noteId, imageTime)
                     resposeXml = MiniXml("thumbRequest")
-                    resposeXml.addAttribute("note", noteText)
+                    resposeXml.addAttribute("note", str(noteId))
                     resposeXml.addAttribute("time", "%.2F" % imageTime)
                     resposeXml.addAttribute("fileName", thumbnailFileName)
                     self._webOutputQueue.put(resposeXml.getXmlString())

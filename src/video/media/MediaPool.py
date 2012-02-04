@@ -151,8 +151,7 @@ class MediaPool(object):
                 noteListString += str(i)
         return noteListString
 
-    def requestVideoThumbnail(self, noteLetter, videoPosition):
-        noteId = MidiUtilities.noteStringToNoteNumber(noteLetter)
+    def requestVideoThumbnail(self, noteId, videoPosition):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):
             return noteMedia.getThumbnailId(videoPosition)

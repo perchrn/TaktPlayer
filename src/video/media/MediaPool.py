@@ -141,6 +141,16 @@ class MediaPool(object):
         self._mediaPool[midiNote] = mediaFile
         return midiNote
 
+    def requestNoteList(self):
+        noteListString = ""
+        for i in range(128):
+            media = self._mediaPool[i]
+            if(media != None):
+                if(noteListString != ""):
+                    noteListString += ","
+                noteListString += str(i)
+        return noteListString
+
     def requestVideoThumbnail(self, noteLetter, videoPosition):
         noteId = MidiUtilities.noteStringToNoteNumber(noteLetter)
         noteMedia = self._mediaPool[noteId]

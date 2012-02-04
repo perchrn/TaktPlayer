@@ -34,7 +34,6 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         else:
             extraY = 0
         dc.DrawBitmap(bitmap, 2, 1 + extraY, True)
-        print "b: " + str(self._isBlack) + " p: " + str(isPressed)
         if((self._isBlack == False) and (isPressed != True)):
             dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
         elif((self._isBlack == True) and (isPressed == True)):

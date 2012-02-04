@@ -86,7 +86,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
 
                 imageThumbNote = self._getKeyValueFromList(queryDict, 'imageThumb', None)
                 configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
-                testString = self._getKeyValueFromList(queryDict, 'test', None)
+                noteListString = self._getKeyValueFromList(queryDict, 'noteList', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -95,10 +95,10 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                     thumbRequestXml.addAttribute("time", "%.2f" % thumbTime)
                     webInputQueue.put(thumbRequestXml.getXmlString())
                     try:
-                        configXmlString = webOutputQueue.get(True, 5.0)
-                        self._returnXmlRespose(configXmlString)
+                        thumbnailAnswerXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(thumbnailAnswerXmlString)
                     except:
-                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for thumbnail answer XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
                 if(configRequestPath != None):
@@ -112,10 +112,16 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for configuration XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
-                elif(testString != None):
-                    serverMessageXml = MiniXml("servermessage", "Testing 1 2: %s" % testString)
-                    self._returnXmlRespose(serverMessageXml.getXmlString())
-                    webInputQueue.put(serverMessageXml.getXmlString())
+                elif(noteListString != None):
+                    noteListRequestXml = MiniXml("noteListRequest")
+                    webInputQueue.put(noteListRequestXml.getXmlString())
+                    try:
+                        noteListXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(noteListXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for note list XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
                 else:
                     serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (verifiedQuery, self.client_address[0], self.client_address[1]))
                     self.send_error(404)
@@ -248,6 +254,12 @@ class GuiServer(object):
                     resposeXml.addAttribute("note", noteText)
                     resposeXml.addAttribute("time", "%.2F" % imageTime)
                     resposeXml.addAttribute("fileName", thumbnailFileName)
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "noteListRequest"):
+                    print "GuiServer client request for note list."
+                    noteListString = self._mediaPool.requestNoteList()
+                    resposeXml = MiniXml("noteListRequest")
+                    resposeXml.addAttribute("list", noteListString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configRequest"):
                     path = webCommandXml.get("path")

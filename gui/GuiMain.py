@@ -10,6 +10,7 @@ from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
 from widgets.PcnImageButton import PcnKeyboardButton
 
 from network.GuiClient import GuiClient
+from midi.MidiUtilities import noteToNoteString
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -21,19 +22,34 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             size=(350, 210))
         self.SetBackgroundColour((120,120,120))
 
-        panel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
-#        testText1 = wx.StaticText(panel, wx.ID_ANY, "Input:") #@UndefinedVariable
-#        self._testButton = PcnKeyboardButton(panel, emptyBitMap, (-1,-1), wx.ID_ANY) #@UndefinedVariable
-#        self._testButton.Bind(wx.EVT_BUTTON, self._onButton) #@UndefinedVariable
+        mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        notKeyboardSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        midiTrackSizer=wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        keyboardSizer=wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
-        testText2 = wx.StaticText(panel, wx.ID_ANY, "Test:") #@UndefinedVariable
-        scrollPanel = ScrolledPanel(panel, wx.ID_ANY, style=wx.HSCROLL, size=(3082,70)) #@UndefinedVariable
-        scrollPanel.SetupScrolling()
-        scrollPanel.SetBackgroundColour(wx.Colour(128,128,128)) #@UndefinedVariable
-        self._keyboardPanel = wx.Panel(scrollPanel, wx.ID_ANY, size=(1980,70)) #@UndefinedVariable
-        self._keyboardPanel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
-        hbox = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
-        self._keyboardPanel.SetSizer(hbox)
+        scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
+        scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
+        scrollingKeyboardPannel.SetupScrolling()
+        scrollingKeyboardPannel.SetSizer(keyboardSizer)
+        self._keyboardPanel = wx.Panel(scrollingKeyboardPannel, wx.ID_ANY, size=(3082,70)) #@UndefinedVariable
+        scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
+        keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
+
+        midiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(100,-1)) #@UndefinedVariable
+        midiTrackPanel.SetBackgroundColour(wx.Colour(255,255,233)) #@UndefinedVariable
+        midiTrackPanel.SetupScrolling()
+        midiTrackPanel.SetSizer(midiTrackSizer)
+        midiTrackText = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nA\nB\nC\nD\nE\nF\n" * 3
+        midiTrackThing=wx.StaticText(midiTrackPanel, -1, midiTrackText) #@UndefinedVariable
+        midiTrackSizer.Add(midiTrackThing, wx.EXPAND, 0) #@UndefinedVariable
+
+        restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
+        restPanel.SetBackgroundColour(wx.Colour(255,255,0)) #@UndefinedVariable
+        notKeyboardSizer.Add(midiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        notKeyboardSizer.Add(restPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
@@ -42,19 +58,15 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
 
         self._noteWidgets = []
+        self._noteWidgetIds = []
         for note in range(128):
             octav = int(note / 12)
             octavNote = note % 12
             baseX = 1 + 308 * octav
-            keyboardButton = self.createNoteWidget(octavNote, baseX)
+            keyboardButton = self.createNoteWidget(octavNote, baseX, (note==127))
             self._noteWidgets.append(keyboardButton)
-
-        sizer = wx.FlexGridSizer(cols=2, hgap=12, vgap=12) #@UndefinedVariable
-        sizer.AddMany([testText2, scrollPanel])
-        border = wx.BoxSizer() #@UndefinedVariable
-        border.Add(sizer, 0, wx.ALL, 10) #@UndefinedVariable
-        panel.SetSizerAndFit(border)
-
+            self._noteWidgetIds.append(keyboardButton.GetId())
+            keyboardButton.Bind(wx.EVT_BUTTON, self._onKeyboardButton) #@UndefinedVariable
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
@@ -62,11 +74,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
+        self.SetSizer(mainSizer)
+
         self.Show()
 
         self.setupClientProcess()
 
-    def createNoteWidget(self, noteId, baseX):
+    def createNoteWidget(self, noteId, baseX, lastNote=False):
         buttonPos = None
         bitmap = None
         if(noteId == 0):
@@ -96,6 +110,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         elif(noteId == 7):
             buttonPos = (176+baseX, 36)
             bitmap = self._whiteNoteBitmap
+            if(lastNote == True):
+                wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
         elif(noteId == 8):
             buttonPos = (198+baseX,  1)
             bitmap = self._blackNoteBitmap
@@ -119,14 +135,26 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient = GuiClient()
         self._guiClient.startGuiClientProcess("127.0.0.1", 2021, None)
 
+    def updateKeyboardImages(self):
+        self._guiClient.requestActiveNoteList()
+#        self._guiClient.requestImage("0C", 0.0)
+
     def _timedUpdate(self, event):
         result = self._guiClient.getServerResponse()
         if(result != None):
             if(os.path.isfile(result)):
                 self._testButton.setBitmapFile(result)
 
-    def _onButton(self, event):
-        self._guiClient.requestImage("0C", 0.0)
+    def _onKeyboardButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundNoteId = None
+        for i in range(128):
+            if(self._noteWidgetIds[i] == buttonId):
+                foundNoteId = i
+                break
+        if(foundNoteId != None):
+            noteString = noteToNoteString(foundNoteId)
+            print "found note: " + str(foundNoteId) + " -> " + noteString
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

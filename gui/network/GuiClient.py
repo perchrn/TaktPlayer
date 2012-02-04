@@ -33,6 +33,11 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                         urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                         resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                         resultQueue.put(resposeXmlString)
+                if(commandXml.tag == "noteListRequest"):
+                    urlArgs = "?noteList=true"
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
                 if(commandXml.tag == "thumbnailFileRequest"):
                     fileName = getFromXml(commandXml, "fileName", None)
                     if(fileName != None):
@@ -101,6 +106,10 @@ class GuiClient(object):
                 self._guiClientProcess.terminate()
         self._guiClientProcess = None
 
+    def requestActiveNoteList(self):
+        commandXml = MiniXml("noteListRequest")
+        self._commandQueue.put(commandXml.getXmlString())
+
     def requestImage(self, noteTxt, videoPos = 0.0):
         commandXml = MiniXml("thumbnailRequest")
         commandXml.addAttribute("note", noteTxt)
@@ -125,6 +134,7 @@ class GuiClient(object):
                     if(fileName == None):
                         print "ERRORRRRRRR!!!!! file"
                         return None
+                    fileName = os.path.normcase(fileName)
                     return fileName
                 elif(serverXml.tag == "thumbRequest"):
                     noteTxt = serverXml.get("note")
@@ -134,7 +144,21 @@ class GuiClient(object):
                         print "ERRORRRRRRR!!!!! note"
                         return None
                     print "Got thumbRequest response: %s at %.2f with filename: %s" % (noteTxt, noteTime, fileName)
-                    self.requestImageFile(fileName)
+                    fileName = os.path.normcase(fileName)
+                    if(os.path.isfile(fileName)):
+                        print "File already chached: %s" % (fileName)
+                        return fileName
+                    else:
+                        self.requestImageFile(fileName)
+                    return None
+                elif(serverXml.tag == "noteListRequest"):
+                    listTxt = serverXml.get("list")
+                    print "Got noteListRequest response: list: %s" % (listTxt)
+                    if(os.path.isfile(fileName)):
+                        print "File already chached: %s" % (fileName)
+                        return fileName
+                    else:
+                        self.requestImageFile(fileName)
                     return None
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)

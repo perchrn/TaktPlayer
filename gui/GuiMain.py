@@ -11,6 +11,7 @@ from widgets.PcnImageButton import PcnKeyboardButton
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
+from network.SendMidiOverNet import SendMidiOverNet
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -78,6 +79,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self.Show()
 
+        self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
         self.setupClientProcess()
         self.updateKeyboardImages()
 
@@ -184,6 +186,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(foundNoteId != None):
             noteString = noteToNoteString(foundNoteId)
             print "found note: " + str(foundNoteId) + " -> " + noteString
+            self._midiSender.sendNoteOnOff(0, foundNoteId)
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

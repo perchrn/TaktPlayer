@@ -5,6 +5,50 @@ Created on 26. jan. 2012
 '''
 import wx
 
+def addKeyboardButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
+    oldX, oldY = baseBitmap.GetSize()
+    
+    framedBitmap = wx.EmptyBitmap(oldX, oldY) #@UndefinedVariable
+    dc = wx.MemoryDC() #@UndefinedVariable
+    dc.SelectObject(framedBitmap)
+    dc.DrawBitmap(baseBitmap, 0, 0, True)
+    if(isBlack == True):
+        extraY = 2
+    else:
+        extraY = 0
+    dc.DrawBitmap(bitmap, 2, 1 + extraY, True)
+    if((isBlack == False) and (isPressed != True)):
+        dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
+    elif((isBlack == True) and (isPressed == True)):
+        dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
+    else:
+        dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
+    dc.DrawLine(4, oldY-2, oldX-4, oldY-2)
+    dc.DrawLine(oldX-2, extraY, oldX-2, oldY-4)
+    dc.DrawLine(2, extraY, oldX-2, extraY)
+    dc.DrawLine(1, extraY, 1, oldY-4)
+    dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
+    return framedBitmap
+
+def addTrackButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
+    oldX, oldY = baseBitmap.GetSize()
+    
+    framedBitmap = wx.EmptyBitmap(oldX, oldY) #@UndefinedVariable
+    dc = wx.MemoryDC() #@UndefinedVariable
+    dc.SelectObject(framedBitmap)
+    dc.DrawBitmap(baseBitmap, 0, 0, True)
+    dc.DrawBitmap(bitmap, 1, 6, True)
+    if(isPressed == True):
+        dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
+    else:
+        dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
+    dc.DrawLine(0, oldY-6, oldX-1, oldY-6)
+    dc.DrawLine(oldX-1, 5, oldX-1, oldY-5)
+    dc.DrawLine(0, 5, oldX-1, 5)
+    dc.DrawLine(0, 5, 0, oldY-6)
+    dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
+    return framedBitmap
+
 class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
     def __init__(self, parent, bitmap, pos, bid = -1, size=(-1,-1), isBlack=False):
         super(PcnKeyboardButton, self).__init__(parent, bid, style=wx.BORDER_NONE, pos=pos, size=size) #@UndefinedVariable
@@ -14,6 +58,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self._normal = self._baseBitmap
         self._pressed = self._baseBitmap
         self._buttonParent = parent
+        self._frameAddingFunction = addKeyboardButtonFrame
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM) #@UndefinedVariable
         self.Bind(wx.EVT_SIZE, self.on_size) #@UndefinedVariable
         self.Bind(wx.EVT_PAINT, self.on_paint) #@UndefinedVariable
@@ -23,36 +68,16 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
 #        self.Bind(wx.EVT_MOTION, self.on_motion) #@UndefinedVariable
         self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window) #@UndefinedVariable
 
+    def setFrqameAddingFunction(self, function):
+        self._frameAddingFunction = function
+
     def addButtonFrame(self, bitmap, isPressed):
-        oldX, oldY = self._baseBitmap.GetSize()
-        
-        framedBitmap = wx.EmptyBitmap(oldX, oldY) #@UndefinedVariable
-        dc = wx.MemoryDC() #@UndefinedVariable
-        dc.SelectObject(framedBitmap)
-        dc.DrawBitmap(self._baseBitmap, 0, 0, True)
-        if(self._isBlack == True):
-            extraY = 2
-        else:
-            extraY = 0
-        dc.DrawBitmap(bitmap, 2, 1 + extraY, True)
-        if((self._isBlack == False) and (isPressed != True)):
-            dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
-        elif((self._isBlack == True) and (isPressed == True)):
-            dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
-        else:
-            dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
-        dc.DrawLine(4, oldY-2, oldX-4, oldY-2)
-        dc.DrawLine(oldX-2, extraY, oldX-2, oldY-4)
-        dc.DrawLine(2, extraY, oldX-2, extraY)
-        dc.DrawLine(1, extraY, 1, oldY-4)
-        dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
-        return framedBitmap
+        return self._frameAddingFunction(bitmap, isPressed, self._baseBitmap, self._isBlack)
 
     def setBitmap(self, bitmap):
         self._bitmap = bitmap
         self._normal = self.addButtonFrame(bitmap, False)
         self._pressed = self.addButtonFrame(bitmap, True)
-#        self._buttonParent.Refresh()
         self.Refresh()
 
     def setBitmapFile(self, fileName):

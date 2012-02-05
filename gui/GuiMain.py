@@ -7,7 +7,7 @@ import os
 import sys
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
-from widgets.PcnImageButton import PcnKeyboardButton
+from widgets.PcnImageButton import PcnKeyboardButton, addTrackButtonFrame
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
@@ -29,24 +29,22 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         keyboardSizer=wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
         scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
-        scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         scrollingKeyboardPannel.SetupScrolling()
         scrollingKeyboardPannel.SetSizer(keyboardSizer)
-        self._keyboardPanel = wx.Panel(scrollingKeyboardPannel, wx.ID_ANY, size=(3082,70)) #@UndefinedVariable
+        self._keyboardPanel = wx.Panel(scrollingKeyboardPannel, wx.ID_ANY, size=(3082,60)) #@UndefinedVariable
         scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        midiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(100,-1)) #@UndefinedVariable
-        midiTrackPanel.SetBackgroundColour(wx.Colour(255,255,233)) #@UndefinedVariable
-        midiTrackPanel.SetupScrolling()
-        midiTrackPanel.SetSizer(midiTrackSizer)
-        midiTrackText = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nA\nB\nC\nD\nE\nF\n" * 3
-        midiTrackThing=wx.StaticText(midiTrackPanel, -1, midiTrackText) #@UndefinedVariable
-        midiTrackSizer.Add(midiTrackThing, wx.EXPAND, 0) #@UndefinedVariable
+        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(100,-1)) #@UndefinedVariable
+        scrollingMidiTrackPanel.SetupScrolling()
+        scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
+        self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
+        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(88,88,88)) #@UndefinedVariable
+        midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
         restPanel.SetBackgroundColour(wx.Colour(255,255,0)) #@UndefinedVariable
-        notKeyboardSizer.Add(midiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         notKeyboardSizer.Add(restPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -68,6 +66,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._noteWidgets.append(keyboardButton)
             self._noteWidgetIds.append(keyboardButton.GetId())
             keyboardButton.Bind(wx.EVT_BUTTON, self._onKeyboardButton) #@UndefinedVariable
+
+        self._trackThumbnailBitmap = wx.Bitmap("graphics/trackThumbnail.png") #@UndefinedVariable
+        self._trackWidgets = []
+        self._trackWidgetIds = []
+        for track in range(16):
+            trackButton = PcnKeyboardButton(self._midiTrackPanel, self._trackThumbnailBitmap, (2, 4+46*track), wx.ID_ANY, size=(42, 42), isBlack=False) #@UndefinedVariable
+            trackButton.setFrqameAddingFunction(addTrackButtonFrame)
+            trackButton.setBitmap(self._emptyBitMap)
+            self._trackWidgets.append(trackButton)
+            self._trackWidgetIds.append(trackButton.GetId())
+            trackButton.Bind(wx.EVT_BUTTON, self._onTrackButton) #@UndefinedVariable
+        self._selectedMidiChannel = -1
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
@@ -185,8 +195,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 break
         if(foundNoteId != None):
             noteString = noteToNoteString(foundNoteId)
-            print "found note: " + str(foundNoteId) + " -> " + noteString
-            self._midiSender.sendNoteOnOff(0, foundNoteId)
+            print "sending note: " + str(foundNoteId) + " -> " + noteString
+            self._midiSender.sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
+
+    def _onTrackButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(128):
+            if(self._trackWidgetIds[i] == buttonId):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            print "track pressed id: " + str(foundTrackId)
+            self._selectedMidiChannel = foundTrackId
 
     def _onClose(self, event):
         self._guiClient.stopGuiClientProcess()

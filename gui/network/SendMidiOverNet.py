@@ -14,28 +14,33 @@ class SendMidiOverNet(object):
         self._udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     def sendNoteOn(self, midiChannel, note):
-        command = 0x80 + midiChannel
-        data1 = note
-        data2 = 0x40 # Velocity
-        data3 = 0x00
-        self._midiCommandBuffer[0] = chr(command)
-        self._midiCommandBuffer[1] = chr(data1)
-        self._midiCommandBuffer[2] = chr(data2)
-        self._midiCommandBuffer[3] = chr(data3)
-        self._udpClientSocket.sendto(self._midiCommandBuffer, (self._host, self._port))
+        if((midiChannel > -1) and (midiChannel < 16)):
+            command = 0x80 + midiChannel
+            data1 = note
+            data2 = 0x40 # Velocity
+            data3 = 0x00
+            self._midiCommandBuffer[0] = chr(command)
+            self._midiCommandBuffer[1] = chr(data1)
+            self._midiCommandBuffer[2] = chr(data2)
+            self._midiCommandBuffer[3] = chr(data3)
+            self._udpClientSocket.sendto(self._midiCommandBuffer, (self._host, self._port))
 
     def sendNoteOff(self, midiChannel, note):
-        command = 0x90 + midiChannel
-        data1 = note
-        data2 = 0x40 # Velocity
-        data3 = 0x00
-        self._midiCommandBuffer[0] = chr(command)
-        self._midiCommandBuffer[1] = chr(data1)
-        self._midiCommandBuffer[2] = chr(data2)
-        self._midiCommandBuffer[3] = chr(data3)
-        self._udpClientSocket.sendto(self._midiCommandBuffer, (self._host, self._port))
+        if((midiChannel > -1) and (midiChannel < 16)):
+            command = 0x90 + midiChannel
+            data1 = note
+            data2 = 0x40 # Velocity
+            data3 = 0x00
+            self._midiCommandBuffer[0] = chr(command)
+            self._midiCommandBuffer[1] = chr(data1)
+            self._midiCommandBuffer[2] = chr(data2)
+            self._midiCommandBuffer[3] = chr(data3)
+            self._udpClientSocket.sendto(self._midiCommandBuffer, (self._host, self._port))
 
     def sendNoteOnOff(self, midiChannel, note):
-        self.sendNoteOn(midiChannel, note)
-        self.sendNoteOff(midiChannel, note)
+        if((midiChannel > -1) and (midiChannel < 16)):
+            self.sendNoteOn(midiChannel, note)
+            self.sendNoteOff(midiChannel, note)
+        else:
+            print "Bad MIDI channel: " + str(midiChannel)
 

@@ -337,7 +337,7 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMode, effects, mixMat1, mixMat2, mixMask):
+    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, midiNoteState, mixMat1, mixMat2, mixMask):
         if(self._image == None):
             return image
         else:
@@ -347,9 +347,9 @@ class MediaFile(object):
                 preEffect, postEffect = effects
             else:
                 preEffect, postEffect = (None, None)
-            self._image = self._applyOneEffect(self._image, preEffect)
+            self._image = self._applyOneEffect(self._image, preEffect, currentSongPosition, midiChannelState, midiNoteState)
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            mixedImage = self._applyOneEffect(mixedImage, postEffect)
+            self._image = self._applyOneEffect(self._image, postEffect, currentSongPosition, midiChannelState, midiNoteState)
             return mixedImage
     
 class ImageFile(MediaFile):

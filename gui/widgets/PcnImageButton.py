@@ -74,6 +74,9 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
     def addButtonFrame(self, bitmap, isPressed):
         return self._frameAddingFunction(bitmap, isPressed, self._baseBitmap, self._isBlack)
 
+    def getBitmap(self):
+        return self._bitmap
+
     def setBitmap(self, bitmap):
         self._bitmap = bitmap
         self._normal = self.addButtonFrame(bitmap, False)

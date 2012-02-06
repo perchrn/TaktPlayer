@@ -33,12 +33,17 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                         urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                         resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                         resultQueue.put(resposeXmlString)
-                if(commandXml.tag == "noteListRequest"):
+                elif(commandXml.tag == "noteListRequest"):
                     urlArgs = "?noteList=true"
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                     resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                     resultQueue.put(resposeXmlString)
-                if(commandXml.tag == "thumbnailFileRequest"):
+                elif(commandXml.tag == "trackStateRequest"):
+                    urlArgs = "?trackState=true"
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "thumbnailFileRequest"):
                     fileName = getFromXml(commandXml, "fileName", None)
                     if(fileName != None):
                         resposeXmlString = requestUrl(hostPort, "%s" %(fileName), "image/jpg")
@@ -121,8 +126,12 @@ class GuiClient(object):
         commandXml.addAttribute("fileName", fileName)
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestTrackState(self):
+        commandXml = MiniXml("trackStateRequest")
+        self._commandQueue.put(commandXml.getXmlString())
+
     class ResponseTypes():
-        FileDownload, ThumbRequest, NoteList, Configuration = range(4)
+        FileDownload, ThumbRequest, NoteList, TrackState, Configuration = range(5)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -156,6 +165,11 @@ class GuiClient(object):
                     listTxt = serverXml.get("list")
                     print "Got noteListRequest response: list: %s" % (listTxt)
                     returnValue = (self.ResponseTypes.NoteList, listTxt.split(',', 128))
+                elif(serverXml.tag == "trackStateRequest"):
+                    returnValue = (self.ResponseTypes.TrackState, None)
+                    listTxt = serverXml.get("list")
+#                    print "Got trackStateRequest response: list: %s" % (listTxt)
+                    returnValue = (self.ResponseTypes.TrackState, listTxt.split(',', 128))
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:

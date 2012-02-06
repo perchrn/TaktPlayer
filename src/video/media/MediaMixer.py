@@ -57,18 +57,16 @@ class MediaMixer(object):
             currenMedia = self._mediaTracks[midiChannel]
             mixMode = self._mediaTracksMixMode[midiChannel]
             effects = self._mediaTracksEffects[midiChannel]
-#TODO:            if(effects != None):
-#                midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
-#                midiNoteState = midiChannelState.getActiveNote(midiTime)
-#                getEffectModulationValues(midiTime, midiChannelState)
+            midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
+            midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(currenMedia != None):
                 if(imageMix == None):
                     imageMix = currenMedia.getImage()
                 else:
                     if(imageMix == self._mixMat1):
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, self._mixMat1, self._mixMat2, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMat2, self._mixMask)
                     else:
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, self._mixMat2, self._mixMat3, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMat3, self._mixMask)
         if(imageMix == None):
             imageMix = self._blankImage
         self._nextImage = imageMix

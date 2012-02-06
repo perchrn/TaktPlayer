@@ -151,6 +151,20 @@ class MediaPool(object):
                 noteListString += str(i)
         return noteListString
 
+    def requestTrackState(self, timeStamp):
+        noteListString = ""
+        for i in range(16):
+            midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
+            midiChannelState = self._midiStateHolder.getMidiChannelState(i)
+            midiNoteState = midiChannelState.getActiveNote(midiTime)
+            if(noteListString != ""):
+                noteListString += ","
+            if(midiNoteState.isActive(midiTime)):
+                noteListString += str(midiNoteState.getNote())
+            else:
+                noteListString += "-1"
+        return noteListString
+
     def requestVideoThumbnail(self, noteId, videoPosition):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):

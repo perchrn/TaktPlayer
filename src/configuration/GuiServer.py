@@ -87,6 +87,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 imageThumbNote = self._getKeyValueFromList(queryDict, 'imageThumb', None)
                 configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
                 noteListString = self._getKeyValueFromList(queryDict, 'noteList', None)
+                trackStateString = self._getKeyValueFromList(queryDict, 'trackState', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -101,7 +102,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for thumbnail answer XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
-                if(configRequestPath != None):
+                elif(configRequestPath != None):
                     configRequestXml = MiniXml("configRequest")
                     configRequestXml.addAttribute("path", configRequestPath)
                     webInputQueue.put(configRequestXml.getXmlString())
@@ -118,6 +119,16 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                     try:
                         noteListXmlString = webOutputQueue.get(True, 5.0)
                         self._returnXmlRespose(noteListXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for note list XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(trackStateString != None):
+                    trackStateRequestXml = MiniXml("trackStateRequest")
+                    webInputQueue.put(trackStateRequestXml.getXmlString())
+                    try:
+                        trackStateXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(trackStateXmlString)
                     except:
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for note list XML: %s" % configRequestPath)
                         self.send_error(500)
@@ -261,6 +272,12 @@ class GuiServer(object):
                     noteListString = self._mediaPool.requestNoteList()
                     resposeXml = MiniXml("noteListRequest")
                     resposeXml.addAttribute("list", noteListString)
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "trackStateRequest"):
+                    print "GuiServer client request for note list."
+                    trackStateString = self._mediaPool.requestTrackState(time.time())
+                    resposeXml = MiniXml("trackStateRequest")
+                    resposeXml.addAttribute("list", trackStateString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configRequest"):
                     path = webCommandXml.get("path")

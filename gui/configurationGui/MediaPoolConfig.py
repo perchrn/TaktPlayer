@@ -4,6 +4,8 @@ Created on 6. feb. 2012
 @author: pcn
 '''
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
+import wx
+import os
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -70,10 +72,11 @@ class MediaPoolConfig(object):
             self._mediaPool[midiNote] = MediaFile(self._configurationTree, fileName, noteLetter, midiNote, xmlConfig)
         return midiNote
 
-    def getNoteConfig(self, noteId):
+    def showNoteConfigGui(self, wxPanel, noteId):
         noteId = min(max(noteId, 0), 127)
-        print "DEBUG media requested from pos: " + str(noteId)
-        return self._mediaPool[noteId]
+        selectedMedia = self._mediaPool[noteId]
+        if(selectedMedia != None):
+            self._mediaPool[noteId].showNoteConfigGui(wxPanel)
 
 class MediaFile(object):
     def __init__(self, configParent, fileName, noteLetter, midiNote, xmlConfig):
@@ -99,6 +102,25 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("PlayBackModulation", "None")
         self._configurationTree._updateFromXml(xmlConfig)
 
-    def getFileName(self):
-        return self._configurationTree.getValue("FileName")
+    def showNoteConfigGui(self, wxPanel):
+        noteConfigPanel = wx.Panel(wxPanel, wx.ID_ANY, size=(500, 500)) #@UndefinedVariable
+        noteConfigPanel.SetBackgroundColour(wx.Colour(255,0,255)) #@UndefinedVariable
+        noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        noteConfigPanel.SetSizer(noteConfigSizer)
+
+        fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText = wx.StaticText(noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
+        self._fileNameField = wx.TextCtrl(noteConfigPanel, wx.ID_ANY, os.path.basename(self._configurationTree.getValue("FileName")), size=(200, -1)) #@UndefinedVariable
+        self._fileNameField.SetInsertionPoint(0)
+        fileNameSizer.Add(tmpText)
+        fileNameSizer.Add(self._fileNameField)
+        noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        typeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText = wx.StaticText(noteConfigPanel, wx.ID_ANY, "Type:") #@UndefinedVariable
+        self._typeField = wx.TextCtrl(noteConfigPanel, wx.ID_ANY, self._configurationTree.getValue("Type"), size=(200, -1)) #@UndefinedVariable
+        self._typeField.SetInsertionPoint(-1)
+        typeSizer.Add(tmpText)
+        typeSizer.Add(self._fileNameField)
+        noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 

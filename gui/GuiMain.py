@@ -80,17 +80,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(100,-1)) #@UndefinedVariable
+        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(80,-1)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetupScrolling()
         scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
-        restPanel.SetBackgroundColour(wx.Colour(255,255,0)) #@UndefinedVariable
+        self._restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
+        self._restPanel.SetBackgroundColour(wx.Colour(255,255,0)) #@UndefinedVariable
         notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        notKeyboardSizer.Add(restPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        notKeyboardSizer.Add(self._restPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
@@ -371,9 +371,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             noteString = noteToNoteString(foundNoteId)
             print "sending note: " + str(foundNoteId) + " -> " + noteString
             self._midiSender.sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
-            noteConfig = self._configuration.getNoteConfig(foundNoteId)
-            if(noteConfig != None):
-                print "DEBUG: " + noteConfig.getFileName()
+            self._configuration.showNoteConfigGui(self._restPanel, foundNoteId)
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

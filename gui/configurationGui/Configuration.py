@@ -21,8 +21,8 @@ class Configuration(object):
         self._configurationTree.setFromXml(config)
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
 
-    def getNoteConfig(self, noteId):
-        return self._mediaPoolConf.getNoteConfig(noteId)
+    def showNoteConfigGui(self, wxPanel, noteId):
+        return self._mediaPoolConf.showNoteConfigGui(wxPanel, noteId)
 
     def printConfiguration(self):
         print self._configurationTree.getConfigurationXMLString()

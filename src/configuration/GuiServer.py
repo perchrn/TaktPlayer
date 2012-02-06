@@ -88,6 +88,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
                 noteListString = self._getKeyValueFromList(queryDict, 'noteList', None)
                 trackStateString = self._getKeyValueFromList(queryDict, 'trackState', None)
+                configStateString = self._getKeyValueFromList(queryDict, 'configState', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -131,6 +132,16 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         self._returnXmlRespose(trackStateXmlString)
                     except:
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for note list XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(configStateString != None):
+                    configStateRequestXml = MiniXml("configStateRequest")
+                    webInputQueue.put(configStateRequestXml.getXmlString())
+                    try:
+                        configStateXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(configStateXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for config state XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
                 else:
@@ -242,7 +253,6 @@ class GuiServer(object):
             serverMessageXml = stringToXml(serverMessage)
             if(serverMessageXml != None):
                 if(serverMessageXml.tag == "servermessage"):
-                    print "DEBUG: " + str(serverMessage)
                     print "GuiServer Message: " + serverMessageXml.get("message")
         except Empty:
             pass
@@ -253,7 +263,8 @@ class GuiServer(object):
                 if(webCommandXml.tag == "servermessage"):
                     print "GuiServer Message: " + webCommandXml.get("message")
                 elif(webCommandXml.tag == "serverLog"):
-                    print "%s - - [%s] %s" % (webCommandXml.get("server"), webCommandXml.get("timeStamp"), webCommandXml.get("message"))
+                    pass
+#                    print "%s - - [%s] %s" % (webCommandXml.get("server"), webCommandXml.get("timeStamp"), webCommandXml.get("message"))
                 elif(webCommandXml.tag == "serverException"):
                     print "GuiServer Socket Exception caught when communicationg with: %s [%s] %s" % (webCommandXml.get("client"), webCommandXml.get("id"), webCommandXml.get("description"))
                 elif(webCommandXml.tag == "thumbRequest"):
@@ -279,6 +290,12 @@ class GuiServer(object):
                     resposeXml = MiniXml("trackStateRequest")
                     resposeXml.addAttribute("list", trackStateString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "configStateRequest"):
+                    configStateString = self._configurationTree.getConfigId()
+                    resposeXml = MiniXml("configStateRequest")
+                    resposeXml.addAttribute("id", configStateString)
+                    print "GuiServer client request for config state. Current configId: " + str(configStateString)
+                    self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configRequest"):
                     path = webCommandXml.get("path")
                     if(path == "root"):
@@ -290,7 +307,7 @@ class GuiServer(object):
                     else:
                         resposeXml = MiniXml("configRequest", "Could not find path: %s" % path)
                         self._webOutputQueue.put(resposeXml.getXmlString())
-                    print "XML: " + xmlTree.getConfigurationXMLString()
+#                    print "XML: " + xmlTree.getConfigurationXMLString()
                 elif(webCommandXml.tag == "unauthorizedAccess"):
                     print "Unauthorized access from client: %s at %s" %(webCommandXml.get("client"), webCommandXml.get("timeStamp"))
                 else:

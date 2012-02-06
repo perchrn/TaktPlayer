@@ -83,6 +83,7 @@ class MediaPool(object):
 
     def addMedia(self, fileName, noteLetter, midiLength = None, mediaType = None):
         midiNote = MidiUtilities.noteStringToNoteNumber(noteLetter)
+        midiNote = min(max(midiNote, 0), 127)
 
         oldMedia = self._mediaPool[midiNote]
 
@@ -106,7 +107,9 @@ class MediaPool(object):
             keepOld = False
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
+                    print "FileName OK"
                     if(oldMedia.getType() == mediaType):
+                        print "MediaType OK"
                         keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName)
                         if(midiLength != None):

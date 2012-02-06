@@ -160,6 +160,7 @@ class MediaFile(object):
         return "Unknown"
 
     def equalFileName(self, fileName):
+        print "equalFileName " + self._filename + " == " + os.path.normcase(fileName)
         return self._filename == os.path.normcase(fileName)
 
     def getFileName(self):

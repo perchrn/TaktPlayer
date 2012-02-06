@@ -93,6 +93,7 @@ class MyKivyApp(App):
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
             if(self._configurationTree.isConfigurationUpdated()):
+                #TODO: Fix config updated indicator...
 #                print "config is updated..."
                 self._getConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()

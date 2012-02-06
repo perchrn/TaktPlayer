@@ -24,7 +24,6 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 commandXml = stringToXml(command)
 #                httpConnection.request("GET", "?configPath=root")
 #                httpConnection.request("GET", "?configPath=musicalvideoplayer.global.effectmodulation")
-#                httpConnection.request("GET", "thumbs/6e5b995f7ac65a36ae54edfd28dcdf0fc729b79d021a65360d9b4a79_0.00.jpg")
                 if(commandXml.tag == "thumbnailRequest"):
                     noteTxt = getFromXml(commandXml, "note", None)
                     noteTime = getFromXml(commandXml, "time", "0.0")
@@ -40,6 +39,18 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                     resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "trackStateRequest"):
                     urlArgs = "?trackState=true"
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "configStateRequest"):
+                    oldId = getFromXml(commandXml, "id", "-1")
+                    urlArgs = "?configState=%s" %(oldId)
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "configurationRequest"):
+                    path = getFromXml(commandXml, "path", "root")
+                    urlArgs = "?configPath=%s" %(path)
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                     resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                     resultQueue.put(resposeXmlString)
@@ -130,8 +141,20 @@ class GuiClient(object):
         commandXml = MiniXml("trackStateRequest")
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestConfigState(self, oldState):
+        commandXml = MiniXml("configStateRequest")
+        commandXml.addAttribute("oldState", oldState)
+        self._commandQueue.put(commandXml.getXmlString())
+
+    def requestConfiguration(self, path=None):
+        commandXml = MiniXml("configurationRequest")
+        if(path == None):
+            path = "root"
+        commandXml.addAttribute("path", path)
+        self._commandQueue.put(commandXml.getXmlString())
+
     class ResponseTypes():
-        FileDownload, ThumbRequest, NoteList, TrackState, Configuration = range(5)
+        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration = range(6)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -147,7 +170,6 @@ class GuiClient(object):
                         print "ERRORRRRRRR!!!!! file"
                         returnValue = (self.ResponseTypes.FileDownload, None)
                     else:
-                        fileName = os.path.normcase(fileName)
                         returnValue = (self.ResponseTypes.FileDownload, fileName)
                 elif(serverXml.tag == "thumbRequest"):
                     noteTxt = serverXml.get("note")
@@ -157,19 +179,26 @@ class GuiClient(object):
                         print "ERRORRRRRRR!!!!! note"
                         return (self.ResponseTypes.ThumbRequest, None)
                     noteId = max(min(int(noteTxt), 127), 0)
-                    print "Got thumbRequest response: %s at %.2f with filename: %s" % (noteTxt, noteTime, fileName)
-                    fileName = os.path.normcase(fileName)
+#                    print "Got thumbRequest response: %s at %.2f with filename: %s" % (noteTxt, noteTime, fileName)
                     returnValue = (self.ResponseTypes.ThumbRequest, (noteId, noteTime, fileName))
                 elif(serverXml.tag == "noteListRequest"):
-                    returnValue = (self.ResponseTypes.NoteList, None)
+#                    returnValue = (self.ResponseTypes.NoteList, None)
                     listTxt = serverXml.get("list")
-                    print "Got noteListRequest response: list: %s" % (listTxt)
+#                    print "Got noteListRequest response: list: %s" % (listTxt)
                     returnValue = (self.ResponseTypes.NoteList, listTxt.split(',', 128))
                 elif(serverXml.tag == "trackStateRequest"):
-                    returnValue = (self.ResponseTypes.TrackState, None)
+#                    returnValue = (self.ResponseTypes.TrackState, None)
                     listTxt = serverXml.get("list")
 #                    print "Got trackStateRequest response: list: %s" % (listTxt)
                     returnValue = (self.ResponseTypes.TrackState, listTxt.split(',', 128))
+                elif(serverXml.tag == "configStateRequest"):
+#                    returnValue = (self.ResponseTypes.ConfigState, None)
+                    configId = serverXml.get("id")
+#                    print "Got configStateRequest response: list: %s" % (configId)
+                    returnValue = (self.ResponseTypes.ConfigState, int(configId))
+                elif(serverXml.tag == "configuration"):
+                    returnValue = (self.ResponseTypes.Configuration, serverXml)
+#                    print "Got configurationRequest response."
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:

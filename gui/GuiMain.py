@@ -13,6 +13,7 @@ from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
 from network.SendMidiOverNet import SendMidiOverNet
 import time
+from configurationGui.Configuration import Configuration
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -21,7 +22,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, Config = range(5)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration = range(6)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -59,7 +60,7 @@ class TaskHolder(object):
 
     def taskDone(self):
         self.setState(self.States.Done)
-        print self._desc + " task done in " + str(self._stateTime - self._startTime) + " secs."
+#        print self._desc + " task done in " + str(self._stateTime - self._startTime) + " secs."
 
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
@@ -83,7 +84,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel.SetupScrolling()
         scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(88,88,88)) #@UndefinedVariable
+        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
@@ -135,6 +136,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._taskQueue = []
         self._skippedTrackStateRequests = 99
+        self._skippedConfigStateRequests = 99
+        self._lastConfigState = -1
+        self._configuration = Configuration()
         self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
         self.setupClientProcess()
         self.updateKeyboardImages()
@@ -215,6 +219,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._checkServerResponse()
         self._checkForStaleTasks()
         self._requestTrackState()
+        self._requestConfigState()
 
     def _checkServerResponse(self):
         result = self._guiClient.getServerResponse()
@@ -227,10 +232,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + fileName
                     else:
-                        if(os.path.isfile(fileName)):
-                            foundTask.getWidget().setBitmapFile(fileName)
+                        osFileName = os.path.normcase(fileName)
+                        if(os.path.isfile(osFileName)):
+                            foundTask.getWidget().setBitmapFile(osFileName)
             if(result[0] == GuiClient.ResponseTypes.ThumbRequest):
-                print "GuiClient.ResponseTypes.ThumbRequest"
+#                print "GuiClient.ResponseTypes.ThumbRequest"
                 if(result[1] != None):
                     noteTxt, noteTime, fileName = result[1] #@UnusedVariable
                     noteId = max(min(int(noteTxt), 127), 0)
@@ -238,8 +244,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + noteTxt + ":" + noteTime + " -> " + fileName
                     else:
-                        if(os.path.isfile(fileName)):
-                            self._noteWidgets[noteId].setBitmapFile(fileName)
+                        osFileName = os.path.normcase(fileName)
+                        if(os.path.isfile(osFileName)):
+                            self._noteWidgets[noteId].setBitmapFile(osFileName)
                         else:
                             fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
                             self._taskQueue.append(fileRequestTask)
@@ -248,7 +255,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.NoteList):
-                print "GuiClient.ResponseTypes.NoteList"
+#                print "GuiClient.ResponseTypes.NoteList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ActiveNotes, None)
                 if(result[1] != None):
                     noteList = result[1]
@@ -256,11 +263,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         found = False
                         for listEntryTxt in noteList:
                             if(int(listEntryTxt) == i):
-                                print "requesting i= " + str(i)
+#                                print "requesting i= " + str(i)
                                 imageRequestTask = TaskHolder("Note request for note %d:%.2f" %(i, 0.0), TaskHolder.RequestTypes.Note, self._noteWidgets[i], i)
                                 self._taskQueue.append(imageRequestTask)
                                 self._guiClient.requestImage(i, 0.0)
                                 imageRequestTask.setState(TaskHolder.States.Sendt)
+                                found = True
                         if(found == False):
                             widget = self._noteWidgets[i]
                             widget.setBitmap(self._emptyBitMap)
@@ -283,6 +291,32 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.ConfigState):
+#                print "GuiClient.ResponseTypes.ConfigState"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
+                if(result[1] != None):
+                    configId = result[1]
+                    if(configId != self._lastConfigState):
+#                        print "Config is updated on server.... TADA! Please do the right thing man :-P " + str(self._lastConfigState) + " != " + str(configId)
+                        configRequestTask = TaskHolder("Configuration request", TaskHolder.RequestTypes.Configuration, None, None)
+                        self._taskQueue.append(configRequestTask)
+                        self._guiClient.requestConfiguration()
+                        configRequestTask.setState(TaskHolder.States.Sendt)
+                    self._lastConfigState = configId
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.Configuration):
+#                print "GuiClient.ResponseTypes.Configuration"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Configuration, None)
+                if(result[1] != None):
+                    config = result[1]
+                    self._configuration.setFromXml(config)
+#                    self._configuration.printConfiguration()
+                    self.updateKeyboardImages()
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
 
     def _checkForStaleTasks(self):
         checkTime = time.time()
@@ -292,8 +326,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(task.getType() == TaskHolder.RequestTypes.ActiveNotes):
                     self._guiClient.requestActiveNoteList()
                     task.setState(TaskHolder.States.Sendt)
-                if(task.getType() == TaskHolder.RequestTypes.Track):
+                elif(task.getType() == TaskHolder.RequestTypes.Track):
                     self._guiClient.requestTrackState()
+                    task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.ConfigState):
+                    self._guiClient.requestConfigState(self._lastConfigState)
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.Note):
                     self._guiClient.requestImage(task.getUniqueId(), 0.0)
@@ -311,6 +348,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             self._skippedTrackStateRequests += 1
 
+    def _requestConfigState(self):
+        if(self._skippedConfigStateRequests > 30):
+            self._skippedConfigStateRequests = 0
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
+            if(foundTask == None):
+                configStateRequestTask = TaskHolder("Config state request", TaskHolder.RequestTypes.ConfigState, None, None)
+                self._taskQueue.append(configStateRequestTask)
+                self._guiClient.requestConfigState(self._lastConfigState)
+                configStateRequestTask.setState(TaskHolder.States.Sendt)
+        else:
+            self._skippedConfigStateRequests += 1
+
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundNoteId = None
@@ -322,6 +371,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             noteString = noteToNoteString(foundNoteId)
             print "sending note: " + str(foundNoteId) + " -> " + noteString
             self._midiSender.sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
+            noteConfig = self._configuration.getNoteConfig(foundNoteId)
+            if(noteConfig != None):
+                print "DEBUG: " + noteConfig.getFileName()
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

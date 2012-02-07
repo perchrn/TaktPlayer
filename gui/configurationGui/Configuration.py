@@ -24,6 +24,15 @@ class Configuration(object):
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
 
+    def setupEffectsGui(self, plane, sizer):
+        self._globalConf.setupEffectsGui(plane, sizer)
+
+    def setupEffectsSlidersGui(self, plane, sizer):
+        self._globalConf.setupEffectsSlidersGui(plane, sizer)
+
+    def editEffectsConfig(self, configName, midiChannel):
+        self._globalConf.editEffectsConfig(configName, midiChannel)
+
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()
 

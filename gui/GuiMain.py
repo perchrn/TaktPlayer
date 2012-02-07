@@ -387,7 +387,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(noteConfig == None):
                 print "TODO: Setup DEFAULT " * 5 #TODO:
             else:
-                self._noteGui.updateGui(noteConfig)
+                self._noteGui.updateGui(noteConfig, self._selectedMidiChannel)
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

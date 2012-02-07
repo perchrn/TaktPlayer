@@ -135,6 +135,9 @@ class EffectSettings(object):
         self._configurationTree.addTextParameter("Effect", "None")
         self._actualEffect = None
 
+    def getConfigHolder(self):
+        return self._configurationTree
+
     def _getConfiguration(self):
         self._effectAmountModulationId = self._midiModulation.connectModulation("Amount")
         self._effectArg1ModulationId = self._midiModulation.connectModulation("Arg1")

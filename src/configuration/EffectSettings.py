@@ -73,6 +73,12 @@ class ConfigurationTemplates(object):
                     print "Config child removed OK"
                 self._configurationTemplates.pop(ix)
 
+    def getChoices(self):
+        choiceList = []
+        for template in self._configurationTemplates:
+            choiceList.append(template.getName())
+        return choiceList
+
     def _validateDefault(self):
         pass
 

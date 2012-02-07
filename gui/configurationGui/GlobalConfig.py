@@ -18,3 +18,10 @@ class GlobalConfig(object):
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._mediaFadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
+
+    def getEffectChoices(self):
+        return self._effectsConfiguration.getChoices()
+
+    def getFadeChoices(self):
+        return self._mediaFadeConfiguration.getChoices()
+

@@ -10,6 +10,12 @@ from BeautifulSoup import BeautifulStoneSoup
 import os
 import random
 
+def xmlToPrettyString(xml):
+    xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")
+    soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
+    return soup.prettify()
+
+
 class ParameterTypes():
     (Bool, Float, Int, Text) = range(4)
 

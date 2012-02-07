@@ -6,6 +6,9 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 import os
+from video.media.MediaFile import MixMode
+from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
+    MediaTypes
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -72,20 +75,18 @@ class MediaPoolConfig(object):
             self._mediaPool[midiNote] = MediaFile(self._configurationTree, fileName, noteLetter, midiNote, xmlConfig)
         return midiNote
 
-    def showNoteConfigGui(self, wxPanel, noteId):
+    def getNoteConfiguration(self, noteId):
         noteId = min(max(noteId, 0), 127)
-        selectedMedia = self._mediaPool[noteId]
-        if(selectedMedia != None):
-            self._mediaPool[noteId].showNoteConfigGui(wxPanel)
+        return self._mediaPool[noteId]
 
 class MediaFile(object):
     def __init__(self, configParent, fileName, noteLetter, midiNote, xmlConfig):
-        mediaType = xmlConfig.get("type")
-        if(mediaType != None):
-            mediaType = "VideoLoop"
+        self._mediaType = xmlConfig.get("type")
+        if(self._mediaType == None):
+            self._mediaType = "VideoLoop"
         self._configurationTree = configParent.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
         self._configurationTree.addTextParameter("FileName", "")
-        self._configurationTree.addTextParameter("Type", mediaType)
+        self._configurationTree.addTextParameter("Type", self._mediaType)
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
@@ -95,32 +96,197 @@ class MediaFile(object):
         self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
         self._defaultFadeSettingsName = "Default"
         self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
-        if(mediaType == "VideoLoop"):
+        if(self._mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
-        elif(mediaType == "VideoLoop"):
+        elif(self._mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlayBackModulation", "None")
-        self._configurationTree._updateFromXml(xmlConfig)
+        if(xmlConfig != None):
+            self._configurationTree._updateFromXml(xmlConfig)
 
-    def showNoteConfigGui(self, wxPanel):
-        noteConfigPanel = wx.Panel(wxPanel, wx.ID_ANY, size=(500, 500)) #@UndefinedVariable
-        noteConfigPanel.SetBackgroundColour(wx.Colour(255,0,255)) #@UndefinedVariable
-        noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
-        noteConfigPanel.SetSizer(noteConfigSizer)
+    def getConfig(self):
+        return self._configurationTree
 
+class MediaFileGui(wx.Panel): #@UndefinedVariable
+    def __init__(self, *args, **kwargs):
+        wx.Panel.__init__(self, *args, **kwargs) #@UndefinedVariable
+
+        self._mainConfig = None
+        self._mixModes = MixMode()
+        self._loopModes = VideoLoopMode()
+        self._sequenceModes = ImageSequenceMode()
+        self._typeModes = MediaTypes()
+
+        self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self.SetSizer(self._noteConfigSizer)
+
+        self._fileName = ""
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText = wx.StaticText(noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
-        self._fileNameField = wx.TextCtrl(noteConfigPanel, wx.ID_ANY, os.path.basename(self._configurationTree.getValue("FileName")), size=(200, -1)) #@UndefinedVariable
+        tmpText1 = wx.StaticText(self, wx.ID_ANY, "FileName:") #@UndefinedVariable
+        self._fileNameField = wx.TextCtrl(self, wx.ID_ANY, self._fileName, size=(200, -1)) #@UndefinedVariable
         self._fileNameField.SetInsertionPoint(0)
-        fileNameSizer.Add(tmpText)
-        fileNameSizer.Add(self._fileNameField)
-        noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        fileNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         typeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText = wx.StaticText(noteConfigPanel, wx.ID_ANY, "Type:") #@UndefinedVariable
-        self._typeField = wx.TextCtrl(noteConfigPanel, wx.ID_ANY, self._configurationTree.getValue("Type"), size=(200, -1)) #@UndefinedVariable
-        self._typeField.SetInsertionPoint(-1)
-        typeSizer.Add(tmpText)
-        typeSizer.Add(self._fileNameField)
-        noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        tmpText2 = wx.StaticText(self, wx.ID_ANY, "Type:") #@UndefinedVariable
+        self._typeField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["VideoLoop"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateTypeChoices(self._typeField, "VideoLoop", "VideoLoop")
+        typeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        typeSizer.Add(self._typeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(typeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._subModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModeLabel = wx.StaticText(self, wx.ID_ANY, "Loop mode:") #@UndefinedVariable
+        self._subModeField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["Normal"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._subModeSizer.Add(self._subModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModeSizer.Add(self._subModeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._subModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModulationLabel = wx.StaticText(self, wx.ID_ANY, "Playback modulation:") #@UndefinedVariable
+        self._subModulationField = wx.TextCtrl(self, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._subModulationField.SetInsertionPoint(0)
+        self._subModulationSizer.Add(self._subModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        noteSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self, wx.ID_ANY, "Note:") #@UndefinedVariable
+        self._noteField = wx.TextCtrl(self, wx.ID_ANY, "0C", size=(200, -1)) #@UndefinedVariable
+        self._noteField.SetInsertionPoint(0)
+        noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        noteSizer.Add(self._noteField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(noteSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        syncSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText4 = wx.StaticText(self, wx.ID_ANY, "Syncronization length:") #@UndefinedVariable
+        self._syncField = wx.TextCtrl(self, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
+        self._syncField.SetInsertionPoint(0)
+        syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
+        syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(syncSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        quantizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText5 = wx.StaticText(self, wx.ID_ANY, "Quantization:") #@UndefinedVariable
+        self._quantizeField = wx.TextCtrl(self, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
+        self._quantizeField.SetInsertionPoint(0)
+        quantizeSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
+        quantizeSizer.Add(self._quantizeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(quantizeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        mixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText6 = wx.StaticText(self, wx.ID_ANY, "Mix mode:") #@UndefinedVariable
+        self._mixField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateMixModeChoices(self._mixField, "Add", "Add")
+        mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
+        mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
+        self._effect1Field = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
+        effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        effect1Sizer.Add(self._effect1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(effect1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        effect2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
+        self._effect2Field = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
+        effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        effect2Sizer.Add(self._effect2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(effect2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        fadeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self, wx.ID_ANY, "Fade template:") #@UndefinedVariable
+        self._fadeField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateEffecChoices(self._fadeField, "Default", "Default")
+        fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        fadeSizer.Add(self._fadeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self.setupSubConfig("VideoLoop")
+
+    def setMainConfig(self, mainConfig):
+        self._mainConfig = mainConfig
+
+    def setupSubConfig(self, fileType):
+        if(fileType == "VideoLoop"):
+            self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subModulationSizer)
+        elif(fileType == "ImageSequence"):
+            self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Show(self._subModulationSizer)
+        else:
+            self._noteConfigSizer.Hide(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subModulationSizer)
+        self.Layout()
+
+    def _updateEffecChoices(self, widget, value, defaultValue):
+        if(self._mainConfig == None):
+            self._updateChoices(widget, None, value, defaultValue)
+        else:
+            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue)
+
+    def _updateFadeChoices(self, widget, value, defaultValue):
+        if(self._mainConfig == None):
+            self._updateChoices(widget, None, value, defaultValue)
+        else:
+            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue)
+
+    def _updateMixModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._mixModes.getChoices, value, defaultValue)
+
+    def _updateLoopModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._loopModes.getChoices, value, defaultValue)
+
+    def _updateSequenceModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._sequenceModes.getChoices, value, defaultValue)
+
+    def _updateTypeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
+
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+        widget.Clear()
+        valueOk = False
+        for choice in choiceList:
+            widget.Append(choice)
+            if(choice == value):
+                valueOk = True
+        if(valueOk == True):
+            widget.SetStringSelection(value)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+    def updateGui(self, noteConfig):
+        config = noteConfig.getConfig()
+        self._fileName = config.getValue("FileName")
+        self._fileNameField.SetValue(os.path.basename(self._fileName))
+        self._type = config.getValue("Type")
+        self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
+        if(self._type == "VideoLoop"):
+            self._subModeLabel.SetLabel("Loop mode:")
+            self._updateLoopModeChoices(self._subModeField, config.getValue("LoopMode"), "Add")
+            self._subModeField.SetValue(config.getValue("LoopMode"))
+        elif(self._type == "ImageSequence"):
+            self._subModeLabel.SetLabel("Sequence mode:")
+            self._updateSequenceModeChoices(self._subModeField, config.getValue("SequenceMode"), "Add")
+            self._subModeField.SetValue(config.getValue("SequenceMode"))
+            self._subModulationField.SetValue(config.getValue("PlayBackModulation"))
+        self.setupSubConfig(self._type)
+        self._noteField.SetValue(config.getValue("Note"))
+        self._syncField.SetValue(str(config.getValue("SyncLength")))
+        self._quantizeField.SetValue(str(config.getValue("QuantizeLength")))
+        self._updateMixModeChoices(self._mixField, config.getValue("MixMode"), "Add")
+        self._updateEffecChoices(self._effect1Field, config.getValue("Effect1Config"), "MediaDefault1")
+        self._updateEffecChoices(self._effect2Field, config.getValue("Effect2Config"), "MediaDefault2")
+        self._updateFadeChoices(self._fadeField, config.getValue("FadeConfig"), "Default")
+
 

@@ -21,11 +21,20 @@ class Configuration(object):
         self._configurationTree.setFromXml(config)
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
 
-    def showNoteConfigGui(self, wxPanel, noteId):
-        return self._mediaPoolConf.showNoteConfigGui(wxPanel, noteId)
+    def getEffectChoices(self):
+        return self._globalConf.getEffectChoices()
+
+    def getFadeChoices(self):
+        return self._globalConf.getFadeChoices()
+
+    def getNoteConfiguration(self, noteId):
+        return self._mediaPoolConf.getNoteConfiguration(noteId)
+
+    def getXmlString(self):
+        return self._configurationTree.getConfigurationXMLString()
 
     def printConfiguration(self):
-        print self._configurationTree.getConfigurationXMLString()
+        print self.getXmlString()
 
 
 

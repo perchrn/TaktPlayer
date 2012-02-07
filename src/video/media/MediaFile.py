@@ -10,6 +10,7 @@ import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat
 import hashlib
+from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -46,9 +47,6 @@ def mixImagesAdd(image1, image2, mixMat):
 def mixImagesMultiply(image1, image2, mixMat):
     cv.Mul(image1, image2, mixMat, 0.003)
     return mixMat
-
-class MixMode:
-    (Default, Add, Multiply, LumaKey, Replace) = range(5)
 
 def mixImages(mode, image1, image2, mixMat1, mixMat2, mixMask):
     if(mode == MixMode.Add):
@@ -429,14 +427,11 @@ class CameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    class Mode:
-        Time, ReTrigger, Controller = range(3)
-
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
         self._triggerCounter = 0
         self._firstTrigger = True
-        self._sequenceMode = ImageSequenceFile.Mode.Time
+        self._sequenceMode = ImageSequenceMode.Time
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
         self._midiModulation.setModulationReceiver("PlayBackModulation", "None")
@@ -447,11 +442,11 @@ class ImageSequenceFile(MediaFile):
         self._playbackModulationId = self._midiModulation.connectModulation("PlayBackModulation")
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
-            self._sequenceMode = ImageSequenceFile.Mode.ReTrigger
+            self._sequenceMode = ImageSequenceMode.ReTrigger
         elif(seqMode == "Controller"):
-            self._sequenceMode = ImageSequenceFile.Mode.Controller
+            self._sequenceMode = ImageSequenceMode.Controller
         else:
-            self._sequenceMode = ImageSequenceFile.Mode.Time #Defaults to time
+            self._sequenceMode = ImageSequenceMode.Time #Defaults to time
 
     def close(self):
         pass
@@ -486,11 +481,11 @@ class ImageSequenceFile(MediaFile):
 
         lastFrame = self._currentFrame
         
-        if(self._sequenceMode == ImageSequenceFile.Mode.Time):
+        if(self._sequenceMode == ImageSequenceMode.Time):
             self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames)
-        elif(self._sequenceMode == ImageSequenceFile.Mode.ReTrigger):
+        elif(self._sequenceMode == ImageSequenceMode.ReTrigger):
             self._currentFrame =  (self._triggerCounter % self._numberOfFrames)
-        elif(self._sequenceMode == ImageSequenceFile.Mode.Controller):
+        elif(self._sequenceMode == ImageSequenceMode.Controller):
             self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):
@@ -519,32 +514,30 @@ class ImageSequenceFile(MediaFile):
     def openFile(self, midiLength):
         self.openVideoFile(midiLength)
 
-class VideoLoopFile(MediaFile):
-    class Mode:
-        Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
 
+class VideoLoopFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
-        self._loopMode = VideoLoopFile.Mode.Normal
+        self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         loopMode = self._configurationTree.getValue("LoopMode")
         if(loopMode == "Normal"):
-            self._loopMode = VideoLoopFile.Mode.Normal
+            self._loopMode = VideoLoopMode.Normal
         elif(loopMode == "Reverse"):
-            self._loopMode = VideoLoopFile.Mode.Reverse
+            self._loopMode = VideoLoopMode.Reverse
         elif(loopMode == "PingPong"):
-            self._loopMode = VideoLoopFile.Mode.PingPong
+            self._loopMode = VideoLoopMode.PingPong
         elif(loopMode == "PingPongReverse"):
-            self._loopMode = VideoLoopFile.Mode.PingPongReverse
+            self._loopMode = VideoLoopMode.PingPongReverse
         elif(loopMode == "DontLoop"):
-            self._loopMode = VideoLoopFile.Mode.DontLoop
+            self._loopMode = VideoLoopMode.DontLoop
         elif(loopMode == "DontLoopReverse"):
-            self._loopMode = VideoLoopFile.Mode.DontLoopReverse
+            self._loopMode = VideoLoopMode.DontLoopReverse
         else:
-            self._loopMode = VideoLoopFile.Mode.Normal #Defaults to normal
+            self._loopMode = VideoLoopMode.Normal #Defaults to normal
 
     def close(self):
         pass
@@ -560,20 +553,20 @@ class VideoLoopFile(MediaFile):
         lastFrame = self._currentFrame
 
         framePos = int(((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames)
-        if(self._loopMode == VideoLoopFile.Mode.Normal):
+        if(self._loopMode == VideoLoopMode.Normal):
             self._currentFrame = framePos % self._numberOfFrames
-        elif(self._loopMode == VideoLoopFile.Mode.Reverse):
+        elif(self._loopMode == VideoLoopMode.Reverse):
             self._currentFrame = -framePos % self._numberOfFrames
-        elif(self._loopMode == VideoLoopFile.Mode.PingPong):
+        elif(self._loopMode == VideoLoopMode.PingPong):
             self._currentFrame = abs(((framePos + self._numberOfFrames) % (2 * self._numberOfFrames)) - self._numberOfFrames)
-        elif(self._loopMode == VideoLoopFile.Mode.PingPongReverse):
+        elif(self._loopMode == VideoLoopMode.PingPongReverse):
             self._currentFrame = abs((framePos % (2 * self._numberOfFrames)) - self._numberOfFrames)
-        elif(self._loopMode == VideoLoopFile.Mode.DontLoop):
+        elif(self._loopMode == VideoLoopMode.DontLoop):
             if(framePos < self._numberOfFrames):
                 self._currentFrame = framePos
             else:
                 self._image = None
-        elif(self._loopMode == VideoLoopFile.Mode.DontLoopReverse):
+        elif(self._loopMode == VideoLoopMode.DontLoopReverse):
             if(framePos < self._numberOfFrames):
                 self._currentFrame = self._numberOfFrames - 1 - framePos
             else:

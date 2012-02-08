@@ -25,6 +25,9 @@ def resizeImage(image, resizeMat):
 class EffectTypes():
     Zoom, Flip, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(12)
 
+    def getChoices(self):
+        return ["None", "Zoom", "Flip", "Blur", "BlurContrast", "Distortion", "Edge", "Desaturate", "Contrast", "HueSaturation", "Colorize", "Invert", "Threshold"]
+
 def getEffectId(name):
     lowername = name.lower()
     if(lowername == "zoom"):
@@ -51,6 +54,36 @@ def getEffectId(name):
         return EffectTypes.Invert
     elif(lowername == "threshold"):
         return EffectTypes.Threshold
+    else:
+        return None
+
+def getEffectName(effectId):
+    if(effectId == EffectTypes.Zoom):
+        return "Zoom"
+    elif(effectId == EffectTypes.Flip):
+        return "Flip"
+    elif(effectId == EffectTypes.Blur):
+        return "Blur"
+    elif(effectId == EffectTypes.BlurContrast):
+        return "BlurContrast"
+    elif(effectId == EffectTypes.Distortion):
+        return "Distortion"
+    elif(effectId == EffectTypes.Edge):
+        return "Edge"
+    elif(effectId == EffectTypes.Desaturate):
+        return "Desaturate"
+    elif(effectId == EffectTypes.Contrast):
+        return "Contrast"
+    elif(effectId == EffectTypes.HueSaturation):
+        return "HueSaturation"
+    elif(effectId == EffectTypes.Colorize):
+        return "Colorize"
+    elif(effectId == EffectTypes.Invert):
+        return "Invert"
+    elif(effectId == EffectTypes.Threshold):
+        return "Threshold"
+    else:
+        return None
 
 def getEffectById(effectType, configurationTree, internalResX, internalResY):
     if(effectType == EffectTypes.Zoom):
@@ -85,6 +118,12 @@ def getEffectByName(name, configurationTree, internalResX, internalResY):
     print "getEffectByName name: " + name + " id: " + str(fxid)    
     return getEffectById(fxid, configurationTree, internalResX, internalResY)
 
+class ZoomModes():
+    In, Out, InOut, Full = range(4)
+
+    def getChoices(self):
+        return ["In", "Out", "InOut", "Full"]
+
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -96,19 +135,16 @@ class ZoomEffect(object):
         self._zoomMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
 
-    class Modes():
-        In, Out, InOut, Full = range(4)
-
     def findMode(self, value):
         modeSelected = int(value*3.99)
-        if(modeSelected == ZoomEffect.Modes.In):
-            return ZoomEffect.Modes.In
-        elif(modeSelected == ZoomEffect.Modes.Out):
-            return ZoomEffect.Modes.Out
-        elif(modeSelected == ZoomEffect.Modes.InOut):
-            return ZoomEffect.Modes.InOut
+        if(modeSelected == ZoomModes.In):
+            return ZoomModes.In
+        elif(modeSelected == ZoomModes.Out):
+            return ZoomModes.Out
+        elif(modeSelected == ZoomModes.InOut):
+            return ZoomModes.InOut
         else:
-            return ZoomEffect.Modes.Full
+            return ZoomModes.Full
 
     def _setZoomRange(self, minZoom, maxZoom):
         self._minZoomRange = 1 / maxZoom
@@ -124,7 +160,7 @@ class ZoomEffect(object):
     def applyEffect(self, image, amount, xyrate, xcenter, ycenter, mode):
         zoomMode = self.findMode(mode)
         xzoom = 1.0 - amount
-        if(zoomMode == ZoomEffect.Modes.Full):
+        if(zoomMode == ZoomModes.Full):
             yzoom = 1.0 - amount * (xyrate  * 2)
             xcentr = (xcenter * -2) + 1
             ycentr = (ycenter * 2) - 1
@@ -134,13 +170,13 @@ class ZoomEffect(object):
             ycentr = 0.0
         minZoomRange = self._minZoomRange
         zoomRange = self._zoomRange
-        if(zoomMode == ZoomEffect.Modes.Out):
+        if(zoomMode == ZoomModes.Out):
             if(minZoomRange < 1.0):
                 minZoomRange = 1.0
                 zoomRange = zoomRange - 1.0 + self._minZoomRange
                 xzoom = 1.0 - xzoom
                 yzoom = 1.0 - yzoom
-        elif(zoomMode == ZoomEffect.Modes.In):
+        elif(zoomMode == ZoomModes.In):
             if((minZoomRange + zoomRange) > 1.0):
                 zoomRange = 1.0 - minZoomRange
         if(zoomRange <= 0):
@@ -212,6 +248,12 @@ class ZoomEffect(object):
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
 
+class FlipModes():
+    NoFlip, Vertical, Horizontal, Both = range(4)
+
+    def getChoices(self):
+        return ["NoFlip", "Vertical", "Horizontal", "Both"]
+
 class FlipEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -219,29 +261,26 @@ class FlipEffect(object):
         self._internalResolutionY = internalResY
         self._flipMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
-    class Modes():
-        NoFlip, Vertical, Horisontal, Both = range(4)
-
     def findMode(self, value):
         modeSelected = int(value*3.99)
-        if(modeSelected == FlipEffect.Modes.NoFlip):
-            return FlipEffect.Modes.NoFlip
-        elif(modeSelected == FlipEffect.Modes.Vertical):
-            return FlipEffect.Modes.Vertical
-        elif(modeSelected == FlipEffect.Modes.Horisontal):
-            return FlipEffect.Modes.Horisontal
+        if(modeSelected == FlipModes.NoFlip):
+            return FlipModes.NoFlip
+        elif(modeSelected == FlipModes.Vertical):
+            return FlipModes.Vertical
+        elif(modeSelected == FlipModes.Horizontal):
+            return FlipModes.Horizontal
         else:
-            return FlipEffect.Modes.Both
+            return FlipModes.Both
 
     def getName(self):
         return "Flip"
 
     def findValue(self, mode):
-        if(mode == FlipEffect.Modes.NoFlip):
+        if(mode == FlipModes.NoFlip):
             return None
-        elif(mode == FlipEffect.Modes.Vertical):
+        elif(mode == FlipModes.Vertical):
             return 1
-        elif(mode == FlipEffect.Modes.Horisontal):
+        elif(mode == FlipModes.Horizontal):
             return 0
         else:
             return -1
@@ -302,6 +341,12 @@ class BluredContrastEffect(object):
         cv.Mul(image, self._blurMat1, self._blurMat2, 0.006)
         return self._blurMat2
 
+class DistortionModes():
+    Black, White, Both = range(3)
+
+    def getChoices(self):
+        return ["Black", "White", "Both"]
+
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -312,11 +357,26 @@ class DistortionEffect(object):
     def getName(self):
         return "Distortion"
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
-        return self.dilateErode(image, amount)
+    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
+        return self.dilateErode(image, amount, mode)
 
-    def dilateErode(self, image, value):
-        itterations = int(value * 128) - 64
+    def findMode(self, value):
+        modeSelected = int(value*2.99)
+        if(modeSelected == DistortionModes.Black):
+            return DistortionModes.Black
+        elif(modeSelected == DistortionModes.White):
+            return DistortionModes.White
+        else:
+            return DistortionModes.Both
+
+    def dilateErode(self, image, value, mode):
+        modeSelected = self.findMode(mode)
+        if(modeSelected == DistortionModes.White):
+            itterations = int(value * 64)
+        elif(modeSelected == DistortionModes.Black):
+            itterations = -int(value * 64)
+        else:
+            itterations = int(value * 128) - 64
         if(itterations == 0):
             return image
         if(itterations < 0):
@@ -324,6 +384,18 @@ class DistortionEffect(object):
         else:
             cv.Dilate(image, self._distortMat, None, itterations)
         return self._distortMat
+
+class EdgeModes():
+    CannyOnTop, Canny, Sobel, Laplace = range(4)
+
+    def getChoices(self):
+        return ["CannyOnTop", "Canny", "Sobel", "Laplace"]
+
+class EdgeColourModes():
+    Value, Saturation, Hue = range(3)
+
+    def getChoices(self):
+        return ["Value", "Saturation", "Hue"]
 
 class EdgeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -339,19 +411,25 @@ class EdgeEffect(object):
     def getName(self):
         return "Distortion"
 
-    class Modes():
-        CannyOnTop, Canny, Sobel, Laplace = range(4)
-
     def findMode(self, value):
         modeSelected = int(value*3.99)
-        if(modeSelected == EdgeEffect.Modes.CannyOnTop):
-            return EdgeEffect.Modes.CannyOnTop
-        elif(modeSelected == EdgeEffect.Modes.Canny):
-            return EdgeEffect.Modes.Canny
-        elif(modeSelected == EdgeEffect.Modes.Sobel):
-            return EdgeEffect.Modes.Sobel
+        if(modeSelected == EdgeModes.CannyOnTop):
+            return EdgeModes.CannyOnTop
+        elif(modeSelected == EdgeModes.Canny):
+            return EdgeModes.Canny
+        elif(modeSelected == EdgeModes.Sobel):
+            return EdgeModes.Sobel
         else:
-            return EdgeEffect.Modes.Laplace
+            return EdgeModes.Laplace
+
+    def findColorMode(self, value):
+        modeSelected = int(value*2.99)
+        if(modeSelected == EdgeColourModes.Value):
+            return EdgeColourModes.Value
+        elif(modeSelected == EdgeColourModes.Saturation):
+            return EdgeColourModes.Saturation
+        else:
+            return EdgeColourModes.Hue
 
     def getHueColor(self, hue):
         phase = int(hue * 5.99)
@@ -401,21 +479,21 @@ class EdgeEffect(object):
 
     def drawEdges(self, image, value, edgeMode, hsv, red, green, blue):
 #        print "mode: " + str(mode) + " int: " + str(modeSelected) + " hsv: " + str(hsv) + " red: " + str(red) + " green: " + str(green) + " blue: " + str(blue)
-        if((edgeMode == EdgeEffect.Modes.CannyOnTop) or (edgeMode == EdgeEffect.Modes.Canny)):
-            hsvSelected = int(hsv*2.99)
+        if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
+            hsvSelected = self.findColorMode(hsv)
         else:
-            hsvSelected = 0
+            hsvSelected = EdgeColourModes.Value
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
-        if(hsvSelected < 1):
+        if(hsvSelected == EdgeColourModes.Value):
             cv.Split(self._colorMat, None, None, self._splitMat, None)
-        elif(hsvSelected < 2):
+        elif(hsvSelected == EdgeColourModes.Saturation):
             cv.Split(self._colorMat, None, self._splitMat, None, None)
         else:
             cv.Split(self._colorMat, self._splitMat, None, None, None)
-        if((edgeMode == EdgeEffect.Modes.CannyOnTop) or (edgeMode == EdgeEffect.Modes.Canny)):
+        if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
-            if(edgeMode == EdgeEffect.Modes.CannyOnTop):
+            if(edgeMode == EdgeModes.CannyOnTop):
                 storage = cv.CreateMemStorage(0)
                 contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
                 cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 3)
@@ -424,7 +502,7 @@ class EdgeEffect(object):
                 cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
                 return self._colorMat
         else:
-            if(edgeMode == EdgeEffect.Modes.Sobel):
+            if(edgeMode == EdgeModes.Sobel):
                 mode = int(value * 3.99)
                 if(mode == 0):
                     (sobelX, sobelY) = (1, 0)
@@ -446,6 +524,12 @@ class EdgeEffect(object):
             cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
             return self._colorMat
 
+class DesaturateModes():
+    Plus, Minus, Mask = range(3)
+
+    def getChoices(self):
+        return ["Plus", "Minus", "Mask"]
+
 class DesaturateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -463,12 +547,12 @@ class DesaturateEffect(object):
 
     def findMode(self, value):
         modeSelected = int(value*2.99)
-        if(modeSelected == DesaturateEffect.Modes.Plus):
-            return DesaturateEffect.Modes.Plus
-        elif(modeSelected == DesaturateEffect.Modes.Minus):
-            return DesaturateEffect.Modes.Minus
+        if(modeSelected == DesaturateModes.Plus):
+            return DesaturateModes.Plus
+        elif(modeSelected == DesaturateModes.Minus):
+            return DesaturateModes.Minus
         else:
-            return DesaturateEffect.Modes.Mask
+            return DesaturateModes.Mask
 
     def getName(self):
         return "Desaturate"
@@ -484,9 +568,9 @@ class DesaturateEffect(object):
         hueMax = min(256, hueValue + huePlussMinus)
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
         cv.InRangeS(self._colorMat, (hueMin, 160, 32), (hueMax, 255, 255), self._maskMat)
-        if(satMode != DesaturateEffect.Modes.Mask):
+        if(satMode != DesaturateModes.Mask):
             cv.Split(self._colorMat, self._hueMat, self._sat1Mat, self._valMat, None)
-            if(satMode == DesaturateEffect.Modes.Plus):
+            if(satMode == DesaturateModes.Plus):
                 cv.Mul(self._sat1Mat, self._maskMat, self._sat2Mat, 0.005)
             else: # Minus
                 cv.Sub(self._sat1Mat, self._maskMat, self._sat2Mat)
@@ -548,6 +632,13 @@ class HueSaturationEffect(object):
         cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
         return self._colorMat
 
+class ColorizeModes():
+    Add, Subtract, SubtractFrom, Multiply = range(4)
+
+    def getChoices(self):
+        return ["Add", "Subtract", "SubtractFrom", "Multiply"]
+
+
 class ColorizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -558,26 +649,23 @@ class ColorizeEffect(object):
     def getName(self):
         return "Colorize"
 
-    class Modes():
-        Add, Subtract, SubtractFrom, Multiply = range(4)
-
     def findMode(self, val):
         intVal = int(val*3.99)
-        if(intVal == ColorizeEffect.Modes.Add):
-            return ColorizeEffect.Modes.Add
-        elif(intVal == ColorizeEffect.Modes.Subtract):
-            return ColorizeEffect.Modes.Subtract
-        elif(intVal == ColorizeEffect.Modes.SubtractFrom):
-            return ColorizeEffect.Modes.SubtractFrom
+        if(intVal == ColorizeModes.Add):
+            return ColorizeModes.Add
+        elif(intVal == ColorizeModes.Subtract):
+            return ColorizeModes.Subtract
+        elif(intVal == ColorizeModes.SubtractFrom):
+            return ColorizeModes.SubtractFrom
         else:
-            return ColorizeEffect.Modes.Multiply
+            return ColorizeModes.Multiply
 
     def applyEffect(self, image, amount, red, green, blue, modeVal):
         mode = self.findMode(modeVal)
         return self.colorize(image, amount, red, green, blue, mode)
 
     def colorize(self, image, amount, red, green, blue, mode):
-        if((mode == ColorizeEffect.Modes.Add) or (mode == ColorizeEffect.Modes.Subtract)):
+        if((mode == ColorizeModes.Add) or (mode == ColorizeModes.Subtract)):
             redCalc = 256 * (red * amount)
             greenCalc = 256 * (green * amount)
             blueCalc = 256 * (blue * amount)
@@ -589,13 +677,13 @@ class ColorizeEffect(object):
         rgbColor = cv.CV_RGB(redCalc, greenCalc, blueCalc)
     #    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
     
-        if(mode == ColorizeEffect.Modes.Add):
+        if(mode == ColorizeModes.Add):
             cv.AddS(image, rgbColor, self._colorMat)
-        elif(mode == ColorizeEffect.Modes.Subtract):
+        elif(mode == ColorizeModes.Subtract):
             cv.SubS(image, rgbColor, self._colorMat)
-        elif(mode == ColorizeEffect.Modes.SubtractFrom):
+        elif(mode == ColorizeModes.SubtractFrom):
             cv.SubRS(image, rgbColor, self._colorMat)
-        elif(mode == ColorizeEffect.Modes.Multiply):
+        elif(mode == ColorizeModes.Multiply):
             cv.Set(self._colorMat, rgbColor)
             cv.Mul(image, self._colorMat, self._colorMat, 0.004)
         else:

@@ -91,14 +91,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-#        self._restPanel = wx.Panel(self, wx.ID_ANY) #@UndefinedVariable
-#        self._restPanel.SetBackgroundColour(wx.Colour(255,255,0)) #@UndefinedVariable
-#        notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-#        notKeyboardSizer.Add(self._restPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._noteGui = MediaFileGui(self, wx.ID_ANY) #@UndefinedVariable
         self._noteGui.setMainConfig(self._configuration)
         notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        notKeyboardSizer.Add(self._noteGui, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        notKeyboardSizer.Add(self._noteGui, proportion=1) #@UndefinedVariable
 
         mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable

@@ -26,14 +26,14 @@ class Configuration(object):
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
 
-    def setupEffectsGui(self, plane, sizer):
-        self._globalConf.setupEffectsGui(plane, sizer)
+    def setupEffectsGui(self, plane, sizer, parentSizer):
+        self._globalConf.setupEffectsGui(plane, sizer, parentSizer)
 
-    def setupEffectsSlidersGui(self, plane, sizer):
-        self._globalConf.setupEffectsSlidersGui(plane, sizer)
+    def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
+        self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer)
 
-    def editEffectsConfig(self, configName, midiChannel, midiNote, midiSender):
-        self._globalConf.editEffectsConfig(configName, midiChannel, midiNote, midiSender)
+    def updateEffectsGui(self, configName, midiChannel, midiNote, midiSender):
+        self._globalConf.updateEffectsGui(configName, midiChannel, midiNote, midiSender)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()

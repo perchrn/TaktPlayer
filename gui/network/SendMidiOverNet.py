@@ -18,7 +18,7 @@ class SendMidiOverNet(object):
             data1 = min(max(0, data1), 127)
             data2 = min(max(0, data2), 127)
             data3 = min(max(0, data3), 127)
-            print "command: 0x%2x 0x%2x 0x%2x 0x%2x" % (command, data1, data2, data3)
+#            print "command: 0x%2x 0x%2x 0x%2x 0x%2x" % (command, data1, data2, data3)
             self._midiCommandBuffer[0] = chr(command)
             self._midiCommandBuffer[1] = chr(data1)
             self._midiCommandBuffer[2] = chr(data2)

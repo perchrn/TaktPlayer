@@ -11,3 +11,8 @@ class MediaMixerConfig(object):
     def getConfTree(self):
         return self._configurationTree
 
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            print "MediaMixerConfig config is updated..."
+        else:
+            print "DEBUG: MediaMixerConfig.checkAndUpdateFromConfiguration NOT updated..."

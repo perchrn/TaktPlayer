@@ -331,6 +331,7 @@ class ConfigurationHolder(object):
 
     def findXmlChildrenList(self, name):
         if(self._loadedXML == None):
+            print "findXmlChildrenList self._loadedXML == None"
             return None
         name = name.lower()
         return self._loadedXML.findall(name)

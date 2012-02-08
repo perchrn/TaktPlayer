@@ -410,6 +410,7 @@ class CameraInput(MediaFile):
         self._videoFile = cv.CaptureFromCAM(self._cameraId)
         try:
             self._captureImage = cv.QueryFrame(self._videoFile)
+            self._firstImage = copyImage(self._captureImage)
         except:
             self._log.warning("Exception while reading: %d", self._cameraId)
             print "Exception while reading: " + str(self._cameraId)

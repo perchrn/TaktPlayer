@@ -22,6 +22,18 @@ class GlobalConfig(object):
         self._effectsGui = EffectsGui()
         self._mediaFadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
 
+    def _getConfiguration(self):
+        self._effectsConfiguration._getConfiguration()
+        self._mediaFadeConfiguration._getConfiguration()
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            print "GlobalConfig config is updated..."
+            self._getConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
+        else:
+            print "DEBUG: GlobalConfig.checkAndUpdateFromConfiguration NOT updated..."
+
     def getEffectChoices(self):
         return self._effectsConfiguration.getChoices()
 
@@ -34,10 +46,10 @@ class GlobalConfig(object):
     def setupEffectsSlidersGui(self, plane, sizer):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer)
 
-    def editEffectsConfig(self, configName, midiChannel):
+    def editEffectsConfig(self, configName, midiChannel, midiNote, midiSender):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
-            self._effectsGui.editEffectsConfig(template, midiChannel)
+            self._effectsGui.editEffectsConfig(template, midiChannel, midiNote, midiSender)
 
 class EffectsGui(object):
     def __init__(self):
@@ -147,38 +159,48 @@ class EffectsGui(object):
         sliderId = event.GetEventObject().GetId()
         if(sliderId == self._amountSliderId):
             print "Ammount: " + str(self._ammountSlider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel <= 16)):
+            if((self._midiChannel > -1) and (self._midiChannel < 16)):
                 self.sendMidi(self._midiChannel, self._ammountField.GetValue(), self._ammountSlider.GetValue())
         elif(sliderId == self._arg1SliderId):
             print "Arg 1: " + str(self._arg1Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel <= 16)):
+            if((self._midiChannel > -1) and (self._midiChannel < 16)):
                 self.sendMidi(self._midiChannel, self._arg1Field.GetValue(), self._arg1Slider.GetValue())
         elif(sliderId == self._arg2SliderId):
             print "Arg 2: " + str(self._arg2Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel <= 16)):
+            if((self._midiChannel > -1) and (self._midiChannel < 16)):
                 self.sendMidi(self._midiChannel, self._arg2Field.GetValue(), self._arg2Slider.GetValue())
         elif(sliderId == self._arg3SliderId):
             print "Arg 3: " + str(self._arg3Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel <= 16)):
+            if((self._midiChannel > -1) and (self._midiChannel < 16)):
                 self.sendMidi(self._midiChannel, self._arg3Field.GetValue(), self._arg3Slider.GetValue())
         elif(sliderId == self._arg4SliderId):
             print "Arg 4: " + str(self._arg4Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel <= 16)):
+            if((self._midiChannel > -1) and (self._midiChannel < 16)):
                 self.sendMidi(self._midiChannel, self._arg4Field.GetValue(), self._arg4Slider.GetValue())
 
     def sendMidi(self, channel, controllerDescription, value):
         if(controllerDescription.startswith("MidiChannel.")):
             descriptionSplit = controllerDescription.split('.', 6)
-            if(descriptionSplit[1] == "Controller"):
-                print "Send Controller: " + str(getControllerId(descriptionSplit[2]))
-            elif(descriptionSplit[1] == "PitchBend"):
-                print "Send PitchBend"
-            elif(descriptionSplit[1] == "Aftertouch"):
-                print "Send Aftertouch"
-        print "Sending... " + str(channel) + " : " + controllerDescription + " val: " + str(value)
-
-    def editEffectsConfig(self, effectTemplate, midiChannel):
+            if(len(descriptionSplit) > 1):
+                if(descriptionSplit[1] == "Controller"):
+                    if(len(descriptionSplit) > 2):
+                        controllerId = getControllerId(descriptionSplit[2])
+#                        print "Sending controller: " + descriptionSplit[2] + " -> " + str(controllerId)
+                        self._midiSender.sendMidiController(channel, controllerId, value)
+                elif(descriptionSplit[1] == "PitchBend"):
+                    self._midiSender.sendPitchbend(channel, value)
+                elif(descriptionSplit[1] == "Aftertouch"):
+                    self._midiSender.sendAftertouch(channel, value)
+        if(controllerDescription.startswith("MidiNote.")):
+            descriptionSplit = controllerDescription.split('.', 6)
+            if(len(descriptionSplit) > 1):
+                if((descriptionSplit[1] == "NotePreasure") or (descriptionSplit[1] == "Preasure")):
+                    self._midiSender.sendPolyPreasure(self._midiChannel, self._midiNote, value)
+            
+    def editEffectsConfig(self, effectTemplate, midiChannel, midiNote, midiSender):
         self._midiChannel = midiChannel
+        self._midiNote = midiNote
+        self._midiSender = midiSender
         config = effectTemplate.getConfigHolder()
         self._templateNameField.SetValue(config.getValue("Name"))
         self._effectNameField.SetValue(config.getValue("Effect"))

@@ -20,6 +20,8 @@ class Configuration(object):
         print "DEBUG: Setting from XML"
         self._configurationTree.setFromXml(config)
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
+        self._mediaMixerConf.checkAndUpdateFromConfiguration()
+        self._globalConf.checkAndUpdateFromConfiguration()
 
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
@@ -30,8 +32,8 @@ class Configuration(object):
     def setupEffectsSlidersGui(self, plane, sizer):
         self._globalConf.setupEffectsSlidersGui(plane, sizer)
 
-    def editEffectsConfig(self, configName, midiChannel):
-        self._globalConf.editEffectsConfig(configName, midiChannel)
+    def editEffectsConfig(self, configName, midiChannel, midiNote, midiSender):
+        self._globalConf.editEffectsConfig(configName, midiChannel, midiNote, midiSender)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()

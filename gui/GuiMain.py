@@ -235,7 +235,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName = result[1]
-                    foundTask = self._findQueuedTask(TaskHolder.RequestTypes.FileDownload, fileName)
+                    foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, fileName)
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + fileName
                     else:
@@ -387,7 +387,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(noteConfig == None):
                 print "TODO: Setup DEFAULT " * 5 #TODO:
             else:
-                self._noteGui.updateGui(noteConfig, self._selectedMidiChannel)
+                self._noteGui.updateGui(noteConfig, self._selectedMidiChannel, foundNoteId, self._midiSender)
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

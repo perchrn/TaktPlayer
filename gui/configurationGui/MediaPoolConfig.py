@@ -237,7 +237,7 @@ class MediaFileGui(wx.Panel): #@UndefinedVariable
         if(self._config != None):
             selectedEffectConfig = self._config.getValue("Effect1Config")
             print "Effect 1 Edit: " + selectedEffectConfig
-            self._mainConfig.editEffectsConfig(selectedEffectConfig, self._midiChannel)
+            self._mainConfig.editEffectsConfig(selectedEffectConfig, self._midiChannel, self._midiNote, self._midiSender)
         else:
             print "Effect 1 Edit: No config selected :-("
 
@@ -245,7 +245,7 @@ class MediaFileGui(wx.Panel): #@UndefinedVariable
         if(self._config != None):
             selectedEffectConfig = self._config.getValue("Effect2Config")
             print "Effect 2 Edit: " + selectedEffectConfig
-            self._mainConfig.editEffectsConfig(selectedEffectConfig, self._midiChannel)
+            self._mainConfig.editEffectsConfig(selectedEffectConfig, self._midiChannel, self._midiNote, self._midiSender)
         else:
             print "Effect 2 Edit: No config selected :-("
 
@@ -304,10 +304,12 @@ class MediaFileGui(wx.Panel): #@UndefinedVariable
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateGui(self, noteConfig, midiChannel):
+    def updateGui(self, noteConfig, midiChannel, midiNote, midiSender):
         config = noteConfig.getConfig()
         self._config = config
         self._midiChannel = midiChannel
+        self._midiNote = midiNote
+        self._midiSender = midiSender
         self._fileName = config.getValue("FileName")
         self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._type = config.getValue("Type")

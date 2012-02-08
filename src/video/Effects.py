@@ -33,7 +33,7 @@ def getEffectId(name):
         return EffectTypes.Flip
     elif(lowername == "blur"):
         return EffectTypes.Blur
-    elif(lowername == "blurContrast"):
+    elif(lowername == "blurcontrast"):
         return EffectTypes.BlurContrast
     elif(lowername == "distortion"):
         return EffectTypes.Distortion

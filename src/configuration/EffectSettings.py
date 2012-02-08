@@ -20,8 +20,9 @@ class ConfigurationTemplates(object):
         pass
 
     def _getConfiguration(self):
-        
-        self._validateDefault()
+        print "DEBUG: ConfigurationTemplates._getConfiguration"
+        self._validateDefault()#TODO: put this after xml read
+        self.loadChildrenFromConfiguration()
 
     def checkAndUpdateFromConfiguration(self):
         pass
@@ -44,15 +45,20 @@ class ConfigurationTemplates(object):
                 return templateIx
         return -1
                 
-    def loadMediaFromConfiguration(self):
+    def loadChildrenFromConfiguration(self):
+        print "loadChildrenFromConfiguration " * 4
         effectTemplatesToKeep = []
-        for xmlConfig in self._templateConfig.findXmlChildrenList("Template"):
+        xmlChildren = self._templateConfig.findXmlChildrenList("Template")
+        if(xmlChildren == None):
+            return
+        for xmlConfig in xmlChildren:
             newTemplateName = xmlConfig.get("name")
             oldTemplateIndex = self._findTemplateIx(newTemplateName)
             if(oldTemplateIndex < 0):
                 newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates.append(newTemplate)
             else:
+                newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates[oldTemplateIndex] = newTemplate
             effectTemplatesToKeep.append(newTemplateName)
         arrayLength = len(self._configurationTemplates)

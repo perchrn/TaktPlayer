@@ -213,6 +213,9 @@ class FadeSettings(object):
         self._levelModulationId = -1
         self._fadeMode = FadeMode.Black
 
+    def getConfigHolder(self):
+        return self._configurationTree
+
     def _getConfiguration(self):
         self._fadeModulationId = self._midiModulation.connectModulation("Modulation")
         self._levelModulationId = self._midiModulation.connectModulation("Level")

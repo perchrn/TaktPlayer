@@ -119,16 +119,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._typeModes = MediaTypes()
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-#        self._noteAreaSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-#        self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-#        self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+
         self._configSizer.Add(self._noteConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._effectConfigPanel) #@UndefinedVariable
+        self._configSizer.Add(self._fadeConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._slidersPanel) #@UndefinedVariable
+
         self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._mediaFileGuiPanel.SetSizer(self._configSizer)
 
@@ -141,6 +143,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
         self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
 
+        self._fadeConfigPanel.SetBackgroundColour((120,120,200))
+        self._fadeConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._fadeConfigPanel.SetSizer(self._fadeConfigSizer)
+        self._mainConfig.setupFadeGui(self._fadeConfigPanel, self._fadeConfigSizer, self._configSizer, self)
+
         self._slidersPanel.SetBackgroundColour((120,120,0))
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._slidersPanel.SetSizer(self._slidersSizer)
@@ -150,8 +157,9 @@ class MediaFileGui(object): #@UndefinedVariable
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
         self._fileNameField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, self._fileName, size=(200, -1)) #@UndefinedVariable
-        self._fileNameField.SetInsertionPoint(0)
-        fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Open') #@UndefinedVariable
+        self._fileNameField.SetEditable(False)
+        self._fileNameField.SetBackgroundColour((232,232,232))
+        fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select') #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
         fileNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -272,6 +280,12 @@ class MediaFileGui(object): #@UndefinedVariable
         fadeSizer.Add(fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         self._selectedEditor = None
         self._type = "VideoLoop"
         self._setupSubConfig()
@@ -391,25 +405,25 @@ All notes on events are quantized to this.
     def _onEffect1Edit(self, event):
         self._selectedEditor = self.EditSelection.Effect1
         self._configSizer.Show(self._effectConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
         self._parentPlane.Layout()
-        if(self._config != None):
-            selectedEffectConfig = self._config.getValue("Effect1Config")
-        else:
-            selectedEffectConfig = "MediaDefault1"
+        selectedEffectConfig = self._effect1Field.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
     def _onEffect2Edit(self, event):
         self._selectedEditor = self.EditSelection.Effect2
         self._configSizer.Show(self._effectConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
         self._parentPlane.Layout()
-        if(self._config != None):
-            selectedEffectConfig = self._config.getValue("Effect2Config")
-        else:
-            selectedEffectConfig = "MediaDefault2"
+        selectedEffectConfig = self._effect2Field.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
     def hideEffectsGui(self):
         self._configSizer.Hide(self._effectConfigPanel)
+        self._parentPlane.Layout()
+
+    def hideFadeGui(self):
+        self._configSizer.Hide(self._fadeConfigPanel)
         self._parentPlane.Layout()
 
     def showSlidersGui(self):
@@ -424,8 +438,29 @@ All notes on events are quantized to this.
         self._selectedEditor = self.EditSelection.Fade
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._fadeConfigPanel)
+        self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
-        print "Fade Edit"
+        selectedFadeConfig = self._fadeField.GetValue()
+        self._mainConfig.updateFadeGui(selectedFadeConfig)
+
+    def _onSaveButton(self, event):
+        print "Save " * 20
+        print "FileName: " + self._fileName
+        print "Type: " + self._type
+        if(self._type == "VideoLoop"):
+            print "LoopMode: " + self._subModeField.GetValue()
+        elif(self._type == "ImageSequence"):
+            print "SequenceMode: " + self._subModeField.GetValue()
+            print "PlayBackModulation: " + self._subModulationField.GetValue()
+        print "Note: " + noteToNoteString(self._midiNote)
+        print "SyncLength: " + self._syncField.GetValue()
+        print "QuantizeLength: " + self._quantizeField.GetValue()
+        print "MixMode: " + self._mixField.GetValue()
+        print "Effect1Config: " + self._effect1Field.GetValue()
+        print "Effect2Config: " + self._effect2Field.GetValue()
+        print "FadeConfig: " + self._fadeField.GetValue()
+        print "Save " * 20
 
     def _showOrHideSubModeModulation(self):
         if(self._selectedSubMode == "Modulation"):
@@ -461,7 +496,6 @@ All notes on events are quantized to this.
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
-#        self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
 
     def _updateEffecChoices(self, widget, value, defaultValue):

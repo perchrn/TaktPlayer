@@ -22,6 +22,16 @@ def resizeImage(image, resizeMat):
 class FadeMode():
     Black, White = range(2)
 
+    def getChoices(self):
+        return ["Black", "White"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+
 def fadeImage(image, value, mode, tmpMat):
     if(mode == FadeMode.White):
         cv.ConvertScaleAbs(image, tmpMat, value, (1.0-value) * 256)

@@ -10,6 +10,7 @@ from midi.MidiController import getControllerId
 from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
     ZoomModes, DistortionModes, EdgeModes, EdgeColourModes, DesaturateModes,\
     ColorizeModes
+from video.media.MediaFile import FadeMode
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -24,28 +25,30 @@ class GlobalConfig(object):
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._effectsGui = EffectsGui(self._mainConfig)
-        self._mediaFadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
+        self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
+        self._fadeGui = FadeGui(self._mainConfig)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
-        self._mediaFadeConfiguration._getConfiguration()
+        self._fadeConfiguration._getConfiguration()
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
             print "GlobalConfig config is updated..."
             self._getConfiguration()
             self._configurationTree.resetConfigurationUpdated()
-        else:
-            print "DEBUG: GlobalConfig.checkAndUpdateFromConfiguration NOT updated..."
 
     def getEffectChoices(self):
         return self._effectsConfiguration.getChoices()
 
     def getFadeChoices(self):
-        return self._mediaFadeConfiguration.getChoices()
+        return self._fadeConfiguration.getChoices()
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsGui(plane, sizer, parentSizer, parentClass)
+
+    def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
+        self._fadeGui.setupFadeGui(plane, sizer, parentSizer, parentClass)
 
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
@@ -54,6 +57,11 @@ class GlobalConfig(object):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
+
+    def updateFadeGui(self, configName):
+        template = self._fadeConfiguration.getTemplate(configName)
+        if(template != None):
+            self._fadeGui.updateGui(template)
 
 class EffectsGui(object):
     def __init__(self, mainConfing):
@@ -143,6 +151,25 @@ class EffectsGui(object):
         self._desaturateModes = DesaturateModes()
         self._colorizeModes = ColorizeModes()
 
+    def _onCloseButton(self, event):
+        self._hideEffectsCallback()
+        self._hideSlidersCallback()
+
+    def _onSaveButton(self, event):
+        print "Save " * 20
+        print "Name: " + self._templateNameField.GetValue()
+        print "Effect: " + self._effectNameField.GetValue()
+        print "Amount: " + self._ammountField.GetValue()
+        print "Arg1: " + self._arg1Field.GetValue()
+        print "Arg2: " + self._arg2Field.GetValue()
+        print "Arg3: " + self._arg3Field.GetValue()
+        print "Arg4: " + self._arg4Field.GetValue()
+        print "Save " * 20
+
+    def _onSlidersButton(self, event):
+        self._showSlidersCallback()
+        self._parentSizer.Layout()
+
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
             choiceList = [value]
@@ -224,17 +251,6 @@ class EffectsGui(object):
 
     def _onSliderCloseButton(self, event):
         self._hideSlidersCallback()
-
-    def _onCloseButton(self, event):
-        self._hideEffectsCallback()
-        self._hideSlidersCallback()
-
-    def _onSaveButton(self, event):
-        print "Save"
-
-    def _onSlidersButton(self, event):
-        self._showSlidersCallback()
-        self._parentSizer.Layout()
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -434,4 +450,94 @@ class EffectsGui(object):
         self._arg2Field.SetValue(config.getValue("Arg2"))
         self._arg3Field.SetValue(config.getValue("Arg3"))
         self._arg4Field.SetValue(config.getValue("Arg4"))
+
+class FadeGui(object):
+    def __init__(self, mainConfing):
+        self._mainConfig = mainConfing
+
+    def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainFadeGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideFadeCallback = parentClass.hideFadeGui
+
+        templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(plane, wx.ID_ANY, "Name:") #@UndefinedVariable
+        self._templateNameField = wx.TextCtrl(plane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
+        self._templateNameField.SetInsertionPoint(0)
+        templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        fadeModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(plane, wx.ID_ANY, "Mode:") #@UndefinedVariable
+        self._fadeModes = FadeMode()
+        self._fadeModesField = wx.ComboBox(plane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
+        fadeModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        fadeModeSizer.Add(self._fadeModesField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(fadeModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        plane.Bind(wx.EVT_COMBOBOX, self._onFadeModeChosen, id=self._fadeModesField.GetId()) #@UndefinedVariable
+
+        fadeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(plane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
+        self._fadeModulationField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._fadeModulationField.SetInsertionPoint(0)
+        fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(fadeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        levelModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(plane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
+        self._levelModulationField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._levelModulationField.SetInsertionPoint(0)
+        levelModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        saveButton = wx.Button(plane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+    def _onFadeModeChosen(self, event):
+        print "Fade mode...."
+
+    def _onCloseButton(self, event):
+        self._hideFadeCallback()
+
+    def _onSaveButton(self, event):
+        print "Save " * 20
+        print "Name: " + self._templateNameField.GetValue()
+        print "Mode: " + self._fadeModesField.GetValue()
+        print "Modulation: " + self._fadeModulationField.GetValue()
+        print "Level: " + self._levelModulationField.GetValue()
+        print "Save " * 20
+
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+        widget.Clear()
+        valueOk = False
+        for choice in choiceList:
+            widget.Append(choice)
+            if(choice == value):
+                valueOk = True
+        if(valueOk == True):
+            widget.SetStringSelection(value)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+    def updateGui(self, effectTemplate):
+        config = effectTemplate.getConfigHolder()
+        self._templateNameField.SetValue(config.getValue("Name"))
+        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
+        self._fadeModulationField.SetValue(config.getValue("Modulation"))
+        self._levelModulationField.SetValue(config.getValue("Level"))
 

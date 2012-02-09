@@ -32,11 +32,17 @@ class Configuration(object):
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsGui(plane, sizer, parentSizer, parentClass)
 
+    def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
+
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)
+
+    def updateFadeGui(self, configName):
+        self._globalConf.updateFadeGui(configName)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()

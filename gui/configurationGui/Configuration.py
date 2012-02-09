@@ -7,14 +7,17 @@ from configuration.ConfigurationHolder import ConfigurationHolder
 from configurationGui.GlobalConfig import GlobalConfig
 from configurationGui.MediaPoolConfig import MediaPoolConfig
 from configurationGui.MediaMixerConfig import MediaMixerConfig
+from network.SendMidiOverNet import SendMidiOverNet
 
 class Configuration(object):
     def __init__(self):
-        pass
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._globalConf = GlobalConfig(self._configurationTree)
         self._mediaMixerConf = MediaMixerConfig(self._configurationTree)
         self._mediaPoolConf = MediaPoolConfig(self._mediaMixerConf.getConfTree())
+
+        self._selectedMidiChannel = -1
+        self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
 
     def setFromXml(self, config):
         print "DEBUG: Setting from XML"
@@ -32,8 +35,8 @@ class Configuration(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
         self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer)
 
-    def updateEffectsGui(self, configName, midiChannel, midiNote, midiSender):
-        self._globalConf.updateEffectsGui(configName, midiChannel, midiNote, midiSender)
+    def updateEffectsGui(self, configName, midiNote):
+        self._globalConf.updateEffectsGui(configName, midiNote)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()
@@ -43,6 +46,15 @@ class Configuration(object):
 
     def getXmlString(self):
         return self._configurationTree.getConfigurationXMLString()
+
+    def setSelectedMidiChannel(self, midiChannel):
+        self._selectedMidiChannel = midiChannel
+
+    def getSelectedMidiChannel(self):
+        return self._selectedMidiChannel
+
+    def getMidiSender(self):
+        return self._midiSender
 
     def printConfiguration(self):
         print self.getXmlString()

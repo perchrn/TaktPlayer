@@ -25,24 +25,34 @@ class SendMidiOverNet(object):
             self._midiCommandBuffer[3] = chr(data3)
             self._udpClientSocket.sendto(self._midiCommandBuffer, (self._host, self._port))
         else:
-            print "Bad command..."
+            print "_sendMidiData Bad command..."
 
     def sendNoteOn(self, midiChannel, note):
         if((midiChannel > -1) and (midiChannel < 16)):
-            command = 0x90 + midiChannel
-            self._sendMidiData(command, note, 0x40, 0) # Setting velocity to 0x40
+            if((note > -1) and (note < 128)):
+                command = 0x90 + midiChannel
+                self._sendMidiData(command, note, 0x40, 0) # Setting velocity to 0x40
+            else:
+                print "sendNoteOn Bad note: " + str(note)
+        else:
+            print "sendNoteOn Bad MIDI channel: " + str(midiChannel)
 
     def sendNoteOff(self, midiChannel, note):
         if((midiChannel > -1) and (midiChannel < 16)):
-            command = 0x80 + midiChannel
-            self._sendMidiData(command, note, 0x00, 0) # Setting velocity to 0x00
+            if((note > -1) and (note < 128)):
+                command = 0x80 + midiChannel
+                self._sendMidiData(command, note, 0x00, 0) # Setting velocity to 0x00
+            else:
+                print "sendNoteOff Bad note: " + str(note)
+        else:
+            print "sendNoteOff Bad MIDI channel: " + str(midiChannel)
 
     def sendNoteOnOff(self, midiChannel, note):
         if((midiChannel > -1) and (midiChannel < 16)):
             self.sendNoteOn(midiChannel, note)
             self.sendNoteOff(midiChannel, note)
         else:
-            print "Bad MIDI channel: " + str(midiChannel)
+            print "sendNoteOnOff Bad MIDI channel: " + str(midiChannel)
 
     def sendMidiController(self, midiChannel, controllerId, value):
         if((midiChannel > -1) and (midiChannel < 16)):
@@ -50,28 +60,31 @@ class SendMidiOverNet(object):
                 command = 0xb0 + midiChannel
                 self._sendMidiData(command, controllerId, value, 0) # Setting velocity to 0x40
             else:
-                print "Bad controller id: " + str(controllerId)
+                print "sendMidiController Bad controller id: " + str(controllerId)
         else:
-            print "Bad MIDI channel: " + str(midiChannel)
+            print "sendMidiController Bad MIDI channel: " + str(midiChannel)
 
     def sendPitchbend(self, midiChannel, value, subValue = 0):
         if((midiChannel > -1) and (midiChannel < 16)):
             command = 0xe0 + midiChannel
             self._sendMidiData(command, subValue, value, 0) # Setting velocity to 0x40
         else:
-            print "Bad MIDI channel: " + str(midiChannel)
+            print "sendPitchbend Bad MIDI channel: " + str(midiChannel)
 
     def sendAftertouch(self, midiChannel, value, subValue = 0):
         if((midiChannel > -1) and (midiChannel < 16)):
             command = 0xd0 + midiChannel
             self._sendMidiData(command, value, subValue, 0) # Setting velocity to 0x40
         else:
-            print "Bad MIDI channel: " + str(midiChannel)
+            print "sendAftertouch Bad MIDI channel: " + str(midiChannel)
 
     def sendPolyPreasure(self, midiChannel, note, value):
         if((midiChannel > -1) and (midiChannel < 16)):
-            command = 0xa0 + midiChannel
-            self._sendMidiData(command, note, value, 0) # Setting velocity to 0x40
+            if((note > -1) and (note < 128)):
+                command = 0xa0 + midiChannel
+                self._sendMidiData(command, note, value, 0) # Setting velocity to 0x40
+            else:
+                print "sendPolyPreasure Bad note: " + str(note)
         else:
-            print "Bad MIDI channel: " + str(midiChannel)
+            print "sendPolyPreasure Bad MIDI channel: " + str(midiChannel)
 

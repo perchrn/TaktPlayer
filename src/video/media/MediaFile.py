@@ -444,8 +444,8 @@ class ImageSequenceFile(MediaFile):
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
             self._sequenceMode = ImageSequenceMode.ReTrigger
-        elif(seqMode == "Controller"):
-            self._sequenceMode = ImageSequenceMode.Controller
+        elif(seqMode == "Modulation"):
+            self._sequenceMode = ImageSequenceMode.Modulation
         else:
             self._sequenceMode = ImageSequenceMode.Time #Defaults to time
 
@@ -486,7 +486,7 @@ class ImageSequenceFile(MediaFile):
             self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceMode.ReTrigger):
             self._currentFrame =  (self._triggerCounter % self._numberOfFrames)
-        elif(self._sequenceMode == ImageSequenceMode.Controller):
+        elif(self._sequenceMode == ImageSequenceMode.Modulation):
             self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames)
 
         if(lastFrame != self._currentFrame):

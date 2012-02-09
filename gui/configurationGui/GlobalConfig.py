@@ -13,6 +13,7 @@ from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
 
 class GlobalConfig(object):
     def __init__(self, configParent):
+        self._mainConfig = configParent
         self._configurationTree = configParent.addChildUnique("Global")
         self._configurationTree.addIntParameter("ResolutionX", 800)
         self._configurationTree.addIntParameter("ResolutionY", 600)
@@ -22,7 +23,7 @@ class GlobalConfig(object):
         self._midiTiming = MidiTiming()
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
-        self._effectsGui = EffectsGui()
+        self._effectsGui = EffectsGui(self._mainConfig)
         self._mediaFadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
 
     def _getConfiguration(self):
@@ -49,14 +50,14 @@ class GlobalConfig(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer)
 
-    def updateEffectsGui(self, configName, midiChannel, midiNote, midiSender):
+    def updateEffectsGui(self, configName, midiNote):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
-            self._effectsGui.updateGui(template, midiChannel, midiNote, midiSender)
+            self._effectsGui.updateGui(template, midiNote)
 
 class EffectsGui(object):
-    def __init__(self):
-        pass
+    def __init__(self, mainConfing):
+        self._mainConfig = mainConfing
 
     def setupEffectsGui(self, plane, sizer, parentSizer):
         self._mainEffectsGuiSizer = sizer
@@ -202,26 +203,27 @@ class EffectsGui(object):
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
+        midiChannel = self._mainConfig.getSelectedMidiChannel()
         if(sliderId == self._amountSliderId):
 #            print "Ammount: " + str(self._ammountSlider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel < 16)):
-                self.sendMidi(self._midiChannel, self._ammountField.GetValue(), self._ammountSlider.GetValue())
+            if((midiChannel > -1) and (midiChannel < 16)):
+                self.sendMidi(midiChannel, self._ammountField.GetValue(), self._ammountSlider.GetValue())
         elif(sliderId == self._arg1SliderId):
 #            print "Arg 1: " + str(self._arg1Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel < 16)):
-                self.sendMidi(self._midiChannel, self._arg1Field.GetValue(), self._arg1Slider.GetValue())
+            if((midiChannel > -1) and (midiChannel < 16)):
+                self.sendMidi(midiChannel, self._arg1Field.GetValue(), self._arg1Slider.GetValue())
         elif(sliderId == self._arg2SliderId):
 #            print "Arg 2: " + str(self._arg2Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel < 16)):
-                self.sendMidi(self._midiChannel, self._arg2Field.GetValue(), self._arg2Slider.GetValue())
+            if((midiChannel > -1) and (midiChannel < 16)):
+                self.sendMidi(midiChannel, self._arg2Field.GetValue(), self._arg2Slider.GetValue())
         elif(sliderId == self._arg3SliderId):
 #            print "Arg 3: " + str(self._arg3Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel < 16)):
-                self.sendMidi(self._midiChannel, self._arg3Field.GetValue(), self._arg3Slider.GetValue())
+            if((midiChannel > -1) and (midiChannel < 16)):
+                self.sendMidi(midiChannel, self._arg3Field.GetValue(), self._arg3Slider.GetValue())
         elif(sliderId == self._arg4SliderId):
 #            print "Arg 4: " + str(self._arg4Slider.GetValue())
-            if((self._midiChannel > -1) and (self._midiChannel < 16)):
-                self.sendMidi(self._midiChannel, self._arg4Field.GetValue(), self._arg4Slider.GetValue())
+            if((midiChannel > -1) and (midiChannel < 16)):
+                self.sendMidi(midiChannel, self._arg4Field.GetValue(), self._arg4Slider.GetValue())
         self._updateValueLabels()
 
     def _onEffectChosen(self, event):
@@ -229,6 +231,7 @@ class EffectsGui(object):
         self._setEffect(getEffectName(selectedEffectId-1))
 
     def sendMidi(self, channel, controllerDescription, value):
+        midiSender = self._mainConfig.getMidiSender()
         if(controllerDescription.startswith("MidiChannel.")):
             descriptionSplit = controllerDescription.split('.', 6)
             if(len(descriptionSplit) > 1):
@@ -236,16 +239,16 @@ class EffectsGui(object):
                     if(len(descriptionSplit) > 2):
                         controllerId = getControllerId(descriptionSplit[2])
 #                        print "Sending controller: " + descriptionSplit[2] + " -> " + str(controllerId)
-                        self._midiSender.sendMidiController(channel, controllerId, value)
+                        midiSender.sendMidiController(channel, controllerId, value)
                 elif(descriptionSplit[1] == "PitchBend"):
-                    self._midiSender.sendPitchbend(channel, value)
+                    midiSender.sendPitchbend(channel, value)
                 elif(descriptionSplit[1] == "Aftertouch"):
-                    self._midiSender.sendAftertouch(channel, value)
+                    midiSender.sendAftertouch(channel, value)
         if(controllerDescription.startswith("MidiNote.")):
             descriptionSplit = controllerDescription.split('.', 6)
             if(len(descriptionSplit) > 1):
                 if((descriptionSplit[1] == "NotePreasure") or (descriptionSplit[1] == "Preasure")):
-                    self._midiSender.sendPolyPreasure(self._midiChannel, self._midiNote, value)
+                    midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
 
     def _setLabels(self, amountLabel, arg1Label, arg2Label, arg3Label, arg4Label):
         self._amountLabel.SetLabel(amountLabel)
@@ -387,10 +390,8 @@ class EffectsGui(object):
         self._updateChoices(self._effectNameField, self._effectChoices.getChoices, self._chosenEffect, "None")
         self._updateLabels()
         
-    def updateGui(self, effectTemplate, midiChannel, midiNote, midiSender):
-        self._midiChannel = midiChannel
+    def updateGui(self, effectTemplate, midiNote):
         self._midiNote = midiNote
-        self._midiSender = midiSender
         config = effectTemplate.getConfigHolder()
         self._templateNameField.SetValue(config.getValue("Name"))
         self._setEffect(config.getValue("Effect"))

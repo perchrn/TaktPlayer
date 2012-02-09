@@ -91,10 +91,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        self._noteGui = MediaFileGui(self, wx.ID_ANY) #@UndefinedVariable
-        self._noteGui.setMainConfig(self._configuration)
+        self._noteGui = MediaFileGui(self, self._configuration)
         notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        notKeyboardSizer.Add(self._noteGui, proportion=1) #@UndefinedVariable
+        notKeyboardSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
 
         mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
@@ -142,9 +141,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._skippedTrackStateRequests = 99
         self._skippedConfigStateRequests = 99
         self._lastConfigState = -1
-        self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
         self.setupClientProcess()
-        self.updateKeyboardImages()
+        self._timedUpdate(None)
 
     def createNoteWidget(self, noteId, baseX, lastNote=False):
         buttonPos = None
@@ -221,8 +219,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _timedUpdate(self, event):
         self._checkServerResponse()
         self._checkForStaleTasks()
-        self._requestTrackState()
         self._requestConfigState()
+        self._requestTrackState()
 
     def _checkServerResponse(self):
         result = self._guiClient.getServerResponse()
@@ -378,12 +376,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(foundNoteId != None):
             noteString = noteToNoteString(foundNoteId)
             print "sending note: " + str(foundNoteId) + " -> " + noteString
-            self._midiSender.sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
+            self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
             noteConfig = self._configuration.getNoteConfiguration(foundNoteId)
             if(noteConfig == None):
-                print "TODO: Setup DEFAULT " * 5 #TODO:
+                self._noteGui.clearGui(foundNoteId)
             else:
-                self._noteGui.updateGui(noteConfig, self._selectedMidiChannel, foundNoteId, self._midiSender)
+                self._noteGui.updateGui(noteConfig, foundNoteId)
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -395,6 +393,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(foundTrackId != None):
             print "track pressed id: " + str(foundTrackId)
             self._selectedMidiChannel = foundTrackId
+            self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _onClose(self, event):
         self.Destroy()

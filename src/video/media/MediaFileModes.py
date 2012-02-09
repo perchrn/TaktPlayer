@@ -10,21 +10,46 @@ class MixMode:
     def getChoices(self):
         return ["Default", "Add", "Multiply", "LumaKey", "Replace"]
 
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 class VideoLoopMode:
     Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
 
     def getChoices(self):
         return ["Normal", "Reverse", "PingPong", "PingPongReverse", "DontLoop", "DontLoopReverse"]
 
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 class ImageSequenceMode:
-    Time, ReTrigger, Controller = range(3)
+    Time, ReTrigger, Modulation = range(3)
 
     def getChoices(self):
-        return ["Time", "ReTrigger", "Controller"]
+        return ["Time", "ReTrigger", "Modulation"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
 
 class MediaTypes:
     VideoLoop, Image, ImageSequence, Camera = range(4)
 
     def getChoices(self):
         return ["VideoLoop", "Image", "ImageSequence", "Camera"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 

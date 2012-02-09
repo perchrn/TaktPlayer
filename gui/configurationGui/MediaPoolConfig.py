@@ -71,7 +71,6 @@ class MediaPoolConfig(object):
         if(len(fileName) <= 0):
             self._mediaPool[midiNote] = None
         else:
-            print "DEBUG media added to pool pos: " + str(midiNote)
             self._mediaPool[midiNote] = MediaFile(self._configurationTree, fileName, noteLetter, midiNote, xmlConfig)
         return midiNote
 
@@ -140,12 +139,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effectConfigPanel.SetBackgroundColour((120,0,120))
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
-        self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer)
+        self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
 
         self._slidersPanel.SetBackgroundColour((120,120,0))
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._slidersPanel.SetSizer(self._slidersSizer)
-        self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer)
+        self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
 
         self._fileName = ""
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -198,7 +197,8 @@ class MediaFileGui(object): #@UndefinedVariable
         noteSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText3 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Note:") #@UndefinedVariable
         self._noteField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, noteToNoteString(self._midiNote), size=(200, -1)) #@UndefinedVariable
-        self._noteField.SetInsertionPoint(0)
+        self._noteField.SetEditable(False)
+        self._noteField.SetBackgroundColour((232,232,232))
         noteHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onNoteHelp, id=noteHelpButton.GetId()) #@UndefinedVariable
         noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
@@ -390,36 +390,41 @@ All notes on events are quantized to this.
 
     def _onEffect1Edit(self, event):
         self._selectedEditor = self.EditSelection.Effect1
+        self._configSizer.Show(self._effectConfigPanel)
+        self._parentPlane.Layout()
         if(self._config != None):
-            self._configSizer.Show(self._effectConfigPanel)
-            self._configSizer.Show(self._slidersPanel)
-#            self._mediaFileGuiPanel.Layout()
-            self._parentPlane.Layout()
             selectedEffectConfig = self._config.getValue("Effect1Config")
-            print "Effect 1 Edit: " + selectedEffectConfig
-            self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
         else:
-            print "Effect 1 Edit: No config selected :-("
+            selectedEffectConfig = "MediaDefault1"
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
     def _onEffect2Edit(self, event):
         self._selectedEditor = self.EditSelection.Effect2
+        self._configSizer.Show(self._effectConfigPanel)
+        self._parentPlane.Layout()
         if(self._config != None):
-            self._configSizer.Show(self._effectConfigPanel)
-            self._configSizer.Show(self._slidersPanel)
-#            self._mediaFileGuiPanel.Layout()
-            self._parentPlane.Layout()
             selectedEffectConfig = self._config.getValue("Effect2Config")
-            print "Effect 2 Edit: " + selectedEffectConfig
-            self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
         else:
-            print "Effect 2 Edit: No config selected :-("
+            selectedEffectConfig = "MediaDefault2"
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
+
+    def hideEffectsGui(self):
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._parentPlane.Layout()
+
+    def showSlidersGui(self):
+        self._configSizer.Show(self._slidersPanel)
+        self._parentPlane.Layout()
+
+    def hideSlidersGui(self):
+        self._configSizer.Hide(self._slidersPanel)
+        self._parentPlane.Layout()
 
     def _onFadeEdit(self, event):
+        self._selectedEditor = self.EditSelection.Fade
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-#        self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
-        self._selectedEditor = self.EditSelection.Fade
         print "Fade Edit"
 
     def _showOrHideSubModeModulation(self):

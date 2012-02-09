@@ -12,7 +12,7 @@ from network.SendMidiOverNet import SendMidiOverNet
 class Configuration(object):
     def __init__(self):
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._globalConf = GlobalConfig(self._configurationTree)
+        self._globalConf = GlobalConfig(self._configurationTree, self)
         self._mediaMixerConf = MediaMixerConfig(self._configurationTree)
         self._mediaPoolConf = MediaPoolConfig(self._mediaMixerConf.getConfTree())
 
@@ -29,11 +29,11 @@ class Configuration(object):
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
 
-    def setupEffectsGui(self, plane, sizer, parentSizer):
-        self._globalConf.setupEffectsGui(plane, sizer, parentSizer)
+    def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupEffectsGui(plane, sizer, parentSizer, parentClass)
 
-    def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
-        self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer)
+    def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)

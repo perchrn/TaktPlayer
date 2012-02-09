@@ -12,8 +12,8 @@ from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
     ColorizeModes
 
 class GlobalConfig(object):
-    def __init__(self, configParent):
-        self._mainConfig = configParent
+    def __init__(self, configParent, mainConfig):
+        self._mainConfig = mainConfig
         self._configurationTree = configParent.addChildUnique("Global")
         self._configurationTree.addIntParameter("ResolutionX", 800)
         self._configurationTree.addIntParameter("ResolutionY", 600)
@@ -44,11 +44,11 @@ class GlobalConfig(object):
     def getFadeChoices(self):
         return self._mediaFadeConfiguration.getChoices()
 
-    def setupEffectsGui(self, plane, sizer, parentSizer):
-        self._effectsGui.setupEffectsGui(plane, sizer, parentSizer)
+    def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
+        self._effectsGui.setupEffectsGui(plane, sizer, parentSizer, parentClass)
 
-    def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
-        self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer)
+    def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
+        self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
     def updateEffectsGui(self, configName, midiNote):
         template = self._effectsConfiguration.getTemplate(configName)
@@ -59,9 +59,11 @@ class EffectsGui(object):
     def __init__(self, mainConfing):
         self._mainConfig = mainConfing
 
-    def setupEffectsGui(self, plane, sizer, parentSizer):
+    def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._mainEffectsGuiSizer = sizer
         self._parentSizer = parentSizer
+        self._hideEffectsCallback = parentClass.hideEffectsGui
+        self._showSlidersCallback = parentClass.showSlidersGui
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(plane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -121,6 +123,18 @@ class EffectsGui(object):
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        saveButton = wx.Button(plane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        slidersButton = wx.Button(plane, wx.ID_ANY, 'Sliders') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(slidersButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         self._flipModes = FlipModes()
         self._zoomModes = ZoomModes()
         self._distortionModes = DistortionModes()
@@ -145,9 +159,10 @@ class EffectsGui(object):
         else:
             widget.SetStringSelection(defaultValue)
 
-    def setupEffectsSlidersGui(self, plane, sizer, parentSizer):
+    def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._mainSliderSizer = sizer
         self._parentSizer = parentSizer
+        self._hideSlidersCallback = parentClass.hideSlidersGui
 
         self._ammountSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountSliderLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
@@ -199,7 +214,27 @@ class EffectsGui(object):
         self._mainSliderSizer.Add(self._arg4SliderSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._arg4SliderId = self._arg4Slider.GetId()
 
+        self._sliderButtonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSliderCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+    def _onSliderCloseButton(self, event):
+        self._hideSlidersCallback()
+
+    def _onCloseButton(self, event):
+        self._hideEffectsCallback()
+        self._hideSlidersCallback()
+
+    def _onSaveButton(self, event):
+        print "Save"
+
+    def _onSlidersButton(self, event):
+        self._showSlidersCallback()
+        self._parentSizer.Layout()
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -285,7 +320,6 @@ class EffectsGui(object):
         else:
             self._mainEffectsGuiSizer.Hide(self._arg4Sizer)
             self._mainSliderSizer.Hide(self._arg4SliderSizer)
-        self._parentSizer.Layout()
         self._parentSizer.Layout()
 
     def _updateValueLabels(self):

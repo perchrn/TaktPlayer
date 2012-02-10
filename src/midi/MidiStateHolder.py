@@ -4,7 +4,6 @@ Created on 20. des. 2011
 @author: pcn
 '''
 from midi import MidiUtilities
-from midi import MidiController
 import logging
 from midi.MidiController import MidiControllers
 import time
@@ -20,6 +19,16 @@ class NoteModulationSources():
             if(typeId == i):
                 return self.getChoices()[i]
         return self.getChoices()[0]
+
+    def getId(self, typeName):
+        choices = self.getChoices()
+        for i in range(len(choices)):
+            name = choices[i]
+            if(name == typeName):
+                return i
+        if(typeName == "Preasure"):
+            return NoteModulationSources.NotePreasure
+        return -1
 
 class NoteState(object):
     def __init__(self):

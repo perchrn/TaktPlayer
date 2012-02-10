@@ -302,7 +302,7 @@ class MediaFileGui(object): #@UndefinedVariable
         return self._mediaFileGuiPanel
 
     class EditSelection():
-        Effect1, Effect2, Fade = range(3)
+        Effect1, Effect2, Fade, ImageSeqModulation = range(4)
 
     def _onOpenFile(self, event):
         dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable

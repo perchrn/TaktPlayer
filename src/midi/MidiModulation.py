@@ -226,6 +226,9 @@ class MidiModulation(object):
             print "Unregistered receiver \"%s\"" % receiverName
             return None
         sourceDescription = self._configurationTree.getValue(receiverName)
+        return  self.findModulationId(sourceDescription)
+
+    def findModulationId(self, sourceDescription):
         sourceSplit = sourceDescription.split('.', 6)
         if( sourceSplit[0] == "MidiChannel" ):
             if(len(sourceSplit) > 1):
@@ -271,6 +274,7 @@ class MidiModulation(object):
             if(len(sourceSplit) > 1):
                 newSplit = sourceDescription.split('.', 1)
                 value = float(newSplit[1])
+                value = min(max(value, 0.0), 1.0)
                 return (ModulationSources.Value, value)
         elif( sourceSplit[0] == "ADSR" ):
             if(len(sourceSplit) > 1):

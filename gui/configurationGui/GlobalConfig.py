@@ -10,7 +10,8 @@ from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
     ZoomModes, DistortionModes, EdgeModes, EdgeColourModes, DesaturateModes,\
     ColorizeModes
 from video.media.MediaFile import FadeMode
-from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes
+from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
+    MidiModulation
 from midi.MidiStateHolder import MidiChannelModulationSources,\
     NoteModulationSources
 from midi.MidiController import MidiControllers
@@ -65,6 +66,9 @@ class GlobalConfig(object):
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
 
+    def updateModulationGui(self, modulationString):
+            self._modulationGui.updateGui(modulationString)
+
     def updateFadeGui(self, configName):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
@@ -79,6 +83,8 @@ class EffectsGui(object):
         self._parentSizer = parentSizer
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._showSlidersCallback = parentClass.showSlidersGui
+        self._showModulationCallback = parentClass.showModulationGui
+        self._hideModulationCallback = parentClass.hideModulationGui
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(plane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -102,40 +108,55 @@ class EffectsGui(object):
         self._amountLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._ammountField.SetInsertionPoint(0)
+        ammountButton = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=ammountButton.GetId()) #@UndefinedVariable
         self._ammountSizer.Add(self._amountLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(self._ammountField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._ammountSizer.Add(ammountButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._ammountSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg1Label = wx.StaticText(plane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
         self._arg1Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg1Field.SetInsertionPoint(0)
+        arg1Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=arg1Button.GetId()) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._arg1Sizer.Add(arg1Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg2Label = wx.StaticText(plane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
         self._arg2Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg2Field.SetInsertionPoint(0)
+        arg2Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=arg2Button.GetId()) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._arg2Sizer.Add(arg2Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg3Label = wx.StaticText(plane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
         self._arg3Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg3Field.SetInsertionPoint(0)
+        arg3Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=arg3Button.GetId()) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._arg3Sizer.Add(arg3Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg3Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg4Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg4Label = wx.StaticText(plane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
         self._arg4Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg4Field.SetInsertionPoint(0)
+        arg4Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=arg4Button.GetId()) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._arg4Sizer.Add(arg4Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -159,8 +180,34 @@ class EffectsGui(object):
         self._colorizeModes = ColorizeModes()
         self._midiControllers = MidiControllers()
 
+    def _onAmmountEdit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._ammountField.GetValue())
+
+    def _onArg1Edit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._arg1Field.GetValue())
+
+    def _onArg2Edit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._arg2Field.GetValue())
+
+    def _onArg3Edit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._arg3Field.GetValue())
+
+    def _onArg4Edit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._arg4Field.GetValue())
+
     def _onCloseButton(self, event):
         self._hideEffectsCallback()
+        self._hideModulationCallback()
         self._hideSlidersCallback()
 
     def _onSaveButton(self, event):
@@ -297,7 +344,6 @@ class EffectsGui(object):
                 if(descriptionSplit[1] == "Controller"):
                     if(len(descriptionSplit) > 2):
                         controllerId = self._midiControllers.getId(descriptionSplit[2])
-#                        print "Sending controller: " + descriptionSplit[2] + " -> " + str(controllerId)
                         midiSender.sendMidiController(channel, controllerId, value)
                 elif(descriptionSplit[1] == "PitchBend"):
                     midiSender.sendPitchbend(channel, value)
@@ -469,6 +515,7 @@ class FadeGui(object):
         self._parentSizer = parentSizer
         self._hideFadeCallback = parentClass.hideFadeGui
         self._showModulationCallback = parentClass.showModulationGui
+        self._hideModulationCallback = parentClass.hideModulationGui
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -537,13 +584,17 @@ Decides if this image fades to black or white.
     def _onFadeModulationEdit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue())
 
     def _onLevelModulationEdit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
+        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue())
 
     def _onCloseButton(self, event):
         self._hideFadeCallback()
+        self._hideModulationCallback()
+        self._mainConfig.stopModulationGui()
 
     def _onSaveButton(self, event):
         print "Save " * 20
@@ -586,13 +637,7 @@ class ModulationGui(object):
         self._parentSizer = parentSizer
         self._hideModulationCallback = parentClass.hideModulationGui
 
-#        templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-#        tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
-#        self._templateNameField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
-#        self._templateNameField.SetInsertionPoint(0)
-#        templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
-#        templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
-#        self._mainModulationGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._midiModulation = MidiModulation(None, None)
 
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
@@ -717,6 +762,8 @@ class ModulationGui(object):
 
         self._activeControllersUpdate = wx.Timer(self._mainModulationGuiPlane, -1) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_TIMER, self._onActiveControllersUpdate) #@UndefinedVariable
+
+        self._onModulationSourceChosen(None)
 
     def closeConfig(self):
         if(self._activeControllersUpdate.IsRunning() == True):
@@ -887,11 +934,70 @@ Selects full ADSR or just Attack/Release
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateGui(self, effectTemplate):
-        pass
-#        config = effectTemplate.getConfigHolder()
-#        self._templateNameField.SetValue(config.getValue("Name"))
-#        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
-#        self._fadeModulationField.SetValue(config.getValue("Modulation"))
-#        self._levelModulationField.SetValue(config.getValue("Level"))
+    def updateGui(self, modulationString):
+        print "ModulationGui updateGui: " + str(modulationString)
+        modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
+        updatedId = None
+        if(modulationIdTuplet == None):
+            self._modulationSorcesField.SetValue("None")
+        else:
+            updatedId = self._modulationSorces.getNames(modulationIdTuplet[0])
+            self._modulationSorcesField.SetValue(updatedId)
+            if(modulationIdTuplet[0] == ModulationSources.MidiChannel):
+                subModIdTuplet = modulationIdTuplet[1]
+                isInt = isinstance(subModIdTuplet, int)
+                if((isInt == False) and (len(subModIdTuplet) == 2)):
+                    if(subModIdTuplet[0] == MidiChannelModulationSources.Controller):
+                        controllerName = self._midiControllers.getName(subModIdTuplet[1])
+                        self._midiControllerField.SetValue(controllerName)
+                        self._midiChannelSourceField.SetValue("Controller")
+                else:
+                    channelSourceName = self._midiChannelSource.getNames(subModIdTuplet)
+                    self._midiChannelSourceField.SetValue(channelSourceName)
+                    self._midiControllerField.SetValue("ModWheel")
+            elif(modulationIdTuplet[0] == ModulationSources.MidiNote):
+                subModId = modulationIdTuplet[1]
+                isInt = isinstance(subModId, int)
+                if(isInt == False):
+                    subModId = subModId[0]
+                subModeName = self._midiNoteSource.getNames(subModId)
+                self._midiNoteSourceField.SetValue(subModeName)
+            elif(modulationIdTuplet[0] == ModulationSources.LFO):
+                subModId = modulationIdTuplet[1]
+                isInt = isinstance(subModId, int)
+                if(isInt == True):
+                    subModId = [subModId]
+                subModName = self._lfoType.getNames(subModId[0])
+                self._lfoTypeField.SetValue(subModName)
+            elif(modulationIdTuplet[0] == ModulationSources.ADSR):
+                subModId = modulationIdTuplet[1]
+                isInt = isinstance(subModId, int)
+                if(isInt == True):
+                    subModId = [subModId]
+                subModName = self._adsrType.getNames(subModId[0])
+                self._adsrTypeField.SetValue(subModName)
+            elif(modulationIdTuplet[0] == ModulationSources.Value):
+                subModId = modulationIdTuplet[1]
+                isFloat = isinstance(subModId, float)
+                if(isFloat != True):
+                    subModId = subModId[0]
+                calcValue = int(101.0 * subModId)
+                print "DEBUG X: " + str(calcValue)
+                self._valueSlider.SetValue(calcValue)
+                self._valueValueLabel.SetLabel("%.2f" % (subModId))
+
+        if(updatedId != "MidiChannel"):
+            self._midiChannelSourceField.SetValue("Controller")
+            self._midiControllerField.SetValue("ModWheel")
+        if(updatedId != "MidiNote"):
+            self._midiNoteSourceField.SetValue("Velocity")
+        if(updatedId != "LFO"):
+            self._lfoTypeField.SetValue("Triangle")
+        if(updatedId != "ADSR"):
+            self._adsrTypeField.SetValue("ADSR")
+        if(updatedId != "Value"):
+            self._valueSlider.SetValue(0)
+            self._valueValueLabel.SetLabel("0.00")
+
+        self._onModulationSourceChosen(None)
 

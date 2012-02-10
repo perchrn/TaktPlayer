@@ -361,7 +361,7 @@ class ConfigurationHolder(object):
     def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
-            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name
+            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
             return foundChild
         else:
 #            print "Add Child Unique: " + name + " idName: " + str(idName) + " idValue: " + str(idValue)

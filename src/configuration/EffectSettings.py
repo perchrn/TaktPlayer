@@ -21,8 +21,10 @@ class ConfigurationTemplates(object):
 
     def _getConfiguration(self):
         print "DEBUG: ConfigurationTemplates._getConfiguration"
-        self._validateDefault()#TODO: put this after xml read
         self.loadChildrenFromConfiguration()
+        print "VALIDATE " * 30
+        self._validateDefault()
+        print "VALIDATE " * 30
 
     def checkAndUpdateFromConfiguration(self):
         pass
@@ -41,6 +43,7 @@ class ConfigurationTemplates(object):
         lowername = name.lower()
         for templateIx in range(len(self._configurationTemplates)):
             template = self._configurationTemplates[templateIx]
+            print "template.getName().lower() ( " + template.getName() + " ) == lowername ( " + lowername + " )"
             if(template.getName().lower() == lowername):
                 return templateIx
         return -1
@@ -57,9 +60,11 @@ class ConfigurationTemplates(object):
             if(oldTemplateIndex < 0):
                 newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates.append(newTemplate)
+                print "Append... " + newTemplateName
             else:
                 newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates[oldTemplateIndex] = newTemplate
+                print "Replace... " + newTemplateName
             effectTemplatesToKeep.append(newTemplateName)
         arrayLength = len(self._configurationTemplates)
         for i in range(arrayLength):
@@ -102,15 +107,16 @@ class EffectTemplates(ConfigurationTemplates):
 
     def _validateDefault(self):
         for name in "MediaDefault1", "MediaDefault2", "MixPreDefault", "MixPostDefault":
-            effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
-            self._defaultModulationConfig = EffectSettings(name, self, effectConfigTree)
-            self._configurationTemplates.append(self._defaultModulationConfig)
+            foundConfig = self._templateConfig.findChildUniqueId("Template", "Name", name)
+            if(foundConfig == None):
+                effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
+                self._defaultModulationConfig = EffectSettings(name, self, effectConfigTree)
+                self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
         newTemplate = EffectSettings(name, self, effectConfigTree)
         newTemplate.updateFromXml(xmlConfig)
-        self._configurationTemplates.append(newTemplate)
         return newTemplate
 
 class EffectSettings(object):
@@ -181,15 +187,16 @@ class FadeTemplates(ConfigurationTemplates):
 
     def _validateDefault(self):
         name = "Default"
-        effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
-        self._defaultModulationConfig = FadeSettings(name, self, effectConfigTree)
-        self._configurationTemplates.append(self._defaultModulationConfig)
+        foundConfig = self._templateConfig.findChildUniqueId("Template", "Name", name)
+        if(foundConfig == None):
+            effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
+            self._defaultModulationConfig = FadeSettings(name, self, effectConfigTree)
+            self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", name, name)
         newTemplate = FadeSettings(name, self, effectConfigTree)
         newTemplate.updateFromXml(xmlConfig)
-        self._configurationTemplates.append(newTemplate)
         return newTemplate
 
 class FadeSettings(object):

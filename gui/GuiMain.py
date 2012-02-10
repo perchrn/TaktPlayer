@@ -11,7 +11,6 @@ from widgets.PcnImageButton import PcnKeyboardButton, addTrackButtonFrame
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
-from network.SendMidiOverNet import SendMidiOverNet
 import time
 from configurationGui.Configuration import Configuration
 from configurationGui.MediaPoolConfig import MediaFileGui
@@ -24,7 +23,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration = range(6)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers = range(7)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -69,6 +68,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
             size=(1400, 600))
         self._configuration = Configuration()
+        self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
 
         self.SetBackgroundColour((120,120,120))
 
@@ -130,7 +130,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
         self.Bind(wx.EVT_TIMER, self._timedUpdate) #@UndefinedVariable
-
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
         self.SetSizer(mainSizer)
@@ -140,7 +139,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._taskQueue = []
         self._skippedTrackStateRequests = 99
         self._skippedConfigStateRequests = 99
+        self._skippedLatestControllersRequests = 0
         self._lastConfigState = -1
+        self._latestControllersRequestResult = None
         self.setupClientProcess()
         self._timedUpdate(None)
 
@@ -221,6 +222,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._checkForStaleTasks()
         self._requestConfigState()
         self._requestTrackState()
+        self._requestLatestControllers()
 
     def _checkServerResponse(self):
         result = self._guiClient.getServerResponse()
@@ -323,6 +325,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.LatestControllers):
+#                print "GuiClient.ResponseTypes.LatestControllers"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
+                if(result[1] != None):
+                    self._latestControllersRequestResult = result[1]
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
 
     def _checkForStaleTasks(self):
         checkTime = time.time()
@@ -340,6 +350,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.Note):
                     self._guiClient.requestImage(task.getUniqueId(), 0.0)
+                    task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.LatestControllers):
+                    self._guiClient.requestLatestControllers()
                     task.setState(TaskHolder.States.Sendt)
 
     def _requestTrackState(self):
@@ -365,6 +378,21 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 configStateRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedConfigStateRequests += 1
+
+    def _requestLatestControllers(self):
+        if(self._skippedLatestControllersRequests > 20):
+            self._skippedLatestControllersRequests = 0
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
+            if(foundTask == None):
+                controllersRequestTask = TaskHolder("Latest MIDI controllers request", TaskHolder.RequestTypes.LatestControllers, None, None)
+                self._taskQueue.append(controllersRequestTask)
+                self._guiClient.requestLatestControllers()
+                controllersRequestTask.setState(TaskHolder.States.Sendt)
+        else:
+            self._skippedLatestControllersRequests += 1
+
+    def getLatestControllers(self):
+        return self._latestControllersRequestResult
 
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()

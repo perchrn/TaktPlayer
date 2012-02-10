@@ -122,15 +122,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
         self._configSizer.Add(self._noteConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._effectConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._fadeConfigPanel) #@UndefinedVariable
+        self._configSizer.Add(self._moulationConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._slidersPanel) #@UndefinedVariable
 
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._mediaFileGuiPanel.SetSizer(self._configSizer)
 
@@ -147,6 +150,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fadeConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._fadeConfigPanel.SetSizer(self._fadeConfigSizer)
         self._mainConfig.setupFadeGui(self._fadeConfigPanel, self._fadeConfigSizer, self._configSizer, self)
+
+        self._moulationConfigPanel.SetBackgroundColour((120,200,200))
+        self._moulationConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._moulationConfigPanel.SetSizer(self._moulationConfigSizer)
+        self._mainConfig.setupModulationGui(self._moulationConfigPanel, self._moulationConfigSizer, self._configSizer, self)
 
         self._slidersPanel.SetBackgroundColour((120,120,0))
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -424,6 +432,14 @@ All notes on events are quantized to this.
 
     def hideFadeGui(self):
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._parentPlane.Layout()
+
+    def showModulationGui(self):
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._parentPlane.Layout()
+
+    def hideModulationGui(self):
+        self._configSizer.Hide(self._moulationConfigPanel)
         self._parentPlane.Layout()
 
     def showSlidersGui(self):

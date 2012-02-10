@@ -20,11 +20,8 @@ class ConfigurationTemplates(object):
         pass
 
     def _getConfiguration(self):
-        print "DEBUG: ConfigurationTemplates._getConfiguration"
         self.loadChildrenFromConfiguration()
-        print "VALIDATE " * 30
         self._validateDefault()
-        print "VALIDATE " * 30
 
     def checkAndUpdateFromConfiguration(self):
         pass
@@ -43,7 +40,7 @@ class ConfigurationTemplates(object):
         lowername = name.lower()
         for templateIx in range(len(self._configurationTemplates)):
             template = self._configurationTemplates[templateIx]
-            print "template.getName().lower() ( " + template.getName() + " ) == lowername ( " + lowername + " )"
+#            print "template.getName().lower() ( " + template.getName() + " ) == lowername ( " + lowername + " )"
             if(template.getName().lower() == lowername):
                 return templateIx
         return -1
@@ -60,11 +57,9 @@ class ConfigurationTemplates(object):
             if(oldTemplateIndex < 0):
                 newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates.append(newTemplate)
-                print "Append... " + newTemplateName
             else:
                 newTemplate = self.createTemplateFromXml(newTemplateName, xmlConfig)
                 self._configurationTemplates[oldTemplateIndex] = newTemplate
-                print "Replace... " + newTemplateName
             effectTemplatesToKeep.append(newTemplateName)
         arrayLength = len(self._configurationTemplates)
         for i in range(arrayLength):

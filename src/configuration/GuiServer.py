@@ -89,6 +89,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 noteListString = self._getKeyValueFromList(queryDict, 'noteList', None)
                 trackStateString = self._getKeyValueFromList(queryDict, 'trackState', None)
                 configStateString = self._getKeyValueFromList(queryDict, 'configState', None)
+                latestMidiControllersString = self._getKeyValueFromList(queryDict, 'latestMidiContollers', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -142,6 +143,16 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         self._returnXmlRespose(configStateXmlString)
                     except:
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for config state XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(latestMidiControllersString != None):
+                    latestControllersRequestXml = MiniXml("latestMidiControllersRequest")
+                    webInputQueue.put(latestControllersRequestXml.getXmlString())
+                    try:
+                        latestControllersXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(latestControllersXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for latest MIDI controllers XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
                 else:
@@ -218,9 +229,10 @@ def guiWebServerProcess(host, port, passwd, serverMessageQueue, serverCommandQue
 
 
 class GuiServer(object):
-    def __init__(self, configurationTree, mediaPool):
+    def __init__(self, configurationTree, mediaPool, midiStateHolder):
         self._configurationTree = configurationTree
         self._mediaPool = mediaPool
+        self._midiStateHolder = midiStateHolder
 
         self._serverMessageQueue = None
         self._serverCommandQueue = None
@@ -295,6 +307,12 @@ class GuiServer(object):
                     resposeXml = MiniXml("configStateRequest")
                     resposeXml.addAttribute("id", configStateString)
                     print "GuiServer client request for config state. Current configId: " + str(configStateString)
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "latestMidiControllersRequest"):
+                    latestMidiControllers = self._midiStateHolder.getLatestMidiControllersString()
+                    resposeXml = MiniXml("latestMidiControllersRequest")
+                    resposeXml.addAttribute("controllers", latestMidiControllers)
+                    print "GuiServer client request for latest MIDI controllers. List: " + latestMidiControllers
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configRequest"):
                     path = webCommandXml.get("path")

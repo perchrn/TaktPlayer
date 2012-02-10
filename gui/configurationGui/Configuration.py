@@ -18,6 +18,11 @@ class Configuration(object):
 
         self._selectedMidiChannel = -1
         self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
+        self._latestMidiControllerRequestCallback = None
+
+
+    def setLatestMidiControllerRequestCallback(self, callback):
+        self._latestMidiControllerRequestCallback = callback
 
     def setFromXml(self, config):
         print "DEBUG: Setting from XML"
@@ -34,6 +39,9 @@ class Configuration(object):
 
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
+
+    def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupModulationGui(plane, sizer, parentSizer, parentClass)
 
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
@@ -61,6 +69,9 @@ class Configuration(object):
 
     def getMidiSender(self):
         return self._midiSender
+
+    def getLatestMidiControllers(self):
+        return self._latestMidiControllerRequestCallback()
 
     def printConfiguration(self):
         print self.getXmlString()

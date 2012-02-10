@@ -6,11 +6,14 @@ Created on 6. feb. 2012
 from midi.MidiTiming import MidiTiming
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
 import wx
-from midi.MidiController import getControllerId
 from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
     ZoomModes, DistortionModes, EdgeModes, EdgeColourModes, DesaturateModes,\
     ColorizeModes
 from video.media.MediaFile import FadeMode
+from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes
+from midi.MidiStateHolder import MidiChannelModulationSources,\
+    NoteModulationSources
+from midi.MidiController import MidiControllers
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -27,6 +30,7 @@ class GlobalConfig(object):
         self._effectsGui = EffectsGui(self._mainConfig)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
         self._fadeGui = FadeGui(self._mainConfig)
+        self._modulationGui = ModulationGui(self._mainConfig)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
@@ -49,6 +53,9 @@ class GlobalConfig(object):
 
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._fadeGui.setupFadeGui(plane, sizer, parentSizer, parentClass)
+
+    def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
+        self._modulationGui.setupModulationGui(plane, sizer, parentSizer, parentClass)
 
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
@@ -150,6 +157,7 @@ class EffectsGui(object):
         self._edgeColourModes = EdgeColourModes()
         self._desaturateModes = DesaturateModes()
         self._colorizeModes = ColorizeModes()
+        self._midiControllers = MidiControllers()
 
     def _onCloseButton(self, event):
         self._hideEffectsCallback()
@@ -288,7 +296,7 @@ class EffectsGui(object):
             if(len(descriptionSplit) > 1):
                 if(descriptionSplit[1] == "Controller"):
                     if(len(descriptionSplit) > 2):
-                        controllerId = getControllerId(descriptionSplit[2])
+                        controllerId = self._midiControllers.getId(descriptionSplit[2])
 #                        print "Sending controller: " + descriptionSplit[2] + " -> " + str(controllerId)
                         midiSender.sendMidiController(channel, controllerId, value)
                 elif(descriptionSplit[1] == "PitchBend"):
@@ -456,56 +464,83 @@ class FadeGui(object):
         self._mainConfig = mainConfing
 
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainFadeGuiPlane = plane
         self._mainFadeGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideFadeCallback = parentClass.hideFadeGui
+        self._showModulationCallback = parentClass.showModulationGui
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText1 = wx.StaticText(plane, wx.ID_ANY, "Name:") #@UndefinedVariable
-        self._templateNameField = wx.TextCtrl(plane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
+        tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
+        self._templateNameField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
         self._templateNameField.SetInsertionPoint(0)
         templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         fadeModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(plane, wx.ID_ANY, "Mode:") #@UndefinedVariable
+        tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
         self._fadeModes = FadeMode()
-        self._fadeModesField = wx.ComboBox(plane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
+        fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModeHelp, id=fadeModeButton.GetId()) #@UndefinedVariable
         fadeModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModeSizer.Add(self._fadeModesField, 2, wx.ALL, 5) #@UndefinedVariable
+        fadeModeSizer.Add(fadeModeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(fadeModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        plane.Bind(wx.EVT_COMBOBOX, self._onFadeModeChosen, id=self._fadeModesField.GetId()) #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_COMBOBOX, self._onFadeModeChosen, id=self._fadeModesField.GetId()) #@UndefinedVariable
 
         fadeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText3 = wx.StaticText(plane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
-        self._fadeModulationField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
+        self._fadeModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._fadeModulationField.SetInsertionPoint(0)
+        fadeModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit, id=fadeModulationButton.GetId()) #@UndefinedVariable
         fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        fadeModulationSizer.Add(fadeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(fadeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         levelModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText3 = wx.StaticText(plane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
-        self._levelModulationField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
+        self._levelModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._levelModulationField.SetInsertionPoint(0)
+        levelModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit, id=levelModulationButton.GetId()) #@UndefinedVariable
         levelModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        levelModulationSizer.Add(levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        closeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(plane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        saveButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _onFadeModeChosen(self, event):
-        print "Fade mode...."
+        pass
+
+    def _onFadeModeHelp(self, event):
+        text = """
+Decides if this image fades to black or white.
+"""
+        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Fade mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onFadeModulationEdit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
+
+    def _onLevelModulationEdit(self, event):
+        self._showModulationCallback()
+        self._parentSizer.Layout()
 
     def _onCloseButton(self, event):
         self._hideFadeCallback()
@@ -540,4 +575,323 @@ class FadeGui(object):
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
         self._fadeModulationField.SetValue(config.getValue("Modulation"))
         self._levelModulationField.SetValue(config.getValue("Level"))
+
+class ModulationGui(object):
+    def __init__(self, mainConfing):
+        self._mainConfig = mainConfing
+
+    def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainModulationGuiPlane = plane
+        self._mainModulationGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideModulationCallback = parentClass.hideModulationGui
+
+#        templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+#        tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
+#        self._templateNameField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
+#        self._templateNameField.SetInsertionPoint(0)
+#        templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+#        templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
+#        self._mainModulationGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
+        self._modulationSorces = ModulationSources()
+        self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
+        modulationSorcesButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onModulationModeHelp, id=modulationSorcesButton.GetId()) #@UndefinedVariable
+        modulationSorcesSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        modulationSorcesSizer.Add(self._modulationSorcesField, 2, wx.ALL, 5) #@UndefinedVariable
+        modulationSorcesSizer.Add(modulationSorcesButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(modulationSorcesSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onModulationSourceChosen, id=self._modulationSorcesField.GetId()) #@UndefinedVariable
+
+        """MidiChannel"""
+
+        self._midiChannelSourceSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Channel source:") #@UndefinedVariable
+        self._midiChannelSource = MidiChannelModulationSources()
+        self._midiChannelSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Controller"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._midiChannelSourceField, self._midiChannelSource.getChoices, "Controller", "Controller")
+        midiChannelSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelSourceHelp, id=midiChannelSourceButton.GetId()) #@UndefinedVariable
+        self._midiChannelSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiChannelSourceSizer.Add(self._midiChannelSourceField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._midiChannelSourceSizer.Add(midiChannelSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._midiChannelSourceSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiChannelSourceChosen, id=self._midiChannelSourceField.GetId()) #@UndefinedVariable
+
+        self._midiControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Controller:") #@UndefinedVariable
+        self._midiControllers = MidiControllers()
+        self._midiControllerField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ModWheel"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
+        midiControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp, id=midiControllerButton.GetId()) #@UndefinedVariable
+        self._midiControllerSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiControllerSizer.Add(self._midiControllerField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._midiControllerSizer.Add(midiControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._midiControllerSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiControllerChosen, id=self._midiControllerField.GetId()) #@UndefinedVariable
+
+        self._midiActiveControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Active controllers:") #@UndefinedVariable
+        self._midiActiveControllerField = wx.ListBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, 100), choices=["None"], style=wx.LB_SINGLE) #@UndefinedVariable
+        midiActiveControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelActiveControllerHelp, id=midiActiveControllerButton.GetId()) #@UndefinedVariable
+        self._midiActiveControllerSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiActiveControllerSizer.Add(self._midiActiveControllerField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._midiActiveControllerSizer.Add(midiActiveControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._midiActiveControllerSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_LISTBOX, self._onMidiActiveControllerChosen, id=self._midiActiveControllerField.GetId()) #@UndefinedVariable
+
+        """MidiNote"""
+
+        self._midiNoteSourceSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Note source:") #@UndefinedVariable
+        self._midiNoteSource = NoteModulationSources()
+        self._midiNoteSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Velocity"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
+        midiNoteSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp, id=midiNoteSourceButton.GetId()) #@UndefinedVariable
+        self._midiNoteSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiNoteSourceSizer.Add(self._midiNoteSourceField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._midiNoteSourceSizer.Add(midiNoteSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._midiNoteSourceSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiNoteSourceChosen, id=self._midiNoteSourceField.GetId()) #@UndefinedVariable
+
+        """LFO"""
+
+        self._lfoTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO type:") #@UndefinedVariable
+        self._lfoType = LfoShapes()
+        self._lfoTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Triangle"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
+        lfoTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp, id=lfoTypeButton.GetId()) #@UndefinedVariable
+        self._lfoTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoTypeSizer.Add(self._lfoTypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoTypeSizer.Add(lfoTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onLfoTypeChosen, id=self._lfoTypeField.GetId()) #@UndefinedVariable
+
+        """ADSR"""
+
+        self._adsrTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR type:") #@UndefinedVariable
+        self._adsrType = AdsrShapes()
+        self._adsrTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ADSR"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._adsrTypeField, self._adsrType.getChoices, "ADSR", "ADSR")
+        adsrTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrTypeHelp, id=adsrTypeButton.GetId()) #@UndefinedVariable
+        self._adsrTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._adsrTypeSizer.Add(self._adsrTypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._adsrTypeSizer.Add(adsrTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._adsrTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onAdsrTypeChosen, id=self._adsrTypeField.GetId()) #@UndefinedVariable
+
+        """Value"""
+
+        self._valueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._valueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
+        self._valueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
+        self._valueValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._valueSliderSizer.Add(self._valueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._valueSliderSizer.Add(self._valueSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._valueSliderSizer.Add(self._valueValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._valueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._valueSliderId = self._valueSlider.GetId()
+        self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+        """Buttons"""
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        saveButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._buttonsSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._activeControllersUpdate = wx.Timer(self._mainModulationGuiPlane, -1) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_TIMER, self._onActiveControllersUpdate) #@UndefinedVariable
+
+    def closeConfig(self):
+        if(self._activeControllersUpdate.IsRunning() == True):
+            self._activeControllersUpdate.Stop()
+
+    def _onModulationSourceChosen(self, event):
+        choice = self._modulationSorcesField.GetValue()
+        if(choice == "MidiChannel"):
+            self._mainModulationGuiSizer.Show(self._midiChannelSourceSizer)
+            self._parentSizer.Layout()
+            self._onMidiChannelSourceChosen(event)
+        else:
+            self._mainModulationGuiSizer.Hide(self._midiChannelSourceSizer)
+            self._mainModulationGuiSizer.Hide(self._midiControllerSizer)
+            self._mainModulationGuiSizer.Hide(self._midiActiveControllerSizer)
+            self._parentSizer.Layout()
+        if(choice == "MidiNote"):
+            self._mainModulationGuiSizer.Show(self._midiNoteSourceSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._midiNoteSourceSizer)
+            self._parentSizer.Layout()
+        if(choice == "LFO"):
+            self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._lfoTypeSizer)
+            self._parentSizer.Layout()
+        if(choice == "ADSR"):
+            self._mainModulationGuiSizer.Show(self._adsrTypeSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._adsrTypeSizer)
+            self._parentSizer.Layout()
+        if(choice == "Value"):
+            self._mainModulationGuiSizer.Show(self._valueSliderSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._valueSliderSizer)
+            self._parentSizer.Layout()
+
+    def _onModulationModeHelp(self, event):
+        text = """
+Selects modulation type.
+
+MidiChannel:\tChannel wide MIDI controllers.
+MidiNote:\t\tVelocity and note pressures.
+LFO:\t\tLow Frequency Oscillator
+ADSR:\t\tAttach/Release based on note timing.
+Value;\t\tStatic value.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _getActiveControllersStringList(self):
+        idList = self._mainConfig.getLatestMidiControllers()
+        returnList = []
+        if(idList != None):
+            for ctrlId in idList:
+                ctrlName = self._midiControllers.getName(int(ctrlId))
+                if(ctrlName != None):
+                    returnList.append(ctrlName)
+        return returnList
+
+    def _onActiveControllersUpdate(self, event):
+        selected = self._midiControllerField.GetValue()
+        self._updateChoices(self._midiActiveControllerField, self._getActiveControllersStringList, selected, "ModWheel")
+
+    def _onMidiChannelSourceChosen(self, event):
+        choice = self._midiChannelSourceField.GetValue()
+        if(choice == "Controller"):
+            self._mainModulationGuiSizer.Show(self._midiControllerSizer)
+            self._mainModulationGuiSizer.Show(self._midiActiveControllerSizer)
+            if(self._activeControllersUpdate.IsRunning() == False):
+                self._activeControllersUpdate.Start(500)#2 times a second
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._midiActiveControllerSizer)
+            self._mainModulationGuiSizer.Hide(self._midiControllerSizer)
+            if(self._activeControllersUpdate.IsRunning() == True):
+                self._activeControllersUpdate.Stop()
+            self._parentSizer.Layout()
+
+    def _onMidiChannelSourceHelp(self, event):
+        text = """
+Selects modulation type.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onMidiControllerChosen(self, event):
+        pass
+
+    def _onMidiActiveControllerChosen(self, event):
+        choice = self._midiActiveControllerField.GetStringSelection()
+        self._midiControllerField.SetValue(choice)
+
+    def _onMidiChannelControllerHelp(self, event):
+        text = """
+Selects modulation type.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI channel mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onMidiChannelActiveControllerHelp(self, event):
+        text = """
+Selects modulation type.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI channel mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onMidiNoteSourceHelp(self, event):
+        text = """
+TODO: bla bla bla
+"""#TODO: bla bla bla
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI note help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onLfoTypeHelp(self, event):
+        text = """
+TODO: bla bla bla
+"""#TODO: bla bla bla
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onAdsrTypeHelp(self, event):
+        text = """
+Selects full ADSR or just Attack/Release
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSlide(self, event):
+        sliderId = event.GetEventObject().GetId()
+        if(sliderId == self._valueSliderId):
+#            print "Ammount: " + str(self._ammountSlider.GetValue())
+            valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
+            self._valueValueLabel.SetLabel(valueString)
+
+    def _onCloseButton(self, event):
+        self._hideModulationCallback()
+
+    def _onSaveButton(self, event):
+        print "Save " * 20
+        print "Nr1: " + self._modulationSorcesField.GetValue()
+        print "Save " * 20
+
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+        widget.Clear()
+        valueOk = False
+        for choice in choiceList:
+            widget.Append(choice)
+            if(choice == value):
+                valueOk = True
+        if(valueOk == True):
+            widget.SetStringSelection(value)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+    def updateGui(self, effectTemplate):
+        pass
+#        config = effectTemplate.getConfigHolder()
+#        self._templateNameField.SetValue(config.getValue("Name"))
+#        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
+#        self._fadeModulationField.SetValue(config.getValue("Modulation"))
+#        self._levelModulationField.SetValue(config.getValue("Level"))
 

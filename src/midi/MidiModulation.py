@@ -26,9 +26,6 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Note.1C.ADSR")
 
 class LowFrequencyOscilator(object):
-    class Shape():
-        Triangle, SawTooth, Ramp, Sine, Random = range(5)
-
     def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
         print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         print "LowFrequencyOscilator: Len: %f, Start: %f" % (midiLength, startSPP)
@@ -45,17 +42,17 @@ class LowFrequencyOscilator(object):
         self._radians360 = math.radians(360)
 
     def getValue(self, songPosition, argument):
-        if(self._shape == LowFrequencyOscilator.Shape.Random):
+        if(self._shape == LfoShapes.Random):
             return self._minVal + (random.random() * self._valRange)
         else:
             phase = ((songPosition - self._startSongPosition) / self._syncLength) % 1.0
-            if(self._shape == LowFrequencyOscilator.Shape.Triangle):
+            if(self._shape == LfoShapes.Triangle):
                 return self._minVal + (abs((phase * 2) - 1.0) * self._valRange)
-            elif(self._shape == LowFrequencyOscilator.Shape.SawTooth):
+            elif(self._shape == LfoShapes.SawTooth):
                 return self._minVal + (phase * self._valRange)
-            elif(self._shape == LowFrequencyOscilator.Shape.Ramp):
+            elif(self._shape == LfoShapes.Ramp):
                 return self._minVal + (1.0 - phase * self._valRange)
-            elif(self._shape == LowFrequencyOscilator.Shape.Sine):
+            elif(self._shape == LfoShapes.Sine):
                 return self._minVal + ((1.0 + math.sin(self._radians360 * phase)) / 2 * self._valRange)
 
     def isEqual(self, mode, midiLength, startSPP, minVal, maxVal):
@@ -67,24 +64,54 @@ class LowFrequencyOscilator(object):
                             return True
         return False
 
+class LfoShapes():
+    Triangle, SawTooth, Ramp, Sine, Random = range(5)
+
+    def getChoices(self):
+        return ["Triangle", "SawTooth", "Ramp", "Sine", "Random"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 def getLfoShapeId(shapeName):
     if(shapeName == "Triangle"):
-        return LowFrequencyOscilator.Shape.Triangle
+        return LfoShapes.Triangle
     elif(shapeName == "SawTooth"):
-        return LowFrequencyOscilator.Shape.SawTooth
+        return LfoShapes.SawTooth
     elif(shapeName == "Ramp"):
-        return LowFrequencyOscilator.Shape.Ramp
+        return LfoShapes.Ramp
     elif(shapeName == "Sine"):
-        return LowFrequencyOscilator.Shape.Sine
+        return LfoShapes.Sine
     elif(shapeName == "Random"):
-        return LowFrequencyOscilator.Shape.Random
+        return LfoShapes.Random
     else:
         return None
 
-class AttackDecaySustainRelease(object):
-    class Shape():
-        ADSR, AR = range(2)
+class AdsrShapes():
+    ADSR, AR = range(2)
 
+    def getChoices(self):
+        return ["ADSR", "AR"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+def getAdsrShapeId(shapeName):
+    if(shapeName == "ADSR"):
+        return AdsrShapes.ADSR
+    elif(shapeName == "AR"):
+        return AdsrShapes.AR
+    else:
+        return None
+
+
+class AttackDecaySustainRelease(object):
     def __init__(self, midiTimingClass, mode, attack, decay, sustain, release):
         self._midiTiming = midiTimingClass
 
@@ -137,17 +164,18 @@ class AttackDecaySustainRelease(object):
                             return True
         return False
 
-
-def getAdsrShapeId(shapeName):
-    if(shapeName == "ADSR"):
-        return AttackDecaySustainRelease.Shape.ADSR
-    elif(shapeName == "AR"):
-        return AttackDecaySustainRelease.Shape.AR
-    else:
-        return None
-
 class ModulationSources():
-    MidiChannel, MidiNote, Lfo, ADSR, Value = range(5)
+    NoModulation, MidiChannel, MidiNote, LFO, ADSR, Value = range(6)
+
+    def getChoices(self):
+        return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 
 class ModulatiobReceiver(object):
     def __init__(self, modId, name):
@@ -159,7 +187,7 @@ class ModulatiobReceiver(object):
 
 class MidiModulation(object):
     def __init__(self, configurationTree, midiTiming):
-        self._tmpMidiChClass = MidiChannelStateHolder(0)
+        self._tmpMidiChClass = MidiChannelStateHolder(0, None)
         self._tmpMidiNoteClass = NoteState()
 
         self._configurationTree = configurationTree
@@ -238,7 +266,7 @@ class MidiModulation(object):
                                     tmpMax = float(valuesSplit[3])
                                     if(tmpMax >= 0.0):
                                         maxVal = tmpMax
-                    return (ModulationSources.Lfo, self._getLfoId(mode, midiLength, startSPP, minVal, maxVal))
+                    return (ModulationSources.LFO, self._getLfoId(mode, midiLength, startSPP, minVal, maxVal))
         elif( sourceSplit[0] == "Value" ):
             if(len(sourceSplit) > 1):
                 newSplit = sourceDescription.split('.', 1)
@@ -259,7 +287,7 @@ class MidiModulation(object):
                         if(tmpAttack >= 0.0):
                             attack = tmpAttack
                         if(len(valuesSplit) > 1):
-                            if(mode == AttackDecaySustainRelease.Shape.AR):
+                            if(mode == AdsrShapes.AR):
                                 tmpRelease = float(valuesSplit[1])
                                 if(tmpRelease >= 0.0):
                                     release = tmpRelease
@@ -326,7 +354,7 @@ class MidiModulation(object):
                 return midiChannelStateHolder.getModulationValue(subId, argument)
             elif(sourceId == ModulationSources.MidiNote):
                 return midiNoteStateHolder.getModulationValue(subId, argument)
-            elif(sourceId == ModulationSources.Lfo):
+            elif(sourceId == ModulationSources.LFO):
                 return self._getLfo(subId).getValue(songPosition, argument)
             elif(sourceId == ModulationSources.ADSR):
                 return self._getAdsr(subId).getValue(songPosition, (midiNoteStateHolder.getStartPosition(), midiNoteStateHolder.getStopPosition(), midiNoteStateHolder.getNoteLength()))

@@ -54,6 +54,11 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                     resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                     resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "latestMidiContollersRequest"):
+                    urlArgs = "?latestMidiContollers=true"
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "thumbnailFileRequest"):
                     fileName = getFromXml(commandXml, "fileName", None)
                     if(fileName != None):
@@ -153,8 +158,12 @@ class GuiClient(object):
         commandXml.addAttribute("path", path)
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestLatestControllers(self):
+        commandXml = MiniXml("latestMidiContollersRequest")
+        self._commandQueue.put(commandXml.getXmlString())
+
     class ResponseTypes():
-        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration = range(6)
+        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration, LatestControllers = range(7)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -199,6 +208,10 @@ class GuiClient(object):
                 elif(serverXml.tag == "configuration"):
                     returnValue = (self.ResponseTypes.Configuration, serverXml)
 #                    print "Got configurationRequest response."
+                elif(serverXml.tag == "latestMidiControllersRequest"):
+                    listTxt = serverXml.get("controllers")
+                    returnValue = (self.ResponseTypes.LatestControllers, listTxt.split(',', 128))
+#                    print "Got latestMidiControllersRequest response: " + listTxt
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:

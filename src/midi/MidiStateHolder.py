@@ -6,7 +6,20 @@ Created on 20. des. 2011
 from midi import MidiUtilities
 from midi import MidiController
 import logging
-from midi.MidiController import getControllerId, getControllerName
+from midi.MidiController import MidiControllers
+import time
+
+class NoteModulationSources():
+    Velocity, ReleaseVelocity, NotePreasure = range(3)
+
+    def getChoices(self):
+        return ["Velocity", "ReleaseVelocity", "NotePreasure"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
 
 class NoteState(object):
     def __init__(self):
@@ -26,44 +39,38 @@ class NoteState(object):
         self._noteOffInSync = False
         self._quantizeValue = 0
 
-    class ModulationSources():
-        Velocity, ReleaseVelocity, NotePreasure = range(3)
-    
-    def getModulationSources(self):
-        return ("Velocity", "ReleaseVelocity", "NotePreasure")
-
     def getModulationId(self, modName):
         if(modName == "Velocity"):
-            return NoteState.ModulationSources.Velocity
+            return NoteModulationSources.Velocity
         elif(modName == "ReleaseVelocity"):
-            return NoteState.ModulationSources.ReleaseVelocity
+            return NoteModulationSources.ReleaseVelocity
         elif(modName == "NotePreasure"):
-            return NoteState.ModulationSources.NotePreasure
+            return NoteModulationSources.NotePreasure
         elif(modName == "Preasure"):
-            return NoteState.ModulationSources.NotePreasure
+            return NoteModulationSources.NotePreasure
         else:
             return None
 
     def getModulationValue(self, modId, argument):
         isInt = isinstance(modId, int)
         if(isInt == True):
-            if(modId == NoteState.ModulationSources.Velocity):
+            if(modId == NoteModulationSources.Velocity):
                 velMod = float(self._velocity) / 128
                 return velMod
-            elif(modId == NoteState.ModulationSources.ReleaseVelocity):
+            elif(modId == NoteModulationSources.ReleaseVelocity):
                 velMod = float(self._releaseVelocity) / 128
                 return velMod
-            elif(modId == NoteState.ModulationSources.NotePreasure):
+            elif(modId == NoteModulationSources.NotePreasure):
                 preasureMod = float(self._preasure) / 128
                 return preasureMod
         elif(len(modId) == 1):
-            if(modId[0] == NoteState.ModulationSources.Velocity):
+            if(modId[0] == NoteModulationSources.Velocity):
                 velMod = float(self._velocity) / 128
                 return velMod
-            elif(modId[0] == NoteState.ModulationSources.ReleaseVelocity):
+            elif(modId[0] == NoteModulationSources.ReleaseVelocity):
                 velMod = float(self._releaseVelocity) / 128
                 return velMod
-            elif(modId[0] == NoteState.ModulationSources.NotePreasure):
+            elif(modId[0] == NoteModulationSources.NotePreasure):
                 preasureMod = float(self._preasure) / 128
                 return preasureMod
         return 0.0
@@ -191,8 +198,55 @@ class NoteState(object):
         if((self._noteOffSPP >= 0.0) and (self._noteOffQuantizedSPP < 0)):
             self._noteOffQuantizedSPP = self._quantize(self._noteOffSPP, quantizeValue)
 
+class MidiControllerLatestModified(object):
+    def __init__(self):
+        self._numberToSave = 10
+        self._latestControllers = []
+
+    def controllerUpdated(self, controllerId):
+        print "DEBUG controllerUpdated()"
+        oldestIndex = None
+        currentTime = time.time()
+        oldestTime = currentTime
+        for i in range(len(self._latestControllers)):
+            oldControllerId, oldControllerTime = self._latestControllers[i]
+            if(oldControllerId == controllerId):
+                self._latestControllers[i] = (controllerId, currentTime)
+                return
+            if(oldControllerTime < oldestTime):
+                oldestTime = oldControllerTime
+                oldestIndex = i
+        if(len(self._latestControllers) < self._numberToSave):
+            self._latestControllers.append((controllerId, currentTime))
+        elif(oldestIndex != None):
+            self._latestControllers[oldestIndex] = (controllerId, currentTime)
+
+    def getLatestControllers(self):
+        self._latestControllers = sorted(self._latestControllers, key=lambda controller: controller[1], reverse=True)
+        return self._latestControllers
+
+    def getLatestControllersString(self):
+        returnString = ""
+        for controllerInfo in self.getLatestControllers():
+            if(returnString != ""):
+                returnString += ","
+            returnString += str(controllerInfo[0])
+        return returnString
+
+class MidiChannelModulationSources():
+    Controller, PitchBend, Aftertouch = range(3)
+
+    def getChoices(self):
+        return ("Controller", "PitchBend", "Aftertouch")
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 class MidiChannelStateHolder(object):
-    def __init__(self, channelId):
+    def __init__(self, channelId, midiControllerLatestModified):
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._midiChannel = channelId
 
@@ -213,42 +267,39 @@ class MidiChannelStateHolder(object):
         self._pitchBendValue = 0.5 #No pitch bend
         self._aftertouch = 0.0 #No aftertouch
 
-    class ModulationSources():
-        Controller, PitchBend, Aftertouch = range(3)
-    
-    def getModulationSources(self):
-        return ("Controller", "PitchBend", "Aftertouch")
+        self._midiControllers = MidiControllers()
+        self._midiControllerLatestModified = midiControllerLatestModified
 
     def getModulationId(self, modName):
         if(modName == "Controller"):
-            return MidiChannelStateHolder.ModulationSources.Controller
+            return MidiChannelModulationSources.Controller
         elif(modName == "PitchBend"):
-            return MidiChannelStateHolder.ModulationSources.PitchBend
+            return MidiChannelModulationSources.PitchBend
         elif(modName == "Aftertouch"):
-            return MidiChannelStateHolder.ModulationSources.Aftertouch
+            return MidiChannelModulationSources.Aftertouch
         else:
             return None
 
     def getModulationSubId(self, modId, subModName):
-        if(modId == MidiChannelStateHolder.ModulationSources.Controller):
-            return getControllerId(subModName)
+        if(modId == MidiChannelModulationSources.Controller):
+            return self._midiControllers.getId(subModName)
         else:
             return None
 
     def getModulationValue(self, modId, argument):
         isInt = isinstance(modId, int)
         if((isInt == False) and (len(modId) == 2)):
-            if(modId[0] == MidiChannelStateHolder.ModulationSources.Controller):
+            if(modId[0] == MidiChannelModulationSources.Controller):
                 return self._controllerValues[modId[1]]
         elif(isInt == True):
-            if(modId == MidiChannelStateHolder.ModulationSources.PitchBend):
+            if(modId == MidiChannelModulationSources.PitchBend):
                 return self._pitchBendValue
-            if(modId == MidiChannelStateHolder.ModulationSources.Aftertouch):
+            if(modId == MidiChannelModulationSources.Aftertouch):
                 return self._aftertouch
         elif(len(modId) == 1):
-            if(modId[0] == MidiChannelStateHolder.ModulationSources.PitchBend):
+            if(modId[0] == MidiChannelModulationSources.PitchBend):
                 return self._pitchBendValue
-            if(modId[0] == MidiChannelStateHolder.ModulationSources.Aftertouch):
+            if(modId[0] == MidiChannelModulationSources.Aftertouch):
                 return self._aftertouch
         return 0.0
 
@@ -279,12 +330,14 @@ class MidiChannelStateHolder(object):
 
     def controllerChange(self, controllerId, value, songPosition):
 #        print "DEBUG got controller: " + getControllerName(controllerId) + " (id: " + str(controllerId) + ")"
-        if(controllerId == MidiController.Controllers.ResetAllControllers):
+        if(controllerId == self._midiControllers.ResetAllControllers):
             self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
             for i in range(128):
                 self._controllerValues[i] = 0.0
         else:
+            print "DEBUG controllerChange()"
             self._controllerValues[controllerId] = (float(value) / 127)
+            self._midiControllerLatestModified.controllerUpdated(controllerId)
 
     def pitchBendChange(self, data1, data2, songPosition):
         self._pitchBendValue = (float(data2) / 128) + (float(data1) / 16256)#(127*128)
@@ -379,8 +432,9 @@ class MidiChannelStateHolder(object):
 class MidiStateHolder(object):
     def __init__(self):
         self._midiChannelStateHolder = []
+        self._midiControllerLatestModified = MidiControllerLatestModified()
         for i in range(16):
-            self._midiChannelStateHolder.append(MidiChannelStateHolder(i+1))
+            self._midiChannelStateHolder.append(MidiChannelStateHolder(i+1, self._midiControllerLatestModified))
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
         self._midiChannelStateHolder[midiChannel].noteEvent(True, data1, data2, songPosition)
@@ -423,3 +477,7 @@ class MidiStateHolder(object):
 
     def getMidiChannelState(self, midiChannel):
         return self._midiChannelStateHolder[midiChannel]
+
+    def getLatestMidiControllersString(self):
+        return self._midiControllerLatestModified.getLatestControllersString()
+

@@ -80,7 +80,7 @@ class MyKivyApp(App):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
-        self._guiServer = GuiServer(self._configurationTree, self._mediaPool)
+        self._guiServer = GuiServer(self._configurationTree, self._mediaPool, self._midiStateHolder)
         self._guiServer.startGuiServerProcess("0.0.0.0", 2021, None)
         print self._configurationTree.getConfigurationXMLString()
 

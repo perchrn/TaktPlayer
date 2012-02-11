@@ -79,6 +79,7 @@ class EffectsGui(object):
         self._mainConfig = mainConfing
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainEffectsPlane = plane
         self._mainEffectsGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideEffectsCallback = parentClass.hideEffectsGui
@@ -87,87 +88,93 @@ class EffectsGui(object):
         self._hideModulationCallback = parentClass.hideModulationGui
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText1 = wx.StaticText(plane, wx.ID_ANY, "Name:") #@UndefinedVariable
-        self._templateNameField = wx.TextCtrl(plane, wx.ID_ANY, "MediaDefault1", size=(200, -1)) #@UndefinedVariable
+        tmpText1 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
+        self._templateNameField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "MediaDefault1", size=(200, -1)) #@UndefinedVariable
         self._templateNameField.SetInsertionPoint(0)
+        templateNameButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onTemplateNameHelp, id=templateNameButton.GetId()) #@UndefinedVariable
         templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        templateNameSizer.Add(templateNameButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         effectNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(plane, wx.ID_ANY, "Effect:") #@UndefinedVariable
+        tmpText2 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect:") #@UndefinedVariable
         self._effectChoices = EffectTypes()
-        self._effectNameField = wx.ComboBox(plane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._effectNameField = wx.ComboBox(self._mainEffectsPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._effectNameField, self._effectChoices.getChoices, "None", "None")
+        effectNameButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onEffectHelp, id=effectNameButton.GetId()) #@UndefinedVariable
         effectNameSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         effectNameSizer.Add(self._effectNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        effectNameSizer.Add(effectNameButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(effectNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        plane.Bind(wx.EVT_COMBOBOX, self._onEffectChosen, id=self._effectNameField.GetId()) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_COMBOBOX, self._onEffectChosen, id=self._effectNameField.GetId()) #@UndefinedVariable
 
         self._ammountSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._amountLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
-        self._ammountField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._amountLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Amount:") #@UndefinedVariable
+        self._ammountField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._ammountField.SetInsertionPoint(0)
-        ammountButton = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=ammountButton.GetId()) #@UndefinedVariable
+        ammountButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=ammountButton.GetId()) #@UndefinedVariable
         self._ammountSizer.Add(self._amountLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(self._ammountField, 2, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(ammountButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._ammountSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._arg1Label = wx.StaticText(plane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
-        self._arg1Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._arg1Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
+        self._arg1Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg1Field.SetInsertionPoint(0)
-        arg1Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=arg1Button.GetId()) #@UndefinedVariable
+        arg1Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=arg1Button.GetId()) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(arg1Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._arg2Label = wx.StaticText(plane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
-        self._arg2Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._arg2Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
+        self._arg2Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg2Field.SetInsertionPoint(0)
-        arg2Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=arg2Button.GetId()) #@UndefinedVariable
+        arg2Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=arg2Button.GetId()) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(arg2Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._arg3Label = wx.StaticText(plane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
-        self._arg3Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._arg3Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
+        self._arg3Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg3Field.SetInsertionPoint(0)
-        arg3Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=arg3Button.GetId()) #@UndefinedVariable
+        arg3Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=arg3Button.GetId()) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(arg3Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg3Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._arg4Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._arg4Label = wx.StaticText(plane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
-        self._arg4Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._arg4Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
+        self._arg4Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg4Field.SetInsertionPoint(0)
-        arg4Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=arg4Button.GetId()) #@UndefinedVariable
+        arg4Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=arg4Button.GetId()) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(arg4Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        closeButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(plane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        saveButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
-        slidersButton = wx.Button(plane, wx.ID_ANY, 'Sliders') #@UndefinedVariable
-        plane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
+        slidersButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Sliders') #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(slidersButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -179,6 +186,40 @@ class EffectsGui(object):
         self._desaturateModes = DesaturateModes()
         self._colorizeModes = ColorizeModes()
         self._midiControllers = MidiControllers()
+
+    def _onTemplateNameHelp(self, event):
+        text = """
+The name of this configuration.
+
+You will get a choice to rename or make a new template on save if you change this.
+"""
+        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Template name help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onEffectHelp(self, event):
+        text = """
+Selects the effect.
+
+"""
+        effectChoices = self._effectChoices.getChoices()
+        effectDescriptions = self._effectChoices.getDescriptions()
+        for i in range(1, len(self._effectChoices.getChoices())):
+            effectName = effectChoices[i]
+            effectDescription = effectDescriptions[i]
+            extraTab = "\t"
+            if(i == 4):
+                extraTab = ""
+            elif(i == 7):
+                extraTab = ""
+            elif(i == 9):
+                extraTab = ""
+            elif(i == 12):
+                extraTab = ""
+            text += effectName + ":\t" + extraTab + effectDescription + "\n"
+        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Effect help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def _onAmmountEdit(self, event):
         self._showModulationCallback()
@@ -798,9 +839,12 @@ class ModulationGui(object):
         self._valueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
         self._valueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
         self._valueValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        valueValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onValueHelp, id=valueValueButton.GetId()) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._valueSliderSizer.Add(valueValueButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._valueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._valueSliderId = self._valueSlider.GetId()
         self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
@@ -877,7 +921,7 @@ MidiChannel:\tChannel wide MIDI controllers.
 MidiNote:\t\tVelocity and note pressures.
 LFO:\t\tLow Frequency Oscillator
 ADSR:\t\tAttach/Release based on note timing.
-Value;\t\tStatic value.
+Value:\t\tStatic value.
 """
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -914,7 +958,11 @@ Value;\t\tStatic value.
 
     def _onMidiChannelSourceHelp(self, event):
         text = """
-Selects modulation type.
+Selects MIDI channel modulation source.
+
+Controller:\tMIDI controllers like ModWheel etc.
+PitchBend:\tMIDI pitch bend.
+Aftertouch:\tPreasure applied while note is pressed down.
 """
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -929,32 +977,46 @@ Selects modulation type.
 
     def _onMidiChannelControllerHelp(self, event):
         text = """
-Selects modulation type.
+Select from all available controllers.
+
+You can always fiddle with the controller you want and select it in active controllers instead.
 """
-        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI channel mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI controller help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onMidiChannelActiveControllerHelp(self, event):
         text = """
-Selects modulation type.
+Shows the latest controllers received by the program on any MIDI channel.
+
+Just turn or push the controller you want to use and it should show up here.
 """
-        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI channel mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Active controllers help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onMidiNoteSourceHelp(self, event):
         text = """
-TODO: bla bla bla
-"""#TODO: bla bla bla
+Midi notes modulation sources
+
+Velocity:\t\tNote on velocity.
+ReleaseVelocity:\tNote off velocity.
+NotePreasure:\tPolyphonic pressure.
+"""
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI note help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onLfoTypeHelp(self, event):
         text = """
-TODO: bla bla bla
-"""#TODO: bla bla bla
+Selects LFO shape.
+
+Triangle:\t\tLinear up and down.
+SawTooth:\tLinear up and instant down again.
+Ramp:\t\tInstant up and linear down.
+Sine:\t\tSine curve.
+Random:\t\tNo phase just random numbers.
+"""
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -1009,7 +1071,7 @@ Maximum output value from the LFO.
 
     def _onAdsrTypeHelp(self, event):
         text = """
-Selects full ADSR or just Attack/Release
+Selects full ADSR or just Attack/Release mode
 """
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -1032,6 +1094,14 @@ Selects full ADSR or just Attack/Release
         if(sliderId == self._valueSliderId):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             self._valueValueLabel.SetLabel(valueString)
+
+    def _onValueHelp(self, event):
+        text = """
+Constant static value.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Value help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def _onCloseButton(self, event):
         self._hideModulationCallback()

@@ -162,14 +162,15 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
 
         self._fileName = ""
+        self._cameraId = 0
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText1 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
+        self._fileNameLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
         self._fileNameField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, self._fileName, size=(200, -1)) #@UndefinedVariable
         self._fileNameField.SetEditable(False)
         self._fileNameField.SetBackgroundColour((232,232,232))
         fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
-        fileNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -222,16 +223,16 @@ class MediaFileGui(object): #@UndefinedVariable
         noteSizer.Add(noteHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(noteSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        syncSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._syncSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText4 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Synchronization length:") #@UndefinedVariable
         self._syncField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
         self._syncField.SetInsertionPoint(0)
         syncHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSyncHelp, id=syncHelpButton.GetId()) #@UndefinedVariable
-        syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
-        syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
-        syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._noteConfigSizer.Add(syncSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
+        self._syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._syncSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         quantizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText5 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Quantization:") #@UndefinedVariable
@@ -305,15 +306,26 @@ class MediaFileGui(object): #@UndefinedVariable
         Effect1, Effect2, Fade, ImageSeqModulation = range(4)
 
     def _onOpenFile(self, event):
-        dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
-        if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-            self._fileName = dlg.GetPath()
-            self._fileNameField.SetValue(os.path.basename(self._fileName))
-        dlg.Destroy()
+        if(self._type == "Camera"):#
+            dlg = wx.NumberEntryDialog(self._mediaFileGuiPanel, "Choose camera input ID:", "ID:", "Camera input", self._cameraId, 0, 32) #@UndefinedVariable
+            if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
+                self._cameraId = dlg.GetValue()
+                self._fileNameField.SetValue(str(self._cameraId))
+            dlg.Destroy()
+        else:
+            dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
+            if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
+                self._fileName = dlg.GetPath()
+                self._fileNameField.SetValue(os.path.basename(self._fileName))
+            dlg.Destroy()
 
     def _onTypeChosen(self, event):
         selectedTypeId = self._typeField.GetSelection()
         self._type = self._typeModes.getNames(selectedTypeId)
+        if(self._type == "Camera"):
+            self._fileNameField.SetValue(str(self._cameraId))
+        else:
+            self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._setupSubConfig()
 
     def _onTypeHelp(self, event):
@@ -476,7 +488,10 @@ All notes on events are quantized to this.
 
     def _onSaveButton(self, event):
         print "Save " * 20
-        print "FileName: " + self._fileName
+        if(self._type == "Camera"):
+            print "FileName: " + str(self._cameraId)
+        else:
+            print "FileName: " + self._fileName
         print "Type: " + self._type
         if(self._type == "VideoLoop"):
             print "LoopMode: " + self._subModeField.GetValue()
@@ -526,6 +541,12 @@ All notes on events are quantized to this.
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+        if(self._type == "Image"):
+            self._noteConfigSizer.Hide(self._syncSizer)
+        elif(self._type == "Camera"):
+            self._noteConfigSizer.Hide(self._syncSizer)
+        else:
+            self._noteConfigSizer.Show(self._syncSizer)
         self._parentPlane.Layout()
 
     def _updateEffecChoices(self, widget, value, defaultValue):
@@ -572,9 +593,15 @@ All notes on events are quantized to this.
         config = noteConfig.getConfig()
         self._config = config
         self._midiNote = midiNote
-        self._fileName = self._config.getValue("FileName")
-        self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._type = self._config.getValue("Type")
+        if(self._type == "Camera"):
+            self._cameraId = int(self._config.getValue("FileName"))
+            self._fileName = ""
+            self._fileNameField.SetValue(str(self._cameraId))
+        else:
+            self._cameraId = 0
+            self._fileName = self._config.getValue("FileName")
+            self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
         self._setupSubConfig()
         self._noteField.SetValue(self._config.getValue("Note"))
@@ -597,6 +624,7 @@ All notes on events are quantized to this.
         self._config = None
         self._midiNote = midiNote
         midiNoteString = noteToNoteString(self._midiNote)
+        self._cameraId = 0
         self._fileName = ""
         self._fileNameField.SetValue("")
         self._type = "VideoLoop"

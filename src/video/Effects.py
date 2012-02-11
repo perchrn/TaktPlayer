@@ -26,7 +26,33 @@ class EffectTypes():
     Zoom, Flip, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(12)
 
     def getChoices(self):
-        return ["None", "Zoom", "Flip", "Blur", "BlurContrast", "Distortion", "Edge", "Desaturate", "Contrast", "HueSaturation", "Colorize", "Invert", "Threshold"]
+        return ["None",
+                "Zoom",
+                "Flip",
+                "Blur",
+                "BlurContrast",
+                "Distortion",
+                "Edge",
+                "Desaturate",
+                "Contrast",
+                "HueSaturation",
+                "Colorize",
+                "Invert",
+                "Threshold"]
+    def getDescriptions(self):
+        return ["None",
+                "Zoom inn/out and even crop video.",
+                "Flip video horizontal/vertical.",
+                "Blur video.",
+                "Blur and multiply with self.",
+                "Distort image to black or white.",
+                "Edge detection effects.",
+                "Selective desaturation effects.",
+                "Adjust brightness and contrast",
+                "Rotate colors and adjust saturation.",
+                "Add/subtract/multiply with color.",
+                "Invert video.",
+                "Threshold video to black and white."]
 
 def getEffectId(name):
     lowername = name.lower()

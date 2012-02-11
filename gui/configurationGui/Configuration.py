@@ -49,8 +49,8 @@ class Configuration(object):
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)
 
-    def updateModulationGui(self, modulationString):
-        self._globalConf.updateModulationGui(modulationString)
+    def updateModulationGui(self, modulationString, widget):
+        self._globalConf.updateModulationGui(modulationString, widget)
 
     def updateFadeGui(self, configName):
         self._globalConf.updateFadeGui(configName)

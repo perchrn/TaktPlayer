@@ -31,7 +31,7 @@ class GlobalConfig(object):
         self._effectsGui = EffectsGui(self._mainConfig)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
         self._fadeGui = FadeGui(self._mainConfig)
-        self._modulationGui = ModulationGui(self._mainConfig)
+        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
@@ -66,8 +66,8 @@ class GlobalConfig(object):
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
 
-    def updateModulationGui(self, modulationString):
-            self._modulationGui.updateGui(modulationString)
+    def updateModulationGui(self, modulationString, widget):
+        self._modulationGui.updateGui(modulationString, widget)
 
     def updateFadeGui(self, configName):
         template = self._fadeConfiguration.getTemplate(configName)
@@ -183,27 +183,27 @@ class EffectsGui(object):
     def _onAmmountEdit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._ammountField.GetValue())
+        self._mainConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField)
 
     def _onArg1Edit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._arg1Field.GetValue())
+        self._mainConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field)
 
     def _onArg2Edit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._arg2Field.GetValue())
+        self._mainConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field)
 
     def _onArg3Edit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._arg3Field.GetValue())
+        self._mainConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field)
 
     def _onArg4Edit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._arg4Field.GetValue())
+        self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field)
 
     def _onCloseButton(self, event):
         self._hideEffectsCallback()
@@ -584,12 +584,12 @@ Decides if this image fades to black or white.
     def _onFadeModulationEdit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue())
+        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField)
 
     def _onLevelModulationEdit(self, event):
         self._showModulationCallback()
         self._parentSizer.Layout()
-        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue())
+        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField)
 
     def _onCloseButton(self, event):
         self._hideFadeCallback()
@@ -628,8 +628,10 @@ Decides if this image fades to black or white.
         self._levelModulationField.SetValue(config.getValue("Level"))
 
 class ModulationGui(object):
-    def __init__(self, mainConfing):
+    def __init__(self, mainConfing, midiTiming):
         self._mainConfig = mainConfing
+        self._midiTiming = midiTiming
+        self._updateWidget = None
 
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
         self._mainModulationGuiPlane = plane
@@ -637,7 +639,7 @@ class ModulationGui(object):
         self._parentSizer = parentSizer
         self._hideModulationCallback = parentClass.hideModulationGui
 
-        self._midiModulation = MidiModulation(None, None)
+        self._midiModulation = MidiModulation(None, self._midiTiming)
 
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
@@ -668,24 +670,24 @@ class ModulationGui(object):
         self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiChannelSourceChosen, id=self._midiChannelSourceField.GetId()) #@UndefinedVariable
 
         self._midiControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Controller:") #@UndefinedVariable
+        tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Controller:") #@UndefinedVariable
         self._midiControllers = MidiControllers()
         self._midiControllerField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ModWheel"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
         midiControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp, id=midiControllerButton.GetId()) #@UndefinedVariable
-        self._midiControllerSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiControllerSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiControllerSizer.Add(self._midiControllerField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiControllerSizer.Add(midiControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._midiControllerSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiControllerChosen, id=self._midiControllerField.GetId()) #@UndefinedVariable
 
         self._midiActiveControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Active controllers:") #@UndefinedVariable
+        tmpText4 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Active controllers:") #@UndefinedVariable
         self._midiActiveControllerField = wx.ListBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, 100), choices=["None"], style=wx.LB_SINGLE) #@UndefinedVariable
         midiActiveControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelActiveControllerHelp, id=midiActiveControllerButton.GetId()) #@UndefinedVariable
-        self._midiActiveControllerSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiActiveControllerSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(self._midiActiveControllerField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(midiActiveControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._midiActiveControllerSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
@@ -694,13 +696,13 @@ class ModulationGui(object):
         """MidiNote"""
 
         self._midiNoteSourceSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Note source:") #@UndefinedVariable
+        tmpText5 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Note source:") #@UndefinedVariable
         self._midiNoteSource = NoteModulationSources()
         self._midiNoteSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Velocity"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
         midiNoteSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp, id=midiNoteSourceButton.GetId()) #@UndefinedVariable
-        self._midiNoteSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        self._midiNoteSourceSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(self._midiNoteSourceField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(midiNoteSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._midiNoteSourceSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
@@ -709,17 +711,61 @@ class ModulationGui(object):
         """LFO"""
 
         self._lfoTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO type:") #@UndefinedVariable
+        tmpText6 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO type:") #@UndefinedVariable
         self._lfoType = LfoShapes()
         self._lfoTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Triangle"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
         lfoTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp, id=lfoTypeButton.GetId()) #@UndefinedVariable
-        self._lfoTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoTypeSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoTypeSizer.Add(self._lfoTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoTypeSizer.Add(lfoTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onLfoTypeChosen, id=self._lfoTypeField.GetId()) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onLfoTypeChosen, id=self._lfoTypeField.GetId()) #@UndefinedVariable
+
+        self._lfoLengthSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO length:") #@UndefinedVariable
+        self._lfoLengthField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
+        self._lfoLengthField.SetInsertionPoint(0)
+        lfoLengthButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoLengthHelp, id=lfoLengthButton.GetId()) #@UndefinedVariable
+        self._lfoLengthSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoLengthSizer.Add(self._lfoLengthField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoLengthSizer.Add(lfoLengthButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoLengthSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._lfoPhaseSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO ofset:") #@UndefinedVariable
+        self._lfoPhaseField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(200, -1)) #@UndefinedVariable
+        self._lfoPhaseField.SetInsertionPoint(0)
+        lfoPhaseButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoPhaseHelp, id=lfoPhaseButton.GetId()) #@UndefinedVariable
+        self._lfoPhaseSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoPhaseSizer.Add(self._lfoPhaseField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoPhaseSizer.Add(lfoPhaseButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoPhaseSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._lfoMinValueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._lfoMinValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Min value:") #@UndefinedVariable
+        self._lfoMinValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
+        self._lfoMinValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._lfoMinValueSliderSizer.Add(self._lfoMinValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMinValueSliderSizer.Add(self._lfoMinValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMinValueSliderSizer.Add(self._lfoMinValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoMinValueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._lfoMinValueSliderId = self._lfoMinValueSlider.GetId()
+        self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+        self._lfoMaxValueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._lfoMaxValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Max value:") #@UndefinedVariable
+        self._lfoMaxValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
+        self._lfoMaxValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoMaxValueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._lfoMaxValueSliderId = self._lfoMaxValueSlider.GetId()
+        self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
         """ADSR"""
 
@@ -788,9 +834,17 @@ class ModulationGui(object):
             self._parentSizer.Layout()
         if(choice == "LFO"):
             self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
+            self._mainModulationGuiSizer.Show(self._lfoLengthSizer)
+            self._mainModulationGuiSizer.Show(self._lfoPhaseSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._lfoTypeSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoPhaseSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoMinValueSliderSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoMaxValueSliderSizer)
             self._parentSizer.Layout()
         if(choice == "ADSR"):
             self._mainModulationGuiSizer.Show(self._adsrTypeSizer)
@@ -895,6 +949,38 @@ TODO: bla bla bla
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _onLfoTypeChosen(self, event):
+        lfoType = self._lfoTypeField.GetValue()
+        if(lfoType != "Random"):
+            self._mainModulationGuiSizer.Show(self._lfoLengthSizer)
+            self._mainModulationGuiSizer.Show(self._lfoPhaseSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoPhaseSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
+            self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
+            self._parentSizer.Layout()
+            
+    def _onLfoLengthHelp(self, event):
+        text = """
+The length of the LFO in beats.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO length help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onLfoPhaseHelp(self, event):
+        text = """
+The start offset or phase of the LFO in beats.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO offset help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+
     def _onAdsrTypeHelp(self, event):
         text = """
 Selects full ADSR or just Attack/Release
@@ -905,8 +991,13 @@ Selects full ADSR or just Attack/Release
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
+        if(sliderId == self._lfoMinValueSliderId):
+            valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
+            self._lfoMinValueLabel.SetLabel(valueString)
+        if(sliderId == self._lfoMaxValueSliderId):
+            valueString = "%.2f" % (float(self._lfoMaxValueSlider.GetValue()) / 101.0)
+            self._lfoMaxValueLabel.SetLabel(valueString)
         if(sliderId == self._valueSliderId):
-#            print "Ammount: " + str(self._ammountSlider.GetValue())
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             self._valueValueLabel.SetLabel(valueString)
 
@@ -914,9 +1005,36 @@ Selects full ADSR or just Attack/Release
         self._hideModulationCallback()
 
     def _onSaveButton(self, event):
-        print "Save " * 20
-        print "Nr1: " + self._modulationSorcesField.GetValue()
-        print "Save " * 20
+        modType = self._modulationSorcesField.GetValue()
+        modeString = modType
+        if(modType == "MidiChannel"):
+            channelType = self._midiChannelSourceField.GetValue()
+            modeString += "." + channelType
+            if(channelType == "Controller"):
+                controllerName = self._midiControllerField.GetValue()
+                modeString += "." + controllerName
+        if(modType == "MidiNote"):
+            noteMod = self._midiNoteSourceField.GetValue()
+            modeString += "." + noteMod
+        if(modType == "LFO"):
+            lfoType = self._lfoTypeField.GetValue()
+            modeString += "." + lfoType
+            lfoLength = self._lfoLengthField.GetValue()
+            modeString += "." + lfoLength
+            lfoPhase = self._lfoPhaseField.GetValue()
+            modeString += "|" + lfoPhase
+            valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
+            modeString += "|" + valueString
+            valueString = "%.2f" % (float(self._lfoMaxValueSlider.GetValue()) / 101.0)
+            modeString += "|" + valueString
+        if(modType == "ADSR"):
+            adsrType = self._adsrTypeField.GetValue()
+            modeString += "." + adsrType
+        if(modType == "Value"):
+            valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
+            modeString += "." + valueString
+        if(self._updateWidget != None):
+            self._updateWidget.SetValue(modeString)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -934,8 +1052,8 @@ Selects full ADSR or just Attack/Release
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateGui(self, modulationString):
-        print "ModulationGui updateGui: " + str(modulationString)
+    def updateGui(self, modulationString, widget):
+        self._updateWidget = widget
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
         updatedId = None
         if(modulationIdTuplet == None):
@@ -969,6 +1087,18 @@ Selects full ADSR or just Attack/Release
                     subModId = [subModId]
                 subModName = self._lfoType.getNames(subModId[0])
                 self._lfoTypeField.SetValue(subModName)
+                if(len(subModId) > 1):
+                    self._lfoLengthField.SetValue(str(subModId[1]))
+                if(len(subModId) > 2):
+                    self._lfoPhaseField.SetValue(str(subModId[2] / self._midiTiming.getTicksPerQuarteNote()))
+                if(len(subModId) > 3):
+                    calcValue = int(101.0 * subModId[3])
+                    self._lfoMinValueSlider.SetValue(calcValue)
+                    self._lfoMinValueLabel.SetLabel("%.2f" % (subModId[3]))
+                if(len(subModId) > 4):
+                    calcValue = int(101.0 * subModId[4])
+                    self._lfoMaxValueSlider.SetValue(calcValue)
+                    self._lfoMaxValueLabel.SetLabel("%.2f" % (subModId[4]))
             elif(modulationIdTuplet[0] == ModulationSources.ADSR):
                 subModId = modulationIdTuplet[1]
                 isInt = isinstance(subModId, int)
@@ -982,7 +1112,6 @@ Selects full ADSR or just Attack/Release
                 if(isFloat != True):
                     subModId = subModId[0]
                 calcValue = int(101.0 * subModId)
-                print "DEBUG X: " + str(calcValue)
                 self._valueSlider.SetValue(calcValue)
                 self._valueValueLabel.SetLabel("%.2f" % (subModId))
 
@@ -993,6 +1122,10 @@ Selects full ADSR or just Attack/Release
             self._midiNoteSourceField.SetValue("Velocity")
         if(updatedId != "LFO"):
             self._lfoTypeField.SetValue("Triangle")
+            self._lfoLengthField.SetValue("4.0")
+            self._lfoPhaseField.SetValue("0.0")
+            self._lfoMinValueSlider.SetValue(0)
+            self._lfoMaxValueSlider.SetValue(101)
         if(updatedId != "ADSR"):
             self._adsrTypeField.SetValue("ADSR")
         if(updatedId != "Value"):

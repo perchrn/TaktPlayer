@@ -260,7 +260,7 @@ class MidiModulation(object):
                         if(len(valuesSplit) > 1):
                             tmpSPP = float(valuesSplit[1])
                             if(tmpSPP >= 0.0):
-                                startSPP = tmpSPP
+                                startSPP = tmpSPP * self._midiTiming.getTicksPerQuarteNote()
                             if(len(valuesSplit) > 2):
                                 tmpMin = float(valuesSplit[2])
                                 if(tmpMin >= 0.0):
@@ -280,10 +280,10 @@ class MidiModulation(object):
             if(len(sourceSplit) > 1):
                 mode = getAdsrShapeId(sourceSplit[1])
                 if(mode != None):
-                    attack = 4.0
+                    attack = 0.0
                     decay = 0.0
                     sustain = 1.0
-                    release = 4.0
+                    release = 0.0
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
                         valuesSplit = newSplit[2].split('|', 5)

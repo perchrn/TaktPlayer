@@ -364,6 +364,14 @@ ReTrigger Will be restarted when another note is activated on the same track.
         dlg.Destroy()
 
     def _onSubmodulationEdit(self, event):
+        self._selectedEditor = self.EditSelection.ImageSeqModulation
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._parentPlane.Layout()
+        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField)
+
         print "Sub modulation Edit..."
 
     def _onMixHelp(self, event):
@@ -411,19 +419,23 @@ All notes on events are quantized to this.
         dlg.Destroy()
 
     def _onEffect1Edit(self, event):
-        self._selectedEditor = self.EditSelection.Effect1
         self._configSizer.Show(self._effectConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        if(self._selectedEditor != self.EditSelection.Effect1):
+            self._configSizer.Hide(self._moulationConfigPanel)
         self._parentPlane.Layout()
         selectedEffectConfig = self._effect1Field.GetValue()
+        self._selectedEditor = self.EditSelection.Effect1
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
     def _onEffect2Edit(self, event):
-        self._selectedEditor = self.EditSelection.Effect2
         self._configSizer.Show(self._effectConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        if(self._selectedEditor != self.EditSelection.Effect2):
+            self._configSizer.Hide(self._moulationConfigPanel)
         self._parentPlane.Layout()
         selectedEffectConfig = self._effect2Field.GetValue()
+        self._selectedEditor = self.EditSelection.Effect2
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
     def hideEffectsGui(self):
@@ -451,13 +463,15 @@ All notes on events are quantized to this.
         self._parentPlane.Layout()
 
     def _onFadeEdit(self, event):
-        self._selectedEditor = self.EditSelection.Fade
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
+        if(self._selectedEditor != self.EditSelection.Fade):
+            self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Show(self._fadeConfigPanel)
         self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
         selectedFadeConfig = self._fadeField.GetValue()
+        self._selectedEditor = self.EditSelection.Fade
         self._mainConfig.updateFadeGui(selectedFadeConfig)
 
     def _onSaveButton(self, event):

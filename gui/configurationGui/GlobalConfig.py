@@ -108,7 +108,7 @@ class EffectsGui(object):
         self._amountLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountField = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._ammountField.SetInsertionPoint(0)
-        ammountButton = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        ammountButton = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=ammountButton.GetId()) #@UndefinedVariable
         self._ammountSizer.Add(self._amountLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(self._ammountField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -119,7 +119,7 @@ class EffectsGui(object):
         self._arg1Label = wx.StaticText(plane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
         self._arg1Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg1Field.SetInsertionPoint(0)
-        arg1Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        arg1Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=arg1Button.GetId()) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -130,7 +130,7 @@ class EffectsGui(object):
         self._arg2Label = wx.StaticText(plane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
         self._arg2Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg2Field.SetInsertionPoint(0)
-        arg2Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        arg2Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=arg2Button.GetId()) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -141,7 +141,7 @@ class EffectsGui(object):
         self._arg3Label = wx.StaticText(plane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
         self._arg3Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg3Field.SetInsertionPoint(0)
-        arg3Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        arg3Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=arg3Button.GetId()) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -152,7 +152,7 @@ class EffectsGui(object):
         self._arg4Label = wx.StaticText(plane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
         self._arg4Field = wx.TextCtrl(plane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg4Field.SetInsertionPoint(0)
-        arg4Button = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        arg4Button = wx.Button(plane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=arg4Button.GetId()) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -249,7 +249,7 @@ class EffectsGui(object):
         self._ammountSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountSliderLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountSlider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
-        self._amountValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._amountValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._ammountSliderSizer.Add(self._amountSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._ammountSliderSizer.Add(self._ammountSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._ammountSliderSizer.Add(self._amountValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -259,7 +259,7 @@ class EffectsGui(object):
         self._arg1SliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg1SliderLabel = wx.StaticText(plane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
         self._arg1Slider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
-        self._arg1ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._arg1ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._arg1SliderSizer.Add(self._arg1SliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg1SliderSizer.Add(self._arg1Slider, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg1SliderSizer.Add(self._arg1ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -269,7 +269,7 @@ class EffectsGui(object):
         self._arg2SliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg2SliderLabel = wx.StaticText(plane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
         self._arg2Slider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
-        self._arg2ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._arg2ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._arg2SliderSizer.Add(self._arg2SliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg2SliderSizer.Add(self._arg2Slider, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg2SliderSizer.Add(self._arg2ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -279,7 +279,7 @@ class EffectsGui(object):
         self._arg3SliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg3SliderLabel = wx.StaticText(plane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
         self._arg3Slider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
-        self._arg3ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._arg3ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._arg3SliderSizer.Add(self._arg3SliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg3SliderSizer.Add(self._arg3Slider, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg3SliderSizer.Add(self._arg3ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -289,7 +289,7 @@ class EffectsGui(object):
         self._arg4SliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._arg4SliderLabel = wx.StaticText(plane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
         self._arg4Slider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
-        self._arg4ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._arg4ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._arg4SliderSizer.Add(self._arg4SliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg4SliderSizer.Add(self._arg4Slider, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg4SliderSizer.Add(self._arg4ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -530,7 +530,7 @@ class FadeGui(object):
         self._fadeModes = FadeMode()
         self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
-        fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModeHelp, id=fadeModeButton.GetId()) #@UndefinedVariable
         fadeModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModeSizer.Add(self._fadeModesField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -542,7 +542,7 @@ class FadeGui(object):
         tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
         self._fadeModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._fadeModulationField.SetInsertionPoint(0)
-        fadeModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        fadeModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit, id=fadeModulationButton.GetId()) #@UndefinedVariable
         fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -553,7 +553,7 @@ class FadeGui(object):
         tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
         self._levelModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._levelModulationField.SetInsertionPoint(0)
-        levelModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        levelModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit, id=levelModulationButton.GetId()) #@UndefinedVariable
         levelModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -646,7 +646,7 @@ class ModulationGui(object):
         self._modulationSorces = ModulationSources()
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
-        modulationSorcesButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        modulationSorcesButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onModulationModeHelp, id=modulationSorcesButton.GetId()) #@UndefinedVariable
         modulationSorcesSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         modulationSorcesSizer.Add(self._modulationSorcesField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -661,7 +661,7 @@ class ModulationGui(object):
         self._midiChannelSource = MidiChannelModulationSources()
         self._midiChannelSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Controller"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiChannelSourceField, self._midiChannelSource.getChoices, "Controller", "Controller")
-        midiChannelSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        midiChannelSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelSourceHelp, id=midiChannelSourceButton.GetId()) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(self._midiChannelSourceField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -674,7 +674,7 @@ class ModulationGui(object):
         self._midiControllers = MidiControllers()
         self._midiControllerField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ModWheel"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
-        midiControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        midiControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp, id=midiControllerButton.GetId()) #@UndefinedVariable
         self._midiControllerSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiControllerSizer.Add(self._midiControllerField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -684,8 +684,8 @@ class ModulationGui(object):
 
         self._midiActiveControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText4 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Active controllers:") #@UndefinedVariable
-        self._midiActiveControllerField = wx.ListBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, 100), choices=["None"], style=wx.LB_SINGLE) #@UndefinedVariable
-        midiActiveControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._midiActiveControllerField = wx.ListBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(120, 100), choices=["None"], style=wx.LB_SINGLE) #@UndefinedVariable
+        midiActiveControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelActiveControllerHelp, id=midiActiveControllerButton.GetId()) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(self._midiActiveControllerField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -700,7 +700,7 @@ class ModulationGui(object):
         self._midiNoteSource = NoteModulationSources()
         self._midiNoteSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Velocity"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
-        midiNoteSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        midiNoteSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp, id=midiNoteSourceButton.GetId()) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(self._midiNoteSourceField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -715,7 +715,7 @@ class ModulationGui(object):
         self._lfoType = LfoShapes()
         self._lfoTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Triangle"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
-        lfoTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        lfoTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp, id=lfoTypeButton.GetId()) #@UndefinedVariable
         self._lfoTypeSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoTypeSizer.Add(self._lfoTypeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -725,33 +725,40 @@ class ModulationGui(object):
 
         self._lfoLengthSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO length:") #@UndefinedVariable
-        self._lfoLengthField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
-        self._lfoLengthField.SetInsertionPoint(0)
-        lfoLengthButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        self._lfoLengthSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._lfoLengthLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        lfoLengthButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoLengthHelp, id=lfoLengthButton.GetId()) #@UndefinedVariable
         self._lfoLengthSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        self._lfoLengthSizer.Add(self._lfoLengthField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoLengthSizer.Add(self._lfoLengthSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoLengthSizer.Add(self._lfoLengthLabel, 0, wx.ALL, 5) #@UndefinedVariable
         self._lfoLengthSizer.Add(lfoLengthButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoLengthSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._lfoLevelSliderId = self._lfoLengthSlider.GetId()
 
         self._lfoPhaseSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO ofset:") #@UndefinedVariable
-        self._lfoPhaseField = wx.TextCtrl(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(200, -1)) #@UndefinedVariable
-        self._lfoPhaseField.SetInsertionPoint(0)
-        lfoPhaseButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO offset:") #@UndefinedVariable
+        self._lfoPhaseSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._lfoPhaseLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        lfoPhaseButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoPhaseHelp, id=lfoPhaseButton.GetId()) #@UndefinedVariable
         self._lfoPhaseSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
-        self._lfoPhaseSizer.Add(self._lfoPhaseField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoPhaseSizer.Add(self._lfoPhaseSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoPhaseSizer.Add(self._lfoPhaseLabel, 0, wx.ALL, 5) #@UndefinedVariable
         self._lfoPhaseSizer.Add(lfoPhaseButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoPhaseSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._lfoPhaseSliderId = self._lfoPhaseSlider.GetId()
 
         self._lfoMinValueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._lfoMinValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Min value:") #@UndefinedVariable
         self._lfoMinValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
-        self._lfoMinValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._lfoMinValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        lfoMinValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoMinValueHelp, id=lfoMinValueButton.GetId()) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMinValueSliderSizer.Add(lfoMinValueButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoMinValueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._lfoMinValueSliderId = self._lfoMinValueSlider.GetId()
         self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
@@ -759,10 +766,13 @@ class ModulationGui(object):
         self._lfoMaxValueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._lfoMaxValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Max value:") #@UndefinedVariable
         self._lfoMaxValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
-        self._lfoMaxValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._lfoMaxValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        lfoMaxValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoMaxValueHelp, id=lfoMaxValueButton.GetId()) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._lfoMaxValueSliderSizer.Add(lfoMaxValueButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoMaxValueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._lfoMaxValueSliderId = self._lfoMaxValueSlider.GetId()
         self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
@@ -774,7 +784,7 @@ class ModulationGui(object):
         self._adsrType = AdsrShapes()
         self._adsrTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ADSR"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._adsrTypeField, self._adsrType.getChoices, "ADSR", "ADSR")
-        adsrTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help') #@UndefinedVariable
+        adsrTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrTypeHelp, id=adsrTypeButton.GetId()) #@UndefinedVariable
         self._adsrTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrTypeSizer.Add(self._adsrTypeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -787,7 +797,7 @@ class ModulationGui(object):
         self._valueSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._valueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
         self._valueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
-        self._valueValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(60,-1)) #@UndefinedVariable
+        self._valueValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -981,6 +991,22 @@ The start offset or phase of the LFO in beats.
         dlg.Destroy()
 
 
+    def _onLfoMinValueHelp(self, event):
+        text = """
+Minimum output value from the LFO.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO minimum value help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onLfoMaxValueHelp(self, event):
+        text = """
+Maximum output value from the LFO.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO maximum value help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onAdsrTypeHelp(self, event):
         text = """
 Selects full ADSR or just Attack/Release
@@ -991,6 +1017,12 @@ Selects full ADSR or just Attack/Release
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
+        if(sliderId == self._lfoLevelSliderId):
+            valueString = "%.1f" % (float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0)
+            self._lfoLengthLabel.SetLabel(valueString)
+        if(sliderId == self._lfoPhaseSliderId):
+            valueString = "%.1f" % (float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0)
+            self._lfoPhaseLabel.SetLabel(valueString)
         if(sliderId == self._lfoMinValueSliderId):
             valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
             self._lfoMinValueLabel.SetLabel(valueString)
@@ -1019,9 +1051,9 @@ Selects full ADSR or just Attack/Release
         if(modType == "LFO"):
             lfoType = self._lfoTypeField.GetValue()
             modeString += "." + lfoType
-            lfoLength = self._lfoLengthField.GetValue()
+            lfoLength = "%.2f" % (float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0)
             modeString += "." + lfoLength
-            lfoPhase = self._lfoPhaseField.GetValue()
+            lfoPhase = "%.2f" % (float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0)
             modeString += "|" + lfoPhase
             valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
             modeString += "|" + valueString
@@ -1088,9 +1120,13 @@ Selects full ADSR or just Attack/Release
                 subModName = self._lfoType.getNames(subModId[0])
                 self._lfoTypeField.SetValue(subModName)
                 if(len(subModId) > 1):
-                    self._lfoLengthField.SetValue(str(subModId[1]))
+                    calcValue = int(160.0 * subModId[1] / 32.0)
+                    self._lfoLengthSlider.SetValue(calcValue)
+                    self._lfoLengthLabel.SetLabel("%.1f" % (subModId[1]))
                 if(len(subModId) > 2):
-                    self._lfoPhaseField.SetValue(str(subModId[2] / self._midiTiming.getTicksPerQuarteNote()))
+                    calcValue = int(160.0 * subModId[2] / 32.0)
+                    self._lfoPhaseSlider.SetValue(calcValue)
+                    self._lfoPhaseLabel.SetLabel("%.1f" % (subModId[2]))
                 if(len(subModId) > 3):
                     calcValue = int(101.0 * subModId[3])
                     self._lfoMinValueSlider.SetValue(calcValue)
@@ -1122,10 +1158,14 @@ Selects full ADSR or just Attack/Release
             self._midiNoteSourceField.SetValue("Velocity")
         if(updatedId != "LFO"):
             self._lfoTypeField.SetValue("Triangle")
-            self._lfoLengthField.SetValue("4.0")
-            self._lfoPhaseField.SetValue("0.0")
+            self._lfoLengthSlider.SetValue(20)
+            self._lfoLengthLabel.SetLabel("4.0")
+            self._lfoPhaseSlider.SetValue(0)
+            self._lfoPhaseLabel.SetLabel("0.0")
             self._lfoMinValueSlider.SetValue(0)
+            self._lfoMinValueLabel.SetLabel("0.00")
             self._lfoMaxValueSlider.SetValue(101)
+            self._lfoMaxValueLabel.SetLabel("1.00")
         if(updatedId != "ADSR"):
             self._adsrTypeField.SetValue("ADSR")
         if(updatedId != "Value"):

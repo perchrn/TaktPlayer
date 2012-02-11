@@ -167,7 +167,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fileNameField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, self._fileName, size=(200, -1)) #@UndefinedVariable
         self._fileNameField.SetEditable(False)
         self._fileNameField.SetBackgroundColour((232,232,232))
-        fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select') #@UndefinedVariable
+        fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
         fileNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -178,7 +178,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText2 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Type:") #@UndefinedVariable
         self._typeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["VideoLoop"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateTypeChoices(self._typeField, "VideoLoop", "VideoLoop")
-        typeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        typeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onTypeHelp, id=typeHelpButton.GetId()) #@UndefinedVariable
         typeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(self._typeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -190,7 +190,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModeLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Loop mode:") #@UndefinedVariable
         self._subModeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Normal"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateLoopModeChoices(self._subModeField, "Normal", "Normal")
-        subModeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        subModeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSubModeHelp, id=subModeHelpButton.GetId()) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -202,7 +202,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Playback modulation:") #@UndefinedVariable
         self._subModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._subModulationField.SetInsertionPoint(0)
-        subModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        subModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit, id=subModulationEditButton.GetId()) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -215,7 +215,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, noteToNoteString(self._midiNote), size=(200, -1)) #@UndefinedVariable
         self._noteField.SetEditable(False)
         self._noteField.SetBackgroundColour((232,232,232))
-        noteHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        noteHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onNoteHelp, id=noteHelpButton.GetId()) #@UndefinedVariable
         noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(self._noteField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -226,7 +226,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText4 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Synchronization length:") #@UndefinedVariable
         self._syncField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
         self._syncField.SetInsertionPoint(0)
-        syncHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        syncHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSyncHelp, id=syncHelpButton.GetId()) #@UndefinedVariable
         syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -237,7 +237,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText5 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Quantization:") #@UndefinedVariable
         self._quantizeField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "1.0", size=(200, -1)) #@UndefinedVariable
         self._quantizeField.SetInsertionPoint(0)
-        quantizeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        quantizeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onQuantizeHelp, id=quantizeHelpButton.GetId()) #@UndefinedVariable
         quantizeSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(self._quantizeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -248,7 +248,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText6 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Mix mode:") #@UndefinedVariable
         self._mixField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateMixModeChoices(self._mixField, "Add", "Add")
-        mixHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help') #@UndefinedVariable
+        mixHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -259,7 +259,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
         self._effect1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
-        effect1Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        effect1Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onEffect1Edit, id=effect1Button.GetId()) #@UndefinedVariable
         effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -270,7 +270,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
         self._effect2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
-        effect2Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        effect2Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onEffect2Edit, id=effect2Button.GetId()) #@UndefinedVariable
         effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Field, 2, wx.ALL, 5) #@UndefinedVariable
@@ -281,7 +281,7 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Fade template:") #@UndefinedVariable
         self._fadeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateFadeChoices(self._fadeField, "Default", "Default")
-        fadeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        fadeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onFadeEdit, id=fadeButton.GetId()) #@UndefinedVariable
         fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeField, 2, wx.ALL, 5) #@UndefinedVariable

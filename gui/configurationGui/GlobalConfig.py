@@ -11,11 +11,13 @@ from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
     ColorizeModes
 from video.media.MediaFile import FadeMode
 from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
-    MidiModulation, AttackDecaySustainRelease
+    MidiModulation, AttackDecaySustainRelease, getLfoShapeId,\
+    LowFrequencyOscilator, getAdsrShapeId
 from midi.MidiStateHolder import MidiChannelModulationSources,\
     NoteModulationSources
 from midi.MidiController import MidiControllers
 from widgets.PcnAdsrDisplayWindget import PcnAdsrDisplayWidget
+from widgets.PcnLfoDisplayWindget import PcnLfoDisplayWidget
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -776,7 +778,7 @@ class ModulationGui(object):
         self._lfoLengthSizer.Add(self._lfoLengthLabel, 0, wx.ALL, 5) #@UndefinedVariable
         self._lfoLengthSizer.Add(lfoLengthButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._lfoLengthSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        self._lfoLevelSliderId = self._lfoLengthSlider.GetId()
+        self._lfoLengthSliderId = self._lfoLengthSlider.GetId()
 
         self._lfoPhaseSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO offset:") #@UndefinedVariable
@@ -818,6 +820,18 @@ class ModulationGui(object):
         self._mainModulationGuiSizer.Add(self._lfoMaxValueSliderSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._lfoMaxValueSliderId = self._lfoMaxValueSlider.GetId()
         self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+        self._lfoGraphicsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._lfoGraphicsLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO graph:") #@UndefinedVariable
+        emptyLfoBitMap = wx.EmptyBitmap (200, 80, depth=3) #@UndefinedVariable
+        self._lfoGraphicsDisplay = PcnLfoDisplayWidget(self._mainModulationGuiPlane, emptyLfoBitMap)
+        lfoGraphicsValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+#        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoGraphicsHelp, id=lfoGraphicsValueButton.GetId()) #@UndefinedVariable
+        self._lfoGraphicsSizer.Add(self._lfoGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._lfoGraphicsSizer.Add(self._lfoGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
+        self._lfoGraphicsSizer.Add(lfoGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._lfoGraphicsSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._lfoGraphicsId = self._lfoGraphicsDisplay.GetId()
 
         """ADSR"""
 
@@ -963,6 +977,7 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Hide(self._lfoPhaseSizer)
             self._mainModulationGuiSizer.Hide(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Hide(self._lfoMaxValueSliderSizer)
+            self._mainModulationGuiSizer.Hide(self._lfoGraphicsSizer)
             self._parentSizer.Layout()
         if(choice == "ADSR"):
             self._mainModulationGuiSizer.Show(self._adsrTypeSizer)
@@ -1098,14 +1113,21 @@ Random:\t\tNo phase just random numbers.
             self._mainModulationGuiSizer.Show(self._lfoPhaseSizer)
             self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
+            self._mainModulationGuiSizer.Show(self._lfoGraphicsSizer)
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
             self._mainModulationGuiSizer.Hide(self._lfoPhaseSizer)
             self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
+            self._mainModulationGuiSizer.Show(self._lfoGraphicsSizer)
             self._parentSizer.Layout()
-            
+        lfoLengthValue = float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0
+        lfoPhaseValue = float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0
+        lfoMinValue = float(self._lfoMinValueSlider.GetValue()) / 101.0
+        lfoMaxValue = float(self._lfoMaxValueSlider.GetValue()) / 101.0
+        self._updateLfoGraph(self._lfoTypeField.GetValue(), lfoLengthValue, lfoPhaseValue, lfoMinValue, lfoMaxValue)
+
     def _onLfoLengthHelp(self, event):
         text = """
 The length of the LFO in beats.
@@ -1163,6 +1185,11 @@ Selects full ADSR or just Attack/Release mode
             self._mainModulationGuiSizer.Show(self._adsrReleaseSizer)
             self._mainModulationGuiSizer.Show(self._adsrGraphicsSizer)
             self._parentSizer.Layout()
+        attackValue = float(self._adsrAttackSlider.GetValue()) / 160.0 * 32.0
+        decayValue = float(self._adsrDecaySlider.GetValue()) / 160.0 * 32.0
+        sustainValue = float(self._adsrSustainSlider.GetValue()) / 101.0
+        releaseValue = float(self._adsrReleaseSlider.GetValue()) / 160.0 * 32.0
+        self._updateAdsrGraph(self._adsrTypeField.GetValue(), attackValue, decayValue, sustainValue, releaseValue)
             
     def _onAdsrAttackHelp(self, event):
         text = """
@@ -1196,29 +1223,34 @@ Sets release time.
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _updateLfoGraph(self, lfoTypeString, length, phase, minLevel, maxLevel):
+        lfoType = getLfoShapeId(lfoTypeString)
+        self._lfoGraphicsDisplay.drawLfo(LowFrequencyOscilator(self._midiTiming, lfoType, length, phase, minLevel, maxLevel))
+        
     def _updateAdsrGraph(self, adsrTypeString, attack, decay, sustain, release):
-        if(adsrTypeString == "ADSR"):
-            adsrType = AdsrShapes.ADSR
-        else:
-            adsrType = AdsrShapes.AR
+        adsrType = getAdsrShapeId(adsrTypeString)
         self._adsrGraphicsDisplay.drawAdsr(AttackDecaySustainRelease(self._midiTiming, adsrType, attack, decay, sustain, release))
-        
-        
+
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
         adsrModified = False
-        if(sliderId == self._lfoLevelSliderId):
+        lfoModified = False
+        if(sliderId == self._lfoLengthSliderId):
             valueString = "%.1f" % (float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0)
             self._lfoLengthLabel.SetLabel(valueString)
+            lfoModified = True
         elif(sliderId == self._lfoPhaseSliderId):
             valueString = "%.1f" % (float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0)
             self._lfoPhaseLabel.SetLabel(valueString)
+            lfoModified = True
         elif(sliderId == self._lfoMinValueSliderId):
             valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
             self._lfoMinValueLabel.SetLabel(valueString)
+            lfoModified = True
         elif(sliderId == self._lfoMaxValueSliderId):
             valueString = "%.2f" % (float(self._lfoMaxValueSlider.GetValue()) / 101.0)
             self._lfoMaxValueLabel.SetLabel(valueString)
+            lfoModified = True
         elif(sliderId == self._adsrAttackSliderId):
             valueString = "%.1f" % (float(self._adsrAttackSlider.GetValue()) / 160.0 * 32.0)
             self._adsrAttackLabel.SetLabel(valueString)
@@ -1238,6 +1270,12 @@ Sets release time.
         elif(sliderId == self._valueSliderId):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             self._valueValueLabel.SetLabel(valueString)
+        if(lfoModified == True):
+            lfoLengthValue = float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0
+            lfoPhaseValue = float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0
+            lfoMinValue = float(self._lfoMinValueSlider.GetValue()) / 101.0
+            lfoMaxValue = float(self._lfoMaxValueSlider.GetValue()) / 101.0
+            self._updateLfoGraph(self._lfoTypeField.GetValue(), lfoLengthValue, lfoPhaseValue, lfoMinValue, lfoMaxValue)
         if(adsrModified == True):
             attackValue = float(self._adsrAttackSlider.GetValue()) / 160.0 * 32.0
             decayValue = float(self._adsrDecaySlider.GetValue()) / 160.0 * 32.0
@@ -1364,6 +1402,7 @@ Constant static value.
                     calcValue = int(101.0 * subModId[4])
                     self._lfoMaxValueSlider.SetValue(calcValue)
                     self._lfoMaxValueLabel.SetLabel("%.2f" % (subModId[4]))
+                self._updateLfoGraph(subModName, subModId[1], subModId[2], subModId[3], subModId[4])
             elif(modulationIdTuplet[0] == ModulationSources.ADSR):
                 subModId = modulationIdTuplet[1]
                 isInt = isinstance(subModId, int)
@@ -1412,6 +1451,7 @@ Constant static value.
             self._lfoMinValueLabel.SetLabel("0.00")
             self._lfoMaxValueSlider.SetValue(101)
             self._lfoMaxValueLabel.SetLabel("1.00")
+            self._updateLfoGraph("Triangle", 4.0, 0.0, 0.0, 1.0)
         if(updatedId != "ADSR"):
             self._adsrTypeField.SetValue("ADSR")
             self._adsrAttackSlider.SetValue(0)

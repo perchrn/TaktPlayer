@@ -26,9 +26,9 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Note.1C.ADSR")
 
 class LowFrequencyOscilator(object):
-    def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
+    def __init__(self, midiTimingClass, mode, midiLength = 4.0, startBeat = 0.0, minVal = 0.0, maxVal = 1.0):
         self._midiTiming = midiTimingClass
-        self._startSongPosition = startSPP
+        self._startSongPosition = startBeat * self._midiTiming.getTicksPerQuarteNote()
         self._midiLength = midiLength
         self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
         self._shape = mode
@@ -60,6 +60,10 @@ class LowFrequencyOscilator(object):
                         if(self._maxVal == maxVal):
                             return True
         return False
+
+    def calculateLength(self, length):
+        return length * self._midiTiming.getTicksPerQuarteNote()
+
 
 class LfoShapes():
     Triangle, SawTooth, Ramp, Sine, Random = range(5)
@@ -111,17 +115,20 @@ def getAdsrShapeId(shapeName):
 class AttackDecaySustainRelease(object):
     def __init__(self, midiTimingClass, mode, attack, decay, sustain, release):
         self._midiTiming = midiTimingClass
+        self._shape = mode
 
         self._attackLength = attack
-        self._decayLength = decay
-        self._sustainValue = sustain
+        if(self._shape == AdsrShapes.ADSR):
+            self._decayLength = decay
+            self._sustainValue = sustain
+        else:
+            self._decayLength = 0.0
+            self._sustainValue = 1.0
         self._releaseLength = release
         self._attackLengthCalc = attack * self._midiTiming.getTicksPerQuarteNote()
         self._decayLengthCalc = decay * self._midiTiming.getTicksPerQuarteNote()
         self._sustainStartCalc = self._attackLengthCalc + self._decayLengthCalc
         self._releaseLengthCalc = release * self._midiTiming.getTicksPerQuarteNote()
-
-        self._shape = mode
 
     def getValue(self, songPosition, argument):
         noteOnSPP, noteOffSPP, originalLength = argument
@@ -253,7 +260,7 @@ class MidiModulation(object):
                 mode = getLfoShapeId(sourceSplit[1])
                 if(mode != None):
                     midiLength = 4.0
-                    startSPP = 0.0
+                    startBeat = 0.0
                     minVal = 0.0
                     maxVal = 1.0
                     if(len(sourceSplit) > 2):
@@ -267,9 +274,9 @@ class MidiModulation(object):
                             pass #Keep default
                         if(len(valuesSplit) > 1):
                             try:
-                                tmpSPP = float(valuesSplit[1])
-                                if(tmpSPP >= 0.0):
-                                    startSPP = tmpSPP * self._midiTiming.getTicksPerQuarteNote()
+                                tmpStartBeat = float(valuesSplit[1])
+                                if(tmpStartBeat >= 0.0):
+                                    startBeat = tmpStartBeat
                             except:
                                 pass #Keep default
                             if(len(valuesSplit) > 2):
@@ -286,7 +293,7 @@ class MidiModulation(object):
                                             maxVal = tmpMax
                                     except:
                                         pass #Keep default
-                    return (ModulationSources.LFO, self._getLfoId(mode, midiLength, startSPP, minVal, maxVal))
+                    return (ModulationSources.LFO, self._getLfoId(mode, midiLength, startBeat, minVal, maxVal))
         elif( sourceSplit[0] == "Value" ):
             if(len(sourceSplit) > 1):
                 newSplit = sourceDescription.split('.', 1)
@@ -348,17 +355,17 @@ class MidiModulation(object):
             print "Invalid modulation description: \"%s\"" % sourceDescription
         return None
 
-    def _findLfo(self, mode, midiLength, startSPP, minVal, maxVal):
+    def _findLfo(self, mode, midiLength, startBeat, minVal, maxVal):
         for lfo in self._activeLfos:
-            if(lfo.isEqual(mode, midiLength, startSPP, minVal, maxVal)):
+            if(lfo.isEqual(mode, midiLength, startBeat, minVal, maxVal)):
                 return lfo
         return None
 
     def _getLfo(self, lfoConfig):
-        mode, midiLength, startSPP, minVal, maxVal = lfoConfig
-        foundLfo = self._findLfo(mode, midiLength, startSPP, minVal, maxVal)
+        mode, midiLength, startBeat, minVal, maxVal = lfoConfig
+        foundLfo = self._findLfo(mode, midiLength, startBeat, minVal, maxVal)
         if(foundLfo == None):
-            newLfo = LowFrequencyOscilator(self._midiTiming, mode, midiLength, startSPP, minVal, maxVal)
+            newLfo = LowFrequencyOscilator(self._midiTiming, mode, midiLength, startBeat, minVal, maxVal)
             self._activeLfos.append(newLfo)
             return newLfo
         else:

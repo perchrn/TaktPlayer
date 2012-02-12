@@ -831,7 +831,61 @@ class ModulationGui(object):
         self._adsrTypeSizer.Add(self._adsrTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrTypeSizer.Add(adsrTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._adsrTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onAdsrTypeChosen, id=self._adsrTypeField.GetId()) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onAdsrTypeChosen, id=self._adsrTypeField.GetId()) #@UndefinedVariable
+
+        self._adsrAttackhSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR attack:") #@UndefinedVariable
+        self._adsrAttackhSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._adsrAttackLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        adsrAttackhButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrAttackHelp, id=adsrAttackhButton.GetId()) #@UndefinedVariable
+        self._adsrAttackhSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._adsrAttackhSizer.Add(self._adsrAttackhSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._adsrAttackhSizer.Add(self._adsrAttackLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._adsrAttackhSizer.Add(adsrAttackhButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._adsrAttackhSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._adsrAttackSliderId = self._adsrAttackhSlider.GetId()
+
+        self._adsrDecaySizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR decay:") #@UndefinedVariable
+        self._adsrDecaySlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._adsrDecayLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        adsrDecayButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrDecayHelp, id=adsrDecayButton.GetId()) #@UndefinedVariable
+        self._adsrDecaySizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
+        self._adsrDecaySizer.Add(self._adsrDecaySlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._adsrDecaySizer.Add(self._adsrDecayLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._adsrDecaySizer.Add(adsrDecayButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._adsrDecaySizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._adsrDecaySliderId = self._adsrDecaySlider.GetId()
+
+        self._adsrSustainSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._adsrSustainLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR sustain:") #@UndefinedVariable
+        self._adsrSustainSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
+        self._adsrSustainValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        adsrSustainValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrSustainHelp, id=adsrSustainValueButton.GetId()) #@UndefinedVariable
+        self._adsrSustainSizer.Add(self._adsrSustainLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._adsrSustainSizer.Add(self._adsrSustainSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._adsrSustainSizer.Add(self._adsrSustainValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._adsrSustainSizer.Add(adsrSustainValueButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._adsrSustainSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._adsrSustainId = self._adsrSustainSlider.GetId()
+        self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+        self._adsrReleaseSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._adsrReleaseLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR release:") #@UndefinedVariable
+        self._adsrReleaseSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._adsrReleaseValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        adsrReleaseValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrReleaseHelp, id=adsrReleaseValueButton.GetId()) #@UndefinedVariable
+        self._adsrReleaseSizer.Add(self._adsrReleaseLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._adsrReleaseSizer.Add(self._adsrReleaseSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._adsrReleaseSizer.Add(self._adsrReleaseValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._adsrReleaseSizer.Add(adsrReleaseValueButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._adsrReleaseSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._adsrReleaseId = self._adsrReleaseSlider.GetId()
+        self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
         """Value"""
 
@@ -888,10 +942,7 @@ class ModulationGui(object):
             self._parentSizer.Layout()
         if(choice == "LFO"):
             self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
-            self._mainModulationGuiSizer.Show(self._lfoLengthSizer)
-            self._mainModulationGuiSizer.Show(self._lfoPhaseSizer)
-            self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
-            self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
+            self._onLfoTypeChosen(event)
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._lfoTypeSizer)
@@ -902,9 +953,14 @@ class ModulationGui(object):
             self._parentSizer.Layout()
         if(choice == "ADSR"):
             self._mainModulationGuiSizer.Show(self._adsrTypeSizer)
+            self._onAdsrTypeChosen(event)
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._adsrTypeSizer)
+            self._mainModulationGuiSizer.Hide(self._adsrAttackhSizer)
+            self._mainModulationGuiSizer.Hide(self._adsrDecaySizer)
+            self._mainModulationGuiSizer.Hide(self._adsrSustainSizer)
+            self._mainModulationGuiSizer.Hide(self._adsrReleaseSizer)
             self._parentSizer.Layout()
         if(choice == "Value"):
             self._mainModulationGuiSizer.Show(self._valueSliderSizer)
@@ -1077,6 +1133,53 @@ Selects full ADSR or just Attack/Release mode
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _onAdsrTypeChosen(self, event):
+        adsrType = self._adsrTypeField.GetValue()
+        if(adsrType == "ADSR"):
+            self._mainModulationGuiSizer.Show(self._adsrAttackhSizer)
+            self._mainModulationGuiSizer.Show(self._adsrDecaySizer)
+            self._mainModulationGuiSizer.Show(self._adsrSustainSizer)
+            self._mainModulationGuiSizer.Show(self._adsrReleaseSizer)
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._adsrDecaySizer)
+            self._mainModulationGuiSizer.Hide(self._adsrSustainSizer)
+            self._mainModulationGuiSizer.Show(self._adsrAttackhSizer)
+            self._mainModulationGuiSizer.Show(self._adsrReleaseSizer)
+            self._parentSizer.Layout()
+            
+    def _onAdsrAttackHelp(self, event):
+        text = """
+Sets attack time.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR attack help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onAdsrDecayHelp(self, event):
+        text = """
+Sets decay time.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR decay help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onAdsrSustainHelp(self, event):
+        text = """
+Sets sustain level.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR sustain help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onAdsrReleaseHelp(self, event):
+        text = """
+Sets release time.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR release help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
         if(sliderId == self._lfoLevelSliderId):
@@ -1091,6 +1194,18 @@ Selects full ADSR or just Attack/Release mode
         if(sliderId == self._lfoMaxValueSliderId):
             valueString = "%.2f" % (float(self._lfoMaxValueSlider.GetValue()) / 101.0)
             self._lfoMaxValueLabel.SetLabel(valueString)
+        if(sliderId == self._adsrAttackSliderId):
+            valueString = "%.1f" % (float(self._adsrAttackhSlider.GetValue()) / 160.0 * 32.0)
+            self._adsrAttackLabel.SetLabel(valueString)
+        if(sliderId == self._adsrDecaySliderId):
+            valueString = "%.1f" % (float(self._adsrDecaySlider.GetValue()) / 160.0 * 32.0)
+            self._adsrDecayLabel.SetLabel(valueString)
+        if(sliderId == self._adsrSustainId):
+            valueString = "%.2f" % (float(self._adsrSustainSlider.GetValue()) / 101.0)
+            self._adsrSustainValueLabel.SetLabel(valueString)
+        if(sliderId == self._adsrReleaseId):
+            valueString = "%.1f" % (float(self._adsrReleaseSlider.GetValue()) / 160.0 * 32.0)
+            self._adsrReleaseValueLabel.SetLabel(valueString)
         if(sliderId == self._valueSliderId):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             self._valueValueLabel.SetLabel(valueString)
@@ -1121,10 +1236,10 @@ Constant static value.
         if(modType == "LFO"):
             lfoType = self._lfoTypeField.GetValue()
             modeString += "." + lfoType
-            lfoLength = "%.2f" % (float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0)
-            modeString += "." + lfoLength
-            lfoPhase = "%.2f" % (float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0)
-            modeString += "|" + lfoPhase
+            valueString = "%.2f" % (float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0)
+            modeString += "." + valueString
+            valueString = "%.2f" % (float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0)
+            modeString += "|" + valueString
             valueString = "%.2f" % (float(self._lfoMinValueSlider.GetValue()) / 101.0)
             modeString += "|" + valueString
             valueString = "%.2f" % (float(self._lfoMaxValueSlider.GetValue()) / 101.0)
@@ -1132,6 +1247,15 @@ Constant static value.
         if(modType == "ADSR"):
             adsrType = self._adsrTypeField.GetValue()
             modeString += "." + adsrType
+            valueString = "%.2f" % (float(self._adsrAttackhSlider.GetValue()) / 160.0 * 32.0)
+            modeString += "." + valueString
+            if(adsrType == "ADSR"):
+                valueString = "%.2f" % (float(self._adsrDecaySlider.GetValue()) / 160.0 * 32.0)
+                modeString += "|" + valueString
+                valueString = "%.2f" % (float(self._adsrSustainSlider.GetValue()) / 101.0)
+                modeString += "|" + valueString
+            valueString = "%.2f" % (float(self._adsrReleaseSlider.GetValue()) / 160.0 * 32.0)
+            modeString += "|" + valueString
         if(modType == "Value"):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             modeString += "." + valueString
@@ -1212,6 +1336,22 @@ Constant static value.
                     subModId = [subModId]
                 subModName = self._adsrType.getNames(subModId[0])
                 self._adsrTypeField.SetValue(subModName)
+                if(len(subModId) > 1):
+                    calcValue = int(160.0 * subModId[1] / 32.0)
+                    self._adsrAttackhSlider.SetValue(calcValue)
+                    self._adsrAttackLabel.SetLabel("%.1f" % (subModId[1]))
+                if(len(subModId) > 2):
+                    calcValue = int(160.0 * subModId[2] / 32.0)
+                    self._adsrDecaySlider.SetValue(calcValue)
+                    self._adsrDecayLabel.SetLabel("%.1f" % (subModId[2]))
+                if(len(subModId) > 3):
+                    calcValue = int(101.0 * subModId[3])
+                    self._adsrSustainSlider.SetValue(calcValue)
+                    self._adsrSustainValueLabel.SetLabel("%.2f" % (subModId[3]))
+                if(len(subModId) > 4):
+                    calcValue = int(160.0 * subModId[4] / 32.0)
+                    self._adsrReleaseSlider.SetValue(calcValue)
+                    self._adsrReleaseValueLabel.SetLabel("%.2f" % (subModId[4]))
             elif(modulationIdTuplet[0] == ModulationSources.Value):
                 subModId = modulationIdTuplet[1]
                 isFloat = isinstance(subModId, float)
@@ -1238,6 +1378,14 @@ Constant static value.
             self._lfoMaxValueLabel.SetLabel("1.00")
         if(updatedId != "ADSR"):
             self._adsrTypeField.SetValue("ADSR")
+            self._adsrAttackhSlider.SetValue(0)
+            self._adsrAttackLabel.SetLabel("0.0")
+            self._adsrDecaySlider.SetValue(0)
+            self._adsrDecayLabel.SetLabel("0.0")
+            self._adsrSustainSlider.SetValue(101)
+            self._adsrSustainValueLabel.SetLabel("1.00")
+            self._adsrReleaseSlider.SetValue(0)
+            self._adsrReleaseValueLabel.SetLabel("0.0")
         if(updatedId != "Value"):
             self._valueSlider.SetValue(0)
             self._valueValueLabel.SetLabel("0.00")

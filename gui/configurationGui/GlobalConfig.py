@@ -826,7 +826,7 @@ class ModulationGui(object):
         emptyLfoBitMap = wx.EmptyBitmap (200, 80, depth=3) #@UndefinedVariable
         self._lfoGraphicsDisplay = PcnLfoDisplayWidget(self._mainModulationGuiPlane, emptyLfoBitMap)
         lfoGraphicsValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-#        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoGraphicsHelp, id=lfoGraphicsValueButton.GetId()) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoGraphicsHelp, id=lfoGraphicsValueButton.GetId()) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(self._lfoGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(self._lfoGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(lfoGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -834,7 +834,6 @@ class ModulationGui(object):
         self._lfoGraphicsId = self._lfoGraphicsDisplay.GetId()
 
         """ADSR"""
-
         self._adsrTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR type:") #@UndefinedVariable
         self._adsrType = AdsrShapes()
@@ -907,7 +906,7 @@ class ModulationGui(object):
         emptyAdsrBitMap = wx.EmptyBitmap (200, 80, depth=3) #@UndefinedVariable
         self._adsrGraphicsDisplay = PcnAdsrDisplayWidget(self._mainModulationGuiPlane, emptyAdsrBitMap)
         adsrGraphicsValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-#        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrGraphicsHelp, id=adsrGraphicsValueButton.GetId()) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrGraphicsHelp, id=adsrGraphicsValueButton.GetId()) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(self._adsrGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(self._adsrGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(adsrGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -1161,6 +1160,14 @@ Maximum output value from the LFO.
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _onLfoGraphicsHelp(self, event):
+        text = """
+Shows a graphic representation of the LFO settings over 64 beats.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'LFO graph help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onAdsrTypeHelp(self, event):
         text = """
 Selects full ADSR or just Attack/Release mode
@@ -1220,6 +1227,15 @@ Sets sustain level.
 Sets release time.
 """
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR release help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onAdsrGraphicsHelp(self, event):
+        text = """
+Shows a graphic representation of the ADSR settings.
+This graph auto adjusts to the length of the ADSR.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'ADSR graph help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 

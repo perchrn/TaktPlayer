@@ -48,7 +48,7 @@ class LowFrequencyOscilator(object):
             elif(self._shape == LfoShapes.SawTooth):
                 return self._minVal + (phase * self._valRange)
             elif(self._shape == LfoShapes.Ramp):
-                return self._minVal + (1.0 - phase * self._valRange)
+                return self._minVal + ((1.0 - phase) * self._valRange)
             elif(self._shape == LfoShapes.Sine):
                 return self._minVal + ((1.0 + math.sin(self._radians360 * phase)) / 2 * self._valRange)
 

@@ -270,7 +270,7 @@ class MidiControllers():
         for i in range(len(choices)):
             if(typeId == i):
                 return choices[i]
-        return None
+        return "ModWheel"
 
     def getId(self, typeName):
         choices = self.getChoices()

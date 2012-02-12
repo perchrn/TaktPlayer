@@ -27,9 +27,6 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
 
 class LowFrequencyOscilator(object):
     def __init__(self, midiTimingClass, mode, midiLength = 4.0, startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
-        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
-        print "LowFrequencyOscilator: Len: %f, Start: %f" % (midiLength, startSPP)
-        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         self._midiTiming = midiTimingClass
         self._startSongPosition = startSPP
         self._midiLength = midiLength
@@ -115,15 +112,13 @@ class AttackDecaySustainRelease(object):
     def __init__(self, midiTimingClass, mode, attack, decay, sustain, release):
         self._midiTiming = midiTimingClass
 
-        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
-        print "AttackDecaySustainRelease: A: %f, D: %f S: %f R: %f" % (attack, decay, sustain, release)
-        print "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
         self._attackLength = attack
         self._decayLength = decay
         self._sustainValue = sustain
         self._releaseLength = release
         self._attackLengthCalc = attack * self._midiTiming.getTicksPerQuarteNote()
         self._decayLengthCalc = decay * self._midiTiming.getTicksPerQuarteNote()
+        self._sustainStartCalc = self._attackLengthCalc + self._decayLengthCalc
         self._releaseLengthCalc = release * self._midiTiming.getTicksPerQuarteNote()
 
         self._shape = mode
@@ -145,15 +140,25 @@ class AttackDecaySustainRelease(object):
                         return 1.0 - self._sustainValue
         else:
             if((self._releaseLengthCalc > 0.0)):
+                if((noteOffSPP - noteOnSPP) < self._sustainStartCalc):
+                    releaseStartValue = self.getValue(noteOffSPP, (noteOnSPP, 0.0, 0.0))
+                else:
+                    releaseStartValue = self._sustainValue
                 if((songPosition - noteOffSPP) <= self._releaseLengthCalc):
-                    return ((float(songPosition) - noteOffSPP) / self._releaseLengthCalc)
-                else:
-                    return 1.0
-            else:
-                if(self._sustainValue >= 0.99):
-                    return 0.0
-                else:
-                    return 1.0 - self._sustainValue
+                    return (((float(songPosition) - noteOffSPP) / self._releaseLengthCalc) * releaseStartValue) + (1.0 - releaseStartValue)
+            return 1.0
+
+    def getAttackLength(self):
+        return self._attackLengthCalc
+
+    def getDecayLength(self):
+        return self._decayLengthCalc
+
+    def calculateHoldLength(self, holdLength):
+        return holdLength * self._midiTiming.getTicksPerQuarteNote()
+
+    def getReleaseLength(self):
+        return self._releaseLengthCalc
 
     def isEqual(self, mode, attack, decay, sustain, release):
         if(self._shape == mode):
@@ -254,26 +259,41 @@ class MidiModulation(object):
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
                         valuesSplit = newSplit[2].split('|', 5)
-                        tmpLength = float(valuesSplit[0])
-                        if(tmpLength > 0.0):
-                            midiLength = tmpLength
+                        try:
+                            tmpLength = float(valuesSplit[0])
+                            if(tmpLength > 0.0):
+                                midiLength = tmpLength
+                        except:
+                            pass #Keep default
                         if(len(valuesSplit) > 1):
-                            tmpSPP = float(valuesSplit[1])
-                            if(tmpSPP >= 0.0):
-                                startSPP = tmpSPP * self._midiTiming.getTicksPerQuarteNote()
+                            try:
+                                tmpSPP = float(valuesSplit[1])
+                                if(tmpSPP >= 0.0):
+                                    startSPP = tmpSPP * self._midiTiming.getTicksPerQuarteNote()
+                            except:
+                                pass #Keep default
                             if(len(valuesSplit) > 2):
-                                tmpMin = float(valuesSplit[2])
-                                if(tmpMin >= 0.0):
-                                    minVal = tmpMin
+                                try:
+                                    tmpMin = float(valuesSplit[2])
+                                    if(tmpMin >= 0.0):
+                                        minVal = tmpMin
+                                except:
+                                    pass #Keep default
                                 if(len(valuesSplit) > 3):
-                                    tmpMax = float(valuesSplit[3])
-                                    if(tmpMax >= 0.0):
-                                        maxVal = tmpMax
+                                    try:
+                                        tmpMax = float(valuesSplit[3])
+                                        if(tmpMax >= 0.0):
+                                            maxVal = tmpMax
+                                    except:
+                                        pass #Keep default
                     return (ModulationSources.LFO, self._getLfoId(mode, midiLength, startSPP, minVal, maxVal))
         elif( sourceSplit[0] == "Value" ):
             if(len(sourceSplit) > 1):
                 newSplit = sourceDescription.split('.', 1)
-                value = float(newSplit[1])
+                try:
+                    value = float(newSplit[1])
+                except:
+                    value = 0.0
                 value = min(max(value, 0.0), 1.0)
                 return (ModulationSources.Value, value)
         elif( sourceSplit[0] == "ADSR" ):
@@ -287,26 +307,41 @@ class MidiModulation(object):
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
                         valuesSplit = newSplit[2].split('|', 5)
-                        tmpAttack = float(valuesSplit[0])
-                        if(tmpAttack >= 0.0):
-                            attack = tmpAttack
+                        try:
+                            tmpAttack = float(valuesSplit[0])
+                            if(tmpAttack >= 0.0):
+                                attack = tmpAttack
+                        except:
+                            pass #Keep default
                         if(len(valuesSplit) > 1):
                             if(mode == AdsrShapes.AR):
-                                tmpRelease = float(valuesSplit[1])
-                                if(tmpRelease >= 0.0):
-                                    release = tmpRelease
+                                try:
+                                    tmpRelease = float(valuesSplit[1])
+                                    if(tmpRelease >= 0.0):
+                                        release = tmpRelease
+                                except:
+                                    pass #Keep default
                             else:
-                                tmpDecay = float(valuesSplit[1])
-                                if(tmpDecay >= 0.0):
-                                    decay = tmpDecay
+                                try:
+                                    tmpDecay = float(valuesSplit[1])
+                                    if(tmpDecay >= 0.0):
+                                        decay = tmpDecay
+                                except:
+                                    pass #Keep default
                                 if(len(valuesSplit) > 2):
-                                    tmpSustain = float(valuesSplit[2])
-                                    if(tmpSustain >= 0.0):
-                                        sustain = tmpSustain
-                                    if(len(valuesSplit) > 3):
+                                    try:
+                                        tmpSustain = float(valuesSplit[2])
+                                        if(tmpSustain >= 0.0):
+                                            sustain = tmpSustain
+                                    except:
+                                        pass #Keep default
+                                if(len(valuesSplit) > 3):
+                                    try:
                                         tmpRelease = float(valuesSplit[3])
                                         if(tmpRelease >= 0.0):
                                             release = tmpRelease
+                                    except:
+                                        pass #Keep default
                     print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
                     return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release))
         if(sourceDescription != "None"):

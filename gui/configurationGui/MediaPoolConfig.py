@@ -10,6 +10,7 @@ from video.media.MediaFile import MixMode
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes
 
+
 class MediaPoolConfig(object):
     def __init__(self, configParent):
         self._configurationTree = configParent.addChildUnique("MediaPool")
@@ -409,6 +410,28 @@ This is the note assigned to this configuration.
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Note help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
+
+    def _onSyncValidate(self, event):
+        valueString = self._syncField.GetValue()
+        valueError = False
+        try:
+            valueFloat = float(valueString)
+        except ValueError:
+            valueFloat = 4.0
+            valueError = True
+        if(valueFloat < 0.0):
+            valueFloat = 0.0
+            valueError = True
+        if(valueFloat > 1280.0):
+            valueFloat = 1280.0
+            valueError = True
+        if(valueError):
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, "Value must be a float between 0.0 and 1280.0", 'Synchronization length value error', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
+        valueString = str(valueFloat)
+        self._syncField.SetValue(valueString)
+
     def _onSyncHelp(self, event):
         text = """
 Decides how long the video takes to loop
@@ -416,9 +439,31 @@ or how long the images are displayed.
 
 \tGiven in beats (4:4)
 """
-        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Synchronization help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
+
+    def _onQuantizeValidate(self, event):
+        valueString = self._quantizeField.GetValue()
+        valueError = False
+        try:
+            valueFloat = float(valueString)
+        except ValueError:
+            valueFloat = 1.0
+            valueError = True
+        if(valueFloat < 0.0):
+            valueFloat = 0.0
+            valueError = True
+        if(valueFloat > 1280.0):
+            valueFloat = 1280.0
+            valueError = True
+        if(valueError):
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, "Value must be a float between 0.0 and 1280.0", 'Quantize value error', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
+        valueString = str(valueFloat)
+        self._quantizeField.SetValue(valueString)
+
     def _onQuantizeHelp(self, event):
         text = """
 Decides when the video or image starts.
@@ -426,7 +471,7 @@ All notes on events are quantized to this.
 
 \tGiven in beats (4:4)
 """
-        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Quantize help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -488,6 +533,7 @@ All notes on events are quantized to this.
 
     def _onSaveButton(self, event):
         print "Save " * 20
+        #TODO: get relative path for file name!!!
         if(self._type == "Camera"):
             print "FileName: " + str(self._cameraId)
         else:
@@ -499,7 +545,9 @@ All notes on events are quantized to this.
             print "SequenceMode: " + self._subModeField.GetValue()
             print "PlayBackModulation: " + self._subModulationField.GetValue()
         print "Note: " + noteToNoteString(self._midiNote)
+        self._onSyncValidate(event)
         print "SyncLength: " + self._syncField.GetValue()
+        self._onQuantizeValidate(event)
         print "QuantizeLength: " + self._quantizeField.GetValue()
         print "MixMode: " + self._mixField.GetValue()
         print "Effect1Config: " + self._effect1Field.GetValue()

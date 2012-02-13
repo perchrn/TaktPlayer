@@ -7,7 +7,7 @@ import os
 import sys
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
-from widgets.PcnImageButton import PcnKeyboardButton, addTrackButtonFrame
+from widgets.PcnImageButton import PcnKeyboardButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
@@ -116,6 +116,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._noteWidgets.append(keyboardButton)
             self._noteWidgetIds.append(keyboardButton.GetId())
             keyboardButton.Bind(wx.EVT_BUTTON, self._onKeyboardButton) #@UndefinedVariable
+            keyboardButton.Bind(EVT_DRAG_START_EVENT, self._onDragStart)
+            keyboardButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragDone)
 
         self._trackThumbnailBitmap = wx.Bitmap("graphics/trackThumbnail.png") #@UndefinedVariable
         self._trackWidgets = []
@@ -132,6 +134,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
         self.Bind(wx.EVT_TIMER, self._timedUpdate) #@UndefinedVariable
+        self.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
         self.SetSizer(mainSizer)
@@ -144,6 +147,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._skippedLatestControllersRequests = 0
         self._lastConfigState = -1
         self._latestControllersRequestResult = None
+        self._dragSource = None
         self.setupClientProcess()
         self._timedUpdate(None)
 
@@ -323,9 +327,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         if(currentGuiConfigString != self._oldServerConfigurationString):
                             text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
                             dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                            dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                             dlg.Destroy()
-                            if(result == False):
+                            if(dialogResult == False):
                                 loadConfig = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
@@ -422,6 +426,39 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._noteGui.clearGui(foundNoteId)
             else:
                 self._noteGui.updateGui(noteConfig, foundNoteId)
+
+    def _onDragStart(self, event):
+        self._dragSource = event.GetEventObject().GetId()
+
+    def _onDragDone(self, event):
+        if(self._dragSource != None):
+            sourceNoteId = None
+            for i in range(128):
+                if(self._noteWidgetIds[i] == self._dragSource):
+                    sourceNoteId = i
+                    break
+            if(sourceNoteId != None):
+                buttonId =  event.GetEventObject().GetId()
+                destNoteId = None
+                for i in range(128):
+                    if(self._noteWidgetIds[i] == buttonId):
+                        destNoteId = i
+                        break
+                if(destNoteId != None):
+                    if(destNoteId != sourceNoteId):
+                        print "Drag and drop from noteId %d to %d" % (sourceNoteId, destNoteId)
+                        sourceConfig = self._configuration.getNoteConfiguration(sourceNoteId)
+                        if(sourceConfig != None):
+                            destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
+                            if(destinationConfig == None):
+                                destinationConfig = self._configuration.makeNoteConfig("", noteToNoteString(destNoteId), destNoteId)
+                            if(destinationConfig != None):
+                                destinationConfig.updateFrom(sourceConfig, True)
+                                self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
+        self._dragSource = None
+
+    def _onMouseRelease(self, event):
+        self._dragSource = None
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

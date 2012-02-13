@@ -3,7 +3,11 @@ Created on 26. jan. 2012
 
 @author: pcn
 '''
-import wx
+import wx #@UnusedImport
+import  wx.lib.newevent #@UnresolvedImport
+
+DragStartEvent, EVT_DRAG_START_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
+DragDoneEvent, EVT_DRAG_DONE_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
 
 def addKeyboardButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
     oldX, oldY = baseBitmap.GetSize()
@@ -126,12 +130,20 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
     clicked = property(get_clicked, set_clicked)
     def on_left_down(self, event):
         self.clicked = True
+        dragStartEvent = wx.CommandEvent() #@UndefinedVariable
+        dragStartEvent.SetEventObject(self)
+        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId)
+        wx.PostEvent(self, dragStartEvent) #@UndefinedVariable
     def on_left_dclick(self, event):
         self.on_left_down(event)
     def on_left_up(self, event):
         if self.clicked:
             self.post_event()
         self.clicked = False
+        dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
+        dragDoneEvent.SetEventObject(self)
+        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
+        wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
 #    def on_motion(self, event):
 #        if self.clicked:
 #            self.clicked = False

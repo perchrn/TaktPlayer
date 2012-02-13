@@ -152,6 +152,24 @@ class MediaFile(object):
     def getConfig(self):
         return self._configurationTree
 
+    def updateFileName(self, fileName, isVideoFile):
+        self._configurationTree.setValue("FileName", fileName)
+        if(isVideoFile == False):
+            self._configurationTree.setValue("Type", "Image")
+            self._configurationTree.removeParameter("LoopMode")
+            self._configurationTree.removeParameter("SequenceMode")
+            self._configurationTree.removeParameter("PlayBackModulation")
+        else:
+            oldType = self._configurationTree.getValue("Type")
+            if((oldType == "Image") or (oldType == "Camera")):
+                self._configurationTree.setValue("Type", "VideoLoop")
+                oldloopMode = self._configurationTree.getValue("LoopMode")
+                if(oldloopMode == None):
+                    self._configurationTree.setValue("LoopMode", "Normal")
+                self._configurationTree.removeParameter("SequenceMode")
+                self._configurationTree.removeParameter("PlayBackModulation")
+
+
     def updateFrom(self, sourceMediaFile, dontChangeNote = True):
         sourceConfigTree = sourceMediaFile.getConfig()
         self._configurationTree.setValue("FileName", sourceConfigTree.getValue("FileName"))

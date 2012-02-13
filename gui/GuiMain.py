@@ -15,6 +15,7 @@ import time
 from configurationGui.Configuration import Configuration
 from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString
+import subprocess
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -63,6 +64,17 @@ class TaskHolder(object):
         self.setState(self.States.Done)
 #        print self._desc + " task done in " + str(self._stateTime - self._startTime) + " secs."
 
+class FileDrop(wx.FileDropTarget): #@UndefinedVariable
+    def __init__(self, widgetId, callbackFunction):
+        wx.FileDropTarget.__init__(self) #@UndefinedVariable
+        self._widgetId = widgetId
+        self._callbackFunction = callbackFunction
+
+    def OnDropFiles(self, x, y, filenames):
+        for name in filenames:
+            self._callbackFunction(self._widgetId, name)
+            break
+
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
@@ -104,6 +116,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
         self._blackNoteBitmapRight = wx.Bitmap("graphics/blackNoteRight.png") #@UndefinedVariable
         self._blackNoteBitmap = wx.Bitmap("graphics/blackNote.png") #@UndefinedVariable
+        self._newNoteBitmap = wx.Bitmap("graphics/newNote.png") #@UndefinedVariable
         self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
 
         self._noteWidgets = []
@@ -118,6 +131,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             keyboardButton.Bind(wx.EVT_BUTTON, self._onKeyboardButton) #@UndefinedVariable
             keyboardButton.Bind(EVT_DRAG_START_EVENT, self._onDragStart)
             keyboardButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragDone)
+            dropTarget = FileDrop(keyboardButton.GetId(), self.fileDropped)
+            keyboardButton.SetDropTarget(dropTarget)
 
         self._trackThumbnailBitmap = wx.Bitmap("graphics/trackThumbnail.png") #@UndefinedVariable
         self._trackWidgets = []
@@ -459,6 +474,97 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onMouseRelease(self, event):
         self._dragSource = None
+
+    def _call_command(self, command):
+        print "command: " + command
+        process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        outputString = ""
+        while True:
+            out = process.stdout.read(1)
+            if out == '' and process.poll() != None:
+                break
+            if out != '':
+                outputString += out
+        outputString += process.communicate()[0]
+        return outputString
+
+    def fileDropped(self, widgetId, fileName):
+        destNoteId = None
+        for i in range(128):
+            if(self._noteWidgetIds[i] == widgetId):
+                destNoteId = i
+                break
+        if(destNoteId != None):
+            ffmpegString = self._call_command(os.path.normpath("../ffmpeg/bin/ffmpeg") + " -i " + fileName)
+            inputCount = 0
+            streamcount = 0
+            inputIsVideo = True
+            inputIsAvi = False
+            inputOk = False
+            tryConvert = False
+            for ffmpegLine in ffmpegString.split('\n'):
+                if(ffmpegLine.startswith("Input") == True):
+                    print "Input: " + ffmpegLine
+                    if(", image2," in ffmpegLine):
+                        print "image!!!"
+                        inputIsVideo = False
+                    if(", avi," in ffmpegLine):
+                        print "video!!!"
+                        inputIsAvi = True
+                    inputCount += 1
+                if(inputCount == 1):
+                    if(ffmpegLine.startswith("Input") == False):
+                        if("Stream " in ffmpegLine):
+                            streamcount += 1
+                            if(inputIsVideo == True):
+                                if(("MJPG" in ffmpegLine) and ("0x47504A4D" in ffmpegLine)):
+                                    print "MJPG " * 20
+                                    if(inputIsAvi == True):
+                                        inputOk = True
+                                else:
+                                    tryConvert = True
+                            else:
+                                if(" mjpeg," in ffmpegLine):
+                                    print "Jpeg " * 10
+                                    inputOk = True
+                                elif(" gif," in ffmpegLine):
+                                    print "GIF " * 10
+                                    inputOk = True
+                                elif(" png," in ffmpegLine):
+                                    print "PNG " * 10
+                                    inputOk = True
+                                else:
+                                    print ffmpegLine
+            if(inputCount > 0):
+                convertBeforeImport = True
+                if((inputCount == 1) and (streamcount == 1) and (inputOk == True)):
+                    convertBeforeImport = False
+                if(convertBeforeImport == True):
+                    if(tryConvert == True):
+                        text = "Convert file: " + fileName
+                        dlg = wx.MessageDialog(self, text, 'DEBUG', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                if(inputOk == True):
+                    print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), fileName)
+                    destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
+                    if(destinationConfig == None):
+                        destinationConfig = self._configuration.makeNoteConfig(fileName, noteToNoteString(destNoteId), destNoteId)
+                    if(destinationConfig != None):
+                        destinationConfig.updateFileName(fileName, inputIsVideo)
+                        self._noteWidgets[destNoteId].setBitmap(self._newNoteBitmap)
+                        self._noteGui.updateGui(destinationConfig, destNoteId)
+                    return
+            text = "Unknown file type: \"" + fileName + "\"\n"
+            text += "\n"
+            text += "We support jpg, png and gif images,\n"
+            text += "and video files detected by ffmpeg.\n"
+            text += "\n"
+            text += "You can manually convert using ffmpeg with\n"
+            text += "output options: \"-vcodec mjpeg -qscale 1 -an\"\n"
+            dlg = wx.MessageDialog(self, text, 'File error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

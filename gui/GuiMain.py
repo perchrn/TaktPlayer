@@ -69,6 +69,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             size=(1400, 600))
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
+        self._oldServerConfigurationString = ""
 
         self.SetBackgroundColour((120,120,120))
 
@@ -316,13 +317,23 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(result[1] != None):
                     newConfigXml = result[1]
                     newConfigString = xmlToPrettyString(newConfigXml)
-                    oldConfigString = self._configuration.getXmlString()
-                    if(oldConfigString != newConfigString):
-                        self._configuration.setFromXml(newConfigXml)
-                        self.updateKeyboardImages()
-                        print "#" * 150
-                        self._configuration.printConfiguration()
-                        print "#" * 150
+                    if(self._oldServerConfigurationString != newConfigString):
+                        currentGuiConfigString = self._configuration.getXmlString()
+                        loadConfig = True
+                        if(currentGuiConfigString != self._oldServerConfigurationString):
+                            text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
+                            dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                            dlg.Destroy()
+                            if(result == False):
+                                loadConfig = False
+                        if(loadConfig == True):
+                            self._configuration.setFromXml(newConfigXml)
+                            self.updateKeyboardImages()
+                            print "#" * 150
+                            self._configuration.printConfiguration()
+                            print "#" * 150
+                    self._oldServerConfigurationString = newConfigString
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)

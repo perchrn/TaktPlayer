@@ -79,14 +79,59 @@ class MediaPoolConfig(object):
         noteId = min(max(noteId, 0), 127)
         return self._mediaPool[noteId]
 
+    def makeNoteConfig(self, fileName, noteLetter, midiNote):
+        if((midiNote >= 0) and (midiNote < 128)):
+            print "Making note: %s !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" % midiNote
+            newMediaFile = MediaFile(self._configurationTree, fileName, noteLetter, midiNote, None)
+            self._mediaPool[midiNote] = newMediaFile
+            return newMediaFile
+        return None
+
+    def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
+        returnNumer = 0
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                returnNumer += noteConfig.countNumberOfTimeEffectTemplateUsed(effectConfigName)
+        return returnNumer
+
+    def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
+        returnNumer = 0
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                returnNumer += noteConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+        return returnNumer
+
+    def renameEffectTemplateUsed(self, oldName, newName):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.renameEffectTemplateUsed(oldName, newName)
+
+    def renameFadeTemplateUsed(self, oldName, newName):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.renameFadeTemplateUsed(oldName, newName)
+
+    def verifyEffectTemplateUsed(self, effectConfigNameList):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.verifyEffectTemplateUsed(effectConfigNameList)
+
+    def verifyFadeTemplateUsed(self, fadeConfigNameList):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.verifyFadeTemplateUsed(fadeConfigNameList)
+
 class MediaFile(object):
     def __init__(self, configParent, fileName, noteLetter, midiNote, xmlConfig):
-        self._mediaType = xmlConfig.get("type")
-        if(self._mediaType == None):
-            self._mediaType = "VideoLoop"
+        mediaType = None
+        if(xmlConfig != None):
+            mediaType = xmlConfig.get("type")
+        if(mediaType == None):
+            mediaType = "VideoLoop"
         self._configurationTree = configParent.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
         self._configurationTree.addTextParameter("FileName", "")
-        self._configurationTree.addTextParameter("Type", self._mediaType)
+        self._configurationTree.setValue("FileName", fileName)
+        self._configurationTree.addTextParameter("Type", mediaType)
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
@@ -96,9 +141,9 @@ class MediaFile(object):
         self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
         self._defaultFadeSettingsName = "Default"
         self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
-        if(self._mediaType == "VideoLoop"):
+        if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
-        elif(self._mediaType == "ImageSequence"):
+        elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlayBackModulation", "None")
         if(xmlConfig != None):
@@ -106,6 +151,62 @@ class MediaFile(object):
 
     def getConfig(self):
         return self._configurationTree
+
+    def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):
+        returnNumber = 0
+        for configName in ["Effect1Config", "Effect2Config"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == effectsConfigName):
+                returnNumber += 1
+        return returnNumber
+
+    def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
+        returnNumber = 0
+        for configName in ["FadeConfig"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == fadeConfigName):
+                returnNumber += 1
+        return returnNumber
+
+    def renameEffectTemplateUsed(self, oldName, newName):
+        for configName in ["Effect1Config", "Effect2Config"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == oldName):
+                self._configurationTree.setValue(configName, newName)
+
+    def renameFadeTemplateUsed(self, oldName, newName):
+        for configName in ["FadeConfig"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == oldName):
+                self._configurationTree.setValue(configName, newName)
+
+    def verifyEffectTemplateUsed(self, effectConfigNameList):
+        usedConfigName = self._configurationTree.getValue("Effect1Config")
+        nameOk = False
+        for configName in effectConfigNameList:
+            if(usedConfigName == configName):
+                nameOk = True
+                break
+        if(nameOk == False):
+            self._configurationTree.setValue("Effect1Config", self._defaultEffect1SettingsName)
+        usedConfigName = self._configurationTree.getValue("Effect2Config")
+        nameOk = False
+        for configName in effectConfigNameList:
+            if(usedConfigName == configName):
+                nameOk = True
+                break
+        if(nameOk == False):
+            self._configurationTree.setValue("Effect2Config", self._defaultEffect2SettingsName)
+
+    def verifyFadeTemplateUsed(self, fadeConfigNameList):
+        usedConfigName = self._configurationTree.getValue("FadeConfig")
+        nameOk = False
+        for configName in fadeConfigNameList:
+            if(usedConfigName == configName):
+                nameOk = True
+                break
+        if(nameOk == False):
+            self._configurationTree.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaFileGui(object): #@UndefinedVariable
     def __init__(self, parentPlane, mainConfig):
@@ -292,8 +393,11 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
+        sendButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Send') #@UndefinedVariable #TODO: Move this button...
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSendButton, id=sendButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(sendButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._selectedEditor = None
@@ -531,28 +635,62 @@ All notes on events are quantized to this.
         self._selectedEditor = self.EditSelection.Fade
         self._mainConfig.updateFadeGui(selectedFadeConfig)
 
+    def _onSendButton(self, event):
+        self._mainConfig.printConfiguration()
+
     def _onSaveButton(self, event):
         print "Save " * 20
-        #TODO: get relative path for file name!!!
+        #TODO: get relative path for file name!!!            print "Relative: " + os.path.relpath(self._fileName, os.curdir)
         if(self._type == "Camera"):
-            print "FileName: " + str(self._cameraId)
+            noteFileName = str(self._cameraId)
+            print "FileName: " + noteFileName
         else:
+            noteFileName = self._fileName
             print "FileName: " + self._fileName
-        print "Type: " + self._type
-        if(self._type == "VideoLoop"):
-            print "LoopMode: " + self._subModeField.GetValue()
-        elif(self._type == "ImageSequence"):
-            print "SequenceMode: " + self._subModeField.GetValue()
-            print "PlayBackModulation: " + self._subModulationField.GetValue()
-        print "Note: " + noteToNoteString(self._midiNote)
-        self._onSyncValidate(event)
-        print "SyncLength: " + self._syncField.GetValue()
-        self._onQuantizeValidate(event)
-        print "QuantizeLength: " + self._quantizeField.GetValue()
-        print "MixMode: " + self._mixField.GetValue()
-        print "Effect1Config: " + self._effect1Field.GetValue()
-        print "Effect2Config: " + self._effect2Field.GetValue()
-        print "FadeConfig: " + self._fadeField.GetValue()
+        noteLetter = noteToNoteString(self._midiNote)
+        if(self._config == None):
+            newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
+            print "Save2 " * 20
+            if(newConfig != None):
+                self._config = newConfig.getConfig()
+                print "Save :) " * 20
+        if(self._config != None):
+            print "Save3 " * 20
+            self._config.setValue("Type", self._type)
+            if(self._type == "VideoLoop"):
+                loopMode = self._subModeField.GetValue()
+                self._config.addTextParameter("LoopMode", "Normal")
+                self._config.setValue("LoopMode", loopMode)
+                self._config.removeParameter("SequenceMode")
+                self._config.removeParameter("PlayBackModulation")
+            elif(self._type == "ImageSequence"):
+                self._config.removeParameter("LoopMode")
+                sequenceMode = self._subModeField.GetValue()
+                self._config.addTextParameter("SequenceMode", "Time")
+                self._config.setValue("SequenceMode", sequenceMode)
+                sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                self._subModulationField.SetValue(sequenceModulation)
+                self._config.addTextParameter("PlayBackModulation", "None")
+                self._config.setValue("PlayBackModulation", sequenceModulation)
+            else:
+                self._config.removeParameter("LoopMode")
+                self._config.removeParameter("SequenceMode")
+                self._config.removeParameter("PlayBackModulation")
+            self._onSyncValidate(event)
+            syncLength = self._syncField.GetValue()
+            self._config.setValue("SyncLength", syncLength)
+            self._onQuantizeValidate(event)
+            quantizeLength = self._quantizeField.GetValue()
+            self._config.setValue("QuantizeLength", quantizeLength)
+            mixMode = self._mixField.GetValue()
+            self._config.setValue("MixMode", mixMode)
+            effect1Config = self._effect1Field.GetValue()
+            self._config.setValue("Effect1Config", effect1Config)
+            effect2Config = self._effect2Field.GetValue()
+            self._config.setValue("Effect2Config", effect2Config)
+            fadeConfig = self._fadeField.GetValue()
+            self._config.setValue("FadeConfig", fadeConfig)
+            print "Save4 " * 20
         print "Save " * 20
 
     def _showOrHideSubModeModulation(self):
@@ -638,9 +776,12 @@ All notes on events are quantized to this.
             widget.SetStringSelection(defaultValue)
 
     def updateGui(self, noteConfig, midiNote):
-        config = noteConfig.getConfig()
-        self._config = config
-        self._midiNote = midiNote
+        if(noteConfig != None):
+            config = noteConfig.getConfig()
+            self._config = config
+            self._midiNote = midiNote
+        if(self._config == None):
+            return
         self._type = self._config.getValue("Type")
         if(self._type == "Camera"):
             self._cameraId = int(self._config.getValue("FileName"))

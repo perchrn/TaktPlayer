@@ -14,7 +14,10 @@ class Configuration(object):
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._globalConf = GlobalConfig(self._configurationTree, self)
         self._mediaMixerConf = MediaMixerConfig(self._configurationTree)
+        self._mixerGui = None
+
         self._mediaPoolConf = MediaPoolConfig(self._mediaMixerConf.getConfTree())
+        self._noteGui = None
 
         self._selectedMidiChannel = -1
         self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
@@ -30,6 +33,20 @@ class Configuration(object):
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
         self._mediaMixerConf.checkAndUpdateFromConfiguration()
         self._globalConf.checkAndUpdateFromConfiguration()
+
+    def setNoteGui(self, noteGui):
+        self._noteGui = noteGui
+
+    def updateNoteGui(self):
+        if(self._noteGui != None):
+            self._noteGui.updateGui(None, None)
+
+    def setMixerGui(self, noteGui):
+        self._mixerGui = noteGui
+
+    def updateMixerGui(self):
+        if(self._mixerGui != None):
+            self._mixerGui.updateGui(None, None)
 
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
@@ -49,6 +66,60 @@ class Configuration(object):
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)
 
+    def getEffectTemplate(self, configName):
+        return self._globalConf.getEffectTemplate(configName)
+
+    def getFadeTemplate(self, configName):
+        return self._globalConf.getFadeTemplate(configName)
+
+    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
+        return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+
+    def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
+        return self._globalConf.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)
+
+    def deleteEffectTemplate(self, configName):
+        return self._globalConf.deleteEffectTemplate(configName)
+
+    def deleteFadeTemplate(self, configName):
+        return self._globalConf.deleteFadeTemplate(configName)
+
+    def verifyEffectTemplateUsed(self):
+        effectsConfigNames =  self._globalConf.getEffectTemplateNamesList()
+        self._mediaPoolConf.verifyEffectTemplateUsed(effectsConfigNames)
+        self._mediaMixerConf.verifyEffectTemplateUsed(effectsConfigNames)
+
+    def verifyFadeTemplateUsed(self):
+        effectsConfigNames =  self._globalConf.getFadeTemplateNamesList()
+        self._mediaPoolConf.verifyFadeTemplateUsed(effectsConfigNames)
+        self._mediaMixerConf.verifyFadeTemplateUsed(effectsConfigNames)
+
+    def checkIfNameIsDefaultEffectName(self, configName):
+        return self._globalConf.checkIfNameIsDefaultEffectName(configName)
+
+    def checkIfNameIsDefaultFadeName(self, configName):
+        return self._globalConf.checkIfNameIsDefaultFadeName(configName)
+
+    def countNumberOfTimeEffectTemplateUsed(self, configName):
+        returnNumber = 0
+        returnNumber += self._mediaPoolConf.countNumberOfTimeEffectTemplateUsed(configName)
+        returnNumber += self._mediaMixerConf.countNumberOfTimeEffectTemplateUsed(configName)
+        return returnNumber
+
+    def countNumberOfTimeFadeTemplateUsed(self, configName):
+        returnNumber = 0
+        returnNumber += self._mediaPoolConf.countNumberOfTimeFadeTemplateUsed(configName)
+        returnNumber += self._mediaMixerConf.countNumberOfTimeFadeTemplateUsed(configName)
+        return returnNumber
+
+    def renameEffectTemplateUsed(self, oldName, newName):
+        self._mediaPoolConf.renameEffectTemplateUsed(oldName, newName)
+        self._mediaMixerConf.renameEffectTemplateUsed(oldName, newName)
+
+    def renameFadeTemplateUsed(self, oldName, newName):
+        self._mediaPoolConf.renameFadeTemplateUsed(oldName, newName)
+        self._mediaMixerConf.renameFadeTemplateUsed(oldName, newName)
+
     def updateModulationGui(self, modulationString, widget):
         self._globalConf.updateModulationGui(modulationString, widget)
 
@@ -60,6 +131,9 @@ class Configuration(object):
 
     def getNoteConfiguration(self, noteId):
         return self._mediaPoolConf.getNoteConfiguration(noteId)
+
+    def makeNoteConfig(self, fileName, noteLetter, midiNote):
+        return self._mediaPoolConf.makeNoteConfig(fileName, noteLetter, midiNote)
 
     def getXmlString(self):
         return self._configurationTree.getConfigurationXMLString()

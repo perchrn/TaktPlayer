@@ -5,7 +5,9 @@ Created on 9. jan. 2012
 '''
 import random
 import math
-from midi.MidiStateHolder import MidiChannelStateHolder, NoteState
+from midi.MidiStateHolder import MidiChannelStateHolder, NoteState,\
+    MidiChannelModulationSources, NoteModulationSources
+from midi.MidiController import MidiControllers
 
 # Modulation examples:
 #MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.ModWheel")
@@ -92,7 +94,7 @@ def getLfoShapeId(shapeName):
         return None
 
 class AdsrShapes():
-    ADSR, AR = range(2)
+    ADSR, AR = range(2)#TODO: Add curved attack release... (for fades)
 
     def getChoices(self):
         return ["ADSR", "AR"]
@@ -232,6 +234,9 @@ class MidiModulation(object):
                 return regReceiver
         return None
 
+    def setValue(self, name, value):
+        self._configurationTree.setValue(name, value)
+
     def connectModulation(self, receiverName):
         receiver = self.findReceiver(receiverName)
         if(receiver == None):
@@ -354,6 +359,98 @@ class MidiModulation(object):
         if(sourceDescription != "None"):
             print "Invalid modulation description: \"%s\"" % sourceDescription
         return None
+
+    def getStringFromId(self, modulationId):
+        modulationSource, subModId = modulationId
+        returnString = ""
+        if(modulationSource == ModulationSources.MidiChannel):
+            returnString = "MidiChannel"
+            isInt = isinstance(subModId, int)
+            if((isInt == False) and (len(subModId) == 2)):
+                if(subModId[0] == MidiChannelModulationSources.Controller):
+                    midiControllers = MidiControllers()
+                    controllerName = midiControllers.getName(subModId[1])
+                    returnString += ".Controller." + controllerName
+            else:
+                if(subModId == MidiChannelModulationSources.Controller):
+                    returnString += ".Controller.ModWheel"
+                else:
+                    midiChannelModulationSources = MidiChannelModulationSources()
+                    channelSourceName = midiChannelModulationSources.getNames(subModId)
+                    returnString += "." + channelSourceName
+        elif(modulationSource == ModulationSources.MidiNote):
+            returnString = "MidiNote"
+            isInt = isinstance(subModId, int)
+            if(isInt == False):
+                subModId = subModId[0]
+            noteModulationSources = NoteModulationSources()
+            subModeName = noteModulationSources.getNames(subModId)
+            returnString += "." + subModeName
+        elif(modulationSource == ModulationSources.LFO):
+            returnString = "LFO"
+            isInt = isinstance(subModId, int)
+            if(isInt == True):
+                subModId = [subModId]
+            lfoTypes = LfoShapes()
+            subModName = lfoTypes.getNames(subModId[0])
+            returnString += "." + subModName
+            if(len(subModId) > 1):
+                returnString += "." + str(subModId[1])
+            else:
+                returnString += ".4.0"
+            if(len(subModId) > 2):
+                returnString += "|" + str(subModId[2])
+            else:
+                returnString += "|0.0"
+            if(len(subModId) > 3):
+                returnString += "|" + str(subModId[3])
+            else:
+                returnString += "|0.0"
+            if(len(subModId) > 4):
+                returnString += "|" + str(subModId[4])
+            else:
+                returnString += "|1.0"
+        elif(modulationSource == ModulationSources.ADSR):
+            returnString = "ADSR"
+            isInt = isinstance(subModId, int)
+            if(isInt == True):
+                subModId = [subModId]
+            adsrType = AdsrShapes()
+            subModName = adsrType.getNames(subModId[0])
+            returnString += "." + subModName
+            if(len(subModId) > 1):
+                returnString += "." + str(subModId[1])
+            else:
+                returnString += ".0.0"
+            if(len(subModId) > 2):
+                returnString += "|" + str(subModId[2])
+            else:
+                returnString += "|0.0"
+            if(len(subModId) > 3):
+                returnString += "|" + str(subModId[3])
+            else:
+                returnString += "|1.0"
+            if(len(subModId) > 4):
+                returnString += "|" + str(subModId[4])
+            else:
+                returnString += "|0.0"
+        elif(modulationSource == ModulationSources.Value):
+            returnString = "Value"
+            isFloat = isinstance(subModId, float)
+            if(isFloat != True):
+                subModId = subModId[0]
+            returnString += "." + str(subModId)
+        else:
+            returnString = "None"
+        return returnString
+
+    def validateModulationString(self, string):
+        modulationId = self.findModulationId(string)
+        if(modulationId == None):
+            return "None"
+        else:
+            newString = self.getStringFromId(modulationId)
+            return newString
 
     def _findLfo(self, mode, midiLength, startBeat, minVal, maxVal):
         for lfo in self._activeLfos:

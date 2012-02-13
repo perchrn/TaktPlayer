@@ -31,9 +31,9 @@ class GlobalConfig(object):
         self._midiTiming = MidiTiming()
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
-        self._effectsGui = EffectsGui(self._mainConfig)
+        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
-        self._fadeGui = FadeGui(self._mainConfig)
+        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming)
         self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
 
     def _getConfiguration(self):
@@ -69,6 +69,21 @@ class GlobalConfig(object):
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
 
+    def getEffectTemplate(self, configName):
+        return self._effectsConfiguration.getTemplate(configName)
+
+    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
+        return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+
+    def deleteEffectTemplate(self, configName):
+        self._effectsConfiguration.deleteTemplate(configName)
+
+    def getEffectTemplateNamesList(self):
+        return self._effectsConfiguration.getTemplateNamesList()
+
+    def checkIfNameIsDefaultEffectName(self, configName):
+        return self._effectsConfiguration.checkIfNameIsDefaultName(configName)
+
     def updateModulationGui(self, modulationString, widget):
         self._modulationGui.updateGui(modulationString, widget)
 
@@ -77,9 +92,27 @@ class GlobalConfig(object):
         if(template != None):
             self._fadeGui.updateGui(template)
 
+    def getFadeTemplate(self, configName):
+        return self._fadeConfiguration.getTemplate(configName)
+
+    def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
+        return self._fadeConfiguration.createTemplate(saveName, fadeMode, fadeMod, levelMod)
+
+    def deleteFadeTemplate(self, configName):
+        self._fadeConfiguration.deleteTemplate(configName)
+
+    def getFadeTemplateNamesList(self):
+        return self._fadeConfiguration.getTemplateNamesList()
+
+    def checkIfNameIsDefaultFadeName(self, configName):
+        return self._fadeConfiguration.checkIfNameIsDefaultName(configName)
+
 class EffectsGui(object):
-    def __init__(self, mainConfing):
+    def __init__(self, mainConfing, midiTiming):
         self._mainConfig = mainConfing
+        self._midiTiming = midiTiming
+        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._startConfigName = ""
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._mainEffectsPlane = plane
@@ -255,15 +288,59 @@ Selects the effect.
         self._hideSlidersCallback()
 
     def _onSaveButton(self, event):
-        print "Save " * 20
-        print "Name: " + self._templateNameField.GetValue()
-        print "Effect: " + self._effectNameField.GetValue()
-        print "Amount: " + self._ammountField.GetValue()
-        print "Arg1: " + self._arg1Field.GetValue()
-        print "Arg2: " + self._arg2Field.GetValue()
-        print "Arg3: " + self._arg3Field.GetValue()
-        print "Arg4: " + self._arg4Field.GetValue()
-        print "Save " * 20
+        saveName = self._templateNameField.GetValue()
+        oldTemplate = self._mainConfig.getEffectTemplate(saveName)
+        rename = False
+        cancel = False
+        if(saveName != self._startConfigName):
+            inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(self._startConfigName)
+            
+            if(oldTemplate != None):
+                text = "\"%s\" already exists!!! Do you want to overwrite?" % (saveName)
+                dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == False):
+                    cancel = True
+                else:
+                    text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                    dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                    result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                    dlg.Destroy()
+                    if(result == True):
+                        rename = True
+            else:
+                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    rename = True
+        effectName = self._effectNameField.GetValue()
+        ammountMod = self._midiModulation.validateModulationString(self._ammountField.GetValue())
+        arg1Mod = self._midiModulation.validateModulationString(self._arg1Field.GetValue())
+        arg2Mod = self._midiModulation.validateModulationString(self._arg2Field.GetValue())
+        arg3Mod = self._midiModulation.validateModulationString(self._arg3Field.GetValue())
+        arg4Mod = self._midiModulation.validateModulationString(self._arg4Field.GetValue())
+        if(cancel == True):
+            self._ammountField.SetValue(ammountMod)
+            self._arg1Field.SetValue(arg1Mod)
+            self._arg2Field.SetValue(arg2Mod)
+            self._arg3Field.SetValue(arg3Mod)
+            self._arg4Field.SetValue(arg4Mod)
+        else:
+            if(oldTemplate == None):
+                print "Make new template..."
+                savedTemplate = self._mainConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+                if(rename == True):
+                    self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
+                self._mainConfig.verifyEffectTemplateUsed()
+            else:
+                oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+                savedTemplate = oldTemplate
+            self.updateGui(savedTemplate, self._midiNote)
+            self._mainConfig.updateNoteGui()
+            self._mainConfig.updateMixerGui()
 
     def _onSlidersButton(self, event):
         self._showSlidersCallback()
@@ -355,23 +432,18 @@ Selects the effect.
         sliderId = event.GetEventObject().GetId()
         midiChannel = self._mainConfig.getSelectedMidiChannel()
         if(sliderId == self._amountSliderId):
-#            print "Ammount: " + str(self._ammountSlider.GetValue())
             if((midiChannel > -1) and (midiChannel < 16)):
                 self.sendMidi(midiChannel, self._ammountField.GetValue(), self._ammountSlider.GetValue())
         elif(sliderId == self._arg1SliderId):
-#            print "Arg 1: " + str(self._arg1Slider.GetValue())
             if((midiChannel > -1) and (midiChannel < 16)):
                 self.sendMidi(midiChannel, self._arg1Field.GetValue(), self._arg1Slider.GetValue())
         elif(sliderId == self._arg2SliderId):
-#            print "Arg 2: " + str(self._arg2Slider.GetValue())
             if((midiChannel > -1) and (midiChannel < 16)):
                 self.sendMidi(midiChannel, self._arg2Field.GetValue(), self._arg2Slider.GetValue())
         elif(sliderId == self._arg3SliderId):
-#            print "Arg 3: " + str(self._arg3Slider.GetValue())
             if((midiChannel > -1) and (midiChannel < 16)):
                 self.sendMidi(midiChannel, self._arg3Field.GetValue(), self._arg3Slider.GetValue())
         elif(sliderId == self._arg4SliderId):
-#            print "Arg 4: " + str(self._arg4Slider.GetValue())
             if((midiChannel > -1) and (midiChannel < 16)):
                 self.sendMidi(midiChannel, self._arg4Field.GetValue(), self._arg4Slider.GetValue())
         self._updateValueLabels()
@@ -541,7 +613,8 @@ Selects the effect.
     def updateGui(self, effectTemplate, midiNote):
         self._midiNote = midiNote
         config = effectTemplate.getConfigHolder()
-        self._templateNameField.SetValue(config.getValue("Name"))
+        self._startConfigName = config.getValue("Name")
+        self._templateNameField.SetValue(self._startConfigName)
         self._setEffect(config.getValue("Effect"))
         self._ammountField.SetValue(config.getValue("Amount"))
         self._arg1Field.SetValue(config.getValue("Arg1"))
@@ -550,8 +623,10 @@ Selects the effect.
         self._arg4Field.SetValue(config.getValue("Arg4"))
 
 class FadeGui(object):
-    def __init__(self, mainConfing):
+    def __init__(self, mainConfing, midiTiming):
         self._mainConfig = mainConfing
+        self._midiTiming = midiTiming
+        self._midiModulation = MidiModulation(None, self._midiTiming)
 
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._mainFadeGuiPlane = plane
@@ -641,12 +716,54 @@ Decides if this image fades to black or white.
         self._mainConfig.stopModulationGui()
 
     def _onSaveButton(self, event):
-        print "Save " * 20
-        print "Name: " + self._templateNameField.GetValue()
-        print "Mode: " + self._fadeModesField.GetValue()
-        print "Modulation: " + self._fadeModulationField.GetValue()
-        print "Level: " + self._levelModulationField.GetValue()
-        print "Save " * 20
+        saveName = self._templateNameField.GetValue()
+        oldTemplate = self._mainConfig.getFadeTemplate(saveName)
+        rename = False
+        cancel = False
+        if(saveName != self._startConfigName):
+            inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(self._startConfigName)
+            
+            if(oldTemplate != None):
+                text = "\"%s\" already exists!!! Do you want to overwrite?" % (saveName)
+                dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == False):
+                    cancel = True
+                else:
+                    text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                    dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                    result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                    dlg.Destroy()
+                    if(result == True):
+                        rename = True
+            else:
+                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    rename = True
+        fadeMode = self._fadeModesField.GetValue()
+        fadeMod = self._midiModulation.validateModulationString(self._fadeModulationField.GetValue())
+        levelMod = self._midiModulation.validateModulationString(self._levelModulationField.GetValue())
+        if(cancel == True):
+            self._fadeModesField.SetValue(fadeMode)
+            self._fadeModulationField.SetValue(fadeMod)
+            self._levelModulationField.SetValue(levelMod)
+        else:
+            if(oldTemplate == None):
+                print "Make new template..."
+                savedTemplate = self._mainConfig.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)
+                if(rename == True):
+                    self._mainConfig.renameFadeTemplateUsed(self._startConfigName, saveName)
+                self._mainConfig.verifyFadeTemplateUsed()
+            else:
+                oldTemplate.update(fadeMode, fadeMod, levelMod)
+                savedTemplate = oldTemplate
+            self.updateGui(savedTemplate)
+            self._mainConfig.updateNoteGui()
+            self._mainConfig.updateMixerGui()
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -664,9 +781,10 @@ Decides if this image fades to black or white.
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateGui(self, effectTemplate):
-        config = effectTemplate.getConfigHolder()
-        self._templateNameField.SetValue(config.getValue("Name"))
+    def updateGui(self, fadeTemplate):
+        config = fadeTemplate.getConfigHolder()
+        self._startConfigName = config.getValue("Name")
+        self._templateNameField.SetValue(self._startConfigName)
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
         self._fadeModulationField.SetValue(config.getValue("Modulation"))
         self._levelModulationField.SetValue(config.getValue("Level"))
@@ -675,6 +793,7 @@ class ModulationGui(object):
     def __init__(self, mainConfing, midiTiming):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
+        self._midiModulation = MidiModulation(None, self._midiTiming)
         self._updateWidget = None
 
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
@@ -682,8 +801,6 @@ class ModulationGui(object):
         self._mainModulationGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideModulationCallback = parentClass.hideModulationGui
-
-        self._midiModulation = MidiModulation(None, self._midiTiming)
 
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable

@@ -92,6 +92,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         self._noteGui = MediaFileGui(self, self._configuration)
+        self._configuration.setNoteGui(self._noteGui)
         notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         notKeyboardSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
 

@@ -195,6 +195,11 @@ class ConfigurationHolder(object):
             print "Error! Could not find parameter \"" + name +  "\""
             return None
 
+    def removeParameter(self, name):
+        foundParameter = self._findParameter(name)
+        if(foundParameter != None):
+            self._parameters.remove(foundParameter)
+        
     def _getValueFromXml(self, xml, name):
         param = self._findParameter(name)
         name = name.lower()

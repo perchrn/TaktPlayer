@@ -6,10 +6,6 @@ Created on 6. feb. 2012
 from midi.MidiTiming import MidiTiming
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
 import wx
-from video.Effects import EffectTypes, getEffectId, getEffectName, FlipModes,\
-    ZoomModes, DistortionModes, EdgeModes, EdgeColourModes, DesaturateModes,\
-    ColorizeModes
-from video.media.MediaFile import FadeMode
 from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
     MidiModulation, AttackDecaySustainRelease, getLfoShapeId,\
     LowFrequencyOscilator, getAdsrShapeId
@@ -18,6 +14,10 @@ from midi.MidiStateHolder import MidiChannelModulationSources,\
 from midi.MidiController import MidiControllers
 from widgets.PcnAdsrDisplayWindget import PcnAdsrDisplayWidget
 from widgets.PcnLfoDisplayWindget import PcnLfoDisplayWidget
+from video.media.MediaFileModes import FadeMode
+from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
+    EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
+    EdgeColourModes
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):

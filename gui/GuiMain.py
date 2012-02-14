@@ -16,6 +16,7 @@ from configurationGui.Configuration import Configuration
 from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString
 import subprocess
+import multiprocessing
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -86,19 +87,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.SetBackgroundColour((120,120,120))
 
         mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        menuSeperatorSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         notKeyboardSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        midiTrackSizer=wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        keyboardSizer=wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+
+        menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,33)) #@UndefinedVariable
+        menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
+        menuPannel.SetSizer(menuSizer) #@UndefinedVariable
+        menuSeperatorPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
+        menuSeperatorPannel.SetBackgroundColour(wx.Colour(0,255,0)) #@UndefinedVariable
+        menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
 
         scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
-        scrollingKeyboardPannel.SetupScrolling()
+        scrollingKeyboardPannel.SetupScrolling(True, False)
         scrollingKeyboardPannel.SetSizer(keyboardSizer)
         self._keyboardPanel = wx.Panel(scrollingKeyboardPannel, wx.ID_ANY, size=(3082,60)) #@UndefinedVariable
         scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(80,-1)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetupScrolling()
+        scrollingMidiTrackPanel.SetupScrolling(False, True)
         scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
@@ -109,8 +119,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         notKeyboardSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
 
+        mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
         mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._sendButton = wx.Button(menuPannel, wx.ID_ANY, 'Send') #@UndefinedVariable
+        self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._midiButton = wx.Button(menuPannel, wx.ID_ANY, 'MIDI on') #@UndefinedVariable
+        self._updateMidiButtonColor(self._configuration.isMidiEnabled())
+        menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuPannel.Bind(wx.EVT_BUTTON, self._onSendButton, id=self._sendButton.GetId()) #@UndefinedVariable
+        menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
@@ -219,7 +240,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def setupClientProcess(self):
         self._guiClient = GuiClient()
-        self._guiClient.startGuiClientProcess("127.0.0.1", 2021, None)
+        host, port = self._configuration.getWebConfig()
+        self._guiClient.startGuiClientProcess(host, port, None)
 
     def updateKeyboardImages(self):
         activeNotesTask = TaskHolder("Active notes request", TaskHolder.RequestTypes.ActiveNotes, None)
@@ -425,6 +447,25 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def getLatestControllers(self):
         return self._latestControllersRequestResult
 
+    def _onSendButton(self, event):
+        xmlString = self._configuration.getXmlString()
+        print xmlString
+        self._guiClient.sendConfiguration(xmlString)
+
+    def _updateMidiButtonColor(self, midiOn):
+        if(midiOn == True):
+            self._midiButton.SetBackgroundColour(wx.Colour(200,255,200)) #@UndefinedVariable
+        else:
+            self._midiButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+
+    def _midiToggle(self, event):
+        midiOn = self._configuration.isMidiEnabled()
+        if(midiOn == True):
+            self._configuration.setMidiEnable(False)
+        else:
+            self._configuration.setMidiEnable(True)
+        self._updateMidiButtonColor(midiOn)
+
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundNoteId = None
@@ -583,6 +624,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.stopGuiClientProcess()
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     dirOk = True
     scriptDir = os.path.dirname(sys.argv[0])
     if((scriptDir != "") and (scriptDir != os.getcwd())):

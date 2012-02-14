@@ -6,9 +6,8 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 import os
-from video.media.MediaFile import MixMode
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
-    MediaTypes
+    MediaTypes, MixMode
 
 
 class MediaPoolConfig(object):
@@ -438,11 +437,8 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
-        sendButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Send') #@UndefinedVariable #TODO: Move this button...
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSendButton, id=sendButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(sendButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._selectedEditor = None
@@ -680,27 +676,21 @@ All notes on events are quantized to this.
         self._selectedEditor = self.EditSelection.Fade
         self._mainConfig.updateFadeGui(selectedFadeConfig)
 
-    def _onSendButton(self, event):
-        self._mainConfig.printConfiguration()
-
     def _onSaveButton(self, event):
-        print "Save " * 20
-        #TODO: get relative path for file name!!!            print "Relative: " + os.path.relpath(self._fileName, os.curdir)
         if(self._type == "Camera"):
             noteFileName = str(self._cameraId)
-            print "FileName: " + noteFileName
         else:
-            noteFileName = self._fileName
-            print "FileName: " + self._fileName
+            playerBaseDir = self._mainConfig.getPlayerBaseDir()
+            if((playerBaseDir != "") and (self._fileName != "")):
+                noteFileName = os.path.relpath(self._fileName, playerBaseDir)
+            else:
+                noteFileName = self._fileName
         noteLetter = noteToNoteString(self._midiNote)
         if(self._config == None):
             newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
-            print "Save2 " * 20
             if(newConfig != None):
                 self._config = newConfig.getConfig()
-                print "Save :) " * 20
         if(self._config != None):
-            print "Save3 " * 20
             self._config.setValue("Type", self._type)
             if(self._type == "VideoLoop"):
                 loopMode = self._subModeField.GetValue()
@@ -735,8 +725,6 @@ All notes on events are quantized to this.
             self._config.setValue("Effect2Config", effect2Config)
             fadeConfig = self._fadeField.GetValue()
             self._config.setValue("FadeConfig", fadeConfig)
-            print "Save4 " * 20
-        print "Save " * 20
 
     def _showOrHideSubModeModulation(self):
         if(self._selectedSubMode == "Modulation"):

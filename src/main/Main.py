@@ -8,6 +8,7 @@ Created on 28. nov. 2011
 import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
 from configuration.GuiServer import GuiServer
+import multiprocessing
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -135,6 +136,7 @@ class MyKivyApp(App):
             raise
 
 if __name__ in ('__android__', '__main__'):
+    multiprocessing.freeze_support()
     try:
         mainApp = MyKivyApp()
         Clock.schedule_interval(mainApp.getNextFrame, 0)

@@ -96,11 +96,14 @@ class ConfigurationHolder(object):
 
     def loadConfig(self, configName):
         filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
-        loadFile = open(filePath, 'r')
-        xmlString = loadFile.read()
-        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
-        self._loadedXML = ElementTree.XML(soup.prettify())
-        self._updateFromXml(self._loadedXML)
+        try:
+            loadFile = open(filePath, 'r')
+            xmlString = loadFile.read()
+            soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
+            self._loadedXML = ElementTree.XML(soup.prettify())
+            self._updateFromXml(self._loadedXML)
+        except:
+            print "Error loading configuration."
 
     def setFromXml(self, xmlConfig):
         self._loadedXML = xmlConfig

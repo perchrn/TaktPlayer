@@ -11,25 +11,60 @@ from network.SendMidiOverNet import SendMidiOverNet
 
 class Configuration(object):
     def __init__(self):
-        self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._globalConf = GlobalConfig(self._configurationTree, self)
-        self._mediaMixerConf = MediaMixerConfig(self._configurationTree)
+        self._guiConfigurationTree = ConfigurationHolder("MusicalVideoPlayerGUI")
+        self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
+        self.setupGuiConfiguration()
+        print self._guiConfigurationTree.getConfigurationXMLString()
+        self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
+        self._globalConf = GlobalConfig(self._playerConfigurationTree, self)
+        self._mediaMixerConf = MediaMixerConfig(self._playerConfigurationTree)
         self._mixerGui = None
 
         self._mediaPoolConf = MediaPoolConfig(self._mediaMixerConf.getConfTree())
         self._noteGui = None
 
         self._selectedMidiChannel = -1
-        self._midiSender = SendMidiOverNet("127.0.0.1", 2020)
+        self.setupMidiSender()
         self._latestMidiControllerRequestCallback = None
 
+    def setupGuiConfiguration(self):
+        self._guiPlayerConfig = self._guiConfigurationTree.addChildUnique("Player")
+        self._guiPlayerConfig.addTextParameter("Host", "127.0.0.1")
+        self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
+        self._guiPlayerConfig.addIntParameter("WebPort", 2021)
+        self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
+        self._guiPlayerConfig.addTextParameter("BaseDir", "")
+        self._guiPlayerConfig.addTextParameter("AddDir", "")
+
+    def setupMidiSender(self):
+        host, port = self.getMidiConfig()
+        self._midiSender = SendMidiOverNet(host, port)
+
+    def getWebConfig(self):
+        host = self._guiPlayerConfig.getValue("Host")
+        port = self._guiPlayerConfig.getValue("WebPort")
+        return (host, port)
+
+    def getMidiConfig(self):
+        host = self._guiPlayerConfig.getValue("Host")
+        port = self._guiPlayerConfig.getValue("MidiPort")
+        return (host, port)
+
+    def getPlayerBaseDir(self):
+        return self._guiPlayerConfig.getValue("BaseDir")
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback
 
+    def isMidiEnabled(self):
+        return self._guiPlayerConfig.getValue("MidiEnabled")
+
+    def setMidiEnable(self, newValue):
+        self._guiPlayerConfig.setValue("MidiEnabled", newValue)
+
     def setFromXml(self, config):
         print "DEBUG: Setting from XML"
-        self._configurationTree.setFromXml(config)
+        self._playerConfigurationTree.setFromXml(config)
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
         self._mediaMixerConf.checkAndUpdateFromConfiguration()
         self._globalConf.checkAndUpdateFromConfiguration()
@@ -136,7 +171,7 @@ class Configuration(object):
         return self._mediaPoolConf.makeNoteConfig(fileName, noteLetter, midiNote)
 
     def getXmlString(self):
-        return self._configurationTree.getConfigurationXMLString()
+        return self._playerConfigurationTree.getConfigurationXMLString()
 
     def setSelectedMidiChannel(self, midiChannel):
         self._selectedMidiChannel = midiChannel

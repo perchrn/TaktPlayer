@@ -4,6 +4,9 @@ Created on 24. jan. 2012
 @author: pcn
 '''
 from cv2 import cv
+import numpy #@UnusedImport
+from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
+    EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId
         
 def getEmptyImage(x, y):
     resizeMat = createMat(x,y)
@@ -21,95 +24,6 @@ def copyImage(image):
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
-
-class EffectTypes():
-    Zoom, Flip, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(12)
-
-    def getChoices(self):
-        return ["None",
-                "Zoom",
-                "Flip",
-                "Blur",
-                "BlurContrast",
-                "Distortion",
-                "Edge",
-                "Desaturate",
-                "Contrast",
-                "HueSaturation",
-                "Colorize",
-                "Invert",
-                "Threshold"]
-    def getDescriptions(self):
-        return ["None",
-                "Zoom inn/out and even crop video.",
-                "Flip video horizontal/vertical.",
-                "Blur video.",
-                "Blur and multiply with self.",
-                "Distort image to black or white.",
-                "Edge detection effects.",
-                "Selective desaturation effects.",
-                "Adjust brightness and contrast",
-                "Rotate colors and adjust saturation.",
-                "Add/subtract/multiply with color.",
-                "Invert video.",
-                "Threshold video to black and white."]
-
-def getEffectId(name):
-    lowername = name.lower()
-    if(lowername == "zoom"):
-        return EffectTypes.Zoom
-    elif(lowername == "flip"):
-        return EffectTypes.Flip
-    elif(lowername == "blur"):
-        return EffectTypes.Blur
-    elif(lowername == "blurcontrast"):
-        return EffectTypes.BlurContrast
-    elif(lowername == "distortion"):
-        return EffectTypes.Distortion
-    elif(lowername == "edge"):
-        return EffectTypes.Edge
-    elif(lowername == "desaturate"):
-        return EffectTypes.Desaturate
-    elif(lowername == "contrast"):
-        return EffectTypes.Contrast
-    elif(lowername == "huesaturation"):
-        return EffectTypes.HueSaturation
-    elif(lowername == "colorize"):
-        return EffectTypes.Colorize
-    elif(lowername == "invert"):
-        return EffectTypes.Invert
-    elif(lowername == "threshold"):
-        return EffectTypes.Threshold
-    else:
-        return None
-
-def getEffectName(effectId):
-    if(effectId == EffectTypes.Zoom):
-        return "Zoom"
-    elif(effectId == EffectTypes.Flip):
-        return "Flip"
-    elif(effectId == EffectTypes.Blur):
-        return "Blur"
-    elif(effectId == EffectTypes.BlurContrast):
-        return "BlurContrast"
-    elif(effectId == EffectTypes.Distortion):
-        return "Distortion"
-    elif(effectId == EffectTypes.Edge):
-        return "Edge"
-    elif(effectId == EffectTypes.Desaturate):
-        return "Desaturate"
-    elif(effectId == EffectTypes.Contrast):
-        return "Contrast"
-    elif(effectId == EffectTypes.HueSaturation):
-        return "HueSaturation"
-    elif(effectId == EffectTypes.Colorize):
-        return "Colorize"
-    elif(effectId == EffectTypes.Invert):
-        return "Invert"
-    elif(effectId == EffectTypes.Threshold):
-        return "Threshold"
-    else:
-        return None
 
 def getEffectById(effectType, configurationTree, internalResX, internalResY):
     if(effectType == EffectTypes.Zoom):
@@ -144,11 +58,6 @@ def getEffectByName(name, configurationTree, internalResX, internalResY):
     print "getEffectByName name: " + name + " id: " + str(fxid)    
     return getEffectById(fxid, configurationTree, internalResX, internalResY)
 
-class ZoomModes():
-    In, Out, InOut, Full = range(4)
-
-    def getChoices(self):
-        return ["In", "Out", "InOut", "Full"]
 
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -274,12 +183,6 @@ class ZoomEffect(object):
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
 
-class FlipModes():
-    NoFlip, Vertical, Horizontal, Both = range(4)
-
-    def getChoices(self):
-        return ["NoFlip", "Vertical", "Horizontal", "Both"]
-
 class FlipEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -367,12 +270,6 @@ class BluredContrastEffect(object):
         cv.Mul(image, self._blurMat1, self._blurMat2, 0.006)
         return self._blurMat2
 
-class DistortionModes():
-    Black, White, Both = range(3)
-
-    def getChoices(self):
-        return ["Black", "White", "Both"]
-
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -410,18 +307,6 @@ class DistortionEffect(object):
         else:
             cv.Dilate(image, self._distortMat, None, itterations)
         return self._distortMat
-
-class EdgeModes():
-    CannyOnTop, Canny, Sobel, Laplace = range(4)
-
-    def getChoices(self):
-        return ["CannyOnTop", "Canny", "Sobel", "Laplace"]
-
-class EdgeColourModes():
-    Value, Saturation, Hue = range(3)
-
-    def getChoices(self):
-        return ["Value", "Saturation", "Hue"]
 
 class EdgeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -550,12 +435,6 @@ class EdgeEffect(object):
             cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
             return self._colorMat
 
-class DesaturateModes():
-    Plus, Minus, Mask = range(3)
-
-    def getChoices(self):
-        return ["Plus", "Minus", "Mask"]
-
 class DesaturateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -657,12 +536,6 @@ class HueSaturationEffect(object):
         cv.SubS(self._colorMat, rgbColor, image)
         cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
         return self._colorMat
-
-class ColorizeModes():
-    Add, Subtract, SubtractFrom, Multiply = range(4)
-
-    def getChoices(self):
-        return ["Add", "Subtract", "SubtractFrom", "Multiply"]
 
 
 class ColorizeEffect(object):

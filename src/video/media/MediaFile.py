@@ -8,9 +8,10 @@ import logging
 from cv2 import cv
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat
+from video.Effects import createMat, getEffectByName
 import hashlib
-from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
+from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
+    FadeMode
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -18,18 +19,6 @@ def copyImage(image):
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
-
-class FadeMode():
-    Black, White = range(2)
-
-    def getChoices(self):
-        return ["Black", "White"]
-
-    def getNames(self, typeId):
-        for i in range(len(self.getChoices())):
-            if(typeId == i):
-                return self.getChoices()[i]
-        return self.getChoices()[0]
 
 
 def fadeImage(image, value, mode, tmpMat):
@@ -128,10 +117,12 @@ class MediaFile(object):
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
+        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
         self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
+        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
         self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
         self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
@@ -223,9 +214,9 @@ class MediaFile(object):
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         return fadeMode, fadeValue
 
-    def _applyOneEffect(self, image, effectSettings, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+    def _applyOneEffect(self, image, effect, effectSettings, songPosition, midiChannelStateHolder, midiNoteStateHolder):
         if(effectSettings != None):
-            effect, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
             if(effect != None):
                 return effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
             else:
@@ -240,8 +231,8 @@ class MediaFile(object):
         else:
             self._image = copyImage(self._captureImage)
 
-        self._image = self._applyOneEffect(self._image, self._effect1Settings, currentSongPosition, midiChannelState, midiNoteState)
-        self._image = self._applyOneEffect(self._image, self._effect2Settings, currentSongPosition, midiChannelState, midiNoteState)
+        self._image = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, currentSongPosition, midiChannelState, midiNoteState)
+        self._image = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, currentSongPosition, midiChannelState, midiNoteState)
 
 #Blur/Distort
 #            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
@@ -353,12 +344,12 @@ class MediaFile(object):
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
             if(effects != None):
-                preEffect, postEffect = effects
+                preEffect, preEffectSettings, postEffect, postEffectSettings = effects
             else:
-                preEffect, postEffect = (None, None)
-            self._image = self._applyOneEffect(self._image, preEffect, currentSongPosition, midiChannelState, midiNoteState)
+                preEffect, preEffectSettings, postEffect, postEffectSettings = (None, None, None, None)
+            self._image = self._applyOneEffect(self._image, preEffect, preEffectSettings, currentSongPosition, midiChannelState, midiNoteState)
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            self._image = self._applyOneEffect(self._image, postEffect, currentSongPosition, midiChannelState, midiNoteState)
+            self._image = self._applyOneEffect(self._image, postEffect, postEffectSettings, currentSongPosition, midiChannelState, midiNoteState)
             return mixedImage
     
 class ImageFile(MediaFile):

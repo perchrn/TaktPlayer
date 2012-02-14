@@ -66,9 +66,11 @@ class MediaPool(object):
         mediaPoolState = []
         for i in range(128):
             mediaPoolState.append(False)
-        for xmlConfig in self._configurationTree.findXmlChildrenList("MediaFile"):
-            midiNote = self.addXmlMedia(xmlConfig)
-            mediaPoolState[midiNote] = True
+        xmlChildren = self._configurationTree.findXmlChildrenList("MediaFile")
+        if(xmlChildren != None):
+            for xmlConfig in xmlChildren:
+                midiNote = self.addXmlMedia(xmlConfig)
+                mediaPoolState[midiNote] = True
         for i in range(128):
             mediaState = mediaPoolState[i]
             if(mediaState == False):

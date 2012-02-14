@@ -4,8 +4,7 @@ Created on 25. jan. 2012
 @author: pcn
 '''
 from midi.MidiModulation import MidiModulation
-from video.media.MediaFile import FadeMode
-from video.Effects import getEffectByName
+from video.media.MediaFileModes import FadeMode
 
 class ConfigurationTemplates(object):
     def __init__(self, configurationTree, midiTiming, name):
@@ -164,7 +163,7 @@ class EffectSettings(object):
         self._effectArg3ModulationId = -1
         self._effectArg4ModulationId = -1
         self._configurationTree.addTextParameter("Effect", "None")
-        self._actualEffect = None
+        self._effectName = "None"
 
     def getConfigHolder(self):
         return self._configurationTree
@@ -175,8 +174,11 @@ class EffectSettings(object):
         self._effectArg2ModulationId = self._midiModulation.connectModulation("Arg2")
         self._effectArg3ModulationId = self._midiModulation.connectModulation("Arg3")
         self._effectArg4ModulationId = self._midiModulation.connectModulation("Arg4")
-        effectName = self._configurationTree.getValue("Effect")
-        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        self._effectName = self._configurationTree.getValue("Effect")
+#        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+
+    def getEffectName(self):
+        return self._effectName
 
     def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
         self._configurationTree.setValue("Effect", effectName)
@@ -197,15 +199,12 @@ class EffectSettings(object):
         self._configurationTree._updateFromXml(xmlFile)
 
     def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
-        if(self._actualEffect != None):
-            amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-            arg1 =  self._midiModulation.getModlulationValue(self._effectArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-            arg2 =  self._midiModulation.getModlulationValue(self._effectArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-            arg3 =  self._midiModulation.getModlulationValue(self._effectArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-            arg4 =  self._midiModulation.getModlulationValue(self._effectArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
-            return (self._actualEffect, amount, arg1, arg2, arg3, arg4)
-        else:
-            return (None, None, None, None, None, None)
+        amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg1 =  self._midiModulation.getModlulationValue(self._effectArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg2 =  self._midiModulation.getModlulationValue(self._effectArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg3 =  self._midiModulation.getModlulationValue(self._effectArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        arg4 =  self._midiModulation.getModlulationValue(self._effectArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        return (amount, arg1, arg2, arg3, arg4)
 
 
 class FadeTemplates(ConfigurationTemplates):

@@ -10,6 +10,7 @@ from utilities.MiniXml import MiniXml, stringToXml, getFromXml
 import httplib
 import os
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
+import urllib
 
 def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
     run = True
@@ -64,6 +65,10 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                     if(fileName != None):
                         resposeXmlString = requestUrl(hostPort, "%s" %(fileName), "image/jpg")
                         resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "configuration"):
+                    postMessage(hostPort, command)
+                else:
+                    print "Unknown command xml: " + command
         except Empty:
             pass
 
@@ -99,10 +104,24 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType = "text/xml"):
         else:
             clientMessageXml = MiniXml("clientmessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
             return clientMessageXml.getXmlString()
+        httpConnection.close()
     except:
         clientMessageXml = MiniXml("clientmessage", "Got exception while requesting URL.")
         return clientMessageXml.getXmlString()
 
+def postMessage(hostPort, xmlString):
+    print "DEBUG"
+    params = urllib.urlencode({'@number': 12524, '@type': 'issue', '@action': 'show'})
+    print str(params) + " type: " + str(type(params))
+    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    conn = httplib.HTTPConnection(hostPort)
+    conn.request("POST", "", params, headers)
+    response = conn.getresponse()
+    print response.status, response.reason
+    print response.read()
+    conn.close()
+    print "DEBUG"
+    
 class GuiClient(object):
     def __init__(self):
         self._commandQueue = None
@@ -161,6 +180,11 @@ class GuiClient(object):
     def requestLatestControllers(self):
         commandXml = MiniXml("latestMidiContollersRequest")
         self._commandQueue.put(commandXml.getXmlString())
+
+    def sendConfiguration(self, xmlString):
+        print "Putting xml..."
+        self._commandQueue.put(xmlString)
+        print "Putting xml... done."
 
     class ResponseTypes():
         FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration, LatestControllers = range(7)

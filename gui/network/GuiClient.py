@@ -10,7 +10,7 @@ from utilities.MiniXml import MiniXml, stringToXml, getFromXml
 import httplib
 import os
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
-import urllib
+import mimetypes
 
 def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
     run = True
@@ -66,7 +66,8 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                         resposeXmlString = requestUrl(hostPort, "%s" %(fileName), "image/jpg")
                         resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "configuration"):
-                    postMessage(hostPort, command)
+                    resposeXmlString = postXMLFile(urlSignaturer, hostPort, "configuration", "active configuration", command)
+                    resultQueue.put(resposeXmlString)
                 else:
                     print "Unknown command xml: " + command
         except Empty:
@@ -99,29 +100,75 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType = "text/xml"):
                     serverResponseData = serverResponse.read()
                     return serverResponseData
             else:
-                clientMessageXml = MiniXml("clientmessage", "Bad file type from server! Got: %s Expected: %s" % (resposeType, excpectedMimeType))
+                clientMessageXml = MiniXml("servermessage", "Bad file type from server! Got: %s Expected: %s" % (resposeType, excpectedMimeType))
                 return clientMessageXml.getXmlString()
         else:
-            clientMessageXml = MiniXml("clientmessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
+            clientMessageXml = MiniXml("servermessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
             return clientMessageXml.getXmlString()
         httpConnection.close()
     except:
-        clientMessageXml = MiniXml("clientmessage", "Got exception while requesting URL.")
+        clientMessageXml = MiniXml("servermessage", "Got exception while requesting URL.")
         return clientMessageXml.getXmlString()
 
-def postMessage(hostPort, xmlString):
-    print "DEBUG"
-    params = urllib.urlencode({'@number': 12524, '@type': 'issue', '@action': 'show'})
-    print str(params) + " type: " + str(type(params))
-    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-    conn = httplib.HTTPConnection(hostPort)
-    conn.request("POST", "", params, headers)
-    response = conn.getresponse()
-    print response.status, response.reason
-    print response.read()
-    conn.close()
-    print "DEBUG"
-    
+def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString):
+    try:
+        files = [(fileType, fileName, xmlString)]
+        fields = urlSignaturer.getSigantureFieldsForFile(fileType, fileName, xmlString)
+        content_type, body = encode_multipart_formdata(fields, files)
+        headers = {"Content-type": content_type}
+        httpConnection = httplib.HTTPConnection(hostPort)
+        httpConnection.request("POST", "", body, headers)
+        serverResponse = httpConnection.getresponse()
+        if(serverResponse.status == 200):
+            print "DEBUG XRF 200"
+            resposeType = serverResponse.getheader("Content-type")
+            if(resposeType == "text/xml"):
+                serverResponseData = serverResponse.read()
+                return serverResponseData
+            else:
+                clientMessageXml = MiniXml("servermessage", "Bad file type from server! Got: %s Expected: %s" % (resposeType, "text/xml"))
+                return clientMessageXml.getXmlString()
+        else:
+            clientMessageXml = MiniXml("servermessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
+            return clientMessageXml.getXmlString()
+        httpConnection.close()
+    except:
+        clientMessageXml = MiniXml("servermessage", "Got exception while requesting URL.")
+        return clientMessageXml.getXmlString()
+
+def encode_multipart_formdata(fields, files):
+    """
+    fields is a sequence of (name, value) elements for regular form fields.
+    files is a sequence of (name, filename, value) elements for data to be uploaded as files
+    Return (content_type, body) ready for httplib.HTTP instance
+    """
+    BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
+    body = None
+    for (key, value) in fields:
+        if(body == None):
+            body = '--' + BOUNDARY + "\n"
+        else:
+            body += '--' + BOUNDARY + "\n"
+        body += 'Content-Disposition: form-data; name="%s"' % key + "\n"
+        body += "\n"
+        body += value + "\n"
+    for (key, filename, value) in files:
+        if(body == None):
+            body = '--' + BOUNDARY + "\n"
+        else:
+            body += '--' + BOUNDARY + "\n"
+        body += 'Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename) + "\n"
+        body += 'Content-Type: %s' % get_content_type(filename) + "\n"
+        body += "\n"
+        body += value + "\n"
+    body += '--' + BOUNDARY + '--' + "\n"
+    body += "\n"
+    content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
+    return content_type, body
+
+def get_content_type(filename):
+    return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
 class GuiClient(object):
     def __init__(self):
         self._commandQueue = None
@@ -236,6 +283,8 @@ class GuiClient(object):
                     listTxt = serverXml.get("controllers")
                     returnValue = (self.ResponseTypes.LatestControllers, listTxt.split(',', 128))
 #                    print "Got latestMidiControllersRequest response: " + listTxt
+                else:
+                    print "Unknown Message: " + serverResponse
             else:
                 print "ERROR! Web server command is not a valid XML: " + str(serverResponse)
         except Empty:

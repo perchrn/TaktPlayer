@@ -20,7 +20,7 @@ class Configuration(object):
         self._mediaMixerConf = MediaMixerConfig(self._playerConfigurationTree)
         self._mixerGui = None
 
-        self._mediaPoolConf = MediaPoolConfig(self._mediaMixerConf.getConfTree())
+        self._mediaPoolConf = MediaPoolConfig(self._playerConfigurationTree)
         self._noteGui = None
 
         self._selectedMidiChannel = -1

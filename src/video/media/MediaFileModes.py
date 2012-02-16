@@ -16,6 +16,18 @@ class MixMode:
                 return self.getChoices()[i]
         return self.getChoices()[0]
 
+def getMixModeFromName(name):
+        if(name == "Add"):
+            return MixMode.Add
+        elif(name == "Multiply"):
+            return MixMode.Multiply
+        elif(name == "LumaKey"):
+            return MixMode.LumaKey
+        elif(name == "Replace"):
+            return MixMode.Replace
+        else:
+            return MixMode.Default
+
 class VideoLoopMode:
     Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
 

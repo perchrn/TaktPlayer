@@ -31,6 +31,16 @@ class UrlSignature(object):
         signature = self._getSignature(urlPlusTime)
         return urlPlusTime + "&sig=%s" % signature
 
+    def getSigantureFieldsForFile(self, fileType, fileName, fileData):
+        returnFields = []
+        timeString = str(time.time() + self._offset)
+        returnFields.append(("sigTime", timeString))
+        if(fileData == None):
+            fileData = ""
+        combinedString = self._passwd + "sigTime" + timeString + fileType + fileName + str(fileData)
+        returnFields.append(("sig", hashlib.sha224(combinedString).hexdigest()))
+        return returnFields
+
     def verifySignature(self, url):
         urlSplit = url.split("&sig=", 1)
         query = urlSplit[0]
@@ -47,6 +57,14 @@ class UrlSignature(object):
             print "self._getSignature(query) != querySignature " + str(self._getSignature(query)) + " X " + str(querySignature)
         return None
 
+    def verifySignatureFields(self, fileType, fileName, fileData, sigTime, sig):
+        combinedString = self._passwd + "sigTime" + str(sigTime) + fileType + fileName + str(fileData)
+        calcSignature = hashlib.sha224(combinedString).hexdigest()
+        if(calcSignature == sig):
+            if(abs(time.time() - sigTime) < 30.0):
+                return True
+        return False
+        
 def getDefaultUrlSignaturePasswd():
     return "GoGoGrillazEatingBananasFtw"
 

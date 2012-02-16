@@ -11,7 +11,7 @@ from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
-    FadeMode
+    FadeMode, getMixModeFromName
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -95,7 +95,6 @@ class MediaFile(object):
         self._configurationTree.addTextParameterStatic("FileName", self._filename)
         self._midiModulation = None
         self._setupConfiguration()
-        self._getConfiguration()
 
     def _setupConfiguration(self):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
@@ -133,16 +132,7 @@ class MediaFile(object):
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
 
         mixMode = self._configurationTree.getValue("MixMode")
-        if(mixMode == "Add"):
-            self._mixMode = MixMode.Add
-        elif(mixMode == "Multiply"):
-            self._mixMode = MixMode.Multiply
-        elif(mixMode == "LumaKey"):
-            self._mixMode = MixMode.LumaKey
-        elif(mixMode == "Replace"):
-            self._mixMode = MixMode.Replace
-        else:
-            self._mixMode = MixMode.Add #Defaults to add
+        self._mixMode = getMixModeFromName(mixMode)
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -355,6 +345,7 @@ class MediaFile(object):
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+        self._getConfiguration()
 
     def getType(self):
         return "Image"
@@ -392,6 +383,7 @@ class CameraInput(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
         self._cameraId = int(fileName)
+        self._getConfiguration()
 
     def getType(self):
         return "Camera"
@@ -438,6 +430,7 @@ class ImageSequenceFile(MediaFile):
         self._configurationTree.addTextParameter("SequenceMode", "Time")
         self._midiModulation.setModulationReceiver("PlayBackModulation", "None")
         self._playbackModulationId = -1
+        self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -488,7 +481,7 @@ class ImageSequenceFile(MediaFile):
         elif(self._sequenceMode == ImageSequenceMode.ReTrigger):
             self._currentFrame =  (self._triggerCounter % self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceMode.Modulation):
-            self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * self._numberOfFrames)
+            self._currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState) * (self._numberOfFrames - 1))
 
         if(lastFrame != self._currentFrame):
             if(self._bufferedImageList != None):
@@ -522,6 +515,7 @@ class VideoLoopFile(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
+        self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)

@@ -171,27 +171,61 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                      'CONTENT_TYPE':self.headers['Content-Type'],
                      })
 
-        # Begin the response
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write('Client: %s\n' % str(self.client_address))
-#        self.wfile.write('User-agent: %s\n' % str(self.headers['user-agent']))
-        self.wfile.write('Path: %s\n' % self.path)
-        self.wfile.write('Form data:\n')
+        serverMessageXml = MiniXml("servermessage", "Sending header for post message...")
+        webInputQueue.put(serverMessageXml.getXmlString())
 
-        # Echo back information about what was posted in the form
+        fileCount = 0
+        fileType = ""
+        fileName = ""
+        sigTime = 0.0
+        sig = ""
+        fileData = None
         for field in form.keys():
             field_item = form[field]
             if field_item.filename:
-                # The field contains an uploaded file
-                file_data = field_item.file.read()
-                file_len = len(file_data)
-                del file_data
-                self.wfile.write('\tUploaded %s as "%s" (%d bytes)\n' % \
-                        (field, field_item.filename, file_len))
+                fileCount += 1
+                if(fileCount < 2):
+                    fileData = field_item.file.read()
+                    fileType = field
+                    fileName = field_item.filename
             else:
-                # Regular form value
-                self.wfile.write('\t%s=%s\n' % (field, form[field].value))
+                if(field == "sigTime"):
+                    sigTime = float(form[field].value)
+                if(field == "sig"):
+                    sig = form[field].value
+        if(fileCount == 1):
+            signatureOk = urlSignaturer.verifySignatureFields(fileType, fileName, fileData, sigTime, sig)
+            if(signatureOk == True):
+                if(fileType == "configuration"):
+                    if(fileName == "active configuration"):
+                        configFileRequestXML = MiniXml("configFileTransfer", "File activated OK!")
+                        configFileRequestXML.addAttribute("type", fileType)
+                        configFileRequestXML.addAttribute("fileName", fileName)
+                        self._returnXmlRespose(serverMessageXml.getXmlString())
+                        webInputQueue.put(fileData)
+                    else:
+                        fileHandle = open(os.path.normpath("config/" + fileName), 'wb')
+                        fileHandle.write(fileData)
+                        fileHandle.close()
+                        configFileRequestXML = MiniXml("configFileTransfer", "File saved OK!")
+                        configFileRequestXML.addAttribute("type", fileType)
+                        configFileRequestXML.addAttribute("fileName", fileName)
+                        self._returnXmlRespose(serverMessageXml.getXmlString())
+                else:
+                    serverMessageXml = MiniXml("servermessage", "Unknown file type transfered: %s for %s" % (fileType, fileName))
+                    self.send_error(404)
+                    webInputQueue.put(serverMessageXml.getXmlString())
+            else:
+                serverMessageXml = MiniXml("unauthorizedAccess")
+                serverMessageXml.addAttribute("client", "%s:%d" % (self.client_address[0], self.client_address[1]))
+                serverMessageXml.addAttribute("timeStamp", str(time.time()))
+                self._returnXmlRespose(serverMessageXml.getXmlString())
+                webInputQueue.put(serverMessageXml.getXmlString())
+            del fileData
+        else:
+            serverMessageXml = MiniXml("servermessage", "Bad number of files posted: %d" % (fileCount))
+            self.send_error(404)
+            webInputQueue.put(serverMessageXml.getXmlString())
         return
 
     def _returnXmlRespose(self, message):
@@ -359,6 +393,16 @@ class GuiServer(object):
                         resposeXml = MiniXml("configRequest", "Could not find path: %s" % path)
                         self._webOutputQueue.put(resposeXml.getXmlString())
 #                    print "XML: " + xmlTree.getConfigurationXMLString()
+                elif(webCommandXml.tag == "configuration"):
+                    print "=" * 120
+                    print webCommand
+                    print "=" * 120
+                    print "Updating configuration..."
+                    self._configurationTree.setFromXml(webCommandXml)
+                    print "-" * 120
+                    print self._configurationTree.getConfigurationXMLString()
+                    print "-" * 120
+                    print "Configuration updated."
                 elif(webCommandXml.tag == "unauthorizedAccess"):
                     print "Unauthorized access from client: %s at %s" %(webCommandXml.get("client"), webCommandXml.get("timeStamp"))
                 else:

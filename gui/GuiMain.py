@@ -17,6 +17,7 @@ from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString
 import subprocess
 import multiprocessing
+from utilities.UrlSignature import UrlSignature
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -449,7 +450,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onSendButton(self, event):
         xmlString = self._configuration.getXmlString()
-        print xmlString
+        urlTest = UrlSignature()
+        urlTest.getSigantureFieldsForFile("configuration", "temp.cfg", xmlString)
         self._guiClient.sendConfiguration(xmlString)
 
     def _updateMidiButtonColor(self, midiOn):

@@ -95,7 +95,7 @@ class ConfigurationHolder(object):
         self._loadedXML = xmlPart
 
     def loadConfig(self, configName):
-        filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
+        filePath = os.path.normcase(os.path.normpath(os.getcwd() + "/config/" + configName))
         try:
             loadFile = open(filePath, 'r')
             xmlString = loadFile.read()
@@ -136,6 +136,7 @@ class ConfigurationHolder(object):
                 childXmlPart = self._findXmlChild(xmlPart, childName)
             if(childXmlPart != None):
                 child._updateFromXml(childXmlPart)
+        self._configIsUpdated = True
 
     def saveConfig(self, configName):
         xmlString = self.getConfigurationXMLString()
@@ -402,6 +403,7 @@ class ConfigurationHolder(object):
     def isConfigurationUpdated(self):
         if(self._configIsUpdated == True):
             self._updateId()
+            print "self._configIsUpdated == True for: " + self._name
             return True
         else:
             for child in self._children:

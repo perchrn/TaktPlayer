@@ -4,8 +4,9 @@ Created on 21. des. 2011
 @author: pcn
 '''
 import logging
-from video.Effects import getEmptyImage, createMask, createMat
+from video.Effects import getEmptyImage, createMask, createMat, getEffectByName
 from video.media.MediaFile import MixMode
+from video.media.MediaFileModes import getMixModeFromName
 
 
 class MediaMixer(object):
@@ -31,14 +32,79 @@ class MediaMixer(object):
         self._nextImageId = 0
 
         self._mediaTracks = []
-        for i in range(16): #@UnusedVariable
-            self._mediaTracks.append(None)
         self._mediaTracksMixMode = []
-        for i in range(16): #@UnusedVariable
-            self._mediaTracksMixMode.append(MixMode.Default)
         self._mediaTracksEffects = []
         for i in range(16): #@UnusedVariable
+            self._mediaTracks.append(None)
+            self._mediaTracksMixMode.append(MixMode.Default)
             self._mediaTracksEffects.append(None)
+        self._mediaTrackConfigs = []
+        for i in range(16):
+            trackConfig = self._configurationTree.addChildUniqueId("MediaTrack", "TrackId", str(i+1), i+1)
+            self.setupTrackConfig(trackConfig)
+            self._mediaTrackConfigs.append(trackConfig)
+
+    def setupTrackConfig(self, trackConfigHolder):
+        trackConfigHolder.addTextParameter("MixMode", "Default")
+        self._defaultPreEffectSettingsName = "MixPreDefault"
+        trackConfigHolder.addTextParameter("PreEffectConfig", self._defaultPreEffectSettingsName)#Default MixPreDefault
+        self._defaultPostEffectSettingsName = "MixPostDefault"
+        trackConfigHolder.addTextParameter("PostEffectConfig", self._defaultPostEffectSettingsName)#Default MixPostDefault
+
+    def loadMediaFromConfiguration(self):
+        mediaTrackState = []
+        for i in range(16):
+            mediaTrackState.append(False)
+        xmlChildren = self._configurationTree.findXmlChildrenList("MediaTrack")
+        if(xmlChildren != None):
+            for xmlConfig in xmlChildren:
+                trackId = self.updateTrackFromXml(xmlConfig)
+                mediaTrackState[trackId - 1] = True
+        for i in range(128):
+            mediaState = mediaTrackState[i]
+            if(mediaState == False):
+                self.deafultTrackSettings(i)
+
+    def updateTrackFromXml(self, xmlConfig):
+        trackId = int(xmlConfig.get("trackid"))
+        trackId = min(max(trackId, 0), 16)
+        trackConfig = self._mediaTrackConfigs[trackId]
+
+        mixMode = xmlConfig.get("mixmode")
+        trackConfig.setValue("MixMode", mixMode)
+        self._mediaTracksMixMode[trackId] = getMixModeFromName(mixMode)
+
+        preEffectModulationTemplate = xmlConfig.get("preeffectconfig")
+        trackConfig.setValue("PreEffectConfig", preEffectModulationTemplate)
+        preEffectSettings = self._effectsConfigurationTemplates.getTemplate(preEffectModulationTemplate)
+        if(preEffectSettings == None):
+            preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+
+        postEffectModulationTemplate = xmlConfig.get("posteffectconfig")
+        trackConfig.setValue("PostEffectConfig", postEffectModulationTemplate)
+        postEffectSettings = self._effectsConfigurationTemplates.getTemplate(postEffectModulationTemplate)
+        if(postEffectSettings == None):
+            postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+
+        self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, postEffect, postEffectSettings)
+        return trackId
+
+    def deafultTrackSettings(self, trackIndex):
+        trackConfig = self._mediaTrackConfigs[trackIndex]
+
+        trackConfig.setValue("MixMode", "Default")
+        self._mediaTracksMixMode[trackIndex] = MixMode.Default
+
+        trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
+        preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPreEffectSettingsName)
+        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+
+        trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
+        postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, postEffect, postEffectSettings)
 
     def getImage(self):
         return self._currentImage

@@ -11,7 +11,7 @@ from midi import MidiUtilities
 from video.Effects import getEmptyImage
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, fadeConfiguration, configurationTree, multiprocessLogger):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, fadeConfiguration, configurationTree, multiprocessLogger, internalResolutionX, internalResolutionY):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
@@ -19,8 +19,8 @@ class MediaPool(object):
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
 
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        self._internalResolutionX =  internalResolutionX
+        self._internalResolutionY =  internalResolutionY
 
         self._emptyImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
 
@@ -128,19 +128,19 @@ class MediaPool(object):
                     oldMedia.close()
                 if(mediaType == "Image"):
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                    mediaFile = ImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
+                    mediaFile = ImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY)
                     mediaFile.openFile(midiLength)
                 elif(mediaType == "ImageSequence"):
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                    mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
+                    mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY)
                     mediaFile.openFile(midiLength)
                 elif(mediaType == "Camera"):
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                    mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
+                    mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY)
                     mediaFile.openFile(midiLength)
                 else:
                     clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                    mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf)
+                    mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY)
                     mediaFile.openFile(midiLength)
 
         self._mediaPool[midiNote] = mediaFile

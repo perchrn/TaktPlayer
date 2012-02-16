@@ -21,7 +21,6 @@ class MediaPoolConfig(object):
         self.loadMediaFromConfiguration()
 
     def _getConfiguration(self):
-        print "DEBUG: MediaPoolConfig._getConfiguration"
         self.loadMediaFromConfiguration()
 
     def checkAndUpdateFromConfiguration(self):
@@ -29,8 +28,6 @@ class MediaPoolConfig(object):
             print "mediaPool config is updated..."
             self._getConfiguration()
             self._configurationTree.resetConfigurationUpdated()
-        else:
-            print "DEBUG: MediaPoolConfig.checkAndUpdateFromConfiguration NOT updated..."
 
     def loadMediaFromConfiguration(self):
         mediaPoolState = []
@@ -38,13 +35,9 @@ class MediaPoolConfig(object):
             mediaPoolState.append(False)
         mediaFileChildren = self._configurationTree.findXmlChildrenList("MediaFile")
         if(mediaFileChildren != None):
-            print "self._configurationTree.findXmlChildrenList(\"MediaFile\") != None"
             for xmlConfig in mediaFileChildren:
-                print "adding one..."
                 midiNote = self.addXmlMedia(xmlConfig)
                 mediaPoolState[midiNote] = True
-        else:
-            print "self._configurationTree.findXmlChildrenList(\"MediaFile\") == None"
         for i in range(128):
             mediaState = mediaPoolState[i]
             if(mediaState == False):
@@ -680,9 +673,9 @@ All notes on events are quantized to this.
         if(self._type == "Camera"):
             noteFileName = str(self._cameraId)
         else:
-            playerBaseDir = self._mainConfig.getPlayerBaseDir()
-            if((playerBaseDir != "") and (self._fileName != "")):
-                noteFileName = os.path.relpath(self._fileName, playerBaseDir)
+            guiVideoDir = self._mainConfig.getGuiVideoDir()
+            if((guiVideoDir != "") and (self._fileName != "")):
+                noteFileName = os.path.relpath(self._fileName, guiVideoDir)
             else:
                 noteFileName = self._fileName
         noteLetter = noteToNoteString(self._midiNote)

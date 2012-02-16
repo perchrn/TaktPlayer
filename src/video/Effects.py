@@ -55,7 +55,6 @@ def getEffectById(effectType, configurationTree, internalResX, internalResY):
 
 def getEffectByName(name, configurationTree, internalResX, internalResY):
     fxid = getEffectId(name)
-    print "getEffectByName name: " + name + " id: " + str(fxid)    
     return getEffectById(fxid, configurationTree, internalResX, internalResY)
 
 

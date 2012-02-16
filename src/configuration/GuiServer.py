@@ -277,7 +277,7 @@ def guiWebServerProcess(host, port, passwd, serverMessageQueue, serverCommandQue
     urlSignaturer = UrlSignature(passwd)
     server = ErrorHandelingHTTPServer((host, port), PcnWebHandler)
     server.timeout = 10.0
-    serverMessageXml = MiniXml("servermessage", "Started Web server.")
+    serverMessageXml = MiniXml("servermessage", "Started Web server. Address: %s Port: %d" % (host, port))
     serverMessageQueue.put(serverMessageXml.getXmlString())
     run = True
     while run:
@@ -320,7 +320,14 @@ class GuiServer(object):
         if(self._guiServerProcess != None):
             print "Stopping guiNetworkServer"
             self._serverCommandQueue.put("QUIT")
-            self._guiServerProcess.join(20.0)
+            roundsLeft = 20
+            while(roundsLeft >= 0):
+                if(self._guiServerProcess.is_alive()):
+                    time.sleep(1)
+                    roundsLeft -= 1
+                else:
+                    roundsLeft = -1
+            self._guiServerProcess.join(1.0)
             if(self._guiServerProcess.is_alive()):
                 print "guiNetworkServer did not respond to quit command. Terminating."
                 self._guiServerProcess.terminate()

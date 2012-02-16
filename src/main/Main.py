@@ -9,6 +9,7 @@ import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
 from configuration.GuiServer import GuiServer
 import multiprocessing
+from configuration.PlayerConfiguration import PlayerConfiguration
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -46,35 +47,37 @@ class MyKivyApp(App):
 #        self._log.setLevel(logging.WARNING)
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
+        self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
+        self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
+        self._playerConfiguration = PlayerConfiguration(self._playerConfigurationTree)
+        self._internalResolutionX, self._internalResolutionY =  self._playerConfiguration.getResolution()
+
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
 #        self._configurationTree.loadConfig("DefaultConfig.cfg")
 #        self._configurationTree.loadConfig("NerverIEnBunt_1.cfg")
 #        self._configurationTree.loadConfig("HongKong_1.cfg")
 #        self._configurationTree.loadConfig("Baertur_1.cfg")
-        self._configurationTree.loadConfig("PovRay_1.cfg")
+        self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
-        self._globalConfig.addIntParameter("ResolutionX", 800)
-        self._globalConfig.addIntParameter("ResolutionY", 600)
 
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
 
         self._pcnVideoWidget = PcnVideo(resolution=(self._internalResolutionX, self._internalResolutionY))
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
-#        self._midiStateHolder.noteOn(0, 0x18, 0x40, (True, 0.0))
+
 
         self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)
 
         confChild = self._configurationTree.addChildUnique("MediaMixer")
-        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration)
+        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger)
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY)
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
+        self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort())
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
 
@@ -82,19 +85,21 @@ class MyKivyApp(App):
         self._configCheckCounter = 0
 
         self._guiServer = GuiServer(self._configurationTree, self._mediaPool, self._midiStateHolder)
-        self._guiServer.startGuiServerProcess("0.0.0.0", 2021, None)
+        self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
+#        self._guiServer.startWithNote(self._playerConfiguration.getStartNote()) #TODO: Fix startupNote...
+#        self._midiStateHolder.noteOn(0, 0x18, 0x40, (True, 0.0))
+
+
         print self._configurationTree.getConfigurationXMLString()
 
         return self._pcnVideoWidget
 
     def _getConfiguration(self):
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        pass
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
             if(self._configurationTree.isConfigurationUpdated()):
-                #TODO: Fix config updated indicator...
                 print "config is updated..."
                 self._getConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()

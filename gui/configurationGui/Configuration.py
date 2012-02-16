@@ -14,7 +14,6 @@ class Configuration(object):
         self._guiConfigurationTree = ConfigurationHolder("MusicalVideoPlayerGUI")
         self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
         self.setupGuiConfiguration()
-        print self._guiConfigurationTree.getConfigurationXMLString()
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._globalConf = GlobalConfig(self._playerConfigurationTree, self)
         self._mediaMixerConf = MediaMixerConfig(self._playerConfigurationTree)
@@ -29,29 +28,28 @@ class Configuration(object):
 
     def setupGuiConfiguration(self):
         self._guiPlayerConfig = self._guiConfigurationTree.addChildUnique("Player")
-        self._guiPlayerConfig.addTextParameter("Host", "127.0.0.1")
+        self._guiPlayerConfig.addTextParameter("PlayerHost", "127.0.0.1")
         self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
-        self._guiPlayerConfig.addTextParameter("BaseDir", "")
-        self._guiPlayerConfig.addTextParameter("AddDir", "")
+        self._guiConfigurationTree.addTextParameter("VideoDir", "")
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()
         self._midiSender = SendMidiOverNet(host, port)
 
     def getWebConfig(self):
-        host = self._guiPlayerConfig.getValue("Host")
+        host = self._guiPlayerConfig.getValue("PlayerHost")
         port = self._guiPlayerConfig.getValue("WebPort")
         return (host, port)
 
     def getMidiConfig(self):
-        host = self._guiPlayerConfig.getValue("Host")
+        host = self._guiPlayerConfig.getValue("PlayerHost")
         port = self._guiPlayerConfig.getValue("MidiPort")
         return (host, port)
 
-    def getPlayerBaseDir(self):
-        return self._guiPlayerConfig.getValue("BaseDir")
+    def getGuiVideoDir(self):
+        return self._guiConfigurationTree.getValue("VideoDir")
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback

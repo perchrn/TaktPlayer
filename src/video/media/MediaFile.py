@@ -66,14 +66,14 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        self._internalResolutionX =  internalResolutionX
+        self._internalResolutionY =  internalResolutionY
         self._resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._fadeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._fileOk = False
@@ -344,8 +344,8 @@ class MediaFile(object):
             return mixedImage
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
         self._getConfiguration()
 
     def getType(self):
@@ -381,8 +381,8 @@ class ImageFile(MediaFile):
         self._fileOk = True
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
         self._cameraId = int(fileName)
         self._getConfiguration()
 
@@ -392,8 +392,8 @@ class CameraInput(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, internalResolutionX, internalResolutionY):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState, internalResolutionX, internalResolutionY)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return
@@ -422,8 +422,8 @@ class CameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
@@ -512,8 +512,8 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()

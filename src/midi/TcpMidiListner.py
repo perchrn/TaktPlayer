@@ -74,7 +74,6 @@ class TcpMidiListner(object):
         self._midiListnerProcess = None
         self._midiQueue = Queue(1024)
         self._midiListnerCommandQueue = Queue(-1)
-        self.startDaemon('', 2020)
         self._conectedAddress = None
 
         self._midiInsideSysExMessage = False

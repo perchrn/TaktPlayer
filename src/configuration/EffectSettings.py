@@ -51,7 +51,6 @@ class ConfigurationTemplates(object):
         return -1
                 
     def loadChildrenFromConfiguration(self):
-        print "loadChildrenFromConfiguration " * 4
         effectTemplatesToKeep = []
         xmlChildren = self._templateConfig.findXmlChildrenList("Template")
         if(xmlChildren == None):

@@ -10,15 +10,15 @@ from video.media.MediaFileModes import getMixModeFromName
 
 
 class MediaMixer(object):
-    def __init__(self, configurationTree, midiStateHolder, effectsConfiguration):
+    def __init__(self, configurationTree, midiStateHolder, effectsConfiguration, internalResolutionX, internalResolutionY):
         self._configurationTree = configurationTree
         self._midiStateHolder = midiStateHolder
         self._effectsConfigurationTemplates = effectsConfiguration
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
+        self._internalResolutionX = internalResolutionX
+        self._internalResolutionY = internalResolutionY
 
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)

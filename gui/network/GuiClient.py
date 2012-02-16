@@ -11,6 +11,7 @@ import httplib
 import os
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import mimetypes
+import time
 
 def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
     run = True
@@ -185,7 +186,16 @@ class GuiClient(object):
         if(self._guiClientProcess != None):
             print "Stopping guiNetworkClient"
             self._commandQueue.put("QUIT")
-            self._guiClientProcess.join(20.0)
+            roundsLeft = 20
+            while(roundsLeft >= 0):
+                if(self._guiClientProcess.is_alive()):
+                    time.sleep(1)
+                    print ".",
+                    roundsLeft -= 1
+                else:
+                    roundsLeft = -1
+            print "."
+            self._guiClientProcess.join(1.0)
             if(self._guiClientProcess.is_alive()):
                 print "GuiNetworkClient did not respond to quit command. Terminating."
                 self._guiClientProcess.terminate()

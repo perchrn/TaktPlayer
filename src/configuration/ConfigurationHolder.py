@@ -399,6 +399,8 @@ class ConfigurationHolder(object):
 
     def resetConfigurationUpdated(self):
         self._configIsUpdated = False
+        for child in self._children:
+            child.resetConfigurationUpdated()
 
     def isConfigurationUpdated(self):
         if(self._configIsUpdated == True):

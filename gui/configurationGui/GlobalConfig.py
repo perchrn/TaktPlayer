@@ -1133,9 +1133,10 @@ Value:\t\tStatic value.
         returnList = []
         if(idList != None):
             for ctrlId in idList:
-                ctrlName = self._midiControllers.getName(int(ctrlId))
-                if(ctrlName != None):
-                    returnList.append(ctrlName)
+                if(ctrlId != ""):
+                    ctrlName = self._midiControllers.getName(int(ctrlId))
+                    if(ctrlName != None):
+                        returnList.append(ctrlName)
         return returnList
 
     def _onActiveControllersUpdate(self, event):

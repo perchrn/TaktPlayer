@@ -186,6 +186,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._latestControllersRequestResult = None
         self._dragSource = None
         self.setupClientProcess()
+        self._oldServerConfigurationString = self._configuration.getXmlString()
         self._timedUpdate(None)
 
     def createNoteWidget(self, noteId, baseX, lastNote=False):
@@ -344,7 +345,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(result[1] != None):
                     configId = result[1]
                     if(configId != self._lastConfigState):
-#                        print "Config is updated on server.... TADA! Please do the right thing man :-P " + str(self._lastConfigState) + " != " + str(configId)
+                        print "Config is updated on server.... TADA! Please do the right thing man :-P " + str(self._lastConfigState) + " != " + str(configId)
                         configRequestTask = TaskHolder("Configuration request", TaskHolder.RequestTypes.Configuration, None, None)
                         self._taskQueue.append(configRequestTask)
                         self._guiClient.requestConfiguration()
@@ -363,12 +364,15 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
                         if(currentGuiConfigString != self._oldServerConfigurationString):
-                            text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
-                            dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                            dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                            dlg.Destroy()
-                            if(dialogResult == False):
+                            if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
+                            else:
+                                text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
+                                dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                                dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                                dlg.Destroy()
+                                if(dialogResult == False):
+                                    loadConfig = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
                             self.updateKeyboardImages()

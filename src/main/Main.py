@@ -99,7 +99,6 @@ class MyKivyApp(App):
                 self._getConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
-                self._globalConfig.resetConfigurationUpdated()
                 #TODO: autosave...
             self._configCheckCounter = 0
         else:

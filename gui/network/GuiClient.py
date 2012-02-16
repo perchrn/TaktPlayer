@@ -23,7 +23,6 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 run = False
             else:
                 commandXml = stringToXml(command)
-#                httpConnection.request("GET", "?configPath=root")
 #                httpConnection.request("GET", "?configPath=musicalvideoplayer.global.effectmodulation")
                 if(commandXml.tag == "thumbnailRequest"):
                     noteTxt = getFromXml(commandXml, "note", None)
@@ -120,7 +119,6 @@ def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString):
         httpConnection.request("POST", "", body, headers)
         serverResponse = httpConnection.getresponse()
         if(serverResponse.status == 200):
-            print "DEBUG XRF 200"
             resposeType = serverResponse.getheader("Content-type")
             if(resposeType == "text/xml"):
                 serverResponseData = serverResponse.read()

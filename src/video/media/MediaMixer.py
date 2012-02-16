@@ -43,6 +43,19 @@ class MediaMixer(object):
             trackConfig = self._configurationTree.addChildUniqueId("MediaTrack", "TrackId", str(i+1), i+1)
             self.setupTrackConfig(trackConfig)
             self._mediaTrackConfigs.append(trackConfig)
+        self.loadMediaFromConfiguration()
+
+    def _getConfiguration(self):
+        self.loadMediaFromConfiguration()
+
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            print "mediaMixer config is updated..."
+            self._getConfiguration()
+            for mediaTrack in self._mediaTracks:
+                if(mediaTrack != None):
+                    mediaTrack.checkAndUpdateFromConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
 
     def setupTrackConfig(self, trackConfigHolder):
         trackConfigHolder.addTextParameter("MixMode", "Default")
@@ -60,14 +73,14 @@ class MediaMixer(object):
             for xmlConfig in xmlChildren:
                 trackId = self.updateTrackFromXml(xmlConfig)
                 mediaTrackState[trackId - 1] = True
-        for i in range(128):
+        for i in range(16):
             mediaState = mediaTrackState[i]
             if(mediaState == False):
                 self.deafultTrackSettings(i)
 
     def updateTrackFromXml(self, xmlConfig):
         trackId = int(xmlConfig.get("trackid"))
-        trackId = min(max(trackId, 0), 16)
+        trackId = min(max(trackId - 1, 0), 15)
         trackConfig = self._mediaTrackConfigs[trackId]
 
         mixMode = xmlConfig.get("mixmode")

@@ -333,6 +333,7 @@ class MediaFile(object):
         else:
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
+                print "MixMode.Default using clips mix mode..."
             if(effects != None):
                 preEffect, preEffectSettings, postEffect, postEffectSettings = effects
             else:

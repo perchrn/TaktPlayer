@@ -516,6 +516,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 destinationConfig = self._configuration.makeNoteConfig("", noteToNoteString(destNoteId), destNoteId)
                             if(destinationConfig != None):
                                 destinationConfig.updateFrom(sourceConfig, True)
+                                self._noteGui.updateGui(destinationConfig, destNoteId)
                                 self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
         self._dragSource = None
 

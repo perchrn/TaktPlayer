@@ -165,7 +165,8 @@ class MediaFile(object):
     def updateFrom(self, sourceMediaFile, dontChangeNote = True):
         sourceConfigTree = sourceMediaFile.getConfig()
         self._configurationTree.setValue("FileName", sourceConfigTree.getValue("FileName"))
-        self._configurationTree.setValue("Type", sourceConfigTree.getValue("Type"))
+        mediaType = sourceConfigTree.getValue("Type")
+        self._configurationTree.setValue("Type", mediaType)
         self._configurationTree.setValue("SyncLength", sourceConfigTree.getValue("SyncLength"))
         self._configurationTree.setValue("QuantizeLength", sourceConfigTree.getValue("QuantizeLength"))
         self._configurationTree.setValue("MixMode", sourceConfigTree.getValue("MixMode"))
@@ -173,20 +174,25 @@ class MediaFile(object):
         self._configurationTree.setValue("Effect2Config", sourceConfigTree.getValue("Effect2Config"))
         self._configurationTree.setValue("FadeConfig", sourceConfigTree.getValue("FadeConfig"))
 
-        loopMode = sourceConfigTree.getValue("LoopMode")
-        if(loopMode != None):
-            self._configurationTree.setValue("LoopMode", loopMode)
+        if(mediaType == "VideoLoop"):
+            self._configurationTree.addTextParameter("LoopMode", "Normal")
+            loopMode = sourceConfigTree.getValue("LoopMode")
+            if(loopMode != None):
+                self._configurationTree.setValue("LoopMode", loopMode)
         else:
             self._configurationTree.removeParameter("LoopMode")
-        sequenceMode = sourceConfigTree.getValue("SequenceMode")
-        if(sequenceMode != None):
-            self._configurationTree.setValue("SequenceMode", sequenceMode)
+
+        if(mediaType == "ImageSequence"):
+            self._configurationTree.addTextParameter("SequenceMode", "Time")
+            self._configurationTree.addTextParameter("PlayBackModulation", "None")
+            sequenceMode = sourceConfigTree.getValue("SequenceMode")
+            if(sequenceMode != None):
+                self._configurationTree.setValue("SequenceMode", sequenceMode)
+            playBackMod = sourceConfigTree.getValue("PlayBackModulation")
+            if(playBackMod != None):
+                self._configurationTree.setValue("PlayBackModulation", playBackMod)
         else:
             self._configurationTree.removeParameter("SequenceMode")
-        playBackMod = sourceConfigTree.getValue("PlayBackModulation")
-        if(playBackMod != None):
-            self._configurationTree.setValue("PlayBackModulation", playBackMod)
-        else:
             self._configurationTree.removeParameter("PlayBackModulation")
         
     def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):

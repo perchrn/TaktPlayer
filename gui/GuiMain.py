@@ -26,7 +26,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers = range(7)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers, ConfigFileList = range(8)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -84,6 +84,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._oldServerConfigurationString = ""
+        self._oldServerConfigList = ""
+        self._oldServerActiveConfig = ""
 
         self.SetBackgroundColour((120,120,120))
 
@@ -94,7 +96,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
-        menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,33)) #@UndefinedVariable
+        menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
         menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuPannel.SetSizer(menuSizer) #@UndefinedVariable
         menuSeperatorPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
@@ -129,10 +131,25 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._midiButton = wx.Button(menuPannel, wx.ID_ANY, 'MIDI on') #@UndefinedVariable
         self._updateMidiButtonColor(self._configuration.isMidiEnabled())
+        confLabel = wx.StaticText(menuPannel, wx.ID_ANY, "Configuration:") #@UndefinedVariable
+        self._activeConfLabel = wx.StaticText(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
+        self._configFileSelector = wx.ComboBox(menuPannel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._configFileSelector.SetStringSelection("N/A")
+        self._loadButton = wx.Button(menuPannel, wx.ID_ANY, 'Load') #@UndefinedVariable
+        self._loadButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._saveButton = wx.Button(menuPannel, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(confLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(self._activeConfLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onSendButton, id=self._sendButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
+        menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
+        menuPannel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
@@ -181,6 +198,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._taskQueue = []
         self._skippedTrackStateRequests = 99
         self._skippedConfigStateRequests = 99
+        self._skippedConfigListRequests = 99
         self._skippedLatestControllersRequests = 0
         self._lastConfigState = -1
         self._latestControllersRequestResult = None
@@ -266,6 +284,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._checkServerResponse()
         self._checkForStaleTasks()
         self._requestConfigState()
+        self._requestConfigList()
         self._requestTrackState()
         self._requestLatestControllers()
 
@@ -391,6 +410,34 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.ConfigFileList):
+#                print "GuiClient.ResponseTypes.ConfigFileList"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
+                if(result[1] != None):
+                    configurationFileListString, activeConfig = result[1]
+                    if((self._oldServerConfigList != configurationFileListString) or (self._oldServerActiveConfig != activeConfig)):
+                        configurationFileLists = configurationFileListString.split(';', 128)
+                        if(self._oldServerActiveConfig != activeConfig):
+                            selectedValue = activeConfig
+                            self._oldServerActiveConfig = activeConfig
+                        else:
+                            selectedValue = self._configFileSelector.GetValue()
+                        self._configFileSelector.Clear()
+                        valueOk = False
+                        self._configFileSelector.Append("active configuration")
+                        for choice in configurationFileLists:
+                            self._configFileSelector.Append(choice)
+                            if(choice == selectedValue):
+                                valueOk = True
+                        if(valueOk == True):
+                            self._configFileSelector.SetStringSelection(selectedValue)
+                        else:
+                            self._configFileSelector.SetStringSelection("active configuration")
+                        self._activeConfLabel.SetLabel(activeConfig)
+                    self._oldServerConfigList = configurationFileListString
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
 
     def _checkForStaleTasks(self):
         checkTime = time.time()
@@ -411,6 +458,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.LatestControllers):
                     self._guiClient.requestLatestControllers()
+                    task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.ConfigFileList):
+                    self._guiClient.requestConfigList()
                     task.setState(TaskHolder.States.Sendt)
 
     def _requestTrackState(self):
@@ -436,6 +486,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 configStateRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedConfigStateRequests += 1
+
+    def _requestConfigList(self):
+        if(self._skippedConfigListRequests > 60):
+            self._skippedConfigListRequests = 0
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
+            if(foundTask == None):
+                configStateRequestTask = TaskHolder("Config list request", TaskHolder.RequestTypes.ConfigFileList, None, None)
+                self._taskQueue.append(configStateRequestTask)
+                self._guiClient.requestConfigList()
+                configStateRequestTask.setState(TaskHolder.States.Sendt)
+        else:
+            self._skippedConfigListRequests += 1
 
     def _requestLatestControllers(self):
         if(self._skippedLatestControllersRequests > 20):
@@ -471,6 +533,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             self._configuration.setMidiEnable(True)
         self._updateMidiButtonColor(midiOn)
+
+    def _onLoadButton(self, event):
+        selectedConfig = self._configFileSelector.GetValue()
+        print "LOAD: " + str(selectedConfig)
+        self._guiClient.requestConfigChange(selectedConfig)
+
+    def _onSaveButton(self, event):
+        selectedConfig = self._configFileSelector.GetValue()
+        print "SAVE: " + str(selectedConfig)
+        self._guiClient.requestConfigSave(selectedConfig)
+
+    def _onNewButton(self):
+        pass
 
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()

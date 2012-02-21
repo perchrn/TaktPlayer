@@ -74,6 +74,7 @@ class ConfigurationHolder(object):
         self._uniqueId = uniqueId
 
         self._loadedXML = None
+        self._loadedFileName = ""
 
         self._configIsUpdated = True
         self._configId = -1
@@ -102,8 +103,32 @@ class ConfigurationHolder(object):
             soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
             self._loadedXML = ElementTree.XML(soup.prettify())
             self._updateFromXml(self._loadedXML)
+            self._loadedFileName = configName
         except:
             print "Error loading configuration."
+
+    def saveConfigFile(self, configName):
+        filePath = os.path.normcase(os.path.normpath(os.getcwd() + "/config/" + configName))
+        try:
+            saveFile = open(filePath, 'w')
+            xmlString = self.getConfigurationXMLString()
+            saveFile.write(xmlString)
+        except:
+            print "Error saving configuration."
+
+    def getConfigFileList(self):
+        fileList = os.listdir(os.path.normpath(os.getcwd() + "/config/"))
+        fileListString = ""
+        for aFile in fileList:
+            if(aFile.endswith(".cfg")):
+                if(aFile != "PlayerConfig.cfg"):
+                    if(fileListString != ""):
+                        fileListString += ";"
+                    fileListString += aFile
+        return fileListString
+
+    def getCurrentFileName(self):
+        return self._loadedFileName
 
     def setFromXml(self, xmlConfig):
         self._loadedXML = xmlConfig
@@ -137,12 +162,6 @@ class ConfigurationHolder(object):
             if(childXmlPart != None):
                 child._updateFromXml(childXmlPart)
         self._configIsUpdated = True
-
-    def saveConfig(self, configName):
-        xmlString = self.getConfigurationXMLString()
-        filePath = os.path.normcase(os.getcwd() + "/config/" + configName)
-        saveFile = open(filePath, 'w')
-        saveFile.write(xmlString)
 
     def getName(self):
         return self._name

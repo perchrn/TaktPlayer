@@ -91,6 +91,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 trackStateString = self._getKeyValueFromList(queryDict, 'trackState', None)
                 configStateString = self._getKeyValueFromList(queryDict, 'configState', None)
                 latestMidiControllersString = self._getKeyValueFromList(queryDict, 'latestMidiContollers', None)
+                configFileRequestType = self._getKeyValueFromList(queryDict, 'configFileRequest', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -156,6 +157,19 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for latest MIDI controllers XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
+                elif(configFileRequestType != None):
+                    fileName = self._getKeyValueFromList(queryDict, 'name', "None")
+                    configFileRequestXML = MiniXml("configFileRequest")
+                    configFileRequestXML.addAttribute("type", configFileRequestType)
+                    configFileRequestXML.addAttribute("fileName", fileName)
+                    webInputQueue.put(configFileRequestXML.getXmlString())
+                    try:
+                        latestControllersXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(latestControllersXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for config list XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
                 else:
                     serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (verifiedQuery, self.client_address[0], self.client_address[1]))
                     self.send_error(404)
@@ -198,19 +212,19 @@ class PcnWebHandler(BaseHTTPRequestHandler):
             if(signatureOk == True):
                 if(fileType == "configuration"):
                     if(fileName == "active configuration"):
-                        configFileRequestXML = MiniXml("configFileTransfer", "File activated OK!")
-                        configFileRequestXML.addAttribute("type", fileType)
-                        configFileRequestXML.addAttribute("fileName", fileName)
-                        self._returnXmlRespose(serverMessageXml.getXmlString())
+                        configTransferRequestXML = MiniXml("configFileTransfer", "File activated OK!")
+                        configTransferRequestXML.addAttribute("type", fileType)
+                        configTransferRequestXML.addAttribute("fileName", fileName)
+                        self._returnXmlRespose(configTransferRequestXML.getXmlString())
                         webInputQueue.put(fileData)
                     else:
                         fileHandle = open(os.path.normpath("config/" + fileName), 'wb')
                         fileHandle.write(fileData)
                         fileHandle.close()
-                        configFileRequestXML = MiniXml("configFileTransfer", "File saved OK!")
-                        configFileRequestXML.addAttribute("type", fileType)
-                        configFileRequestXML.addAttribute("fileName", fileName)
-                        self._returnXmlRespose(serverMessageXml.getXmlString())
+                        configTransferRequestXML = MiniXml("configFileTransfer", "File saved OK!")
+                        configTransferRequestXML.addAttribute("type", fileType)
+                        configTransferRequestXML.addAttribute("fileName", fileName)
+                        self._returnXmlRespose(configTransferRequestXML.getXmlString())
                 else:
                     serverMessageXml = MiniXml("servermessage", "Unknown file type transfered: %s for %s" % (fileType, fileName))
                     self.send_error(404)
@@ -392,7 +406,6 @@ class GuiServer(object):
                     path = webCommandXml.get("path")
                     if(path == "root"):
                         path = "musicalvideoplayer"
-                    print "DEBUG configRequest path: %s" % path
                     xmlTree = self._configurationTree.getPath(path)
                     if(xmlTree != None):
                         self._webOutputQueue.put(xmlTree.getConfigurationXMLString())
@@ -401,15 +414,29 @@ class GuiServer(object):
                         self._webOutputQueue.put(resposeXml.getXmlString())
 #                    print "XML: " + xmlTree.getConfigurationXMLString()
                 elif(webCommandXml.tag == "configuration"):
-                    print "=" * 120
-                    print webCommand
-                    print "=" * 120
                     print "Updating configuration..."
                     self._configurationTree.setFromXml(webCommandXml)
-                    print "-" * 120
-                    print self._configurationTree.getConfigurationXMLString()
-                    print "-" * 120
-                    print "Configuration updated."
+                elif(webCommandXml.tag == "configFileRequest"):
+                    reqType = getFromXml(webCommandXml, "type", "list")
+                    fileName = getFromXml(webCommandXml, "fileName", "None")
+                    print "???????????????????????????????????????????????????????????????????????????????????"
+                    print "DEBUG type: " + reqType + " fileName: " + fileName
+                    if((reqType == "load") and (fileName != "None")):
+                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                        self._configurationTree.loadConfig(fileName)
+                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                    if((reqType == "save") and (fileName != "None")):
+                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                        self._configurationTree.saveConfigFile(fileName)
+                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                    configFileList = self._configurationTree.getConfigFileList()
+                    currentConfigFile = self._configurationTree.getCurrentFileName()
+                    resposeXml = MiniXml("configFileRequest")
+                    resposeXml.addAttribute("configFiles", configFileList)
+                    resposeXml.addAttribute("activeConfig", currentConfigFile)
+#                    print "GuiServer client request for configuration file names. List: " + configFileList
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                    print "???????????????????????????????????????????????????????????????????????????????????"
                 elif(webCommandXml.tag == "unauthorizedAccess"):
                     print "Unauthorized access from client: %s at %s" %(webCommandXml.get("client"), webCommandXml.get("timeStamp"))
                 else:

@@ -68,6 +68,13 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 elif(commandXml.tag == "configuration"):
                     resposeXmlString = postXMLFile(urlSignaturer, hostPort, "configuration", "active configuration", command)
                     resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "configFileRequest"):
+                    requestType = getFromXml(commandXml, "type", "list")
+                    requestName = getFromXml(commandXml, "name", "None")
+                    urlArgs = "?configFileRequest=%s&name=%s" % (requestType, requestName)
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
                 else:
                     print "Unknown command xml: " + command
         except Empty:
@@ -237,12 +244,27 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     def sendConfiguration(self, xmlString):
-        print "Putting xml..."
         self._commandQueue.put(xmlString)
-        print "Putting xml... done."
+
+    def requestConfigList(self):
+        commandXml = MiniXml("configFileRequest")
+        commandXml.addAttribute("type", "list")
+        self._commandQueue.put(commandXml.getXmlString())
+
+    def requestConfigChange(self, configName):
+        commandXml = MiniXml("configFileRequest")
+        commandXml.addAttribute("type", "load")
+        commandXml.addAttribute("name", configName)
+        self._commandQueue.put(commandXml.getXmlString())
+
+    def requestConfigSave(self, configName):
+        commandXml = MiniXml("configFileRequest")
+        commandXml.addAttribute("type", "save")
+        commandXml.addAttribute("name", configName)
+        self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration, LatestControllers = range(7)
+        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration, LatestControllers, ConfigFileList = range(8)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -291,6 +313,11 @@ class GuiClient(object):
                     listTxt = serverXml.get("controllers")
                     returnValue = (self.ResponseTypes.LatestControllers, listTxt.split(',', 128))
 #                    print "Got latestMidiControllersRequest response: " + listTxt
+                elif(serverXml.tag == "configFileRequest"):
+                    listTxt = serverXml.get("configFiles")
+                    activeConfig = serverXml.get("activeConfig")
+                    returnValue = (self.ResponseTypes.ConfigFileList, (listTxt, activeConfig))
+#                    print "Got configFileRequest response: " + listTxt
                 else:
                     print "Unknown Message: " + serverResponse
             else:

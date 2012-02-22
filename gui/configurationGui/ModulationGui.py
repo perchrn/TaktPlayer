@@ -28,6 +28,7 @@ class ModulationGui(object):
         self._mainModulationGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideModulationCallback = parentClass.hideModulationGui
+        self._fixModulationGuiLayout = parentClass.fixModulationGuiLayout
 
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
@@ -317,23 +318,18 @@ class ModulationGui(object):
         choice = self._modulationSorcesField.GetValue()
         if(choice == "MidiChannel"):
             self._mainModulationGuiSizer.Show(self._midiChannelSourceSizer)
-            self._parentSizer.Layout()
             self._onMidiChannelSourceChosen(event)
         else:
             self._mainModulationGuiSizer.Hide(self._midiChannelSourceSizer)
             self._mainModulationGuiSizer.Hide(self._midiControllerSizer)
             self._mainModulationGuiSizer.Hide(self._midiActiveControllerSizer)
-            self._parentSizer.Layout()
         if(choice == "MidiNote"):
             self._mainModulationGuiSizer.Show(self._midiNoteSourceSizer)
-            self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._midiNoteSourceSizer)
-            self._parentSizer.Layout()
         if(choice == "LFO"):
             self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
             self._onLfoTypeChosen(event)
-            self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._lfoTypeSizer)
             self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
@@ -341,11 +337,9 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Hide(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Hide(self._lfoMaxValueSliderSizer)
             self._mainModulationGuiSizer.Hide(self._lfoGraphicsSizer)
-            self._parentSizer.Layout()
         if(choice == "ADSR"):
             self._mainModulationGuiSizer.Show(self._adsrTypeSizer)
             self._onAdsrTypeChosen(event)
-            self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._adsrTypeSizer)
             self._mainModulationGuiSizer.Hide(self._adsrAttackhSizer)
@@ -353,13 +347,12 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Hide(self._adsrSustainSizer)
             self._mainModulationGuiSizer.Hide(self._adsrReleaseSizer)
             self._mainModulationGuiSizer.Hide(self._adsrGraphicsSizer)
-            self._parentSizer.Layout()
         if(choice == "Value"):
             self._mainModulationGuiSizer.Show(self._valueSliderSizer)
-            self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._valueSliderSizer)
-            self._parentSizer.Layout()
+
+        self._fixModulationGuiLayout()
 
     def _onModulationModeHelp(self, event):
         text = """
@@ -397,12 +390,14 @@ Value:\t\tStatic value.
             self._mainModulationGuiSizer.Show(self._midiActiveControllerSizer)
             if(self._activeControllersUpdate.IsRunning() == False):
                 self._activeControllersUpdate.Start(500)#2 times a second
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._midiActiveControllerSizer)
             self._mainModulationGuiSizer.Hide(self._midiControllerSizer)
             if(self._activeControllersUpdate.IsRunning() == True):
                 self._activeControllersUpdate.Stop()
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
 
     def stopModulationUpdate(self):
@@ -482,6 +477,7 @@ Random:\t\tNo phase just random numbers.
             self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoGraphicsSizer)
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
@@ -489,6 +485,7 @@ Random:\t\tNo phase just random numbers.
             self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoGraphicsSizer)
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         lfoLengthValue = float(self._lfoLengthSlider.GetValue()) / 160.0 * 32.0
         lfoPhaseValue = float(self._lfoPhaseSlider.GetValue()) / 160.0 * 32.0
@@ -553,6 +550,7 @@ Selects full ADSR or just Attack/Release mode
             self._mainModulationGuiSizer.Show(self._adsrSustainSizer)
             self._mainModulationGuiSizer.Show(self._adsrReleaseSizer)
             self._mainModulationGuiSizer.Show(self._adsrGraphicsSizer)
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         else:
             self._mainModulationGuiSizer.Hide(self._adsrDecaySizer)
@@ -560,6 +558,7 @@ Selects full ADSR or just Attack/Release mode
             self._mainModulationGuiSizer.Show(self._adsrAttackhSizer)
             self._mainModulationGuiSizer.Show(self._adsrReleaseSizer)
             self._mainModulationGuiSizer.Show(self._adsrGraphicsSizer)
+            self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         attackValue = float(self._adsrAttackSlider.GetValue()) / 160.0 * 32.0
         decayValue = float(self._adsrDecaySlider.GetValue()) / 160.0 * 32.0

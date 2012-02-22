@@ -3,7 +3,9 @@ Created on 6. feb. 2012
 
 @author: pcn
 '''
-from video.media.MediaFileModes import getMixModeFromName
+
+import wx
+from video.media.MediaFileModes import MixMode
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -104,3 +106,148 @@ class MediaMixerConfig(object):
 #        for noteConfig in self._mediaPool:
 #            if(noteConfig != None):
 #                noteConfig.verifyFadeTemplateUsed(fadeConfigNameList)
+
+class MediaTrackGui(object): #@UndefinedVariable
+    def __init__(self, mainConfig):
+        self._mainConfig = mainConfig
+        self._config = None
+        self._mixModes = MixMode()
+        self._selectedEditor = self.EditSelection.Unselected
+
+    class EditSelection():
+        Unselected, PreEffect, PostEffect = range(3)
+
+    def setupTrackGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainTrackPlane = plane
+        self._mainTrackGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideTrackGuiCallback = parentClass.hideTrackGui
+        self._showEffectsCallback = parentClass.showEffectsGui
+        self._hideEffectsCallback = parentClass.hideEffectsGui
+        self._showModulationCallback = parentClass.showModulationGui
+        self._hideModulationCallback = parentClass.hideModulationGui
+
+        self._trackId = 0
+        trackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Channel:") #@UndefinedVariable
+        self._trackField = wx.TextCtrl(self._mainTrackPlane, wx.ID_ANY, str(self._trackId + 1), size=(200, -1)) #@UndefinedVariable
+        self._trackField.SetEditable(False)
+        self._trackField.SetBackgroundColour((232,232,232))
+        trackHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        trackHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onTrackHelp, id=trackHelpButton.GetId()) #@UndefinedVariable
+        trackSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        trackSizer.Add(self._trackField, 2, wx.ALL, 5) #@UndefinedVariable
+        trackSizer.Add(trackHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(trackSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        mixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText6 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Mix mode:") #@UndefinedVariable
+        self._mixField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._mixField, self._mixModes.getChoices, "Add", "Add")
+        mixHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
+        mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
+        mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
+        mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
+        self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
+        self._preEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._preEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPreEffectEdit, id=self._preEffectButton.GetId()) #@UndefinedVariable
+        preEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        preEffectSizer.Add(self._preEffectField, 2, wx.ALL, 5) #@UndefinedVariable
+        preEffectSizer.Add(self._preEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(preEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        postEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
+        self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
+        self._postEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPostEffectEdit, id=self._postEffectButton.GetId()) #@UndefinedVariable
+        postEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        postEffectSizer.Add(self._postEffectField, 2, wx.ALL, 5) #@UndefinedVariable
+        postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(postEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+    def _updateEffecChoices(self, widget, value, defaultValue):
+        if(self._mainConfig == None):
+            self._updateChoices(widget, None, value, defaultValue)
+        else:
+            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue)
+
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+        widget.Clear()
+        valueOk = False
+        for choice in choiceList:
+            widget.Append(choice)
+            if(choice == value):
+                valueOk = True
+        if(valueOk == True):
+            widget.SetStringSelection(value)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+    def _onTrackHelp(self, event):
+        text = """
+This is the track number and MIDI channel.
+"""
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Track help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onMixHelp(self, event):
+        text = """
+Decides how this image is mixed with images on lower MIDI channels.
+\t(This overrides media mix mode if not set to Default.)
+
+Default:\tUses Add if no other mode has been selected by media.
+Add:\tSums the images together.
+Multiply:\tMultiplies the images together. Very handy for masking.
+Lumakey:\tReplaces source everywhere the image is not black.
+Replace:\tNo mixing. Just use this image.
+"""
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _highlightButton(self, selected):
+        if(selected == self.EditSelection.PreEffect):
+            self._preEffectButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+        else:
+            self._preEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        if(selected == self.EditSelection.PostEffect):
+            self._postEffectButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+        else:
+            self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+
+    def _onPreEffectEdit(self, event):
+        self._showEffectsCallback()
+        if(self._selectedEditor != self.EditSelection.PreEffect):
+            self._hideModulationCallback()
+        selectedEffectConfig = self._preEffectField.GetValue()
+        self._selectedEditor = self.EditSelection.PreEffect
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
+
+    def _onPostEffectEdit(self, event):
+        self._showEffectsCallback()
+        if(self._selectedEditor != self.EditSelection.PostEffect):
+            self._hideModulationCallback()
+        selectedEffectConfig = self._postEffectField.GetValue()
+        self._selectedEditor = self.EditSelection.PostEffect
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
+
+

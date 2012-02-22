@@ -121,6 +121,7 @@ class EffectsGui(object):
         self._mainEffectsGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideEffectsCallback = parentClass.hideEffectsGui
+        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
         self._showSlidersCallback = parentClass.showSlidersGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
@@ -519,7 +520,8 @@ Selects the effect.
             descriptionSplit = controllerDescription.split('.', 6)
             if(len(descriptionSplit) > 1):
                 if((descriptionSplit[1] == "NotePreasure") or (descriptionSplit[1] == "Preasure")):
-                    midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
+                    if(self._midiNote != None):
+                        midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
 
     def _setLabels(self, amountLabel, arg1Label, arg2Label, arg3Label, arg4Label):
         self._amountLabel.SetLabel(amountLabel)
@@ -659,6 +661,7 @@ Selects the effect.
             self._chosenEffect = getEffectName(self._chosenEffectId)
         self._updateChoices(self._effectNameField, self._effectChoices.getChoices, self._chosenEffect, "None")
         self._updateLabels()
+        self._fixEffectGuiLayout()
         
     def updateGui(self, effectTemplate, midiNote):
         self._midiNote = midiNote

@@ -252,10 +252,11 @@ class MediaFile(object):
             self._configurationTree.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaFileGui(object): #@UndefinedVariable
-    def __init__(self, parentPlane, parentSizer, mainConfig):
+    def __init__(self, parentPlane, parentSizer, mainConfig, trackGui):
         self._parentPlane = parentPlane
         self._parentSizer = parentSizer
         self._mainConfig = mainConfig
+        self._trackGui = trackGui
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
 
         self._config = None
@@ -266,22 +267,31 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
+        self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._effectConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._fadeConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._moulationConfigPanel) #@UndefinedVariable
         self._configSizer.Add(self._slidersPanel) #@UndefinedVariable
 
+        self._configSizer.Hide(self._trackGuiPlane)
+        self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._mediaFileGuiPanel.SetSizer(self._configSizer)
+
+        self._trackGuiPlane.SetBackgroundColour((220,220,220))
+        self._trackGuiSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._trackGuiPlane.SetSizer(self._trackGuiSizer)
+        self._trackGui.setupTrackGui(self._trackGuiPlane, self._trackGuiSizer, self._configSizer, self)
 
         self._noteConfigPanel.SetBackgroundColour((0,120,120))
         self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -316,7 +326,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fileNameField.SetBackgroundColour((232,232,232))
         fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select', size=(60,-1)) #@UndefinedVariable
         fileOpenButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -328,7 +338,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateTypeChoices(self._typeField, "VideoLoop", "VideoLoop")
         typeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         typeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onTypeHelp, id=typeHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onTypeHelp, id=typeHelpButton.GetId()) #@UndefinedVariable
         typeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(self._typeField, 2, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(typeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -341,7 +351,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateLoopModeChoices(self._subModeField, "Normal", "Normal")
         subModeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         subModeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSubModeHelp, id=subModeHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSubModeHelp, id=subModeHelpButton.GetId()) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(subModeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -354,7 +364,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationField.SetInsertionPoint(0)
         self._subModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._subModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit, id=self._subModulationEditButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit, id=self._subModulationEditButton.GetId()) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -368,7 +378,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteField.SetBackgroundColour((232,232,232))
         noteHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         noteHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onNoteHelp, id=noteHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onNoteHelp, id=noteHelpButton.GetId()) #@UndefinedVariable
         noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(self._noteField, 2, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(noteHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -380,7 +390,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._syncField.SetInsertionPoint(0)
         syncHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         syncHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onSyncHelp, id=syncHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSyncHelp, id=syncHelpButton.GetId()) #@UndefinedVariable
         self._syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -392,7 +402,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._quantizeField.SetInsertionPoint(0)
         quantizeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         quantizeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onQuantizeHelp, id=quantizeHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onQuantizeHelp, id=quantizeHelpButton.GetId()) #@UndefinedVariable
         quantizeSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(self._quantizeField, 2, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(quantizeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -404,7 +414,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateMixModeChoices(self._mixField, "Add", "Add")
         mixHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -416,7 +426,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
         self._effect1Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._effect1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onEffect1Edit, id=self._effect1Button.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onEffect1Edit, id=self._effect1Button.GetId()) #@UndefinedVariable
         effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Field, 2, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -428,7 +438,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._effect2Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._effect2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onEffect2Edit, id=self._effect2Button.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onEffect2Edit, id=self._effect2Button.GetId()) #@UndefinedVariable
         effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Field, 2, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -440,7 +450,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateFadeChoices(self._fadeField, "Default", "Default")
         self._fadeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._fadeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mediaFileGuiPanel.Bind(wx.EVT_BUTTON, self._onFadeEdit, id=self._fadeButton.GetId()) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFadeEdit, id=self._fadeButton.GetId()) #@UndefinedVariable
         fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeField, 2, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -463,6 +473,26 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def getPlane(self):
         return self._mediaFileGuiPanel
+
+    def showNoteGui(self):
+        self._configSizer.Show(self._noteConfigPanel)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
+
+    def hideNoteGui(self):
+        self._configSizer.Hide(self._noteConfigPanel)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
+
+    def showTrackGui(self):
+        self._configSizer.Show(self._trackGuiPlane)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
+
+    def hideTrackGui(self):
+        self._configSizer.Hide(self._trackGuiPlane)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
 
     class EditSelection():
         Unselected, Effect1, Effect2, Fade, ImageSeqModulation = range(5)
@@ -677,10 +707,21 @@ All notes on events are quantized to this.
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
 
+    def showEffectsGui(self):
+        self._configSizer.Show(self._effectConfigPanel)
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+        self._parentPlane.Layout()
+        self._mediaFileGuiPanel.Layout()
+
     def hideEffectsGui(self):
         self._configSizer.Hide(self._effectConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
+        self._parentPlane.Layout()
+        self._mediaFileGuiPanel.Layout()
+
+    def fixEffectsGuiLayout(self):
         self._parentPlane.Layout()
         self._mediaFileGuiPanel.Layout()
 
@@ -693,6 +734,10 @@ All notes on events are quantized to this.
 
     def showModulationGui(self):
         self._configSizer.Show(self._moulationConfigPanel)
+        self._parentPlane.Layout()
+        self._mediaFileGuiPanel.Layout()
+
+    def fixModulationGuiLayout(self):
         self._parentPlane.Layout()
         self._mediaFileGuiPanel.Layout()
 
@@ -728,7 +773,7 @@ All notes on events are quantized to this.
         self._mainConfig.updateFadeGui(selectedFadeConfig)
 
     def _onCloseButton(self, event):
-        self._parentSizer.Hide(self._mediaFileGuiPanel)
+        self.hideNoteGui()
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._moulationConfigPanel)

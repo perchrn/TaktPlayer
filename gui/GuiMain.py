@@ -18,6 +18,7 @@ from configuration.ConfigurationHolder import xmlToPrettyString
 import subprocess
 import multiprocessing
 from utilities.UrlSignature import UrlSignature
+from configurationGui.MediaMixerConfig import MediaTrackGui
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -117,11 +118,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        self._noteGui = MediaFileGui(self, self._editAreaSizer, self._configuration)
+        self._trackGui = MediaTrackGui(self._configuration)
+        self._noteGui = MediaFileGui(self, self._editAreaSizer, self._configuration, self._trackGui)
         self._configuration.setNoteGui(self._noteGui)
+#        self._configuration.setTrackGui(self._trackGui)
         self._editAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._editAreaSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
-        self._editAreaSizer.Hide(self._noteGui.getPlane())
 
         self._mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
@@ -564,8 +566,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._noteGui.clearGui(foundNoteId)
             else:
                 self._noteGui.updateGui(noteConfig, foundNoteId)
-            self._editAreaSizer.Show(self._noteGui.getPlane())
-            self._mainSizer.Layout()
+            self._noteGui.showNoteGui()
+            self._noteGui.hideTrackGui()
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
@@ -596,6 +598,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 destinationConfig.updateFrom(sourceConfig, True)
                                 self._noteGui.updateGui(destinationConfig, destNoteId)
                                 self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
+                                self._noteGui.showNoteGui()
+                                self._noteGui.hideTrackGui()
         self._dragSource = None
 
     def _onMouseRelease(self, event):
@@ -703,6 +707,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             print "track pressed id: " + str(foundTrackId)
             self._selectedMidiChannel = foundTrackId
             self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+            self._noteGui.showTrackGui()
+            self._noteGui.hideNoteGui()
 
     def _onClose(self, event):
         self.Destroy()

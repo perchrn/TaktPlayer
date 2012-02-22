@@ -153,8 +153,11 @@ class Configuration(object):
         self._mediaPoolConf.renameFadeTemplateUsed(oldName, newName)
         self._mediaMixerConf.renameFadeTemplateUsed(oldName, newName)
 
-    def updateModulationGui(self, modulationString, widget):
-        self._globalConf.updateModulationGui(modulationString, widget)
+    def updateModulationGui(self, modulationString, widget, closeCallback):
+        self._globalConf.updateModulationGui(modulationString, widget, closeCallback)
+
+    def stopModulationGui(self):
+        self._globalConf.stopModulationGui()
 
     def updateFadeGui(self, configName):
         self._globalConf.updateFadeGui(configName)

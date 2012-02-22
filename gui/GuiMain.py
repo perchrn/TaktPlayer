@@ -89,10 +89,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self.SetBackgroundColour((120,120,120))
 
-        mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         menuSeperatorSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        notKeyboardSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._editAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
@@ -117,15 +117,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        self._noteGui = MediaFileGui(self, self._configuration)
+        self._noteGui = MediaFileGui(self, self._editAreaSizer, self._configuration)
         self._configuration.setNoteGui(self._noteGui)
-        notKeyboardSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        notKeyboardSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
+        self._editAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._editAreaSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
+        self._editAreaSizer.Hide(self._noteGui.getPlane())
 
-        mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
-        mainSizer.Add(notKeyboardSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
+        self._mainSizer.Add(self._editAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._sendButton = wx.Button(menuPannel, wx.ID_ANY, 'Send') #@UndefinedVariable
         self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -191,7 +192,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
-        self.SetSizer(mainSizer)
+        self.SetSizer(self._mainSizer)
 
         self.Show()
 
@@ -563,6 +564,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._noteGui.clearGui(foundNoteId)
             else:
                 self._noteGui.updateGui(noteConfig, foundNoteId)
+            self._editAreaSizer.Show(self._noteGui.getPlane())
+            self._mainSizer.Layout()
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()

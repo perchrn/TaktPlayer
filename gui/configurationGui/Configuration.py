@@ -168,6 +168,9 @@ class Configuration(object):
     def getNoteConfiguration(self, noteId):
         return self._mediaPoolConf.getNoteConfiguration(noteId)
 
+    def getTrackConfiguration(self, trackId):
+        return self._mediaMixerConf.getTrackConfiguration(trackId)
+
     def makeNoteConfig(self, fileName, noteLetter, midiNote):
         return self._mediaPoolConf.makeNoteConfig(fileName, noteLetter, midiNote)
 

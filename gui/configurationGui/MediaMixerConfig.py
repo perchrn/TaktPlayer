@@ -33,10 +33,14 @@ class MediaMixerConfig(object):
             for xmlConfig in xmlChildren:
                 trackId = self.updateTrackFromXml(xmlConfig)
                 mediaTrackState[trackId - 1] = True
-        for i in range(128):
+        for i in range(16):
             mediaState = mediaTrackState[i]
             if(mediaState == False):
                 self.deafultTrackSettings(i)
+
+    def getTrackConfiguration(self, trackId):
+        trackId = min(max(trackId, 0), 15)
+        return self._mediaTrackConfigs[trackId]
 
     def updateTrackFromXml(self, xmlConfig):
         trackId = int(xmlConfig.get("trackid"))
@@ -71,41 +75,41 @@ class MediaMixerConfig(object):
 
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                returnNumer += noteConfig.countNumberOfTimeEffectTemplateUsed(effectConfigName)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                returnNumer += trackConfig.countNumberOfTimeEffectTemplateUsed(effectConfigName)
         return returnNumer
 
     def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
         returnNumer = 0
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                returnNumer += noteConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                returnNumer += trackConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
         return returnNumer
 
     def renameEffectTemplateUsed(self, oldName, newName):
         pass
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                noteConfig.renameEffectTemplateUsed(oldName, newName)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                trackConfig.renameEffectTemplateUsed(oldName, newName)
 
     def renameFadeTemplateUsed(self, oldName, newName):
         pass
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                noteConfig.renameFadeTemplateUsed(oldName, newName)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                trackConfig.renameFadeTemplateUsed(oldName, newName)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         pass
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                noteConfig.verifyEffectTemplateUsed(effectConfigNameList)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                trackConfig.verifyEffectTemplateUsed(effectConfigNameList)
 
     def verifyFadeTemplateUsed(self, fadeConfigNameList):
         pass
-#        for noteConfig in self._mediaPool:
-#            if(noteConfig != None):
-#                noteConfig.verifyFadeTemplateUsed(fadeConfigNameList)
+#        for trackConfig in self._mediaPool:
+#            if(trackConfig != None):
+#                trackConfig.verifyFadeTemplateUsed(fadeConfigNameList)
 
 class MediaTrackGui(object): #@UndefinedVariable
     def __init__(self, mainConfig):
@@ -126,6 +130,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
+        self._hideSlidersCallback = parentClass.hideSlidersGui
 
         self._trackId = 0
         trackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -143,8 +148,8 @@ class MediaTrackGui(object): #@UndefinedVariable
 
         mixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText6 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Mix mode:") #@UndefinedVariable
-        self._mixField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._mixField, self._mixModes.getChoices, "Add", "Add")
+        self._mixField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._mixField, self._mixModes.getChoices, "Default", "Default")
         mixHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
@@ -154,7 +159,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mainTrackGuiSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
+        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
         self._preEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
@@ -166,7 +171,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mainTrackGuiSizer.Add(preEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         postEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
+        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
         self._postEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
@@ -176,6 +181,17 @@ class MediaTrackGui(object): #@UndefinedVariable
         postEffectSizer.Add(self._postEffectField, 2, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(postEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        saveButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _updateEffecChoices(self, widget, value, defaultValue):
         if(self._mainConfig == None):
@@ -249,5 +265,38 @@ Replace:\tNo mixing. Just use this image.
         self._selectedEditor = self.EditSelection.PostEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
+
+    def _onCloseButton(self, event):
+        self._hideTrackGuiCallback()
+        self._hideEffectsCallback()
+        self._hideModulationCallback()
+        self._hideSlidersCallback()
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+
+    def _onSaveButton(self, event):
+        if(self._config != None):
+            mixMode = self._mixField.GetValue()
+            self._config.setValue("MixMode", mixMode)
+            postEffectConfig = self._preEffectField.GetValue()
+            self._config.setValue("PreEffectConfig", postEffectConfig)
+            preEffectConfig = self._postEffectField.GetValue()
+            self._config.setValue("PostEffectConfig", preEffectConfig)
+
+    def updateGui(self, trackConfig, trackId):
+        self._trackId = trackId
+        self._config = trackConfig
+        if(self._config == None):
+            return
+        self._trackField.SetValue(str(self._trackId + 1))
+        self._updateChoices(self._mixField, self._mixModes.getChoices, self._config.getValue("MixMode"), "Default")
+        self._updateEffecChoices(self._preEffectField, self._config.getValue("PreEffectConfig"), "MixPreDefault")
+        self._updateEffecChoices(self._postEffectField, self._config.getValue("PostEffectConfig"), "MixPostDefault")
+
+        if(self._selectedEditor != self.EditSelection.Unselected):
+            if(self._selectedEditor == self.EditSelection.PreEffect):
+                self._onPreEffectEdit(None)
+            elif(self._selectedEditor == self.EditSelection.PostEffect):
+                self._onPostEffectEdit(None)
 
 

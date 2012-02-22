@@ -18,14 +18,10 @@ class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
         self._mainConfig = mainConfig
         self._configurationTree = configParent.addChildUnique("Global")
-        self._configurationTree.addIntParameter("ResolutionX", 800)
-        self._configurationTree.addIntParameter("ResolutionY", 600)
-        self._internalResolutionX =  self._configurationTree.getValueFromPath("Global.ResolutionX")
-        self._internalResolutionY =  self._configurationTree.getValueFromPath("Global.ResolutionY")
 
         self._midiTiming = MidiTiming()
 
-        self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
+        self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, 800, 600)
         self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
         self._fadeGui = FadeGui(self._mainConfig, self._midiTiming)

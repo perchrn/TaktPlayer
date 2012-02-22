@@ -386,6 +386,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
                         if(currentGuiConfigString != self._oldServerConfigurationString):
+                            print "GUI " * 50
+                            print currentGuiConfigString
+                            print "NEW " * 50
+                            print newConfigString
+                            print "XXX " * 50
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
@@ -699,7 +704,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
-        for i in range(128):
+        for i in range(16):
             if(self._trackWidgetIds[i] == buttonId):
                 foundTrackId = i
                 break
@@ -707,8 +712,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             print "track pressed id: " + str(foundTrackId)
             self._selectedMidiChannel = foundTrackId
             self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
-            self._noteGui.showTrackGui()
-            self._noteGui.hideNoteGui()
+            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+            if(destinationConfig != None):
+                self._trackGui.updateGui(destinationConfig, foundTrackId)
+                self._noteGui.showTrackGui()
+                self._noteGui.hideNoteGui()
 
     def _onClose(self, event):
         self.Destroy()

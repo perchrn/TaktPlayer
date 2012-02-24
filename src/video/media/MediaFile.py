@@ -224,24 +224,6 @@ class MediaFile(object):
         self._image = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, currentSongPosition, midiChannelState, midiNoteState)
         self._image = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, currentSongPosition, midiChannelState, midiNoteState)
 
-#Blur/Distort
-#            self._image = drawEdges(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
-#            self._image = dilateErode(self._image, effectAmount, self._tmpMat2)
-#            self._image = blurImage(self._image, effectAmount, self._tmpMat2)
-#            self._image = blurMultiply(self._image, effectAmount, self._tmpMat2, self._tmpMat1)
-
-#Change
-#            self._image = self.zoomImage(self._captureImage, -0.25, -0.25, zoom, zoom, self._tmpMat1)
-#            self._image = flipImage(self._image, effectArg1, self._tmpMat2)
-
-#Color filters
-#            self._image = hueSaturationBrightness(self._image, effectArg1, effectArg2, effectX, self._tmpMat2)
-#            self._image = colorize(self._image, effectArg1, effectArg2, effectX, ColorizeMode.Add, effectAmount, self._tmpMat2)
-#            self._image = contrastBrightness(self._image, effectAmount, effectArg1, self._tmpMat1)
-#            self._image = invert(self._image, effectAmount, self._tmpMat1)
-#            self._image = blackAndWhite(self._image, effectAmount, self._tmpMask, self._tmpMat1)
-#            self._image = selectiveDesaturate(self._image, effectAmount, effectArg1, effectArg2, self._tmpMat2, self._tmpMask)
-
         if(fadeValue < 0.99):
             self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
         
@@ -333,7 +315,6 @@ class MediaFile(object):
         else:
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
-                print "MixMode.Default using clips mix mode..."
             if(effects != None):
                 preEffect, preEffectSettings, postEffect, postEffectSettings = effects
             else:
@@ -563,11 +544,13 @@ class VideoLoopFile(MediaFile):
                 self._currentFrame = framePos
             else:
                 self._image = None
+                return False
         elif(self._loopMode == VideoLoopMode.DontLoopReverse):
             if(framePos < self._numberOfFrames):
                 self._currentFrame = self._numberOfFrames - 1 - framePos
             else:
                 self._image = None
+                return False
         else: #Normal
             self._currentFrame = framePos % self._numberOfFrames
 

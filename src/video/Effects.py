@@ -630,9 +630,15 @@ class ThresholdEffect(object):
         cv.Merge(self._thersholdMask, self._thersholdMask, self._thersholdMask, None, self._thersholdMat)
         return self._thersholdMat
 
+#TODO: add effects
 #class MirrorEffect(object):
-#class StutterEffect(object):
 #class RotateEffect(object):
-#class InterferenceEffect(object):
-#class LimboEffectish():
-#class ParalaxScrolling():
+
+#class StutterEffect(object):
+#class EchoEffect(object):
+
+#class ScrollingImage(MediaFile):
+#replaces:
+    #class InterferenceEffect(object):
+    #class LimboEffectish():
+    #class ParalaxScrolling():

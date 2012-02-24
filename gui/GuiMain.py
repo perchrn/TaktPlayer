@@ -7,7 +7,7 @@ import os
 import sys
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
-from widgets.PcnImageButton import PcnKeyboardButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT
+from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
@@ -81,7 +81,7 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
-            size=(1400, 600))
+            size=(800, 600))
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._oldServerConfigurationString = ""
@@ -111,11 +111,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(80,-1)) #@UndefinedVariable
+        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetupScrolling(False, True)
         scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(132,132,132)) #@UndefinedVariable
+        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         self._trackGui = MediaTrackGui(self._configuration)
@@ -176,17 +176,65 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             dropTarget = FileDrop(keyboardButton.GetId(), self.fileDropped)
             keyboardButton.SetDropTarget(dropTarget)
 
-        self._trackThumbnailBitmap = wx.Bitmap("graphics/trackThumbnail.png") #@UndefinedVariable
+        self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
+        self._trackEditBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._trackEditPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._trackPlayBitmap = wx.Bitmap("graphics/playButton.png") #@UndefinedVariable
+        self._trackPlayPressedBitmap = wx.Bitmap("graphics/playButtonPressed.png") #@UndefinedVariable
         self._trackWidgets = []
         self._trackWidgetIds = []
+        self._trackEditWidgets = []
+        self._trackEditWidgetsIds = []
+        self._trackPlayWidgets = []
+        self._trackPlayWidgetsIds = []
         for track in range(16):
-            trackButton = PcnKeyboardButton(self._midiTrackPanel, self._trackThumbnailBitmap, (2, 4+46*track), wx.ID_ANY, size=(42, 42), isBlack=False) #@UndefinedVariable
+            extraSpace = ""
+            if(track < 9):
+                extraSpace = " "
+            wx.StaticText(self._midiTrackPanel, wx.ID_ANY, extraSpace + str(track + 1), pos=(2, 4+36*track)) #@UndefinedVariable
+            trackButton = PcnKeyboardButton(self._midiTrackPanel, self._trackThumbnailBitmap, (16, 4+36*track), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
             trackButton.setFrqameAddingFunction(addTrackButtonFrame)
             trackButton.setBitmap(self._emptyBitMap)
+            trackEditButton = PcnImageButton(self._midiTrackPanel, self._trackEditBitmap, self._trackEditPressedBitmap, (60, 4+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+            trackPlayButton = PcnImageButton(self._midiTrackPanel, self._trackPlayBitmap, self._trackPlayPressedBitmap, (60, 21+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
             self._trackWidgets.append(trackButton)
+            self._trackEditWidgets.append(trackEditButton)
+            self._trackPlayWidgets.append(trackPlayButton)
             self._trackWidgetIds.append(trackButton.GetId())
+            self._trackEditWidgetsIds.append(trackEditButton.GetId())
+            self._trackPlayWidgetsIds.append(trackPlayButton.GetId())
             trackButton.Bind(wx.EVT_BUTTON, self._onTrackButton) #@UndefinedVariable
+            trackEditButton.Bind(wx.EVT_BUTTON, self._onTrackEditButton) #@UndefinedVariable
+            trackPlayButton.Bind(wx.EVT_BUTTON, self._onTrackPlayButton) #@UndefinedVariable
         self._selectedMidiChannel = -1
+
+        overviewPanel = self._noteGui.getOverviewPlane()
+        wx.StaticText(overviewPanel, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
+        self._overviewClipButton = PcnKeyboardButton(overviewPanel, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._overviewClipModeButton = PcnImageButton(overviewPanel, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
+        self._overviewClipMixButton = PcnImageButton(overviewPanel, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        wx.StaticText(overviewPanel, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        wx.StaticText(overviewPanel, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
+        wx.StaticText(overviewPanel, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        wx.StaticText(overviewPanel, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
+        self._overviewFx1Button = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx2Button = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
+        wx.StaticText(overviewPanel, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
+        inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
+        inButton = PcnImageButton(overviewPanel, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewPreFxButton = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewClipMixButton = PcnImageButton(overviewPanel, self._blankMixBitmap, self._blankMixBitmap, (50, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewPostFxButton = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
+        outButton = PcnImageButton(overviewPanel, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
+        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
+        previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
+        self._overviewPreviewButton = PcnKeyboardButton(overviewPanel, previewBitmap, (1, 280), wx.ID_ANY, size=(82, 62), isBlack=False) #@UndefinedVariable
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
@@ -555,6 +603,34 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _onNewButton(self):
         pass
 
+    def _selectKeyboardKey(self, keyId):
+        if((keyId >= 0) and (keyId < 128)):
+            self._noteWidgets[keyId].setSelected()
+        for i in range(128):
+            widget = self._noteWidgets[i]
+            if(i != keyId):
+                widget.setSetSelected()
+
+    def _selectTrackKey(self, trackId):
+        if((trackId >= 0) and (trackId < 16)):
+            self._trackWidgets[trackId].setSelected()
+            self._trackEditWidgets[trackId].setSelected()
+        for i in range(16):
+            widget = self._trackWidgets[i]
+            if(i != trackId):
+                widget.setSetSelected()
+            widget = self._trackEditWidgets[i]
+            if(i != trackId):
+                widget.setSetSelected()
+
+    def _selectTrackPlayer(self, trackId):
+        if((trackId >= 0) and (trackId < 16)):
+            self._trackPlayWidgets[trackId].setSelected()
+        for i in range(16):
+            widget = self._trackPlayWidgets[i]
+            if(i != trackId):
+                widget.setSetSelected()
+
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundNoteId = None
@@ -562,10 +638,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._noteWidgetIds[i] == buttonId):
                 foundNoteId = i
                 break
+
         if(foundNoteId != None):
-            noteString = noteToNoteString(foundNoteId)
-            print "sending note: " + str(foundNoteId) + " -> " + noteString
-            self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
+            self._selectKeyboardKey(foundNoteId)
+            self._selectTrackKey(-1)
+            if(self._selectedMidiChannel > -1):
+                self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
             noteConfig = self._configuration.getNoteConfiguration(foundNoteId)
             if(noteConfig == None):
                 self._noteGui.clearGui(foundNoteId)
@@ -708,15 +786,48 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackWidgetIds[i] == buttonId):
                 foundTrackId = i
                 break
+        print "DEBUG onTrack: " + str(foundTrackId)
         if(foundTrackId != None):
-            print "track pressed id: " + str(foundTrackId)
-            self._selectedMidiChannel = foundTrackId
-            self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+            self._selectTrackKey(foundTrackId)
+            self._selectKeyboardKey(-1)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
                 self._trackGui.updateGui(destinationConfig, foundTrackId)
                 self._noteGui.showTrackGui()
                 self._noteGui.hideNoteGui()
+
+    def _onTrackEditButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackEditWidgetsIds[i] == buttonId):
+                foundTrackId = i
+                break
+        print "DEBUG onEdit: " + str(foundTrackId)
+        if(foundTrackId != None):
+            self._selectTrackKey(foundTrackId)
+            self._selectKeyboardKey(-1)
+            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+            if(destinationConfig != None):
+                self._trackGui.updateGui(destinationConfig, foundTrackId)
+                self._noteGui.showTrackGui()
+                self._noteGui.hideNoteGui()
+
+    def _onTrackPlayButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackPlayWidgetsIds[i] == buttonId):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            if(self._selectedMidiChannel == foundTrackId):
+                self._selectedMidiChannel = -1
+                self._selectTrackPlayer(-1)
+            else:
+                self._selectedMidiChannel = foundTrackId
+                self._selectTrackPlayer(foundTrackId)
+            self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _onClose(self, event):
         self.Destroy()

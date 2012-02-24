@@ -266,19 +266,22 @@ class MediaFileGui(object): #@UndefinedVariable
         self._typeModes = MediaTypes()
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._overviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
+        self._configSizer.Add(self._overviewGuiPlane)
+        self._overviewGuiPlane.SetBackgroundColour((170,170,170))
         self._configSizer.Add(self._trackGuiPlane)
-        self._configSizer.Add(self._noteConfigPanel) #@UndefinedVariable
-        self._configSizer.Add(self._effectConfigPanel) #@UndefinedVariable
-        self._configSizer.Add(self._fadeConfigPanel) #@UndefinedVariable
-        self._configSizer.Add(self._moulationConfigPanel) #@UndefinedVariable
-        self._configSizer.Add(self._slidersPanel) #@UndefinedVariable
+        self._configSizer.Add(self._noteConfigPanel)
+        self._configSizer.Add(self._effectConfigPanel)
+        self._configSizer.Add(self._fadeConfigPanel)
+        self._configSizer.Add(self._moulationConfigPanel)
+        self._configSizer.Add(self._slidersPanel)
 
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
@@ -474,6 +477,9 @@ class MediaFileGui(object): #@UndefinedVariable
     def getPlane(self):
         return self._mediaFileGuiPanel
 
+    def getOverviewPlane(self):
+        return self._overviewGuiPlane
+
     def showNoteGui(self):
         self._configSizer.Show(self._noteConfigPanel)
         self._mediaFileGuiPanel.Layout()
@@ -483,6 +489,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._noteConfigPanel)
         self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
+        #TODO: Note selection clear callback
 
     def showTrackGui(self):
         self._configSizer.Show(self._trackGuiPlane)
@@ -493,6 +500,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._trackGuiPlane)
         self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
+        #TODO: Track selection clear callback
 
     class EditSelection():
         Unselected, Effect1, Effect2, Fade, ImageSeqModulation = range(5)

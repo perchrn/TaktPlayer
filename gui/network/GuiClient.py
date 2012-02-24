@@ -196,13 +196,12 @@ class GuiClient(object):
             roundsLeft = 20
             while(roundsLeft >= 0):
                 if(self._guiClientProcess.is_alive()):
-                    time.sleep(1)
                     print ".",
+                    time.sleep(1)
                     roundsLeft -= 1
                 else:
                     roundsLeft = -1
-            print "."
-            self._guiClientProcess.join(1.0)
+            print ":"
             if(self._guiClientProcess.is_alive()):
                 print "GuiNetworkClient did not respond to quit command. Terminating."
                 self._guiClientProcess.terminate()

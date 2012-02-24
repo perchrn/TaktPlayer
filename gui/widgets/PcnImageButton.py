@@ -46,10 +46,10 @@ def addTrackButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
         dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
     else:
         dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
-    dc.DrawLine(0, oldY-6, oldX-1, oldY-6)
-    dc.DrawLine(oldX-1, 5, oldX-1, oldY-5)
-    dc.DrawLine(0, 5, oldX-1, 5)
-    dc.DrawLine(0, 5, 0, oldY-6)
+    dc.DrawLine(1, oldY-1, oldX-1, oldY-1)
+    dc.DrawLine(oldX-1, 1, oldX-1, oldY-1)
+    dc.DrawLine(1, 0, oldX-1, 0)
+    dc.DrawLine(0, 1, 0, oldY-1)
     dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
     return framedBitmap
 
@@ -57,6 +57,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
     def __init__(self, parent, bitmap, pos, bid = -1, size=(-1,-1), isBlack=False):
         super(PcnKeyboardButton, self).__init__(parent, bid, style=wx.BORDER_NONE, pos=pos, size=size) #@UndefinedVariable
         self._clicked = False
+        self._isSelected = False
         self._isBlack = isBlack
         self._baseBitmap = bitmap
         self._normal = self._baseBitmap
@@ -97,6 +98,16 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
     def getBitmapSize(self):
         return self._bitmap.GetSize()
 
+    def setSelected(self):
+        if(self._isSelected != True):
+            self._isSelected = True
+            self.Refresh()
+
+    def setSetSelected(self):
+        if(self._isSelected != False):
+            self._isSelected = False
+            self.Refresh()
+
     def DoGetBestSize(self):
         return self._normal.GetSize()
     def Enable(self, *args, **kwargs):
@@ -117,7 +128,98 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         dc = wx.AutoBufferedPaintDC(self) #@UndefinedVariable
         dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour())) #@UndefinedVariable
         dc.Clear()
-        if(self._clicked):
+        depressed = self._clicked
+        if(self._isSelected):
+            depressed = not self._clicked
+        if(depressed):
+            dc.DrawBitmap(self._pressed, 0, 0)
+        else:
+            dc.DrawBitmap(self._normal, 0, 0)
+    def set_clicked(self, clicked):
+        if clicked != self._clicked:
+            self._clicked = clicked
+            self.Refresh()
+    def get_clicked(self):
+        return self._clicked
+    clicked = property(get_clicked, set_clicked)
+    def on_left_down(self, event):
+        self.clicked = True
+        dragStartEvent = wx.CommandEvent() #@UndefinedVariable
+        dragStartEvent.SetEventObject(self)
+        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId)
+        wx.PostEvent(self, dragStartEvent) #@UndefinedVariable
+    def on_left_dclick(self, event):
+        self.on_left_down(event)
+    def on_left_up(self, event):
+        if self.clicked:
+            self.post_event()
+        self.clicked = False
+        dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
+        dragDoneEvent.SetEventObject(self)
+        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
+        wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
+#    def on_motion(self, event):
+#        if self.clicked:
+#            self.clicked = False
+    def on_leave_window(self, event):
+        self.clicked = False
+
+class PcnImageButton(wx.PyControl): #@UndefinedVariable
+    def __init__(self, parent, bitmapNormal, bitmapPressed, pos=(-1,-1), bid = -1, size=(-1,-1)):
+        super(PcnImageButton, self).__init__(parent, bid, style=wx.BORDER_NONE, pos=pos, size=size) #@UndefinedVariable
+        self._clicked = False
+        self._isSelected = False
+        self._normal = bitmapNormal
+        self._pressed = bitmapPressed
+        self._buttonParent = parent
+        self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM) #@UndefinedVariable
+        self.Bind(wx.EVT_SIZE, self.on_size) #@UndefinedVariable
+        self.Bind(wx.EVT_PAINT, self.on_paint) #@UndefinedVariable
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_left_down) #@UndefinedVariable
+        self.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick) #@UndefinedVariable
+        self.Bind(wx.EVT_LEFT_UP, self.on_left_up) #@UndefinedVariable
+#        self.Bind(wx.EVT_MOTION, self.on_motion) #@UndefinedVariable
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window) #@UndefinedVariable
+
+    def setBitmaps(self, bitmapNormal, bitmapPressed):
+        self._normal = bitmapNormal
+        self._pressed = bitmapPressed
+        self.Refresh()
+
+    def setSelected(self):
+        if(self._isSelected != True):
+            self._isSelected = True
+            self.Refresh()
+
+    def setSetSelected(self):
+        if(self._isSelected != False):
+            self._isSelected = False
+            self.Refresh()
+
+    def DoGetBestSize(self):
+        return self._normal.GetSize()
+    def Enable(self, *args, **kwargs):
+        super(PcnKeyboardButton, self).Enable(*args, **kwargs)
+        self.Refresh()
+    def Disable(self, *args, **kwargs):
+        super(PcnKeyboardButton, self).Disable(*args, **kwargs)
+        self.Refresh()
+    def post_event(self):
+        event = wx.CommandEvent() #@UndefinedVariable
+        event.SetEventObject(self)
+        event.SetEventType(wx.EVT_BUTTON.typeId) #@UndefinedVariable
+        wx.PostEvent(self, event) #@UndefinedVariable
+    def on_size(self, event):
+        event.Skip()
+        self.Refresh()
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self) #@UndefinedVariable
+        dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour())) #@UndefinedVariable
+        dc.Clear()
+        depressed = self._clicked
+        if(self._isSelected):
+            depressed = not self._clicked
+        if(depressed):
             dc.DrawBitmap(self._pressed, 0, 0)
         else:
             dc.DrawBitmap(self._normal, 0, 0)

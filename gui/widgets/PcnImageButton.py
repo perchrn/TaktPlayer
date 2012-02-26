@@ -41,7 +41,7 @@ def addTrackButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
     dc = wx.MemoryDC() #@UndefinedVariable
     dc.SelectObject(framedBitmap)
     dc.DrawBitmap(baseBitmap, 0, 0, True)
-    dc.DrawBitmap(bitmap, 1, 6, True)
+    dc.DrawBitmap(bitmap, 1, 1, True)
     if(isPressed == True):
         dc.SetPen(wx.Pen((255,255,255), 1)) #@UndefinedVariable
     else:

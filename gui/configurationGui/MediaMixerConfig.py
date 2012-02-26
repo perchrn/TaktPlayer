@@ -5,7 +5,9 @@ Created on 6. feb. 2012
 '''
 
 import wx
-from video.media.MediaFileModes import MixMode
+from video.media.MediaFileModes import MixMode, getMixModeFromName
+from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton
+from video.EffectModes import getEffectId, EffectTypes
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -116,10 +118,35 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mainConfig = mainConfig
         self._config = None
         self._mixModes = MixMode()
+        self._mixMode = MixMode.Default
         self._selectedEditor = self.EditSelection.Unselected
+
+        self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
+        self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
 
     class EditSelection():
         Unselected, PreEffect, PostEffect = range(3)
+
+    def setupTrackOverviewGui(self, overviewPanel, parentClass):
+        self._mainTrackOverviewPlane = overviewPanel
+
+        self.updateMixmodeThumb = parentClass.updateMixmodeThumb
+        self.updateEffectThumb = parentClass.updateEffectThumb
+
+        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
+        inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
+        inButton = PcnImageButton(self._mainTrackOverviewPlane, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewPreFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (50, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
+        outButton = PcnImageButton(self._mainTrackOverviewPlane, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
+        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
+        previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
+        self._overviewPreviewButton = PcnKeyboardButton(overviewPanel, previewBitmap, (1, 280), wx.ID_ANY, size=(82, 62), isBlack=False) #@UndefinedVariable
+
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):
         self._mainTrackPlane = plane
@@ -283,15 +310,25 @@ Replace:\tNo mixing. Just use this image.
             preEffectConfig = self._postEffectField.GetValue()
             self._config.setValue("PostEffectConfig", preEffectConfig)
 
-    def updateGui(self, trackConfig, trackId):
+    def updateMixModeOverviewThumb(self, noteMixMode):
+        self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
+        
+    def updateGui(self, trackConfig, trackId, noteMixMode):
         self._trackId = trackId
         self._config = trackConfig
         if(self._config == None):
             return
         self._trackField.SetValue(str(self._trackId + 1))
-        self._updateChoices(self._mixField, self._mixModes.getChoices, self._config.getValue("MixMode"), "Default")
-        self._updateEffecChoices(self._preEffectField, self._config.getValue("PreEffectConfig"), "MixPreDefault")
-        self._updateEffecChoices(self._postEffectField, self._config.getValue("PostEffectConfig"), "MixPostDefault")
+        self._mixMode = self._config.getValue("MixMode")
+        self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
+        print "DEBUG finding track mix mode: track: " + str(self._mixMode) + " note: " + str(noteMixMode)
+        self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
+        preEffectConfig = self._config.getValue("PreEffectConfig")
+        self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
+        self.updateEffectThumb(self._overviewPreFxButton, preEffectConfig)
+        postEffectConfig = self._config.getValue("PostEffectConfig")
+        self._updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
+        self.updateEffectThumb(self._overviewPostFxButton, postEffectConfig)
 
         if(self._selectedEditor != self.EditSelection.Unselected):
             if(self._selectedEditor == self.EditSelection.PreEffect):

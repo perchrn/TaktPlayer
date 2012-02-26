@@ -182,6 +182,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._trackPlayBitmap = wx.Bitmap("graphics/playButton.png") #@UndefinedVariable
         self._trackPlayPressedBitmap = wx.Bitmap("graphics/playButtonPressed.png") #@UndefinedVariable
         self._trackWidgets = []
+        self._activeTrackNotes = []
+        self._activeTrackId = -1
         self._trackWidgetIds = []
         self._trackEditWidgets = []
         self._trackEditWidgetsIds = []
@@ -198,6 +200,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             trackEditButton = PcnImageButton(self._midiTrackPanel, self._trackEditBitmap, self._trackEditPressedBitmap, (60, 4+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
             trackPlayButton = PcnImageButton(self._midiTrackPanel, self._trackPlayBitmap, self._trackPlayPressedBitmap, (60, 21+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
             self._trackWidgets.append(trackButton)
+            self._activeTrackNotes.append(-1)
             self._trackEditWidgets.append(trackEditButton)
             self._trackPlayWidgets.append(trackPlayButton)
             self._trackWidgetIds.append(trackButton.GetId())
@@ -207,34 +210,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             trackEditButton.Bind(wx.EVT_BUTTON, self._onTrackEditButton) #@UndefinedVariable
             trackPlayButton.Bind(wx.EVT_BUTTON, self._onTrackPlayButton) #@UndefinedVariable
         self._selectedMidiChannel = -1
-
-        overviewPanel = self._noteGui.getOverviewPlane()
-        wx.StaticText(overviewPanel, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
-        self._overviewClipButton = PcnKeyboardButton(overviewPanel, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
-        self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
-        self._overviewClipModeButton = PcnImageButton(overviewPanel, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
-        self._overviewClipMixButton = PcnImageButton(overviewPanel, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        wx.StaticText(overviewPanel, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
-        wx.StaticText(overviewPanel, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        wx.StaticText(overviewPanel, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        wx.StaticText(overviewPanel, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
-        self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
-        self._overviewFx1Button = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewFx2Button = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-
-        wx.StaticText(overviewPanel, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
-        inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
-        inButton = PcnImageButton(overviewPanel, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewPreFxButton = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewClipMixButton = PcnImageButton(overviewPanel, self._blankMixBitmap, self._blankMixBitmap, (50, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewPostFxButton = PcnImageButton(overviewPanel, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
-        outButton = PcnImageButton(overviewPanel, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-
-        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
-        previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
-        self._overviewPreviewButton = PcnKeyboardButton(overviewPanel, previewBitmap, (1, 280), wx.ID_ANY, size=(82, 62), isBlack=False) #@UndefinedVariable
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
@@ -403,9 +378,23 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         widget = self._trackWidgets[i]
                         if((note < 0) or (note > 127)):
                             widget.setBitmap(self._emptyBitMap)
+                            if((i == self._activeTrackId) and (self._activeTrackNotes[i] != -1)):
+                                self._noteGui.clearTrackOverviewGui()
+                                self._trackGui.updateMixModeOverviewThumb("None")
+                            self._activeTrackNotes[i] = -1
                         else:
                             noteWidget = self._noteWidgets[note]
-                            widget.setBitmap(noteWidget.getBitmap())
+                            noteBitmap = noteWidget.getBitmap()
+                            widget.setBitmap(noteBitmap)
+                            if((i == self._activeTrackId) and (self._activeTrackNotes[i] != note)):
+                                activeNoteConfig = self._configuration.getNoteConfiguration(note)
+                                if(activeNoteConfig == None):
+                                    self._noteGui.clearTrackOverviewGui()
+                                    self._trackGui.updateMixModeOverviewThumb("None")
+                                else:
+                                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
+                                    self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
+                            self._activeTrackNotes[i] = note
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
@@ -788,11 +777,26 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 break
         print "DEBUG onTrack: " + str(foundTrackId)
         if(foundTrackId != None):
+            self._activeTrackId = foundTrackId
             self._selectTrackKey(foundTrackId)
             self._selectKeyboardKey(-1)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
-                self._trackGui.updateGui(destinationConfig, foundTrackId)
+                activeNoteId = self._activeTrackNotes[foundTrackId]
+                noteMixMode = "Default"
+                if((activeNoteId >= 0) and (activeNoteId < 128)):
+                    activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                    if(activeNoteConfig != None):
+                        noteWidget = self._noteWidgets[activeNoteId]
+                        noteBitmap = noteWidget.getBitmap()
+                        noteMixMode = activeNoteConfig.getMixMode()
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
+                    else:
+                        self._noteGui.clearTrackOverviewGui()
+                else:
+                    noteMixMode = "None"
+                    self._noteGui.clearTrackOverviewGui()
+                self._trackGui.updateGui(destinationConfig, foundTrackId, noteMixMode)
                 self._noteGui.showTrackGui()
                 self._noteGui.hideNoteGui()
 
@@ -809,7 +813,21 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._selectKeyboardKey(-1)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
-                self._trackGui.updateGui(destinationConfig, foundTrackId)
+                activeNoteId = self._activeTrackNotes[foundTrackId]
+                noteMixMode = "Default"
+                if((activeNoteId >= 0) and (activeNoteId < 128)):
+                    activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                    if(activeNoteConfig != None):
+                        noteWidget = self._noteWidgets[activeNoteId]
+                        noteBitmap = noteWidget.getBitmap()
+                        noteMixMode = activeNoteConfig.getMixMode()
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
+                    else:
+                        self._noteGui.clearTrackOverviewGui()
+                else:
+                    noteMixMode = "None"
+                    self._noteGui.clearTrackOverviewGui()
+                self._trackGui.updateGui(destinationConfig, foundTrackId, noteMixMode)
                 self._noteGui.showTrackGui()
                 self._noteGui.hideNoteGui()
 

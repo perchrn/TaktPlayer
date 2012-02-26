@@ -5,9 +5,12 @@ Created on 6. feb. 2012
 '''
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
+from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
+    addTrackButtonFrame
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
-    MediaTypes, MixMode
+    MediaTypes, MixMode, getMixModeFromName
+from video.EffectModes import getEffectId, EffectTypes
 
 
 class MediaPoolConfig(object):
@@ -161,6 +164,8 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("SequenceMode")
                 self._configurationTree.removeParameter("PlayBackModulation")
 
+    def getMixMode(self):
+        return self._configurationTree.getValue("MixMode")
 
     def updateFrom(self, sourceMediaFile, dontChangeNote = True):
         sourceConfigTree = sourceMediaFile.getConfig()
@@ -259,6 +264,46 @@ class MediaFileGui(object): #@UndefinedVariable
         self._trackGui = trackGui
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
 
+        self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
+
+        self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._modeBitmapCamera = wx.Bitmap("graphics/modeCamera.png") #@UndefinedVariable
+        self._modeBitmapImage = wx.Bitmap("graphics/modeImage.png") #@UndefinedVariable
+        self._modeBitmapImageScroll = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
+        self._modeBitmapImageSeqModulation = wx.Bitmap("graphics/modeImageSeqModulation.png") #@UndefinedVariable
+        self._modeBitmapImageSeqReTrigger = wx.Bitmap("graphics/modeImageSeqReTrigger.png") #@UndefinedVariable
+        self._modeBitmapImageSeqTime = wx.Bitmap("graphics/modeImageSeqTime.png") #@UndefinedVariable
+        self._modeBitmapLoop = wx.Bitmap("graphics/modeLoop.png") #@UndefinedVariable
+        self._modeBitmapLoopReverse = wx.Bitmap("graphics/modeLoopReverse.png") #@UndefinedVariable
+        self._modeBitmapPingPong = wx.Bitmap("graphics/modePingPong.png") #@UndefinedVariable
+        self._modeBitmapPingPongReverse = wx.Bitmap("graphics/modePingPongReverse.png") #@UndefinedVariable
+        self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
+        self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
+
+        self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
+        self._mixBitmapAdd = wx.Bitmap("graphics/mixAdd.png") #@UndefinedVariable
+        self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
+        self._mixBitmapLumaKey = wx.Bitmap("graphics/mixLumaKey.png") #@UndefinedVariable
+        self._mixBitmapMultiply = wx.Bitmap("graphics/mixMultiply.png") #@UndefinedVariable
+        self._mixBitmapReplace = wx.Bitmap("graphics/mixReplace.png") #@UndefinedVariable
+        self._mixBitmapSubtract = wx.Bitmap("graphics/mixSubtract.png") #@UndefinedVariable
+
+        self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
+        self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
+        self._fxBitmapBlurMul = wx.Bitmap("graphics/fxBlurMultiply.png") #@UndefinedVariable
+        self._fxBitmapColorize = wx.Bitmap("graphics/fxColorize.png") #@UndefinedVariable
+        self._fxBitmapContrast = wx.Bitmap("graphics/fxContrast.png") #@UndefinedVariable
+        self._fxBitmapDeSat = wx.Bitmap("graphics/fxDeSat.png") #@UndefinedVariable
+        self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
+        self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
+        self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
+        self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
+        self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
+        self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
+        self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
+        self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
+
         self._config = None
         self._mixModes = MixMode()
         self._loopModes = VideoLoopMode()
@@ -266,7 +311,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._typeModes = MediaTypes()
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._overviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
+        self._trackOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -274,8 +319,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
-        self._configSizer.Add(self._overviewGuiPlane)
-        self._overviewGuiPlane.SetBackgroundColour((170,170,170))
+        self._configSizer.Add(self._trackOverviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._effectConfigPanel)
@@ -290,6 +334,10 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._mediaFileGuiPanel.SetSizer(self._configSizer)
+
+        self._trackOverviewGuiPlane.SetBackgroundColour((170,170,170))
+        self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane, self)
+        self._trackGui.setupTrackOverviewGui(self._trackOverviewGuiPlane, self)
 
         self._trackGuiPlane.SetBackgroundColour((220,220,220))
         self._trackGuiSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -474,11 +522,26 @@ class MediaFileGui(object): #@UndefinedVariable
         self._type = "VideoLoop"
         self._setupSubConfig()
 
+    def setupTrackClipOverviewGui(self, overviewPanel, parentClass):
+        self._mainTrackOverviewPlane = overviewPanel
+
+        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
+        self._overviewClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
+        self._overviewClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        self._overviewClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
+        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        self._overviewFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
     def getPlane(self):
         return self._mediaFileGuiPanel
 
     def getOverviewPlane(self):
-        return self._overviewGuiPlane
+        return self._trackOverviewGuiPlane
 
     def showNoteGui(self):
         self._configSizer.Show(self._noteConfigPanel)
@@ -922,6 +985,110 @@ All notes on events are quantized to this.
         else:
             widget.SetStringSelection(defaultValue)
 
+    def updateMixmodeThumb(self, widget, mixMode, noteMixMode):
+        if(mixMode == "Default"):
+            if(noteMixMode == "None"):
+                widget.setBitmaps(self._mixBitmapDefault, self._mixBitmapDefault)
+                return
+            mixMode = noteMixMode
+        mixModeId = getMixModeFromName(mixMode)
+        if(mixModeId == self._mixModes.Add):
+            widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)
+        elif(mixModeId == self._mixModes.Default):
+            widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)#Default is Add!
+        elif(mixModeId == self._mixModes.LumaKey):
+            widget.setBitmaps(self._mixBitmapLumaKey, self._mixBitmapLumaKey)
+        elif(mixModeId == self._mixModes.Multiply):
+            widget.setBitmaps(self._mixBitmapMultiply, self._mixBitmapMultiply)
+        elif(mixModeId == self._mixModes.Replace):
+            widget.setBitmaps(self._mixBitmapReplace, self._mixBitmapReplace)
+#        elif(mixModeId == self._mixModes.Subtrackt):
+#            widget.setBitmaps(self._mixBitmapSubtract, self._mixBitmapSubtract)
+
+    def updateEffectThumb(self, widget, preEffectConfig):
+        effectTemplate = self._mainConfig.getEffectTemplate(preEffectConfig)
+        effectName = effectTemplate.getEffectName()
+        effectId = getEffectId(effectName)
+        if(effectId == None):
+            widget.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        elif(effectId == EffectTypes.Blur):
+            widget.setBitmaps(self._fxBitmapBlur, self._fxBitmapBlur)
+        elif(effectId == EffectTypes.BlurContrast):
+            widget.setBitmaps(self._fxBitmapBlurMul, self._fxBitmapBlurMul)
+        elif(effectId == EffectTypes.Colorize):
+            widget.setBitmaps(self._fxBitmapColorize, self._fxBitmapColorize)
+        elif(effectId == EffectTypes.Contrast):
+            widget.setBitmaps(self._fxBitmapContrast, self._fxBitmapContrast)
+        elif(effectId == EffectTypes.Desaturate):
+            widget.setBitmaps(self._fxBitmapDeSat, self._fxBitmapDeSat)
+        elif(effectId == EffectTypes.Distortion):
+            widget.setBitmaps(self._fxBitmapDist, self._fxBitmapDist)
+        elif(effectId == EffectTypes.Edge):
+            widget.setBitmaps(self._fxBitmapEdge, self._fxBitmapEdge)
+        elif(effectId == EffectTypes.Flip):
+            widget.setBitmaps(self._fxBitmapFlip, self._fxBitmapFlip)
+        elif(effectId == EffectTypes.HueSaturation):
+            widget.setBitmaps(self._fxBitmapHueSat, self._fxBitmapHueSat)
+        elif(effectId == EffectTypes.Invert):
+            widget.setBitmaps(self._fxBitmapInverse, self._fxBitmapInverse)
+        elif(effectId == EffectTypes.Threshold):
+            widget.setBitmaps(self._fxBitmapThreshold, self._fxBitmapThreshold)
+        elif(effectId == EffectTypes.Zoom):
+            widget.setBitmaps(self._fxBitmapZoom, self._fxBitmapZoom)
+
+    def updateMediaTypeThumb(self, widget, configHolder):
+        mediaType = configHolder.getValue("Type")
+        if(mediaType == "Camera"):
+            widget.setBitmaps(self._modeBitmapCamera, self._modeBitmapCamera)
+        elif(mediaType == "Image"):
+            widget.setBitmaps(self._modeBitmapImage, self._modeBitmapImage)
+        elif(mediaType == "VideoLoop"):
+            loopMode = configHolder.getValue("LoopMode")
+            if(loopMode == "Normal"):
+                widget.setBitmaps(self._modeBitmapLoop, self._modeBitmapLoop)
+            elif(loopMode == "Reverse"):
+                widget.setBitmaps(self._modeBitmapLoopReverse, self._modeBitmapLoopReverse)
+            elif(loopMode == "PingPong"):
+                widget.setBitmaps(self._modeBitmapPingPong, self._modeBitmapPingPong)
+            elif(loopMode == "PingPongReverse"):
+                widget.setBitmaps(self._modeBitmapPingPongReverse, self._modeBitmapPingPongReverse)
+            elif(loopMode == "DontLoop"):
+                widget.setBitmaps(self._modeBitmapPlayOnce, self._modeBitmapPlayOnce)
+            elif(loopMode == "DontLoopReverse"):
+                widget.setBitmaps(self._modeBitmapPlayOnceReverse, self._modeBitmapPlayOnceReverse)
+        elif(mediaType == "ImageSequence"):
+            seqMode = configHolder.getValue("SequenceMode")
+            if(seqMode == "Time"):
+                widget.setBitmaps(self._modeBitmapImageSeqTime, self._modeBitmapImageSeqTime)
+            elif(seqMode == "ReTrigger"):
+                widget.setBitmaps(self._modeBitmapImageSeqReTrigger, self._modeBitmapImageSeqReTrigger)
+            elif(seqMode == "Modulation"):
+                widget.setBitmaps(self._modeBitmapImageSeqModulation, self._modeBitmapImageSeqModulation)
+        
+    def updateTrackOverviewGui(self, noteConfig, clipBitmap):
+        config = noteConfig.getConfig()
+        self._overviewClipButton.setBitmap(clipBitmap)
+        self.updateMediaTypeThumb(self._overviewClipModeButton, config)
+        mixMode = config.getValue("MixMode")
+        self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)
+        length = config.getValue("SyncLength")
+        self._overviewClipLengthLabel.SetLabel("L: " + str(length))
+        qLength = config.getValue("QuantizeLength")
+        self._overviewClipQuantizeLabel.SetLabel("Q: " + str(qLength))
+        effect1Config = config.getValue("Effect1Config")
+        self.updateEffectThumb(self._overviewFx1Button, effect1Config)
+        effect2Config = config.getValue("Effect2Config")
+        self.updateEffectThumb(self._overviewFx2Button, effect2Config)
+
+    def clearTrackOverviewGui(self):
+        self._overviewClipButton.setBitmap(self._trackThumbnailBitmap)
+        self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
+        self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
+        self._overviewClipLengthLabel.SetLabel("L: N/A")
+        self._overviewClipQuantizeLabel.SetLabel("Q: N/A")
+        self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+
     def updateGui(self, noteConfig, midiNote):
         if(noteConfig != None):
             config = noteConfig.getConfig()
@@ -943,9 +1110,12 @@ All notes on events are quantized to this.
         self._noteField.SetValue(self._config.getValue("Note"))
         self._syncField.SetValue(str(self._config.getValue("SyncLength")))
         self._quantizeField.SetValue(str(self._config.getValue("QuantizeLength")))
-        self._updateMixModeChoices(self._mixField, self._config.getValue("MixMode"), "Add")
-        self._updateEffecChoices(self._effect1Field, self._config.getValue("Effect1Config"), "MediaDefault1")
-        self._updateEffecChoices(self._effect2Field, self._config.getValue("Effect2Config"), "MediaDefault2")
+        mixMode = self._config.getValue("MixMode")
+        self._updateMixModeChoices(self._mixField, mixMode, "Add")
+        effect1Config = self._config.getValue("Effect1Config")
+        self._updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
+        effect2Config = self._config.getValue("Effect2Config")
+        self._updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
         self._updateFadeChoices(self._fadeField, self._config.getValue("FadeConfig"), "Default")
 
         if(self._selectedEditor != None):

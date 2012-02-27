@@ -1065,9 +1065,11 @@ All notes on events are quantized to this.
             elif(seqMode == "Modulation"):
                 widget.setBitmaps(self._modeBitmapImageSeqModulation, self._modeBitmapImageSeqModulation)
         
-    def updateTrackOverviewGui(self, noteConfig, clipBitmap):
-        config = noteConfig.getConfig()
+    def updateTrackOverviewClipBitmap(self, clipBitmap):
         self._overviewClipButton.setBitmap(clipBitmap)
+
+    def updateTrackOverviewGui(self, noteConfig):
+        config = noteConfig.getConfig()
         self.updateMediaTypeThumb(self._overviewClipModeButton, config)
         mixMode = config.getValue("MixMode")
         self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)

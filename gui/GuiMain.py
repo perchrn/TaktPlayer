@@ -386,14 +386,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             noteWidget = self._noteWidgets[note]
                             noteBitmap = noteWidget.getBitmap()
                             widget.setBitmap(noteBitmap)
-                            if((i == self._activeTrackId) and (self._activeTrackNotes[i] != note)):
-                                activeNoteConfig = self._configuration.getNoteConfiguration(note)
-                                if(activeNoteConfig == None):
-                                    self._noteGui.clearTrackOverviewGui()
-                                    self._trackGui.updateMixModeOverviewThumb("None")
-                                else:
-                                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
-                                    self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
+                            if(i == self._activeTrackId):
+                                self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
+                                if(self._activeTrackNotes[i] != note):
+                                    activeNoteConfig = self._configuration.getNoteConfiguration(note)
+                                    if(activeNoteConfig == None):
+                                        self._noteGui.clearTrackOverviewGui()
+                                        self._trackGui.updateMixModeOverviewThumb("None")
+                                    else:
+                                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
+                                        self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
                             self._activeTrackNotes[i] = note
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -790,7 +792,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         noteWidget = self._noteWidgets[activeNoteId]
                         noteBitmap = noteWidget.getBitmap()
                         noteMixMode = activeNoteConfig.getMixMode()
-                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
+                        self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
                     else:
                         self._noteGui.clearTrackOverviewGui()
                 else:
@@ -821,7 +824,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         noteWidget = self._noteWidgets[activeNoteId]
                         noteBitmap = noteWidget.getBitmap()
                         noteMixMode = activeNoteConfig.getMixMode()
-                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, noteBitmap)
+                        self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
                     else:
                         self._noteGui.clearTrackOverviewGui()
                 else:

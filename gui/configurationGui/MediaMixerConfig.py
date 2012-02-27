@@ -119,6 +119,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._config = None
         self._mixModes = MixMode()
         self._mixMode = MixMode.Default
+        self._latestOverviewMixMode = MixMode.Add
         self._selectedEditor = self.EditSelection.Unselected
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
@@ -303,12 +304,16 @@ Replace:\tNo mixing. Just use this image.
 
     def _onSaveButton(self, event):
         if(self._config != None):
-            mixMode = self._mixField.GetValue()
-            self._config.setValue("MixMode", mixMode)
-            postEffectConfig = self._preEffectField.GetValue()
-            self._config.setValue("PreEffectConfig", postEffectConfig)
-            preEffectConfig = self._postEffectField.GetValue()
-            self._config.setValue("PostEffectConfig", preEffectConfig)
+            self._mixMode = self._mixField.GetValue()
+            print "DEBUG saving mix mode: " + self._mixMode
+            self._config.setValue("MixMode", self._mixMode)
+            self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
+            preEffectConfig = self._preEffectField.GetValue()
+            self._config.setValue("PreEffectConfig", preEffectConfig)
+            self.updateEffectThumb(self._overviewPreFxButton, preEffectConfig)
+            postEffectConfig = self._postEffectField.GetValue()
+            self._config.setValue("PostEffectConfig", postEffectConfig)
+            self.updateEffectThumb(self._overviewPostFxButton, postEffectConfig)
 
     def updateMixModeOverviewThumb(self, noteMixMode):
         self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
@@ -316,13 +321,14 @@ Replace:\tNo mixing. Just use this image.
     def updateGui(self, trackConfig, trackId, noteMixMode):
         self._trackId = trackId
         self._config = trackConfig
+        self._latestOverviewMixMode = noteMixMode
         if(self._config == None):
             return
         self._trackField.SetValue(str(self._trackId + 1))
         self._mixMode = self._config.getValue("MixMode")
         self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
-        print "DEBUG finding track mix mode: track: " + str(self._mixMode) + " note: " + str(noteMixMode)
-        self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
+        print "DEBUG finding track mix mode: track: " + str(self._mixMode) + " note: " + str(self._latestOverviewMixMode)
+        self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
         preEffectConfig = self._config.getValue("PreEffectConfig")
         self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
         self.updateEffectThumb(self._overviewPreFxButton, preEffectConfig)

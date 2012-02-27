@@ -11,6 +11,8 @@ import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes, MixMode, getMixModeFromName
 from video.EffectModes import getEffectId, EffectTypes
+from midi.MidiModulation import MidiModulation
+from midi.MidiTiming import MidiTiming
 
 
 class MediaPoolConfig(object):
@@ -262,6 +264,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._parentSizer = parentSizer
         self._mainConfig = mainConfig
         self._trackGui = trackGui
+        self._midiTiming = MidiTiming()
+        self._midiModulation = MidiModulation(None, self._midiTiming)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
 
         self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
@@ -312,6 +316,7 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._trackOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
+        self._clipOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -320,6 +325,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
         self._configSizer.Add(self._trackOverviewGuiPlane)
+        self._configSizer.Add(self._clipOverviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._effectConfigPanel)
@@ -327,6 +333,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._moulationConfigPanel)
         self._configSizer.Add(self._slidersPanel)
 
+#        self._configSizer.Hide(self._clipOverviewGuiPlane)
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
@@ -336,8 +343,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mediaFileGuiPanel.SetSizer(self._configSizer)
 
         self._trackOverviewGuiPlane.SetBackgroundColour((170,170,170))
-        self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane, self)
+        self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane)
         self._trackGui.setupTrackOverviewGui(self._trackOverviewGuiPlane, self)
+
+        self._clipOverviewGuiPlane.SetBackgroundColour((160,160,160))
+        self.setupClipOverviewGui(self._clipOverviewGuiPlane)
 
         self._trackGuiPlane.SetBackgroundColour((220,220,220))
         self._trackGuiSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -522,26 +532,48 @@ class MediaFileGui(object): #@UndefinedVariable
         self._type = "VideoLoop"
         self._setupSubConfig()
 
-    def setupTrackClipOverviewGui(self, overviewPanel, parentClass):
+    def setupTrackClipOverviewGui(self, overviewPanel):
         self._mainTrackOverviewPlane = overviewPanel
 
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
-        self._overviewClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
-        self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
-        self._overviewClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
-        self._overviewClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
+        self._overviewTrackClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._overviewTrackClipButton.setFrqameAddingFunction(addTrackButtonFrame)
+        self._overviewTrackClipButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackClipButton) #@UndefinedVariable
+        self._overviewTrackClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewTrackClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        self._overviewTrackClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
-        self._overviewFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
+    def setupClipOverviewGui(self, overviewPanel):
+        self._mainClipOverviewPlane = overviewPanel
+
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
+        self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
+        self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipButton) #@UndefinedVariable
+        self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
+        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
+        self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
 
     def getPlane(self):
         return self._mediaFileGuiPanel
-
-    def getOverviewPlane(self):
-        return self._trackOverviewGuiPlane
 
     def showNoteGui(self):
         self._configSizer.Show(self._noteConfigPanel)
@@ -1064,32 +1096,44 @@ All notes on events are quantized to this.
                 widget.setBitmaps(self._modeBitmapImageSeqReTrigger, self._modeBitmapImageSeqReTrigger)
             elif(seqMode == "Modulation"):
                 widget.setBitmaps(self._modeBitmapImageSeqModulation, self._modeBitmapImageSeqModulation)
-        
+
+    def _onOverviewClipButton(self, event):
+        self.showNoteGui()
+
+    def _onOverviewTrackClipButton(self, event):
+        noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId)
+        self.updateGui(noteConfig, self._activeTrackClipNoteId)
+        self._overviewClipButton.setBitmap(self._overviewTrackClipButton.getBitmap())
+
     def updateTrackOverviewClipBitmap(self, clipBitmap):
+        self._overviewTrackClipButton.setBitmap(clipBitmap)
+
+    def updateOverviewClipBitmap(self, clipBitmap):
         self._overviewClipButton.setBitmap(clipBitmap)
 
-    def updateTrackOverviewGui(self, noteConfig):
+    def updateTrackOverviewGui(self, noteConfig, noteId):
         config = noteConfig.getConfig()
-        self.updateMediaTypeThumb(self._overviewClipModeButton, config)
+        self._activeTrackClipNoteId = noteId
+        self.updateMediaTypeThumb(self._overviewTrackClipModeButton, config)
         mixMode = config.getValue("MixMode")
-        self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)
+        self.updateMixmodeThumb(self._overviewTrackClipMixButton, mixMode, mixMode)
         length = config.getValue("SyncLength")
-        self._overviewClipLengthLabel.SetLabel("L: " + str(length))
+        self._overviewTrackClipLengthLabel.SetLabel("L: " + str(length))
         qLength = config.getValue("QuantizeLength")
-        self._overviewClipQuantizeLabel.SetLabel("Q: " + str(qLength))
+        self._overviewTrackClipQuantizeLabel.SetLabel("Q: " + str(qLength))
         effect1Config = config.getValue("Effect1Config")
-        self.updateEffectThumb(self._overviewFx1Button, effect1Config)
+        self.updateEffectThumb(self._overviewTrackFx1Button, effect1Config)
         effect2Config = config.getValue("Effect2Config")
-        self.updateEffectThumb(self._overviewFx2Button, effect2Config)
+        self.updateEffectThumb(self._overviewTrackFx2Button, effect2Config)
 
     def clearTrackOverviewGui(self):
-        self._overviewClipButton.setBitmap(self._trackThumbnailBitmap)
-        self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
-        self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
-        self._overviewClipLengthLabel.SetLabel("L: N/A")
-        self._overviewClipQuantizeLabel.SetLabel("Q: N/A")
-        self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
-        self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        self._overviewTrackClipButton.setBitmap(self._trackThumbnailBitmap)
+        self._overviewTrackClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
+        self._overviewTrackClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
+        self._overviewTrackClipLengthLabel.SetLabel("L: N/A")
+        self._overviewTrackClipQuantizeLabel.SetLabel("Q: N/A")
+        self._overviewTrackFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        self._overviewTrackFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
 
     def updateGui(self, noteConfig, midiNote):
         if(noteConfig != None):
@@ -1100,7 +1144,11 @@ All notes on events are quantized to this.
             return
         self._type = self._config.getValue("Type")
         if(self._type == "Camera"):
-            self._cameraId = int(self._config.getValue("FileName"))
+            fileNameFieldValue = self._config.getValue("FileName")
+            try:
+                self._cameraId = int(fileNameFieldValue)
+            except:
+                self._cameraId = 0
             self._fileName = ""
             self._fileNameField.SetValue(str(self._cameraId))
         else:
@@ -1108,17 +1156,29 @@ All notes on events are quantized to this.
             self._fileName = self._config.getValue("FileName")
             self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
+        self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         self._setupSubConfig()
-        self._noteField.SetValue(self._config.getValue("Note"))
-        self._syncField.SetValue(str(self._config.getValue("SyncLength")))
-        self._quantizeField.SetValue(str(self._config.getValue("QuantizeLength")))
+        noteText = self._config.getValue("Note")
+        self._noteField.SetValue(noteText)
+        self._overviewClipNoteLabel.SetLabel("NOTE: " + noteText)
+        length = self._config.getValue("SyncLength")
+        self._syncField.SetValue(str(length))
+        self._overviewClipLengthLabel.SetLabel("L: " + str(length))
+        qLength = self._config.getValue("QuantizeLength")
+        self._quantizeField.SetValue(str(qLength))
+        self._overviewClipQuantizeLabel.SetLabel("Q: " + str(qLength))
         mixMode = self._config.getValue("MixMode")
         self._updateMixModeChoices(self._mixField, mixMode, "Add")
+        self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)
         effect1Config = self._config.getValue("Effect1Config")
         self._updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
+        self.updateEffectThumb(self._overviewFx1Button, effect1Config)
         effect2Config = self._config.getValue("Effect2Config")
         self._updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
-        self._updateFadeChoices(self._fadeField, self._config.getValue("FadeConfig"), "Default")
+        self.updateEffectThumb(self._overviewFx2Button, effect2Config)
+        fadeConfigName = self._config.getValue("FadeConfig")
+        self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
+        self._mainConfig.updateFadeGuiButtons(fadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.Effect1):
@@ -1153,5 +1213,15 @@ All notes on events are quantized to this.
                 self._onEffect2Edit(None)
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None)
+
+        self._overviewClipButton.setBitmap(self._trackThumbnailBitmap)
+        self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
+        self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
+        self._overviewClipLengthLabel.SetLabel("L: N/A")
+        self._overviewClipQuantizeLabel.SetLabel("Q: N/A")
+        self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        self._overviewClipNoteLabel.SetLabel("NOTE: " + midiNoteString)
+        self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
 

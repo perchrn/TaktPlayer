@@ -156,11 +156,17 @@ class Configuration(object):
     def updateModulationGui(self, modulationString, widget, closeCallback):
         self._globalConf.updateModulationGui(modulationString, widget, closeCallback)
 
+    def updateModulationGuiButton(self, widget, modulationString):
+        self._globalConf.updateModulationGuiButton(modulationString, widget)
+
     def stopModulationGui(self):
         self._globalConf.stopModulationGui()
 
     def updateFadeGui(self, configName):
         self._globalConf.updateFadeGui(configName)
+
+    def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
+        self._globalConf.updateFadeGuiButtons(configName, modeWidget, modulationWidget, levelWidget)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()

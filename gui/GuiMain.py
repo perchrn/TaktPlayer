@@ -394,7 +394,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                         self._noteGui.clearTrackOverviewGui()
                                         self._trackGui.updateMixModeOverviewThumb("None")
                                     else:
-                                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
+                                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, note)
                                         self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
                             self._activeTrackNotes[i] = note
                     if(foundTask != None):
@@ -637,11 +637,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
             noteConfig = self._configuration.getNoteConfiguration(foundNoteId)
             if(noteConfig == None):
+                self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
                 self._noteGui.clearGui(foundNoteId)
             else:
+                noteWidget = self._noteWidgets[foundNoteId]
+                noteBitmap = noteWidget.getBitmap()
+                self._noteGui.updateOverviewClipBitmap(noteBitmap)
                 self._noteGui.updateGui(noteConfig, foundNoteId)
-            self._noteGui.showNoteGui()
-            self._noteGui.hideTrackGui()
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
@@ -672,8 +674,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 destinationConfig.updateFrom(sourceConfig, True)
                                 self._noteGui.updateGui(destinationConfig, destNoteId)
                                 self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
-                                self._noteGui.showNoteGui()
-                                self._noteGui.hideTrackGui()
         self._dragSource = None
 
     def _onMouseRelease(self, event):
@@ -793,15 +793,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         noteBitmap = noteWidget.getBitmap()
                         noteMixMode = activeNoteConfig.getMixMode()
                         self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, activeNoteId)
                     else:
                         self._noteGui.clearTrackOverviewGui()
                 else:
                     noteMixMode = "None"
                     self._noteGui.clearTrackOverviewGui()
                 self._trackGui.updateGui(destinationConfig, foundTrackId, noteMixMode)
-                self._noteGui.showTrackGui()
-                self._noteGui.hideNoteGui()
 
     def _onTrackEditButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -825,7 +823,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         noteBitmap = noteWidget.getBitmap()
                         noteMixMode = activeNoteConfig.getMixMode()
                         self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                        self._noteGui.updateTrackOverviewGui(activeNoteConfig)
+                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, activeNoteId)
                     else:
                         self._noteGui.clearTrackOverviewGui()
                 else:

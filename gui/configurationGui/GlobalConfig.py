@@ -78,6 +78,9 @@ class GlobalConfig(object):
     def updateModulationGui(self, modulationString, widget, closeCallback):
         self._modulationGui.updateGui(modulationString, widget, closeCallback)
 
+    def updateModulationGuiButton(self, modulationString, widget):
+        self._modulationGui.updateModulationGuiButton(modulationString, widget)
+
     def stopModulationGui(self):
         self._modulationGui.stopModulationUpdate()
 
@@ -85,6 +88,10 @@ class GlobalConfig(object):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
             self._fadeGui.updateGui(template)
+
+    def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
+        template = self._fadeConfiguration.getTemplate(configName)
+        self._fadeGui.updateFadeGuiButtons(template, modeWidget, modulationWidget, levelWidget)
 
     def getFadeTemplate(self, configName):
         return self._fadeConfiguration.getTemplate(configName)
@@ -678,6 +685,10 @@ class FadeGui(object):
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._selectedEditor = self.EditSelected.Unselected
 
+        self._blankFadeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
+        self._fadeWhiteBitmap = wx.Bitmap("graphics/fadeToWhite.png") #@UndefinedVariable
+
     class EditSelected():
         Unselected, Fade, Level = range(3)
 
@@ -858,6 +869,28 @@ Decides if this image fades to black or white.
             widget.SetStringSelection(value)
         else:
             widget.SetStringSelection(defaultValue)
+
+    def updateFadeModeThumb(self, widget, fadeMode):
+        if(fadeMode == "None"):
+            widget.setBitmaps(self._blankFadeBitmap, self._blankFadeBitmap)
+        elif(fadeMode == "White"):
+            widget.setBitmaps(self._fadeWhiteBitmap, self._fadeWhiteBitmap)
+        else:
+            widget.setBitmaps(self._fadeBlackBitmap, self._fadeBlackBitmap)
+
+    def updateFadeGuiButtons(self, fadeTemplate, modeWidget, modulationWidget, levelWidget):
+        if(fadeTemplate == None):
+            self.updateFadeModeThumb(modeWidget, "None")
+            self._mainConfig.updateModulationGuiButton(modulationWidget, "None")
+            self._mainConfig.updateModulationGuiButton(levelWidget, "None")
+        else:
+            config = fadeTemplate.getConfigHolder()
+            fadeMode = config.getValue("Mode")
+            self.updateFadeModeThumb(modeWidget, fadeMode)
+            fadeModulation = config.getValue("Modulation")
+            self._mainConfig.updateModulationGuiButton(modulationWidget, fadeModulation)
+            fadeLevel = config.getValue("Level")
+            self._mainConfig.updateModulationGuiButton(levelWidget, fadeLevel)
 
     def updateGui(self, fadeTemplate):
         config = fadeTemplate.getConfigHolder()

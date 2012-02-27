@@ -23,6 +23,13 @@ class ModulationGui(object):
         self._updateWidget = None
         self._closeCallback = None
 
+        self._blankModBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._modBitmatController = wx.Bitmap("graphics/modulationController.png") #@UndefinedVariable
+        self._modBitmatNote = wx.Bitmap("graphics/modulationNote.png") #@UndefinedVariable
+        self._modBitmatLfo = wx.Bitmap("graphics/modulationLfo.png") #@UndefinedVariable
+        self._modBitmatAdsr = wx.Bitmap("graphics/modulationAdsr.png") #@UndefinedVariable
+        self._modBitmatValue = wx.Bitmap("graphics/modulationValue.png") #@UndefinedVariable
+
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
         self._mainModulationGuiPlane = plane
         self._mainModulationGuiSizer = sizer
@@ -737,6 +744,22 @@ Constant static value.
         else:
             widget.SetStringSelection(defaultValue)
 
+    def updateModulationGuiButton(self, modulationString, widget):
+        modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
+        if(modulationIdTuplet == None):
+            widget.setBitmaps(self._blankModBitmap, self._blankModBitmap)
+        else:
+            if(modulationIdTuplet[0] == ModulationSources.MidiChannel):
+                widget.setBitmaps(self._modBitmatController, self._modBitmatController)
+            elif(modulationIdTuplet[0] == ModulationSources.MidiNote):
+                widget.setBitmaps(self._modBitmatNote, self._modBitmatNote)
+            elif(modulationIdTuplet[0] == ModulationSources.LFO):
+                widget.setBitmaps(self._modBitmatLfo, self._modBitmatLfo)
+            elif(modulationIdTuplet[0] == ModulationSources.ADSR):
+                widget.setBitmaps(self._modBitmatAdsr, self._modBitmatAdsr)
+            elif(modulationIdTuplet[0] == ModulationSources.Value):
+                widget.setBitmaps(self._modBitmatValue, self._modBitmatValue)
+       
     def updateGui(self, modulationString, widget, closeCallback):
         self._updateWidget = widget
         self._closeCallback = closeCallback

@@ -35,6 +35,9 @@ class ConfigurationTemplates(object):
                 return template
         return None
 
+    def getList(self):
+        return self._configurationTemplates
+
     def getTemplateNamesList(self):
         returnList = []
         for template in self._configurationTemplates:

@@ -319,6 +319,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._clipOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._effectListPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -328,6 +329,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._clipOverviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
+        self._configSizer.Add(self._effectListPanel)
         self._configSizer.Add(self._effectConfigPanel)
         self._configSizer.Add(self._fadeConfigPanel)
         self._configSizer.Add(self._moulationConfigPanel)
@@ -336,6 +338,7 @@ class MediaFileGui(object): #@UndefinedVariable
 #        self._configSizer.Hide(self._clipOverviewGuiPlane)
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
+        self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
@@ -357,6 +360,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel.SetBackgroundColour((0,120,120))
         self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteConfigPanel.SetSizer(self._noteConfigSizer)
+
+        self._effectListPanel.SetBackgroundColour((120,200,120))
+        self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._effectListPanel.SetSizer(self._effectListSizer)
+        self._mainConfig.setupEffectsListGui(self._effectListPanel, self._effectListSizer, self._configSizer, self)
 
         self._effectConfigPanel.SetBackgroundColour((120,0,120))
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -547,6 +555,8 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewTrackFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
+        self._overviewTrackFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
 
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
@@ -563,6 +573,8 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
+        self._overviewFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
 
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
@@ -577,6 +589,16 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def showNoteGui(self):
         self._configSizer.Show(self._noteConfigPanel)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
+
+    def showEffectList(self):
+        self._configSizer.Show(self._effectListPanel)
+        self._mediaFileGuiPanel.Layout()
+        self._parentPlane.Layout()
+
+    def hideEffectsListGui(self):
+        self._configSizer.Hide(self._effectListPanel)
         self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
 
@@ -1099,6 +1121,10 @@ All notes on events are quantized to this.
 
     def _onOverviewClipButton(self, event):
         self.showNoteGui()
+
+    def _onFxButton(self, event):
+        self._mainConfig.updateEffectList()
+        self.showEffectList()
 
     def _onOverviewTrackClipButton(self, event):
         noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId)

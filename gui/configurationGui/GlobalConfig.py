@@ -6,6 +6,7 @@ Created on 6. feb. 2012
 from midi.MidiTiming import MidiTiming
 from configuration.EffectSettings import EffectTemplates, FadeTemplates
 import wx
+from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 from midi.MidiModulation import MidiModulation
 from midi.MidiController import MidiControllers
 from video.media.MediaFileModes import FadeMode
@@ -13,6 +14,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes
 from configurationGui.ModulationGui import ModulationGui
+import sys
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -21,11 +23,12 @@ class GlobalConfig(object):
 
         self._midiTiming = MidiTiming()
 
+        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
+
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, 800, 600)
-        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming)
+        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
         self._fadeGui = FadeGui(self._mainConfig, self._midiTiming)
-        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
@@ -46,6 +49,9 @@ class GlobalConfig(object):
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsGui(plane, sizer, parentSizer, parentClass)
 
+    def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
+        self._effectsGui.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
+
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._fadeGui.setupFadeGui(plane, sizer, parentSizer, parentClass)
 
@@ -59,6 +65,9 @@ class GlobalConfig(object):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
+
+    def updateEffectList(self):
+        self._effectsGui.updateEffectList(self._effectsConfiguration)
 
     def getEffectTemplate(self, configName):
         return self._effectsConfiguration.getTemplate(configName)
@@ -109,12 +118,29 @@ class GlobalConfig(object):
         return self._fadeConfiguration.checkIfNameIsDefaultName(configName)
 
 class EffectsGui(object):
-    def __init__(self, mainConfing, midiTiming):
+    def __init__(self, mainConfing, midiTiming, modulationGui):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
+        self._modulationGui = modulationGui
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._startConfigName = ""
         self._selectedEditor = self.EditSelection.Unselected
+
+        self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
+        self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
+        self._fxBitmapBlurMul = wx.Bitmap("graphics/fxBlurMultiply.png") #@UndefinedVariable
+        self._fxBitmapColorize = wx.Bitmap("graphics/fxColorize.png") #@UndefinedVariable
+        self._fxBitmapContrast = wx.Bitmap("graphics/fxContrast.png") #@UndefinedVariable
+        self._fxBitmapDeSat = wx.Bitmap("graphics/fxDeSat.png") #@UndefinedVariable
+        self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
+        self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
+        self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
+        self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
+        self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
+        self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
+        self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
+        self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
     class EditSelection():
         Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
@@ -239,6 +265,72 @@ class EffectsGui(object):
         self._colorizeModes = ColorizeModes()
         self._midiControllers = MidiControllers()
 
+    def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainEffectsListPlane = plane
+        self._mainEffectsListGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideEffectsListCallback = parentClass.hideEffectsListGui
+#        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
+#        self._showSlidersCallback = parentClass.showSlidersGui
+#        self._showModulationCallback = parentClass.showModulationGui
+#        self._hideModulationCallback = parentClass.hideModulationGui
+
+        self._effectImageList = wx.ImageList(32, 22) #@UndefinedVariable
+        self._blankEffectIndex = self._effectImageList.Add(self._blankFxBitmap)
+        self._fxIdImageIndex = []
+        index = self._effectImageList.Add(self._fxBitmapZoom)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapFlip)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapBlur)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapBlurMul)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapDist)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapEdge)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapDeSat)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapContrast)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapHueSat)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapColorize)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapInverse)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapThreshold)
+        self._fxIdImageIndex.append(index)
+
+        self._modIdImageIndex = []
+        for i in range(self._modulationGui.getModulationImageCount()):
+            bitmap = self._modulationGui.getBigModulationImageBitmap(i)
+            index = self._effectImageList.Add(bitmap)
+            self._modIdImageIndex.append(index)
+
+        self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,400), agwStyle = wx.LC_REPORT | wx.LC_HRULES) #@UndefinedVariable
+        self._effectListWidget.SetImageList(self._effectImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
+        self._effectListWidget.SetBackgroundColour((170,170,170))
+
+        self._effectListWidget.InsertColumn(0, 'Name', width=150)
+        self._effectListWidget.InsertColumn(1, 'Mod1', width=34)
+        self._effectListWidget.InsertColumn(2, 'Mod2', width=34)
+        self._effectListWidget.InsertColumn(3, 'Mod3', width=34)
+        self._effectListWidget.InsertColumn(4, 'Mod4', width=34)
+        self._effectListWidget.InsertColumn(5, 'Mod5', width=34)
+
+        self._mainEffectsListGuiSizer.Add(self._effectListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListClick, self._effectListWidget)
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
     def _onTemplateNameHelp(self, event):
         text = """
 The name of this configuration.
@@ -337,10 +429,24 @@ Selects the effect.
     def _onCloseButton(self, event):
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._hideEffectsCallback()
-        self._hideModulationCallback()
         self._hideSlidersCallback()
+        self._hideModulationCallback()
+        self._hideEffectsCallback()
 
+    def _onListCloseButton(self, event):
+        self._hideSlidersCallback()
+        self._hideModulationCallback()
+        self._hideEffectsCallback()
+        self._hideEffectsListCallback()
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.stopModulationGui()
+
+    def _onListClick(self, event):
+        currentItem = event.m_itemIndex
+        column = event.GetColumn()
+        print "onListClick: " + str(currentItem) + " col: " + str(column)
+        
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getEffectTemplate(saveName)
@@ -665,7 +771,44 @@ Selects the effect.
         self._updateChoices(self._effectNameField, self._effectChoices.getChoices, self._chosenEffect, "None")
         self._updateLabels()
         self._fixEffectGuiLayout()
-        
+
+    def updateEffectList(self, effectConfiguration):
+        self._effectListWidget.DeleteAllItems()
+        for effectConfig in effectConfiguration.getList():
+            config = effectConfig.getConfigHolder()
+            effectName = config.getValue("Effect")
+            effectId = getEffectId(effectName)
+            if(effectId != None):
+                bitmapId = self._fxIdImageIndex[effectId]
+            else:
+                bitmapId = self._blankEffectIndex
+            index = self._effectListWidget.InsertImageStringItem(sys.maxint, effectConfig.getName(), bitmapId)
+            modulationString = config.getValue("Amount")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._effectListWidget.SetStringItem(index, 1, "", imageId)
+            modulationString = config.getValue("Arg1")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._effectListWidget.SetStringItem(index, 2, "", imageId)
+            modulationString = config.getValue("Arg2")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._effectListWidget.SetStringItem(index, 3, "", imageId)
+            modulationString = config.getValue("Arg3")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._effectListWidget.SetStringItem(index, 4, "", imageId)
+            modulationString = config.getValue("Arg4")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._effectListWidget.SetStringItem(index, 5, "", imageId)
+
+            if(index % 2):
+                self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable
+            else:
+                self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
+
     def updateGui(self, effectTemplate, midiNote):
         self._midiNote = midiNote
         config = effectTemplate.getConfigHolder()

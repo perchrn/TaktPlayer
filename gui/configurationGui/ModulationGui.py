@@ -30,6 +30,15 @@ class ModulationGui(object):
         self._modBitmatAdsr = wx.Bitmap("graphics/modulationAdsr.png") #@UndefinedVariable
         self._modBitmatValue = wx.Bitmap("graphics/modulationValue.png") #@UndefinedVariable
 
+        self._modBitmatBlankBig = wx.Bitmap("graphics/modulationBlankBig.png") #@UndefinedVariable
+        self._modBitmatControllerBig = wx.Bitmap("graphics/modulationControllerBig.png") #@UndefinedVariable
+        self._modBitmatNoteBig = wx.Bitmap("graphics/modulationNoteBig.png") #@UndefinedVariable
+        self._modBitmatLfoBig = wx.Bitmap("graphics/modulationLfoBig.png") #@UndefinedVariable
+        self._modBitmatAdsrBig = wx.Bitmap("graphics/modulationAdsrBig.png") #@UndefinedVariable
+        self._modBitmatValueBig = wx.Bitmap("graphics/modulationValueBig.png") #@UndefinedVariable
+
+        self._modulationSorces = ModulationSources()
+
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
         self._mainModulationGuiPlane = plane
         self._mainModulationGuiSizer = sizer
@@ -39,7 +48,6 @@ class ModulationGui(object):
 
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
-        self._modulationSorces = ModulationSources()
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
         modulationSorcesButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
@@ -744,21 +752,57 @@ Constant static value.
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateModulationGuiButton(self, modulationString, widget):
+    def getModulationImageId(self, modulationString):
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
         if(modulationIdTuplet == None):
-            widget.setBitmaps(self._blankModBitmap, self._blankModBitmap)
+            return ModulationSources.NoModulation
         else:
             if(modulationIdTuplet[0] == ModulationSources.MidiChannel):
-                widget.setBitmaps(self._modBitmatController, self._modBitmatController)
+                return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.MidiNote):
-                widget.setBitmaps(self._modBitmatNote, self._modBitmatNote)
+                return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.LFO):
-                widget.setBitmaps(self._modBitmatLfo, self._modBitmatLfo)
+                return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.ADSR):
-                widget.setBitmaps(self._modBitmatAdsr, self._modBitmatAdsr)
+                return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.Value):
-                widget.setBitmaps(self._modBitmatValue, self._modBitmatValue)
+                return ModulationSources.MidiChannel
+
+    def getModulationImageCount(self):
+        return len(self._modulationSorces.getChoices())
+
+    def getModulationImageBitmap(self, index):
+        if(index == ModulationSources.NoModulation):
+            return self._blankModBitmap
+        elif(index == ModulationSources.MidiChannel):
+            return self._modBitmatController
+        elif(index == ModulationSources.MidiNote):
+            return self._modBitmatNote
+        elif(index == ModulationSources.LFO):
+            return self._modBitmatLfo
+        elif(index == ModulationSources.ADSR):
+            return self._modBitmatAdsr
+        elif(index == ModulationSources.Value):
+            return self._modBitmatValue
+
+    def getBigModulationImageBitmap(self, index):
+        if(index == ModulationSources.NoModulation):
+            return self._modBitmatBlankBig
+        elif(index == ModulationSources.MidiChannel):
+            return self._modBitmatControllerBig
+        elif(index == ModulationSources.MidiNote):
+            return self._modBitmatNoteBig
+        elif(index == ModulationSources.LFO):
+            return self._modBitmatLfoBig
+        elif(index == ModulationSources.ADSR):
+            return self._modBitmatAdsrBig
+        elif(index == ModulationSources.Value):
+            return self._modBitmatValueBig
+
+    def updateModulationGuiButton(self, modulationString, widget):
+        imageId = self.getModulationImageId(modulationString)
+        bitmap = self.getModulationImageBitmap(imageId)
+        widget.setBitmaps(bitmap, bitmap)
        
     def updateGui(self, modulationString, widget, closeCallback):
         self._updateWidget = widget

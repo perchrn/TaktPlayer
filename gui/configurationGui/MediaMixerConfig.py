@@ -327,7 +327,6 @@ Replace:\tNo mixing. Just use this image.
         self._trackField.SetValue(str(self._trackId + 1))
         self._mixMode = self._config.getValue("MixMode")
         self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
-        print "DEBUG finding track mix mode: track: " + str(self._mixMode) + " note: " + str(self._latestOverviewMixMode)
         self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
         preEffectConfig = self._config.getValue("PreEffectConfig")
         self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")

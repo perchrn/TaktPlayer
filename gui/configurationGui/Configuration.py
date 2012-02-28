@@ -87,6 +87,9 @@ class Configuration(object):
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsGui(plane, sizer, parentSizer, parentClass)
 
+    def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
+
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
 
@@ -98,6 +101,9 @@ class Configuration(object):
 
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)
+
+    def updateEffectList(self):
+        self._globalConf.updateEffectList()
 
     def getEffectTemplate(self, configName):
         return self._globalConf.getEffectTemplate(configName)

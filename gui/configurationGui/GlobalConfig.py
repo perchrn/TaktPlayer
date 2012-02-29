@@ -52,6 +52,9 @@ class GlobalConfig(object):
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
 
+    def getFadeModeLists(self):
+        return self._fadeGui.getFadeModeLists()
+
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._fadeGui.setupFadeGui(plane, sizer, parentSizer, parentClass)
 
@@ -778,7 +781,6 @@ Selects the effect.
             print str(type(self._arg4ValueLabels))
 
     def _setupValueLabels(self, amount=None, arg1=None, arg2=None, arg3=None, arg4=None):
-        print "DEBUG: _setupValueLabels " + str(amount) + " - " + str(arg1) + " - " + str(arg2) + " - " + str(arg3) + " - " + str(arg4)
         self._ammountValueLabels = amount
         self._arg1ValueLabels = arg1
         self._arg2ValueLabels = arg2
@@ -893,10 +895,17 @@ class FadeGui(object):
         self._midiTiming = midiTiming
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._selectedEditor = self.EditSelected.Unselected
+        self._fadeModes = FadeMode()
 
         self._blankFadeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
         self._fadeWhiteBitmap = wx.Bitmap("graphics/fadeToWhite.png") #@UndefinedVariable
+
+        self._fadeModeImages = [self._fadeBlackBitmap, self._fadeWhiteBitmap]
+        self._fadeModeLabels = self._fadeModes.getChoices()
+
+    def getFadeModeLists(self):
+        return (self._fadeModeImages, self._fadeModeLabels)
 
     class EditSelected():
         Unselected, Fade, Level = range(3)
@@ -919,7 +928,6 @@ class FadeGui(object):
 
         fadeModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
-        self._fadeModes = FadeMode()
         self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
         fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable

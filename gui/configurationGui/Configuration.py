@@ -90,6 +90,9 @@ class Configuration(object):
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
 
+    def getFadeModeLists(self):
+        return self._globalConf.getFadeModeLists()
+
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
 

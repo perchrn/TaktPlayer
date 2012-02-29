@@ -14,6 +14,32 @@ from video.EffectModes import getEffectId, EffectTypes
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
 
+class PcnPopupMenu(wx.Menu): #@UndefinedVariable
+    def __init__(self, parent, imageList, nameList, onChosenCallback):
+        super(PcnPopupMenu, self).__init__()
+        self._onChosenCallback = onChosenCallback
+
+        self._menuIds = []
+        for i in range(len(imageList)):
+            image = imageList[i]
+            name = nameList[i]
+            
+            menuItem = wx.MenuItem(self, wx.NewId(), name) #@UndefinedVariable
+            menuItem.SetBitmap(image) #@UndefinedVariable
+            menuItem.SetBackgroundColour((190,190,190))
+            self.AppendItem(menuItem)
+            self._menuIds.append(menuItem.GetId())
+            self.Bind(wx.EVT_MENU, self._onChoice, menuItem) #@UndefinedVariable
+
+
+    def _onChoice(self, event):
+        menuId = event.GetId()
+        foundMenuIndex = None
+        for i in range(len(self._menuIds)):
+            if(self._menuIds[i] == menuId):
+                foundMenuIndex = i
+                break
+        self._onChosenCallback(foundMenuIndex)
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -268,6 +294,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
 
+        self._config = None
+        self._mixModes = MixMode()
+        self._loopModes = VideoLoopMode()
+        self._sequenceModes = ImageSequenceMode()
+        self._typeModes = MediaTypes()
+
         self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
@@ -284,6 +316,15 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
 
+        self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
+                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapCamera, self._modeBitmapImage,
+                            self._modeBitmapImageScroll, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
+                            self._modeBitmapImageSeqModulation]
+        self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
+                           "VideoPlayOnce", "VideoPlayOnceReverse", "Camera", "Image",
+                           "ScrollingImage", "ImageSeqTime", "ImageSeqReTrigger",
+                           "ImageSeqModulation"]
+
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
         self._mixBitmapAdd = wx.Bitmap("graphics/mixAdd.png") #@UndefinedVariable
         self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
@@ -291,6 +332,13 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mixBitmapMultiply = wx.Bitmap("graphics/mixMultiply.png") #@UndefinedVariable
         self._mixBitmapReplace = wx.Bitmap("graphics/mixReplace.png") #@UndefinedVariable
         self._mixBitmapSubtract = wx.Bitmap("graphics/mixSubtract.png") #@UndefinedVariable
+
+        self._mixImages = [self._mixBitmapDefault, self._mixBitmapAdd, self._mixBitmapMultiply,
+                            self._mixBitmapLumaKey, self._mixBitmapReplace]
+        self._mixLabels = self._mixModes.getChoices()
+
+        self._fadeModeImages, self._fadeModeLabels = self._mainConfig.getFadeModeLists()
+        self._fadeModeLabelsLong = ["FadeToBlack", "FadeToWhite"]
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
         self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
@@ -307,12 +355,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
-
-        self._config = None
-        self._mixModes = MixMode()
-        self._loopModes = VideoLoopMode()
-        self._sequenceModes = ImageSequenceMode()
-        self._typeModes = MediaTypes()
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._trackOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
@@ -548,6 +590,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._selectedEditor = self.EditSelection.Unselected
+        self._activeTrackClipNoteId = -1
         self._type = "VideoLoop"
         self._setupSubConfig()
 
@@ -577,13 +620,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipButton) #@UndefinedVariable
         self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
         self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
         self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewClipModeButton.Bind(wx.EVT_BUTTON, self._onClipModeButton) #@UndefinedVariable
+        self._overviewClipMixButton.Bind(wx.EVT_BUTTON, self._onClipMixButton) #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx1Done)
         self._overviewFx2Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx2Done)
         self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
@@ -593,8 +640,13 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
         self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
         self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipFadeModeButton.Bind(wx.EVT_BUTTON, self._onClipFadeButton) #@UndefinedVariable
+        self._overviewClipFadeModulationButton.Bind(wx.EVT_BUTTON, self._onClipFadeModulationButton) #@UndefinedVariable
+        self._overviewClipFadeLevelButton.Bind(wx.EVT_BUTTON, self._onClipFadeLevelButton) #@UndefinedVariable
+
         self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
 
     def getPlane(self):
@@ -975,6 +1027,7 @@ All notes on events are quantized to this.
             self._config.setValue("Effect2Config", effect2Config)
             fadeConfig = self._fadeField.GetValue()
             self._config.setValue("FadeConfig", fadeConfig)
+            self.updateGui(None, None)
 
     def _showOrHideSubModeModulation(self):
         if(self._selectedSubMode == "Modulation"):
@@ -989,7 +1042,7 @@ All notes on events are quantized to this.
             if(self._config != None):
                 self._updateLoopModeChoices(self._subModeField, self._config.getValue("LoopMode"), "Normal")
             else:
-                self._updateLoopModeChoices(self._subModeField, "Normal", "Normal")
+                self._updateLoopModeChoices(self._subModeField, self._subModeField.GetValue(), "Normal")
         elif(self._type == "ImageSequence"):
             self._subModeLabel.SetLabel("Sequence mode:")
             if(self._config != None):
@@ -997,7 +1050,7 @@ All notes on events are quantized to this.
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
                 self._subModulationField.SetValue(self._config.getValue("PlayBackModulation"))
             else:
-                self._selectedSubMode = "Time"
+                self._selectedSubMode = self._subModeField.GetValue()
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
                 self._subModulationField.SetValue("None")
 
@@ -1158,20 +1211,161 @@ All notes on events are quantized to this.
             print "Dragged fx: " + fxName + " to TrackFX2"
         self.clearDragCursor()
 
+    def _onClipMixButton(self, event):
+        self._parentPlane.PopupMenu(self._overviewClipMixButtonPopup, (256,59))
+
+    def _onClipMixChosen(self, index):
+        if((index >= 0) and (index < len(self._mixLabels))):
+            modeText = self._mixLabels[index]
+            self._updateMixModeChoices(self._mixField, modeText, "Add")
+            self.updateMixmodeThumb(self._overviewClipMixButton, modeText, modeText)
+
+    def _onClipModeButton(self, event):
+        self._parentPlane.PopupMenu(self._overviewClipModeButtonPopup, (256,42))
+
+    def _onClipModeChosen(self, index):
+        if((index >= 0) and (index < len(self._modeLabels))):
+            modeText = self._modeLabels[index]
+            sequenceMode = None
+            loopMode = None
+            if(modeText == "VideoLoop"):
+                self._type = "VideoLoop"
+                loopMode = "Normal"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoLoopReverse"):
+                self._type = "VideoLoop"
+                loopMode = "Reverse"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoPingPong"):
+                self._type = "VideoLoop"
+                loopMode = "PingPong"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoPingPongReverse"):
+                self._type = "VideoLoop"
+                loopMode = "PingPongReverse"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoPlayOnce"):
+                self._type = "VideoLoop"
+                loopMode = "DontLoop"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoPlayOnceReverse"):
+                self._type = "VideoLoop"
+                loopMode = "DontLoopReverse"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "Camera"):
+                self._type = "Camera"
+            elif(modeText == "Image"):
+                self._type = "Image"
+    #        elif(modeText == "ScrollingImage"):
+    #            self._type = "ImageSequence"
+            elif(modeText == "ImageSeqTime"):
+                self._type = "ImageSequence"
+                sequenceMode = "Time"
+                self._updateSequenceModeChoices(self._subModeField, "Time", "Time")
+            elif(modeText == "ImageSeqReTrigger"):
+                self._type = "ImageSequence"
+                sequenceMode = "ReTrigger"
+                self._updateSequenceModeChoices(self._subModeField, "ReTrigger", "Time")
+            elif(modeText == "ImageSeqModulation"):
+                self._type = "ImageSequence"
+                sequenceMode = "Modulation"
+                self._updateSequenceModeChoices(self._subModeField, "Modulation", "Time")
+
+            if(self._config != None):
+                self._config.setValue("Type", self._type)
+                if(sequenceMode != None):
+                    self._config.setValue("SequenceMode", sequenceMode)
+                if(loopMode != None):
+                    self._config.setValue("LoopMode", loopMode)
+
+            self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
+            self._setupSubConfig()
+            if(self._config != None):
+                self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
+            else:
+                self._overviewClipModeButton.setBitmaps(self._modeImages[index], self._modeImages[index])
+
+    def _onClipFadeModeChosen(self, index):
+        if((index >= 0) and (index < len(self._fadeModeLabels))):
+            if(self._midiNote != None):
+                fadeMode = self._fadeModeLabels[index]
+                print "fadeMode: " + fadeMode
+                if(self._config != None):
+                    fadeConfigName = self._config.getValue("FadeConfig")
+                else:
+                    fadeConfigName = "Default"
+                fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
+                if(fadeConfig != None):
+                    if(fadeConfig.getFadeMode() != fadeMode):
+                        makeNew = False
+                        if(fadeConfigName == "Default"):
+                            makeNew = True
+                        else:
+                            inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+                            if(inUseNumber < 2):
+                                fadeConfig.update(fadeMode, None, None)
+                            else:
+                                makeNew = True
+                        if(makeNew == True):
+                            newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
+                            oldConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
+                            if(oldConfig == None):
+                                text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
+                            else:
+                                text = "Do you want to update configuration: \"%s\"" % (newFadeConfigName)
+                            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                            dlg.Destroy()
+                            if(result == True):
+                                if(oldConfig == None):
+                                    self._mainConfig.makeFadeTemplate(newFadeConfigName, fadeMode, "None", "None")
+                                else:
+                                    oldConfig.update(fadeMode, None, None)
+                                if(self._config != None):
+                                    self._config.setValue("FadeConfig", newFadeConfigName)
+                                self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                                self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+
+    def _onClipFadeButton(self, event):
+        self._parentPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (252,158))
+
+    def _onClipFadeModulationButton(self, event):
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._selectedEditor = self.EditSelection.ImageSeqModulation
+        self._highlightButton(self._selectedEditor)
+        self._parentPlane.Layout()
+        #TODO: Make nessesary copies and update modulation GUI...
+#        if(self._config != None):
+#            fadeConfigName = self._config.getValue("FadeConfig")
+#            if(fadeConfigName == "Default"):
+#                makeNew = True
+#            else:
+#                inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+#                if(inUseNumber < 2):
+#                    
+#                    fadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
+#        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None)
+
+    def _onClipFadeLevelButton(self, event):
+        pass
+
     def _onDragFx1Done(self, event):
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
-            print "Dragged fx: " + fxName + " to FX1"
-            self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
-            self.updateEffectThumb(self._overviewFx1Button, fxName)
+            if(self._midiNote != None):
+                self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
+                self.updateEffectThumb(self._overviewFx1Button, fxName)
         self.clearDragCursor()
 
     def _onDragFx2Done(self, event):
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
-            print "Dragged fx: " + fxName + " to FX2"
-            self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
-            self.updateEffectThumb(self._overviewFx2Button, fxName)
+            if(self._midiNote != None):
+                self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
+                self.updateEffectThumb(self._overviewFx2Button, fxName)
         self.clearDragCursor()
 
     def _onFxButton(self, event):
@@ -1234,8 +1428,8 @@ All notes on events are quantized to this.
             self._fileName = self._config.getValue("FileName")
             self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
-        self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         self._setupSubConfig()
+        self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         noteText = self._config.getValue("Note")
         self._noteField.SetValue(noteText)
         self._overviewClipNoteLabel.SetLabel("NOTE: " + noteText)

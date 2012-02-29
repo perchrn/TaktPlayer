@@ -259,6 +259,9 @@ class FadeSettings(object):
     def getName(self):
         return self._templateName
 
+    def getFadeMode(self):
+        return self._configurationTree.getValue("Mode")
+
     def _setupConfiguration(self):
         self._midiModulation.setModulationReceiver("Modulation", "None")
         self._midiModulation.setModulationReceiver("Level", "None")
@@ -282,8 +285,10 @@ class FadeSettings(object):
             self._fadeMode = FadeMode.Black #Defaults to black
 
     def update(self, fadeMode, fadeMod, levelMod):
-        self._midiModulation.setValue("Modulation", fadeMod)
-        self._midiModulation.setValue("Level", levelMod)
+        if(fadeMod != None):
+            self._midiModulation.setValue("Modulation", fadeMod)
+        if(levelMod != None):
+            self._midiModulation.setValue("Level", levelMod)
         self._configurationTree.setValue("Mode", fadeMode)
         
     def checkAndUpdateFromConfiguration(self):

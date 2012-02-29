@@ -35,6 +35,12 @@ class ConfigurationTemplates(object):
                 return template
         return None
 
+    def getTemplateByIndex(self, index):
+        if((index >= 0) and (index < len(self._configurationTemplates))):
+            return self._configurationTemplates[index]
+        else:
+            return None
+
     def getList(self):
         return self._configurationTemplates
 

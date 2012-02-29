@@ -69,8 +69,19 @@ class GlobalConfig(object):
     def updateEffectList(self):
         self._effectsGui.updateEffectList(self._effectsConfiguration)
 
+    def getDraggedFxName(self):
+        fxIndex = self._effectsGui.getDraggedFxIndex()
+        effect = self._effectsConfiguration.getTemplateByIndex(fxIndex)
+        if(effect != None):
+            return effect.getName()
+        else:
+            return None
+
     def getEffectTemplate(self, configName):
         return self._effectsConfiguration.getTemplate(configName)
+
+    def getEffectTemplateByIndex(self, index):
+        return self._effectsConfiguration.getTemplateByIndex(index)
 
     def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
         return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
@@ -142,6 +153,8 @@ class EffectsGui(object):
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
+        self._effectListDraggedIndex = -1
+
     class EditSelection():
         Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
 
@@ -149,11 +162,13 @@ class EffectsGui(object):
         self._mainEffectsPlane = plane
         self._mainEffectsGuiSizer = sizer
         self._parentSizer = parentSizer
+        self._showEffectsCallback = parentClass.showEffectsGui
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
         self._showSlidersCallback = parentClass.showSlidersGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
+        self._setDragCursor = parentClass.setDragCursor
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -309,7 +324,7 @@ class EffectsGui(object):
             index = self._effectImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
 
-        self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,400), agwStyle = wx.LC_REPORT | wx.LC_HRULES) #@UndefinedVariable
+        self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,400), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._effectListWidget.SetImageList(self._effectImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._effectListWidget.SetBackgroundColour((170,170,170))
 
@@ -322,13 +337,21 @@ class EffectsGui(object):
 
         self._mainEffectsListGuiSizer.Add(self._effectListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListClick, self._effectListWidget)
+        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_COL_CLICK, self._onListItemMouseDown, self._effectListWidget)
+        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListItemSelected, self._effectListWidget)
+        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_DESELECTED, self._onListItemDeselected, self._effectListWidget)
+        self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._effectListWidget)
+        self._effectListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        deleteButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Delete') #@UndefinedVariable
+        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _onTemplateNameHelp(self, event):
@@ -442,11 +465,52 @@ Selects the effect.
         self._highlightButton(self._selectedEditor)
         self._mainConfig.stopModulationGui()
 
-    def _onListClick(self, event):
-        currentItem = event.m_itemIndex
-        column = event.GetColumn()
-        print "onListClick: " + str(currentItem) + " col: " + str(column)
-        
+    def _onListDeleteButton(self, event):
+        if(self._effectListSelectedIndex >= 0):
+            effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+            if(effectTemplate != None):
+                effectName = effectTemplate.getName()
+                inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(effectName)
+                text = "Are you sure you want to delete \"%s\"? (It is used %d times)" % (effectName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    self._mainConfig.deleteEffectTemplate(effectName)
+                    self._mainConfig.verifyEffectTemplateUsed()
+                    self._mainConfig.updateEffectList()
+
+    def _onListItemMouseDown(self, event):
+        self._effectListSelectedIndex = event.m_itemIndex
+        self._effectListDraggedIndex = -1
+
+    def _onListItemSelected(self, event):
+        self._effectListSelectedIndex = event.m_itemIndex
+        self._effectListDraggedIndex = -1
+
+    def _onListItemDeselected(self, event):
+        self._effectListDraggedIndex = -1
+        self._effectListSelectedIndex = -1
+
+    def _onListDragStart(self, event):
+        self._effectListSelectedIndex = event.m_itemIndex
+        self._effectListDraggedIndex = event.m_itemIndex
+        self._setDragCursor()
+
+    def getDraggedFxIndex(self):
+        draggedIndex = self._effectListDraggedIndex
+        self._effectListWidget.SetItemState(draggedIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        self._effectListWidget.SetItemState(draggedIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        self._effectListWidget.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
+        return draggedIndex
+
+    def _onListDoubbleClick(self, event):
+        self._effectListDraggedIndex = -1
+        effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+        if(effectTemplate != None):
+            self.updateGui(effectTemplate, None)
+            self._showEffectsCallback()
+
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getEffectTemplate(saveName)

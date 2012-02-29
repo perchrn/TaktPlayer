@@ -6,7 +6,7 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame
+    addTrackButtonFrame, EVT_DRAG_DONE_EVENT
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes, MixMode, getMixModeFromName
@@ -325,6 +325,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
+        self._mediaFileGuiPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._trackOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._fadeConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._slidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+
         self._configSizer.Add(self._trackOverviewGuiPlane)
         self._configSizer.Add(self._clipOverviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
@@ -573,6 +584,8 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx1Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx1Done)
+        self._overviewFx2Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx2Done)
         self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
         self._overviewFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
 
@@ -874,6 +887,12 @@ All notes on events are quantized to this.
         self._parentPlane.Layout()
         self._mediaFileGuiPanel.Layout()
 
+    def setDragCursor(self):
+        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
+
+    def clearDragCursor(self):
+        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
+
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)
         self._parentPlane.Layout()
@@ -1121,6 +1140,39 @@ All notes on events are quantized to this.
 
     def _onOverviewClipButton(self, event):
         self.showNoteGui()
+
+    def _onMouseRelease(self, event):
+        print "DEBUG mouse RELEASE " * 5
+        self._mainConfig.getDraggedFxName()
+        self.clearDragCursor()
+
+    def _onDragTrackFxPreDone(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            print "Dragged fx: " + fxName + " to TrackFX1"
+        self.clearDragCursor()
+
+    def _onDragTrackFxPostDone(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            print "Dragged fx: " + fxName + " to TrackFX2"
+        self.clearDragCursor()
+
+    def _onDragFx1Done(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            print "Dragged fx: " + fxName + " to FX1"
+            self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
+            self.updateEffectThumb(self._overviewFx1Button, fxName)
+        self.clearDragCursor()
+
+    def _onDragFx2Done(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            print "Dragged fx: " + fxName + " to FX2"
+            self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
+            self.updateEffectThumb(self._overviewFx2Button, fxName)
+        self.clearDragCursor()
 
     def _onFxButton(self, event):
         self._mainConfig.updateEffectList()

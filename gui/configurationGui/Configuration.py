@@ -105,8 +105,14 @@ class Configuration(object):
     def updateEffectList(self):
         self._globalConf.updateEffectList()
 
+    def getDraggedFxName(self):
+        return self._globalConf.getDraggedFxName()
+
     def getEffectTemplate(self, configName):
         return self._globalConf.getEffectTemplate(configName)
+
+    def getEffectTemplateByIndex(self, index):
+        return self._globalConf.getEffectTemplateByIndex(index)
 
     def getFadeTemplate(self, configName):
         return self._globalConf.getFadeTemplate(configName)

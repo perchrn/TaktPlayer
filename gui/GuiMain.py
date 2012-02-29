@@ -214,7 +214,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
         self.Bind(wx.EVT_TIMER, self._timedUpdate) #@UndefinedVariable
-        self.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
         self.SetSizer(self._mainSizer)
@@ -647,9 +647,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
+        self._noteGui.setDragCursor()
 
     def _onDragDone(self, event):
-        if(self._dragSource != None):
+        self._noteGui.clearDragCursor()
+        if(self._dragSource == None):
+            print "DEBUG drag done..."
+        else:
             sourceNoteId = None
             for i in range(128):
                 if(self._noteWidgetIds[i] == self._dragSource):
@@ -676,8 +680,15 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
         self._dragSource = None
 
-    def _onMouseRelease(self, event):
+#    def _onMouseRelease(self, event):
+#        print "DEBUG mouse RELEASE " * 5
+#        self._dragSource = None
+#        self._noteGui.clearDragCursor()
+
+    def _onMouseClick(self, event):
+        print "DEBUG mouse CLICK " * 5
         self._dragSource = None
+        self._noteGui.clearDragCursor()
 
     def _call_command(self, command):
         print "command: " + command

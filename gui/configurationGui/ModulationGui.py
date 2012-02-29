@@ -760,13 +760,13 @@ Constant static value.
             if(modulationIdTuplet[0] == ModulationSources.MidiChannel):
                 return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.MidiNote):
-                return ModulationSources.MidiChannel
+                return ModulationSources.MidiNote
             elif(modulationIdTuplet[0] == ModulationSources.LFO):
-                return ModulationSources.MidiChannel
+                return ModulationSources.LFO
             elif(modulationIdTuplet[0] == ModulationSources.ADSR):
-                return ModulationSources.MidiChannel
+                return ModulationSources.ADSR
             elif(modulationIdTuplet[0] == ModulationSources.Value):
-                return ModulationSources.MidiChannel
+                return ModulationSources.Value
 
     def getModulationImageCount(self):
         return len(self._modulationSorces.getChoices())

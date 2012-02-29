@@ -467,11 +467,12 @@ class DesaturateEffect(object):
 
     def selectiveDesaturate(self, image, value, valRange, satMode):
         hueValue = (value * 180)
-        huePlussMinus = 1 + (valRange * 19)
-        hueMin = max(0, hueValue - huePlussMinus)
-        hueMax = min(256, hueValue + huePlussMinus)
+        huePlussMinus = 1 + (valRange * 39)
+        satMin = int(160 - (100 * valRange))
+        hueMin = int(max(0, hueValue - huePlussMinus))
+        hueMax = int(min(256, hueValue + huePlussMinus))
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
-        cv.InRangeS(self._colorMat, (hueMin, 160, 32), (hueMax, 255, 255), self._maskMat)
+        cv.InRangeS(self._colorMat, (hueMin, satMin, 32), (hueMax, 255, 255), self._maskMat)
         if(satMode != DesaturateModes.Mask):
             cv.Split(self._colorMat, self._hueMat, self._sat1Mat, self._valMat, None)
             if(satMode == DesaturateModes.Plus):

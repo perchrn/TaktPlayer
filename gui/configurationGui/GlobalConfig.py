@@ -479,6 +479,8 @@ Selects the effect.
                     self._mainConfig.deleteEffectTemplate(effectName)
                     self._mainConfig.verifyEffectTemplateUsed()
                     self._mainConfig.updateEffectList()
+                    self._mainConfig.updateNoteGui()
+                    self._mainConfig.updateMixerGui()
 
     def _onListItemMouseDown(self, event):
         self._effectListSelectedIndex = event.m_itemIndex

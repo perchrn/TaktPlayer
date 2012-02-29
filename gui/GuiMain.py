@@ -388,14 +388,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             widget.setBitmap(noteBitmap)
                             if(i == self._activeTrackId):
                                 self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                                if(self._activeTrackNotes[i] != note):
-                                    activeNoteConfig = self._configuration.getNoteConfiguration(note)
-                                    if(activeNoteConfig == None):
-                                        self._noteGui.clearTrackOverviewGui()
-                                        self._trackGui.updateMixModeOverviewThumb("None")
-                                    else:
-                                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, note)
-                                        self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
+                                activeNoteConfig = self._configuration.getNoteConfiguration(note)
+                                if(activeNoteConfig == None):
+                                    self._noteGui.clearTrackOverviewGui()
+                                    self._trackGui.updateMixModeOverviewThumb("None")
+                                else:
+                                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, note)
+                                    self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
                             self._activeTrackNotes[i] = note
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -679,11 +678,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._noteGui.updateGui(destinationConfig, destNoteId)
                                 self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
         self._dragSource = None
-
-#    def _onMouseRelease(self, event):
-#        print "DEBUG mouse RELEASE " * 5
-#        self._dragSource = None
-#        self._noteGui.clearDragCursor()
 
     def _onMouseClick(self, event):
         print "DEBUG mouse CLICK " * 5

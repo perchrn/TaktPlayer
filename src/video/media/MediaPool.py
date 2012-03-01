@@ -192,6 +192,9 @@ class MediaPool(object):
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(midiNoteState.isActive(midiTime)):
                 newMedia = self._mediaPool[midiNoteState.getNote()]
+                if(midiNoteState.isNew() == True):
+                    newMedia.noteJustTriggered(midiTime, midiNoteState, midiChannelState)
+                    midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
                 if(oldMedia == None):
                     self._mediaTracks[midiChannel] = newMedia

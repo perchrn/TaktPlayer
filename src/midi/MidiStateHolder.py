@@ -47,6 +47,7 @@ class NoteState(object):
         self._noteOnInSync = False
         self._noteOffInSync = False
         self._quantizeValue = 0
+        self._isNew = False
 
     def getModulationId(self, modName):
         if(modName == "Velocity"):
@@ -160,6 +161,12 @@ class NoteState(object):
 
     def setPreasure(self, preasure):
         self._preasure = preasure
+
+    def setNewState(self, state = True):
+        self._isNew = state
+
+    def isNew(self):
+        return self._isNew
 
     def noteOn(self, note, velocity, songPosition, spp, midiSync):
         self._noteOn = True
@@ -402,6 +409,7 @@ class MidiChannelStateHolder(object):
             nextNote = self._findWaitingNextNote()
             if((nextNote != None) and (nextNote.isActive(spp))):
                 self._activateNextNote(nextNote)
+                self._activeNote.setNewState(True)
         if(self._numberOfWaitingActiveNotes > 0):
             if(self._activeNote.isNoteReleased(spp)):
                 testNote = self._findWaitingActiveNote(spp)

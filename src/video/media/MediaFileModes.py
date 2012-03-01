@@ -17,16 +17,38 @@ class MixMode:
         return self.getChoices()[0]
 
 def getMixModeFromName(name):
-        if(name == "Add"):
-            return MixMode.Add
-        elif(name == "Multiply"):
-            return MixMode.Multiply
-        elif(name == "LumaKey"):
-            return MixMode.LumaKey
-        elif(name == "Replace"):
-            return MixMode.Replace
-        else:
-            return MixMode.Default
+    if(name == "Add"):
+        return MixMode.Add
+    elif(name == "Multiply"):
+        return MixMode.Multiply
+    elif(name == "LumaKey"):
+        return MixMode.LumaKey
+    elif(name == "Replace"):
+        return MixMode.Replace
+    else:
+        return MixMode.Default
+
+class ModulationValueMode:
+    RawInput, KeepOld, ResetToDefault = range(3)
+
+    def getChoices(self):
+        return ["RawInput", "KeepOld", "ResetToDefault"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+def getModulationValueModeFromName(name):
+    if(name == "RawInput"):
+        return ModulationValueMode.RawInput
+    elif(name == "KeepOld"):
+        return ModulationValueMode.KeepOld
+    elif(name == "ResetToDefault"):
+        return ModulationValueMode.ResetToDefault
+    else:
+        return ModulationValueMode.RawInput
 
 class VideoLoopMode:
     Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)

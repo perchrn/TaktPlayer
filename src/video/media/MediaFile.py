@@ -11,7 +11,7 @@ from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
-    FadeMode, getMixModeFromName
+    FadeMode, getMixModeFromName, ModulationValueMode
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -111,6 +111,16 @@ class MediaFile(object):
         self._quantizeLength = -1.0
         self._mixMode = MixMode.Add
 
+        self._modulationRestartMode = ModulationValueMode.KeepOld
+        self._effect1StartControllerValues = (None, None, None, None, None)
+        self._effect2StartControllerValues = (None, None, None, None, None)
+        self._effect1StartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect2StartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect1ConfigStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect2ConfigStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect1OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect2OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+
     def _getConfiguration(self):
         self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
@@ -199,20 +209,44 @@ class MediaFile(object):
     def getCurrentFramePos(self):
         return self._currentFrame
 
+    def noteJustTriggered(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        if(self._modulationRestartMode != ModulationValueMode.RawInput):
+            self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            self._effect2StartControllerValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+        else:
+            self._effect1StartControllerValues = (None, None, None, None, None)
+            self._effect2StartControllerValues = (None, None, None, None, None)
+        if(self._modulationRestartMode == ModulationValueMode.ResetToDefault):
+            self._effect1StartValues = self._effect1ConfigStartValues
+            self._effect2StartValues = self._effect2ConfigStartValues
+        else: #KeepOldValues
+            self._effect1StartValues = self._effect1OldValues
+            self._effect2StartValues = self._effect2OldValues
+
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         return fadeMode, fadeValue
 
-    def _applyOneEffect(self, image, effect, effectSettings, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+    def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder):
         if(effectSettings != None):
             effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            #TODO: Add mode where values must pass start values?
+            if(effectAmount == effectStartControllerValues[0]):
+                effectAmount = effectStartValues[0]
+            if(effectArg1 == effectStartControllerValues[1]):
+                effectArg1 = effectStartValues[1]
+            if(effectArg2 == effectStartControllerValues[2]):
+                effectArg2 = effectStartValues[2]
+            if(effectArg3 == effectStartControllerValues[3]):
+                effectArg3 = effectStartValues[3]
+            if(effectArg4 == effectStartControllerValues[4]):
+                effectArg4 = effectStartValues[4]
             if(effect != None):
-                return effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-            else:
-                return image
+                image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+            return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
         else:
-            return image
+            return (image, (0.0, 0.0, 0.0, 0.0, 0.0))
 
     def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
         imageSize = cv.GetSize(self._captureImage)
@@ -221,8 +255,8 @@ class MediaFile(object):
         else:
             self._image = copyImage(self._captureImage)
 
-        self._image = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, currentSongPosition, midiChannelState, midiNoteState)
-        self._image = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, currentSongPosition, midiChannelState, midiNoteState)
+        (self._image, self._effect1OldValues) = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, self._effect1StartControllerValues, self._effect1StartValues, currentSongPosition, midiChannelState, midiNoteState)
+        (self._image, self._effect2OldValues) = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, self._effect2StartControllerValues, self._effect2StartValues, currentSongPosition, midiChannelState, midiNoteState)
 
         if(fadeValue < 0.99):
             self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
@@ -319,9 +353,11 @@ class MediaFile(object):
                 preEffect, preEffectSettings, postEffect, postEffectSettings = effects
             else:
                 preEffect, preEffectSettings, postEffect, postEffectSettings = (None, None, None, None)
-            self._image = self._applyOneEffect(self._image, preEffect, preEffectSettings, currentSongPosition, midiChannelState, midiNoteState)
+            dummy1Values = (None, None, None, None, None)
+            dummy2Values = None
+            (self._image, usedValues) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            self._image = self._applyOneEffect(self._image, postEffect, postEffectSettings, currentSongPosition, midiChannelState, midiNoteState)
+            (self._image, usedValues) = self._applyOneEffect(self._image, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
             return mixedImage
     
 class ImageFile(MediaFile):

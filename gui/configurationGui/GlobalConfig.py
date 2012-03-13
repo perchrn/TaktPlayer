@@ -300,6 +300,8 @@ class EffectsGui(object):
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapFlip)
         self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapRotate)
+        self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapBlur)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapBlurMul)

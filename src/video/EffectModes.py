@@ -4,12 +4,13 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(12)
+    Zoom, Flip, Scroll, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(13)
 
     def getChoices(self):
         return ["None",
                 "Zoom",
                 "Flip",
+                "Scroll",
                 "Blur",
                 "BlurContrast",
                 "Distortion",
@@ -24,6 +25,7 @@ class EffectTypes():
         return ["None",
                 "Zoom inn/out and even crop video.",
                 "Flip video horizontal/vertical.",
+                "Scroll image.",
                 "Blur video.",
                 "Blur and multiply with self.",
                 "Distort image to black or white.",
@@ -41,6 +43,8 @@ def getEffectId(name):
         return EffectTypes.Zoom
     elif(lowername == "flip"):
         return EffectTypes.Flip
+    elif(lowername == "scroll"):
+        return EffectTypes.Scroll
     elif(lowername == "blur"):
         return EffectTypes.Blur
     elif(lowername == "blurcontrast"):
@@ -69,6 +73,8 @@ def getEffectName(effectId):
         return "Zoom"
     elif(effectId == EffectTypes.Flip):
         return "Flip"
+    elif(effectId == EffectTypes.Scroll):
+        return "Scroll"
     elif(effectId == EffectTypes.Blur):
         return "Blur"
     elif(effectId == EffectTypes.BlurContrast):
@@ -97,6 +103,12 @@ class ZoomModes():
 
     def getChoices(self):
         return ["In", "Out", "InOut", "Full"]
+
+class ScrollModes():
+    NoFlip, Flip, NoRepeat = range(3)
+
+    def getChoices(self):
+        return ["NoFlip", "Flip", "NoRepeat"]
 
 class FlipModes():
     NoFlip, Vertical, Horizontal, Both = range(4)

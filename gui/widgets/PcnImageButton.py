@@ -63,6 +63,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self._normal = self._baseBitmap
         self._pressed = self._baseBitmap
         self._buttonParent = parent
+        self._bitmap = None
         self._frameAddingFunction = addKeyboardButtonFrame
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM) #@UndefinedVariable
         self.Bind(wx.EVT_SIZE, self.on_size) #@UndefinedVariable
@@ -84,9 +85,10 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
 
     def setBitmap(self, bitmap):
         self._bitmap = bitmap
-        self._normal = self.addButtonFrame(bitmap, False)
-        self._pressed = self.addButtonFrame(bitmap, True)
-        self.Refresh()
+        if(self._bitmap != None):
+            self._normal = self.addButtonFrame(bitmap, False)
+            self._pressed = self.addButtonFrame(bitmap, True)
+            self.Refresh()
 
     def setBitmapFile(self, fileName):
         try:

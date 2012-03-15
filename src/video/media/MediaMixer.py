@@ -5,8 +5,10 @@ Created on 21. des. 2011
 '''
 import logging
 from video.Effects import getEmptyImage, createMask, createMat, getEffectByName
-from video.media.MediaFile import MixMode
+from video.media.MediaFile import MixMode, scaleAndSave
 from video.media.MediaFileModes import getMixModeFromName
+import os
+import shutil
 
 
 class MediaMixer(object):
@@ -24,6 +26,8 @@ class MediaMixer(object):
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat3 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._previewMat = createMat(80, 60)
 
         self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._currentImage = self._blankImage
@@ -44,6 +48,11 @@ class MediaMixer(object):
             self.setupTrackConfig(trackConfig)
             self._mediaTrackConfigs.append(trackConfig)
         self.loadMediaFromConfiguration()
+
+        self._imagesSinceLastPreviewSave = 0
+        self._imagesToSkipBetweenPreviewSave = 20
+        self._tempPreviewName = os.path.normpath("thumbs/preview_tmp.jpg")
+        self._previewName = os.path.normpath("thumbs/preview.jpg")
 
     def _getConfiguration(self):
         self.loadMediaFromConfiguration()
@@ -152,4 +161,13 @@ class MediaMixer(object):
         self._nextImageId += 1
         self._updateImage()
 
+        if(self._imagesSinceLastPreviewSave >= self._imagesToSkipBetweenPreviewSave):
+            self._imagesSinceLastPreviewSave = 0
+            scaleAndSave(self._currentImage, self._tempPreviewName, self._previewMat)
+            try:
+                shutil.move(self._tempPreviewName, self._previewName)
+            except:
+                pass
+        else:
+            self._imagesSinceLastPreviewSave += 1
 

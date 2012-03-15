@@ -27,7 +27,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers, ConfigFileList = range(8)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers, ConfigFileList, Preview = range(9)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -38,7 +38,7 @@ class TaskHolder(object):
         self._stateTime = time.time()
         self._startTime = self._stateTime
         self._timeout = 20.0
-        if(self._type == self.RequestTypes.Track):
+        if((self._type == self.RequestTypes.Track) or (self._type == self.RequestTypes.Preview)):
             self._timeout = 5.0
 
     def getDescription(self):
@@ -93,7 +93,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         menuSeperatorSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._editAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        trackAndEditAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        editAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
@@ -101,7 +102,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuPannel.SetSizer(menuSizer) #@UndefinedVariable
         menuSeperatorPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
-        menuSeperatorPannel.SetBackgroundColour(wx.Colour(0,255,0)) #@UndefinedVariable
+        menuSeperatorPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
 
         scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
@@ -114,20 +115,23 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetupScrolling(False, True)
         scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
-        self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(100,1200)) #@UndefinedVariable
+        self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
         scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
+        scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
+        scrollingEditAreaPanel.SetupScrolling(True, True)
+        scrollingEditAreaPanel.SetSizer(editAreaSizer)
+
         self._trackGui = MediaTrackGui(self._configuration)
-        self._noteGui = MediaFileGui(self, self._editAreaSizer, self._configuration, self._trackGui)
+        self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui)
         self._configuration.setNoteGui(self._noteGui)
-#        self._configuration.setTrackGui(self._trackGui)
-        self._editAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        self._editAreaSizer.Add(self._noteGui.getPlane(), proportion=1) #@UndefinedVariable
+        trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
-        self._mainSizer.Add(self._editAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(trackAndEditAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._sendButton = wx.Button(menuPannel, wx.ID_ANY, 'Send') #@UndefinedVariable
@@ -318,16 +322,24 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         result = self._guiClient.getServerResponse()
         if(result[0] != None):
             if(result[0] == GuiClient.ResponseTypes.FileDownload):
-                print "GuiClient.ResponseTypes.FileDownload"
+#                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName = result[1]
-                    foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, fileName)
-                    if(foundTask == None):
-                        print "Could not find task that belongs to this answer: " + fileName
+                    if(fileName == "thumbs/preview.jpg"):
+                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
+                        osFileName = os.path.normpath(fileName)
+                        self._trackGui.updatePreviewImage(osFileName)
+                        if(foundTask != None):
+                            foundTask.taskDone()
+                            self._taskQueue.remove(foundTask)
                     else:
-                        osFileName = os.path.normcase(fileName)
-                        if(os.path.isfile(osFileName)):
-                            foundTask.getWidget().setBitmapFile(osFileName)
+                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, fileName)
+                        if(foundTask == None):
+                            print "Could not find task that belongs to this answer: " + fileName
+                        else:
+                            osFileName = os.path.normpath(fileName)
+                            if(os.path.isfile(osFileName)):
+                                foundTask.getWidget().setBitmapFile(osFileName)
             if(result[0] == GuiClient.ResponseTypes.ThumbRequest):
 #                print "GuiClient.ResponseTypes.ThumbRequest"
                 if(result[1] != None):
@@ -337,7 +349,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + noteTxt + ":" + noteTime + " -> " + fileName
                     else:
-                        osFileName = os.path.normcase(fileName)
+                        osFileName = os.path.normpath(fileName)
                         if(os.path.isfile(osFileName)):
                             self._noteWidgets[noteId].setBitmapFile(osFileName)
                         else:
@@ -496,6 +508,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 elif(task.getType() == TaskHolder.RequestTypes.Track):
                     self._guiClient.requestTrackState()
                     task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.Preview):
+                    self._guiClient.requestPreview()
+                    task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.ConfigState):
                     self._guiClient.requestConfigState(self._lastConfigState)
                     task.setState(TaskHolder.States.Sendt)
@@ -518,6 +533,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._taskQueue.append(trackRequestTask)
                 self._guiClient.requestTrackState()
                 trackRequestTask.setState(TaskHolder.States.Sendt)
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
+            if(foundTask == None):
+                previewRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Preview, None, None)
+                self._taskQueue.append(previewRequestTask)
+                self._guiClient.requestPreview()
+                previewRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedTrackStateRequests += 1
 

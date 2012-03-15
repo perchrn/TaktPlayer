@@ -217,6 +217,9 @@ class GuiClient(object):
         commandXml.addAttribute("time", "%.2f" % videoPos)
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestPreview(self):
+        self.requestImageFile("thumbs/preview.jpg")
+
     def requestImageFile(self, fileName):
         commandXml = MiniXml("thumbnailFileRequest")
         commandXml.addAttribute("fileName", fileName)
@@ -263,7 +266,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, NoteList, TrackState, ConfigState, Configuration, LatestControllers, ConfigFileList = range(8)
+        FileDownload, ThumbRequest, Preview, NoteList, TrackState, ConfigState, Configuration, LatestControllers, ConfigFileList = range(9)
 
     def getServerResponse(self):
         returnValue = (None, None)

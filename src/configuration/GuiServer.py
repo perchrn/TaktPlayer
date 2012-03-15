@@ -419,16 +419,10 @@ class GuiServer(object):
                 elif(webCommandXml.tag == "configFileRequest"):
                     reqType = getFromXml(webCommandXml, "type", "list")
                     fileName = getFromXml(webCommandXml, "fileName", "None")
-                    print "???????????????????????????????????????????????????????????????????????????????????"
-                    print "DEBUG type: " + reqType + " fileName: " + fileName
                     if((reqType == "load") and (fileName != "None")):
-                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
                         self._configurationTree.loadConfig(fileName)
-                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
                     if((reqType == "save") and (fileName != "None")):
-                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
                         self._configurationTree.saveConfigFile(fileName)
-                        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
                     configFileList = self._configurationTree.getConfigFileList()
                     currentConfigFile = self._configurationTree.getCurrentFileName()
                     resposeXml = MiniXml("configFileRequest")
@@ -436,7 +430,6 @@ class GuiServer(object):
                     resposeXml.addAttribute("activeConfig", currentConfigFile)
 #                    print "GuiServer client request for configuration file names. List: " + configFileList
                     self._webOutputQueue.put(resposeXml.getXmlString())
-                    print "???????????????????????????????????????????????????????????????????????????????????"
                 elif(webCommandXml.tag == "unauthorizedAccess"):
                     print "Unauthorized access from client: %s at %s" %(webCommandXml.get("client"), webCommandXml.get("timeStamp"))
                 else:

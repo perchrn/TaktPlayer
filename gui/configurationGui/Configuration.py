@@ -108,6 +108,9 @@ class Configuration(object):
     def updateEffectList(self):
         self._globalConf.updateEffectList()
 
+    def updateEffectListHeight(self, height):
+        self._globalConf.updateEffectListHeight(height)
+
     def getDraggedFxName(self):
         return self._globalConf.getDraggedFxName()
 

@@ -20,6 +20,9 @@ def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
 
+def scaleAndSave(image, osFileName, resizeMat):
+    cv.Resize(image, resizeMat)
+    cv.SaveImage(osFileName, resizeMat)
 
 def fadeImage(image, value, mode, tmpMat):
     if(mode == FadeMode.White):
@@ -328,18 +331,16 @@ class MediaFile(object):
 
         filenameHash = hashlib.sha224(self._filename).hexdigest()
         thumbnailName = "thumbs/%s_%0.2f.jpg" % (filenameHash, videoPosition)
-        osFileName = os.path.normcase(thumbnailName)
+        osFileName = os.path.normpath(thumbnailName)
         if (os.path.isfile(osFileName) == False):
             print "Thumb file does not exist. Generating... " + thumbnailName
             destWidth, destHeight = (40, 30)
             resizeMat = createMat(destWidth, destHeight)
-            cv.Resize(image, resizeMat)
-            cv.SaveImage(osFileName, resizeMat)
+            scaleAndSave(image, osFileName, resizeMat)
         else:
             print "Thumb file already exist. " + thumbnailName
         return thumbnailName
 
-    
     def openFile(self, midiLength):
         pass
 

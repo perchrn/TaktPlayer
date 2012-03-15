@@ -285,9 +285,8 @@ class MediaFile(object):
             self._configurationTree.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaFileGui(object): #@UndefinedVariable
-    def __init__(self, parentPlane, parentSizer, mainConfig, trackGui):
+    def __init__(self, parentPlane, mainConfig, trackGui):
         self._parentPlane = parentPlane
-        self._parentSizer = parentSizer
         self._mainConfig = mainConfig
         self._trackGui = trackGui
         self._midiTiming = MidiTiming()
@@ -357,17 +356,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._trackOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
-        self._clipOverviewGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(84,360)) #@UndefinedVariable
-        self._trackGuiPlane = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-        self._noteConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-        self._effectListPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
-        self._effectConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-        self._fadeConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-        self._moulationConfigPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
-        self._slidersPanel = wx.Panel(self._mediaFileGuiPanel, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._trackOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(84,-1)) #@UndefinedVariable
+        self._clipOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(84,-1)) #@UndefinedVariable
+        self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
+        self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._fadeConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._moulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
-        self._mediaFileGuiPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._parentPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -396,7 +395,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-        self._mediaFileGuiPanel.SetSizer(self._configSizer)
+        self._parentPlane.SetSizer(self._configSizer)
 
         self._trackOverviewGuiPlane.SetBackgroundColour((170,170,170))
         self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane)
@@ -414,7 +413,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteConfigPanel.SetSizer(self._noteConfigSizer)
 
-        self._effectListPanel.SetBackgroundColour((120,200,120))
+        self._effectListPanel.SetBackgroundColour((130,130,130))
         self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectListPanel.SetSizer(self._effectListSizer)
         self._mainConfig.setupEffectsListGui(self._effectListPanel, self._effectListSizer, self._configSizer, self)
@@ -438,6 +437,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._slidersPanel.SetSizer(self._slidersSizer)
         self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
+
+        self._parentPlane.Bind(wx.EVT_SIZE, self._onResize) #@UndefinedVariable
 
         self._fileName = ""
         self._cameraId = 0
@@ -652,36 +653,40 @@ class MediaFileGui(object): #@UndefinedVariable
     def getPlane(self):
         return self._mediaFileGuiPanel
 
-    def showNoteGui(self):
-        self._configSizer.Show(self._noteConfigPanel)
+    def _onResize(self, event):
+        currentWidth, currentHeight = self._parentPlane.GetSize() #@UnusedVariable
+        self._mainConfig.updateEffectListHeight(currentHeight - 50)
+
+    def refreshLayout(self):
+        self._onResize(None)
         self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
+        self._parentPlane.SendSizeEvent()
+
+    def showNoteGui(self):
+        self._configSizer.Show(self._noteConfigPanel)
+        self.refreshLayout()
 
     def showEffectList(self):
         self._configSizer.Show(self._effectListPanel)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def hideEffectsListGui(self):
         self._configSizer.Hide(self._effectListPanel)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def hideNoteGui(self):
         self._configSizer.Hide(self._noteConfigPanel)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
         #TODO: Note selection clear callback
 
     def showTrackGui(self):
         self._configSizer.Show(self._trackGuiPlane)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def hideTrackGui(self):
         self._configSizer.Hide(self._trackGuiPlane)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
         #TODO: Track selection clear callback
 
     class EditSelection():
@@ -764,7 +769,7 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self._configSizer.Hide(self._fadeConfigPanel)
         self._selectedEditor = self.EditSelection.ImageSeqModulation
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
+        self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None)
 
         print "Sub modulation Edit..."
@@ -880,7 +885,7 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._fadeConfigPanel)
         if(self._selectedEditor != self.EditSelection.Effect1):
             self._configSizer.Hide(self._moulationConfigPanel)
-        self._parentPlane.Layout()
+        self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect1
         self._highlightButton(self._selectedEditor)
@@ -891,7 +896,7 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._fadeConfigPanel)
         if(self._selectedEditor != self.EditSelection.Effect2):
             self._configSizer.Hide(self._moulationConfigPanel)
-        self._parentPlane.Layout()
+        self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect2
         self._highlightButton(self._selectedEditor)
@@ -901,43 +906,36 @@ All notes on events are quantized to this.
         self._configSizer.Show(self._effectConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def hideEffectsGui(self):
         self._configSizer.Hide(self._effectConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def fixEffectsGuiLayout(self):
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def hideFadeGui(self):
         self._configSizer.Hide(self._fadeConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def showModulationGui(self):
         self._configSizer.Show(self._moulationConfigPanel)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def fixModulationGuiLayout(self):
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def hideModulationGui(self):
         self._configSizer.Hide(self._moulationConfigPanel)
         if(self._selectedEditor == self.EditSelection.ImageSeqModulation):
             self._selectedEditor = self.EditSelection.Unselected
             self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def setDragCursor(self):
         self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
@@ -947,13 +945,11 @@ All notes on events are quantized to this.
 
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def hideSlidersGui(self):
         self._configSizer.Hide(self._slidersPanel)
-        self._parentPlane.Layout()
-        self._mediaFileGuiPanel.Layout()
+        self.refreshLayout()
 
     def _onFadeEdit(self, event):
         self._configSizer.Hide(self._effectConfigPanel)
@@ -961,8 +957,7 @@ All notes on events are quantized to this.
         if(self._selectedEditor != self.EditSelection.Fade):
             self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Show(self._fadeConfigPanel)
-        self._mediaFileGuiPanel.Layout()
-        self._parentPlane.Layout()
+        self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
         self._selectedEditor = self.EditSelection.Fade
         self._highlightButton(self._selectedEditor)
@@ -976,7 +971,7 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._fadeConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def _onSaveButton(self, event):
         if(self._type == "Camera"):
@@ -1034,7 +1029,7 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._subModulationSizer)
         else:
             self._noteConfigSizer.Hide(self._subModulationSizer)
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def _setupSubConfig(self):
         if(self._type == "VideoLoop"):
@@ -1069,7 +1064,7 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._syncSizer)
         else:
             self._noteConfigSizer.Show(self._syncSizer)
-        self._parentPlane.Layout()
+        self.refreshLayout()
 
     def _updateEffecChoices(self, widget, value, defaultValue):
         if(self._mainConfig == None):
@@ -1336,7 +1331,7 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._fadeConfigPanel)
         self._selectedEditor = self.EditSelection.ImageSeqModulation
         self._highlightButton(self._selectedEditor)
-        self._parentPlane.Layout()
+        self.refreshLayout()
         #TODO: Make nessesary copies and update modulation GUI...
 #        if(self._config != None):
 #            fadeConfigName = self._config.getValue("FadeConfig")

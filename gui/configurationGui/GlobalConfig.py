@@ -72,6 +72,9 @@ class GlobalConfig(object):
     def updateEffectList(self):
         self._effectsGui.updateEffectList(self._effectsConfiguration)
 
+    def updateEffectListHeight(self, height):
+        self._effectsGui.updateEffectListHeight(height)
+
     def getDraggedFxName(self):
         fxIndex = self._effectsGui.getDraggedFxIndex()
         effect = self._effectsConfiguration.getTemplateByIndex(fxIndex)
@@ -329,7 +332,8 @@ class EffectsGui(object):
             index = self._effectImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
 
-        self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,400), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._oldListHeight = 320
+        self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,self._oldListHeight), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._effectListWidget.SetImageList(self._effectImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._effectListWidget.SetBackgroundColour((170,170,170))
 
@@ -348,6 +352,7 @@ class EffectsGui(object):
         self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._effectListWidget)
         self._effectListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
+#        self._buttonPlane = wx.Panel(self._mainEffectsListPlane, wx.ID_ANY, size=(340,-1), pos=(0, self._oldListHeight+5)) #@UndefinedVariable
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -357,6 +362,7 @@ class EffectsGui(object):
         deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
+#        self._buttonPlane.SetSizer(self._buttonsSizer)
         self._mainEffectsListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _onTemplateNameHelp(self, event):
@@ -421,35 +427,35 @@ Selects the effect.
 
     def _onAmmountEdit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Ammount
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton)
 
     def _onArg1Edit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg1
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton)
 
     def _onArg2Edit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg2
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton)
 
     def _onArg3Edit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg3
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton)
 
     def _onArg4Edit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg4
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton)
@@ -575,7 +581,7 @@ Selects the effect.
 
     def _onSlidersButton(self, event):
         self._showSlidersCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -738,7 +744,7 @@ Selects the effect.
         else:
             self._mainEffectsGuiSizer.Hide(self._arg4Sizer)
             self._mainSliderSizer.Hide(self._arg4SliderSizer)
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
 
     def _updateValueLabels(self):
         if(self._ammountValueLabels == None):
@@ -879,6 +885,14 @@ Selects the effect.
             else:
                 self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
 
+    def updateEffectListHeight(self, height):
+        pass
+#        if((self._oldListHeight != height) and (height >= 100)):
+#            self._effectListWidget.SetSize((340, height))
+#            self._buttonPlane.SetPosition((0,height + 5))
+##            self._mainEffectsListPlane.SetSize((340,height+40))
+#            self._oldListHeight = height
+
     def updateGui(self, effectTemplate, midiNote):
         self._midiNote = midiNote
         config = effectTemplate.getConfigHolder()
@@ -919,6 +933,7 @@ class FadeGui(object):
         self._hideFadeCallback = parentClass.hideFadeGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
+        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -1004,14 +1019,14 @@ Decides if this image fades to black or white.
 
     def _onFadeModulationEdit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelected.Fade
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton)
 
     def _onLevelModulationEdit(self, event):
         self._showModulationCallback()
-        self._parentSizer.Layout()
+        self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelected.Level
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton)

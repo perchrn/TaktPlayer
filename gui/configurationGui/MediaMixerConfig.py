@@ -5,9 +5,9 @@ Created on 6. feb. 2012
 '''
 
 import wx
-from video.media.MediaFileModes import MixMode, getMixModeFromName
-from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton
-from video.EffectModes import getEffectId, EffectTypes
+from video.media.MediaFileModes import MixMode
+from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
+    addTrackButtonFrame
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -147,7 +147,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
         previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
         self._overviewPreviewButton = PcnKeyboardButton(overviewPanel, previewBitmap, (1, 280), wx.ID_ANY, size=(82, 62), isBlack=False) #@UndefinedVariable
-
+        self._overviewPreviewButton.setFrqameAddingFunction(addTrackButtonFrame)
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):
         self._mainTrackPlane = plane
@@ -317,7 +317,10 @@ Replace:\tNo mixing. Just use this image.
 
     def updateMixModeOverviewThumb(self, noteMixMode):
         self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
-        
+
+    def updatePreviewImage(self, fileName):
+        self._overviewPreviewButton.setBitmapFile(fileName)
+
     def updateGui(self, trackConfig, trackId, noteMixMode):
         self._trackId = trackId
         self._config = trackConfig

@@ -69,8 +69,8 @@ class GlobalConfig(object):
         if(template != None):
             self._effectsGui.updateGui(template, midiNote)
 
-    def updateEffectList(self):
-        self._effectsGui.updateEffectList(self._effectsConfiguration)
+    def updateEffectList(self, selectedName):
+        self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
 
     def updateEffectListHeight(self, height):
         self._effectsGui.updateEffectListHeight(height)
@@ -156,6 +156,7 @@ class EffectsGui(object):
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
+        self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
@@ -174,6 +175,7 @@ class EffectsGui(object):
         self._showSlidersCallback = parentClass.showSlidersGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
+        self._showEffectListCallback = parentClass.showEffectList
         self._setDragCursor = parentClass.setDragCursor
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -271,6 +273,10 @@ class EffectsGui(object):
         saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        listButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'List') #@UndefinedVariable
+        listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(listButton, 1, wx.ALL, 5) #@UndefinedVariable
         slidersButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Sliders') #@UndefinedVariable
         slidersButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
@@ -303,7 +309,7 @@ class EffectsGui(object):
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapFlip)
         self._fxIdImageIndex.append(index)
-        index = self._effectImageList.Add(self._fxBitmapRotate)
+        index = self._effectImageList.Add(self._fxBitmapScroll)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapBlur)
         self._fxIdImageIndex.append(index)
@@ -332,7 +338,7 @@ class EffectsGui(object):
             index = self._effectImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
 
-        self._oldListHeight = 320
+        self._oldListHeight = 376
         self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,self._oldListHeight), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._effectListWidget.SetImageList(self._effectImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._effectListWidget.SetBackgroundColour((170,170,170))
@@ -352,17 +358,19 @@ class EffectsGui(object):
         self._mainEffectsListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._effectListWidget)
         self._effectListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
-#        self._buttonPlane = wx.Panel(self._mainEffectsListPlane, wx.ID_ANY, size=(340,-1), pos=(0, self._oldListHeight+5)) #@UndefinedVariable
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        deleteButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Duplicate') #@UndefinedVariable
+        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+#        self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
         deleteButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Delete') #@UndefinedVariable
         deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
-#        self._buttonPlane.SetSizer(self._buttonsSizer)
         self._mainEffectsListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _onTemplateNameHelp(self, event):
@@ -489,7 +497,7 @@ Selects the effect.
                 if(result == True):
                     self._mainConfig.deleteEffectTemplate(effectName)
                     self._mainConfig.verifyEffectTemplateUsed()
-                    self._mainConfig.updateEffectList()
+                    self._mainConfig.updateEffectList(None)
                     self._mainConfig.updateNoteGui()
                     self._mainConfig.updateMixerGui()
 
@@ -523,6 +531,11 @@ Selects the effect.
         if(effectTemplate != None):
             self.updateGui(effectTemplate, None)
             self._showEffectsCallback()
+
+    def _onListButton(self, event):
+        effectConfigName = self._templateNameField.GetValue()
+        self._mainConfig.updateEffectList(effectConfigName)
+        self._showEffectListCallback()
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
@@ -848,8 +861,9 @@ Selects the effect.
         self._updateLabels()
         self._fixEffectGuiLayout()
 
-    def updateEffectList(self, effectConfiguration):
+    def updateEffectList(self, effectConfiguration, selectedName):
         self._effectListWidget.DeleteAllItems()
+        selectedIndex = -1
         for effectConfig in effectConfiguration.getList():
             config = effectConfig.getConfigHolder()
             effectName = config.getValue("Effect")
@@ -858,7 +872,10 @@ Selects the effect.
                 bitmapId = self._fxIdImageIndex[effectId]
             else:
                 bitmapId = self._blankEffectIndex
-            index = self._effectListWidget.InsertImageStringItem(sys.maxint, effectConfig.getName(), bitmapId)
+            configName = effectConfig.getName()
+            index = self._effectListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
+            if(configName == selectedName):
+                selectedIndex = index
             modulationString = config.getValue("Amount")
             modBitmapId = self._modulationGui.getModulationImageId(modulationString)
             imageId = self._modIdImageIndex[modBitmapId]
@@ -884,6 +901,8 @@ Selects the effect.
                 self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable
             else:
                 self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
+        if(selectedIndex > -1):
+            self._effectListWidget.Select(selectedIndex)
 
     def updateEffectListHeight(self, height):
         pass

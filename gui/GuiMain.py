@@ -81,7 +81,7 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
-            size=(800, 600))
+            size=(800, 576))
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._oldServerConfigurationString = ""
@@ -227,6 +227,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._taskQueue = []
         self._skippedTrackStateRequests = 99
+        self._skippedPreviewRequests = 99
         self._skippedConfigStateRequests = 99
         self._skippedConfigListRequests = 99
         self._skippedLatestControllersRequests = 0
@@ -316,6 +317,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._requestConfigState()
         self._requestConfigList()
         self._requestTrackState()
+        self._requestPreview()
         self._requestLatestControllers()
 
     def _checkServerResponse(self):
@@ -533,6 +535,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._taskQueue.append(trackRequestTask)
                 self._guiClient.requestTrackState()
                 trackRequestTask.setState(TaskHolder.States.Sendt)
+        else:
+            self._skippedTrackStateRequests += 1
+
+    def _requestPreview(self):
+        if(self._skippedPreviewRequests > 5):
+            self._skippedPreviewRequests = 0
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
             if(foundTask == None):
                 previewRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Preview, None, None)
@@ -540,7 +548,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._guiClient.requestPreview()
                 previewRequestTask.setState(TaskHolder.States.Sendt)
         else:
-            self._skippedTrackStateRequests += 1
+            self._skippedPreviewRequests += 1
 
     def _requestConfigState(self):
         if(self._skippedConfigStateRequests > 30):
@@ -803,7 +811,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackWidgetIds[i] == buttonId):
                 foundTrackId = i
                 break
-        print "DEBUG onTrack: " + str(foundTrackId)
         if(foundTrackId != None):
             self._activeTrackId = foundTrackId
             self._selectTrackKey(foundTrackId)
@@ -834,7 +841,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackEditWidgetsIds[i] == buttonId):
                 foundTrackId = i
                 break
-        print "DEBUG onEdit: " + str(foundTrackId)
         if(foundTrackId != None):
             self._selectTrackKey(foundTrackId)
             self._selectKeyboardKey(-1)

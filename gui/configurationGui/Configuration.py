@@ -105,8 +105,8 @@ class Configuration(object):
     def updateEffectsGui(self, configName, midiNote):
         self._globalConf.updateEffectsGui(configName, midiNote)
 
-    def updateEffectList(self):
-        self._globalConf.updateEffectList()
+    def updateEffectList(self, selectedName):
+        self._globalConf.updateEffectList(selectedName)
 
     def updateEffectListHeight(self, height):
         self._globalConf.updateEffectListHeight(height)

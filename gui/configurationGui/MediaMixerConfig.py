@@ -129,8 +129,9 @@ class MediaTrackGui(object): #@UndefinedVariable
     class EditSelection():
         Unselected, PreEffect, PostEffect = range(3)
 
-    def setupTrackOverviewGui(self, overviewPanel, parentClass):
-        self._mainTrackOverviewPlane = overviewPanel
+    def setupTrackOverviewGui(self, overviewPanel, trackOverviewPanel, parentClass):
+        self._mainOverviePlane = overviewPanel
+        self._mainTrackOverviewPlane = trackOverviewPanel
 
         self.updateMixmodeThumb = parentClass.updateMixmodeThumb
         self.updateEffectThumb = parentClass.updateEffectThumb
@@ -146,7 +147,7 @@ class MediaTrackGui(object): #@UndefinedVariable
 
         wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
         previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
-        self._overviewPreviewButton = PcnKeyboardButton(overviewPanel, previewBitmap, (1, 280), wx.ID_ANY, size=(82, 62), isBlack=False) #@UndefinedVariable
+        self._overviewPreviewButton = PcnKeyboardButton(self._mainOverviePlane, previewBitmap, (3, 280), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
         self._overviewPreviewButton.setFrqameAddingFunction(addTrackButtonFrame)
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):

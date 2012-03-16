@@ -352,12 +352,14 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
+        self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._trackOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(84,-1)) #@UndefinedVariable
-        self._clipOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(84,-1)) #@UndefinedVariable
+        self._overviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(168,-1)) #@UndefinedVariable
+        self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,264), pos=(0,0)) #@UndefinedVariable
+        self._clipOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,264), pos=(84,0)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
@@ -367,6 +369,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
         self._parentPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._overviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -377,8 +380,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._slidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
 
-        self._configSizer.Add(self._trackOverviewGuiPlane)
-        self._configSizer.Add(self._clipOverviewGuiPlane)
+        self._configSizer.Add(self._overviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._effectListPanel)
@@ -397,9 +399,10 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._slidersPanel)
         self._parentPlane.SetSizer(self._configSizer)
 
+        self._overviewGuiPlane.SetBackgroundColour((180,180,180))
         self._trackOverviewGuiPlane.SetBackgroundColour((170,170,170))
         self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane)
-        self._trackGui.setupTrackOverviewGui(self._trackOverviewGuiPlane, self)
+        self._trackGui.setupTrackOverviewGui(self._overviewGuiPlane, self._trackOverviewGuiPlane, self)
 
         self._clipOverviewGuiPlane.SetBackgroundColour((160,160,160))
         self.setupClipOverviewGui(self._clipOverviewGuiPlane)
@@ -409,31 +412,31 @@ class MediaFileGui(object): #@UndefinedVariable
         self._trackGuiPlane.SetSizer(self._trackGuiSizer)
         self._trackGui.setupTrackGui(self._trackGuiPlane, self._trackGuiSizer, self._configSizer, self)
 
-        self._noteConfigPanel.SetBackgroundColour((0,120,120))
+        self._noteConfigPanel.SetBackgroundColour((140,140,140))
         self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteConfigPanel.SetSizer(self._noteConfigSizer)
 
-        self._effectListPanel.SetBackgroundColour((130,130,130))
+        self._effectListPanel.SetBackgroundColour((160,160,160))
         self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectListPanel.SetSizer(self._effectListSizer)
         self._mainConfig.setupEffectsListGui(self._effectListPanel, self._effectListSizer, self._configSizer, self)
 
-        self._effectConfigPanel.SetBackgroundColour((120,0,120))
+        self._effectConfigPanel.SetBackgroundColour((180,180,180))
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
         self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
 
-        self._fadeConfigPanel.SetBackgroundColour((120,120,200))
+        self._fadeConfigPanel.SetBackgroundColour((180,180,180))
         self._fadeConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._fadeConfigPanel.SetSizer(self._fadeConfigSizer)
         self._mainConfig.setupFadeGui(self._fadeConfigPanel, self._fadeConfigSizer, self._configSizer, self)
 
-        self._moulationConfigPanel.SetBackgroundColour((120,200,200))
+        self._moulationConfigPanel.SetBackgroundColour((160,160,160))
         self._moulationConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._moulationConfigPanel.SetSizer(self._moulationConfigSizer)
         self._mainConfig.setupModulationGui(self._moulationConfigPanel, self._moulationConfigSizer, self._configSizer, self)
 
-        self._slidersPanel.SetBackgroundColour((120,120,0))
+        self._slidersPanel.SetBackgroundColour((200,200,200))
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._slidersPanel.SetSizer(self._slidersSizer)
         self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
@@ -610,8 +613,12 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewTrackFx1Button.enableDoubleClick()
+        self._overviewTrackFx2Button.enableDoubleClick()
         self._overviewTrackFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
         self._overviewTrackFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
+        self._overviewTrackFx1Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
+        self._overviewTrackFx2Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
 
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
@@ -630,12 +637,16 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx1Button.enableDoubleClick()
+        self._overviewFx1Button.enableDoubleClick()
         self._overviewClipModeButton.Bind(wx.EVT_BUTTON, self._onClipModeButton) #@UndefinedVariable
         self._overviewClipMixButton.Bind(wx.EVT_BUTTON, self._onClipMixButton) #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx1Done)
         self._overviewFx2Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx2Done)
         self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
         self._overviewFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
+        self._overviewFx1Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
+        self._overviewFx2Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
 
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
@@ -904,7 +915,6 @@ All notes on events are quantized to this.
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
-        self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
 
@@ -1152,6 +1162,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapHueSat, self._fxBitmapHueSat)
         elif(effectId == EffectTypes.Invert):
             widget.setBitmaps(self._fxBitmapInverse, self._fxBitmapInverse)
+        elif(effectId == EffectTypes.Scroll):
+            widget.setBitmaps(self._fxBitmapScroll, self._fxBitmapScroll)
         elif(effectId == EffectTypes.Threshold):
             widget.setBitmaps(self._fxBitmapThreshold, self._fxBitmapThreshold)
         elif(effectId == EffectTypes.Zoom):
@@ -1207,7 +1219,7 @@ All notes on events are quantized to this.
         self.clearDragCursor()
 
     def _onClipMixButton(self, event):
-        self._parentPlane.PopupMenu(self._overviewClipMixButtonPopup, (256,59))
+        self._clipOverviewGuiPlane.PopupMenu(self._overviewClipMixButtonPopup, (77,30))
 
     def _onClipMixChosen(self, index):
         if((index >= 0) and (index < len(self._mixLabels))):
@@ -1216,7 +1228,7 @@ All notes on events are quantized to this.
             self.updateMixmodeThumb(self._overviewClipMixButton, modeText, modeText)
 
     def _onClipModeButton(self, event):
-        self._parentPlane.PopupMenu(self._overviewClipModeButtonPopup, (256,42))
+        self._clipOverviewGuiPlane.PopupMenu(self._overviewClipModeButtonPopup, (77,13))
 
     def _onClipModeChosen(self, index):
         if((index >= 0) and (index < len(self._modeLabels))):
@@ -1322,7 +1334,7 @@ All notes on events are quantized to this.
                                 self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
     def _onClipFadeButton(self, event):
-        self._parentPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (252,158))
+        self._clipOverviewGuiPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (71,128))
 
     def _onClipFadeModulationButton(self, event):
         self._configSizer.Hide(self._effectConfigPanel)
@@ -1364,7 +1376,52 @@ All notes on events are quantized to this.
         self.clearDragCursor()
 
     def _onFxButton(self, event):
-        self._mainConfig.updateEffectList()
+        buttonId = event.GetEventObject().GetId()
+        if(self._config != None):
+            if(buttonId == self._overviewFx1Button.GetId()):
+                effectConfigName = self._config.getValue("Effect1Config")
+                self.showEffectsGui()
+                self._selectedEditor = self.EditSelection.Effect1
+                self._highlightButton(self._selectedEditor)
+                self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+            if(buttonId == self._overviewFx2Button.GetId()):
+                effectConfigName = self._config.getValue("Effect2Config")
+                self.showEffectsGui()
+                self._selectedEditor = self.EditSelection.Effect2
+                self._highlightButton(self._selectedEditor)
+                self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+        if(self._activeTrackClipNoteId > -1):
+            noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
+            if(noteConfig != None):
+                if(buttonId == self._overviewTrackFx1Button.GetId()):
+                    effectConfigName =  noteConfig.getValue("Effect1Config")
+                    self.showEffectsGui()
+                    self._selectedEditor = self.EditSelection.Unselected
+                    self._highlightButton(self._selectedEditor)
+                    self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+                if(buttonId == self._overviewTrackFx2Button.GetId()):
+                    effectConfigName =  noteConfig.getValue("Effect2Config")
+                    self.showEffectsGui()
+                    self._selectedEditor = self.EditSelection.Unselected
+                    self._highlightButton(self._selectedEditor)
+                    self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+
+    def _onFxButtonDouble(self, event):
+        buttonId = event.GetEventObject().GetId()
+        effectConfigName = None
+        if(self._config != None):
+            if(buttonId == self._overviewFx1Button.GetId()):
+                effectConfigName = self._config.getValue("Effect1Config")
+            if(buttonId == self._overviewFx2Button.GetId()):
+                effectConfigName = self._config.getValue("Effect2Config")
+        if(self._activeTrackClipNoteId > -1):
+            noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
+            if(noteConfig != None):
+                if(buttonId == self._overviewTrackFx1Button.GetId()):
+                    effectConfigName =  noteConfig.getValue("Effect1Config")
+                if(buttonId == self._overviewTrackFx2Button.GetId()):
+                    effectConfigName =  noteConfig.getValue("Effect2Config")
+        self._mainConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
     def _onOverviewTrackClipButton(self, event):

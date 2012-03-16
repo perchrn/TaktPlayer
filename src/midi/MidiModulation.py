@@ -143,7 +143,7 @@ class AttackDecaySustainRelease(object):
                 if(self._sustainValue >= 0.99):
                     return 0.0
                 else:
-                    if((songPosition - noteOnSPP - self._attackLengthCalc) <= self._decayLengthCalc):
+                    if((songPosition - noteOnSPP - self._attackLengthCalc) < self._decayLengthCalc):
                         return (((float(songPosition) - noteOnSPP - self._attackLengthCalc) / self._decayLengthCalc) * (1.0 - self._sustainValue))
                     else:
                         return 1.0 - self._sustainValue

@@ -27,7 +27,7 @@ class MediaMixer(object):
         self._mixMat3 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
-        self._previewMat = createMat(80, 60)
+        self._previewMat = createMat(160, 120)
 
         self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._currentImage = self._blankImage

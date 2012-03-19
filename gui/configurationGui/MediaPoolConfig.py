@@ -6,7 +6,7 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame, EVT_DRAG_DONE_EVENT
+    addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DOUBLE_CLICK_EVENT
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes, MixMode, getMixModeFromName
@@ -364,6 +364,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._fadeListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -376,6 +377,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._fadeListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._fadeConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._slidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -385,6 +387,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._effectListPanel)
         self._configSizer.Add(self._effectConfigPanel)
+        self._configSizer.Add(self._fadeListPanel)
         self._configSizer.Add(self._fadeConfigPanel)
         self._configSizer.Add(self._moulationConfigPanel)
         self._configSizer.Add(self._slidersPanel)
@@ -394,6 +397,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._fadeListPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
@@ -425,6 +429,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
         self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
+
+        self._fadeListPanel.SetBackgroundColour((160,160,160))
+        self._fadeListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._fadeListPanel.SetSizer(self._fadeListSizer)
+        self._mainConfig.setupFadeListGui(self._fadeListPanel, self._fadeListSizer, self._configSizer, self)
 
         self._fadeConfigPanel.SetBackgroundColour((180,180,180))
         self._fadeConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -617,8 +626,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewTrackFx2Button.enableDoubleClick()
         self._overviewTrackFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
         self._overviewTrackFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
-        self._overviewTrackFx1Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
-        self._overviewTrackFx2Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
+        self._overviewTrackFx1Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
+        self._overviewTrackFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
 
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
@@ -626,7 +635,7 @@ class MediaFileGui(object): #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
         self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
-        self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipButton) #@UndefinedVariable
+        self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
@@ -645,8 +654,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewFx2Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx2Done)
         self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
         self._overviewFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
-        self._overviewFx1Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
-        self._overviewFx2Button.Bind(wx.EVT_LEFT_DCLICK, self._onFxButtonDouble) #@UndefinedVariable
+        self._overviewFx1Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
+        self._overviewFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
 
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
         wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
@@ -655,11 +664,28 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
         self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewClipFadeModeButton.enableDoubleClick()
         self._overviewClipFadeModeButton.Bind(wx.EVT_BUTTON, self._onClipFadeButton) #@UndefinedVariable
+        self._overviewClipFadeModeButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
+        self._overviewClipFadeModulationButton.enableDoubleClick()
         self._overviewClipFadeModulationButton.Bind(wx.EVT_BUTTON, self._onClipFadeModulationButton) #@UndefinedVariable
+        self._overviewClipFadeModulationButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
+        self._overviewClipFadeLevelButton.enableDoubleClick()
         self._overviewClipFadeLevelButton.Bind(wx.EVT_BUTTON, self._onClipFadeLevelButton) #@UndefinedVariable
+        self._overviewClipFadeLevelButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
 
         self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
+
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+        self._overviewClipSaveButtonDissabled = True
+        self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
+        self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
 
     def getPlane(self):
         return self._mediaFileGuiPanel
@@ -684,6 +710,14 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def hideEffectsListGui(self):
         self._configSizer.Hide(self._effectListPanel)
+        self.refreshLayout()
+
+    def showFadeListGui(self):
+        self._configSizer.Show(self._fadeListPanel)
+        self.refreshLayout()
+
+    def hideFadeListGui(self):
+        self._configSizer.Hide(self._fadeListPanel)
         self.refreshLayout()
 
     def hideNoteGui(self):
@@ -781,7 +815,7 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self._selectedEditor = self.EditSelection.ImageSeqModulation
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None)
+        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
 
         print "Sub modulation Edit..."
 
@@ -925,6 +959,11 @@ All notes on events are quantized to this.
         self.refreshLayout()
 
     def fixEffectsGuiLayout(self):
+        self.refreshLayout()
+
+    def showFadeGui(self):
+        self._configSizer.Show(self._fadeConfigPanel)
+        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
 
     def hideFadeGui(self):
@@ -1198,8 +1237,14 @@ All notes on events are quantized to this.
             elif(seqMode == "Modulation"):
                 widget.setBitmaps(self._modeBitmapImageSeqModulation, self._modeBitmapImageSeqModulation)
 
-    def _onOverviewClipButton(self, event):
+    def _onOverviewClipEditButton(self, event):
         self.showNoteGui()
+
+    def _onOverviewClipSaveButton(self, event):
+        if(self._config != None):
+            if(self._overviewClipSaveButtonDissabled == False):
+                print "DEBUG: SAVE!!!!!!!!!!!!"
+                self._onSaveButton(event)
 
     def _onMouseRelease(self, event):
         print "DEBUG mouse RELEASE " * 5
@@ -1299,65 +1344,83 @@ All notes on events are quantized to this.
                 print "fadeMode: " + fadeMode
                 if(self._config != None):
                     fadeConfigName = self._config.getValue("FadeConfig")
-                else:
-                    fadeConfigName = "Default"
-                fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
-                if(fadeConfig != None):
-                    if(fadeConfig.getFadeMode() != fadeMode):
-                        makeNew = False
-                        if(fadeConfigName == "Default"):
-                            makeNew = True
-                        else:
-                            inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
-                            if(inUseNumber < 2):
-                                fadeConfig.update(fadeMode, None, None)
-                            else:
+                    fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
+                    if(fadeConfig != None):
+                        if(fadeConfig.getFadeMode() != fadeMode):
+                            makeNew = False
+                            if(fadeConfigName == "Default"):
                                 makeNew = True
-                        if(makeNew == True):
-                            newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
-                            oldConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
-                            if(oldConfig == None):
-                                text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
                             else:
-                                text = "Do you want to update configuration: \"%s\"" % (newFadeConfigName)
-                            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                            dlg.Destroy()
-                            if(result == True):
-                                if(oldConfig == None):
-                                    self._mainConfig.makeFadeTemplate(newFadeConfigName, fadeMode, "None", "None")
+                                inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+                                if(inUseNumber < 2):
+                                    fadeConfig.update(fadeMode, None, None)
                                 else:
-                                    oldConfig.update(fadeMode, None, None)
-                                if(self._config != None):
-                                    self._config.setValue("FadeConfig", newFadeConfigName)
-                                self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
-                                self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                                    makeNew = True
+                            if(makeNew == True):
+                                newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
+                                oldConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
+                                if(oldConfig == None):
+                                    text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
+                                else:
+                                    text = "Do you want to update configuration: \"%s\"" % (newFadeConfigName)
+                                dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                                dlg.Destroy()
+                                if(result == True):
+                                    if(oldConfig == None):
+                                        self._mainConfig.makeFadeTemplate(newFadeConfigName, fadeMode, "None", "None")
+                                        if(self._config != None):
+                                            self._config.setValue("FadeConfig", newFadeConfigName)
+                                    else:
+                                        oldConfig.update(fadeMode, None, None)
+                                    self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                                    self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
     def _onClipFadeButton(self, event):
         self._clipOverviewGuiPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (71,128))
 
+    def _openModulationEditor(self, name):
+        if(self._config != None):
+            fadeConfigName = self._config.getValue("FadeConfig")
+            fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
+            if(fadeConfig != None):
+                makeNew = False
+                if(fadeConfigName == "Default"):
+                    makeNew = True
+                else:
+                    inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+                    if(inUseNumber > 1):
+                        makeNew = True
+                if(makeNew == True):
+                    newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
+                    fadeConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
+                    if(fadeConfig == None):
+                        text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
+                        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Make new config?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            dupTemplateName = self._mainConfig.duplicateFadeTemplate(fadeConfigName)
+                            fadeConfig = self._mainConfig.getFadeTemplate(dupTemplateName)
+                            fadeConfig.setName(newFadeConfigName)
+                            self._config.setValue("FadeConfig", newFadeConfigName)
+                            self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                            self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                            self._mainConfig.updateFadeList(newFadeConfigName)
+                    fadeConfigName = newFadeConfigName
+                if(fadeConfig != None):
+                    self._mainConfig.updateFadeGui(fadeConfigName, name)
+                    self._configSizer.Hide(self._effectConfigPanel)
+                    self._configSizer.Hide(self._slidersPanel)
+                    self.showModulationGui()
+                    self._selectedEditor = self.EditSelection.Unselected
+                    self._highlightButton(self._selectedEditor)
+
     def _onClipFadeModulationButton(self, event):
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Show(self._moulationConfigPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._selectedEditor = self.EditSelection.ImageSeqModulation
-        self._highlightButton(self._selectedEditor)
-        self.refreshLayout()
-        #TODO: Make nessesary copies and update modulation GUI...
-#        if(self._config != None):
-#            fadeConfigName = self._config.getValue("FadeConfig")
-#            if(fadeConfigName == "Default"):
-#                makeNew = True
-#            else:
-#                inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
-#                if(inUseNumber < 2):
-#                    
-#                    fadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
-#        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None)
+        self._openModulationEditor("Modulation")
 
     def _onClipFadeLevelButton(self, event):
-        pass
+        self._openModulationEditor("Level")
 
     def _onDragFx1Done(self, event):
         fxName = self._mainConfig.getDraggedFxName()
@@ -1424,6 +1487,13 @@ All notes on events are quantized to this.
         self._mainConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
+    def _onClipFadeButtonDouble(self, event):
+        fadeConfigName = None
+        if(self._config != None):
+            fadeConfigName = self._config.getValue("FadeConfig")
+        self._mainConfig.updateFadeList(fadeConfigName)
+        self.showFadeListGui()
+
     def _onOverviewTrackClipButton(self, event):
         noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId)
         self.updateGui(noteConfig, self._activeTrackClipNoteId)
@@ -1458,6 +1528,68 @@ All notes on events are quantized to this.
         self._overviewTrackClipQuantizeLabel.SetLabel("Q: N/A")
         self._overviewTrackFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewTrackFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+
+    def _checkIfUpdated(self):
+        if(self._config == None):
+            return False
+        guiType = self._typeField.GetValue()
+        configType = self._config.getValue("Type")
+        if(guiType != configType):
+            print "DEBUG Type!"
+            return True
+        guiFileName = self._fileNameField.GetValue()
+        configFileName = os.path.basename(self._config.getValue("FileName"))
+        if(guiFileName != configFileName):
+            return True
+            print "DEBUG FileName!"
+        if(configType == "VideoLoop"):
+            guiMode = self._subModeField.GetValue()
+            configMode = self._config.getValue("LoopMode")
+            if(guiMode != configMode):
+                print "DEBUG LoopMode!"
+                return True
+        if(self._type == "ImageSequence"):
+            guiMode = self._subModeField.GetValue()
+            configMode = self._config.getValue("SequenceMode")
+            if(guiMode != configMode):
+                print "DEBUG SequenceMode!"
+                return True
+            guiSubMode = self._subModulationField.GetValue()
+            configSubMode = self._config.getValue("PlayBackModulation")
+            if(guiSubMode != configSubMode):
+                print "DEBUG PlayBackModulation!"
+                return True
+        guiSyncLength = float(self._syncField.GetValue())
+        configSyncLength = float(self._config.getValue("SyncLength"))
+        if(guiSyncLength != configSyncLength):
+            print "DEBUG SyncLength! gui: " + str(guiSyncLength) + " " + str(type(guiSyncLength)) + " != conf: " + str(configSyncLength) + " " + str(type(configSyncLength))
+            return True
+        guiQLength = float(self._quantizeField.GetValue())
+        configQLength = float(self._config.getValue("QuantizeLength"))
+        if(guiQLength != configQLength):
+            print "DEBUG QuantizeLength!"
+            return True
+        guiMix = self._mixField.GetValue()
+        configMix = self._config.getValue("MixMode")
+        if(guiMix != configMix):
+            print "DEBUG MixMode!"
+            return True
+        guiFx1 = self._effect1Field.GetValue()
+        configFx1 = self._config.getValue("Effect1Config")
+        if(guiFx1 != configFx1):
+            print "DEBUG Effect1Config!"
+            return True
+        guiFx2 = self._effect2Field.GetValue()
+        configFx2 = self._config.getValue("Effect2Config")
+        if(guiFx2 != configFx2):
+            print "DEBUG Effect1Config!"
+            return True
+        guiFade = self._fadeField.GetValue()
+        configFade = self._config.getValue("FadeConfig")
+        if(guiFade != configFade):
+            print "DEBUG FadeConfig!"
+            return True
+        return False
 
     def updateGui(self, noteConfig, midiNote):
         if(noteConfig != None):
@@ -1512,6 +1644,13 @@ All notes on events are quantized to this.
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None)
 
+        if(self._checkIfUpdated() == True):
+            self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._overviewClipSaveButtonDissabled = False
+        else:
+            self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+            self._overviewClipSaveButtonDissabled = True
+
     def clearGui(self, midiNote):
         self._config = None
         self._midiNote = midiNote
@@ -1547,5 +1686,8 @@ All notes on events are quantized to this.
         self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewClipNoteLabel.SetLabel("NOTE: " + midiNoteString)
         self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+
+        self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+        self._overviewClipSaveButtonDissabled = True
 
 

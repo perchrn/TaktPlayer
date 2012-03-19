@@ -5,6 +5,7 @@ Created on 25. jan. 2012
 '''
 from midi.MidiModulation import MidiModulation
 from video.media.MediaFileModes import FadeMode
+import copy
 
 class ConfigurationTemplates(object):
     def __init__(self, configurationTree, midiTiming, name):
@@ -104,6 +105,18 @@ class ConfigurationTemplates(object):
     def createTemplateFromXml(self, name, xmlConfig):
         pass
 
+    def duplicateTemplate(self, configName):
+        oldTemplate = self.getTemplate(configName)
+        if(oldTemplate != None):
+            newTemplateName = configName + "_dup"
+            testTemplate = self.getTemplate(newTemplateName)
+            if(testTemplate == None):
+                newTemplate = copy.deepcopy(oldTemplate)
+                newTemplate.setName(newTemplateName)
+                self._configurationTemplates.append(newTemplate)
+                return newTemplateName
+        return None
+
     def deleteTemplate(self, configName):
         template = self.getTemplate(configName)
         if(template != None):
@@ -158,6 +171,10 @@ class EffectSettings(object):
 
     def getName(self):
         return self._templateName
+
+    def setName(self, name):
+        self._templateName = name
+        self._configurationTree.setValue("Name", name)
 
     def _setupConfiguration(self):
         self._midiModulation.setModulationReceiver("Amount", "MidiChannel.Controller.ModWheel")
@@ -258,6 +275,10 @@ class FadeSettings(object):
 
     def getName(self):
         return self._templateName
+
+    def setName(self, name):
+        self._templateName = name
+        self._configurationTree.setValue("Name", name)
 
     def getFadeMode(self):
         return self._configurationTree.getValue("Mode")

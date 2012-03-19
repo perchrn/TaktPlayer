@@ -23,7 +23,7 @@ class ModulationGui(object):
         self._updateWidget = None
         self._closeCallback = None
 
-        self._blankModBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._blankModBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
         self._modBitmatController = wx.Bitmap("graphics/modulationController.png") #@UndefinedVariable
         self._modBitmatNote = wx.Bitmap("graphics/modulationNote.png") #@UndefinedVariable
         self._modBitmatLfo = wx.Bitmap("graphics/modulationLfo.png") #@UndefinedVariable
@@ -735,6 +735,8 @@ Constant static value.
             modeString += "." + valueString
         if(self._updateWidget != None):
             self._updateWidget.SetValue(modeString)
+        if(self._saveCallback):
+            self._saveCallback(None)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -804,9 +806,10 @@ Constant static value.
         bitmap = self.getModulationImageBitmap(imageId)
         widget.setBitmaps(bitmap, bitmap)
        
-    def updateGui(self, modulationString, widget, closeCallback):
+    def updateGui(self, modulationString, widget, closeCallback, saveCallback):
         self._updateWidget = widget
         self._closeCallback = closeCallback
+        self._saveCallback = saveCallback
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
         updatedId = None
         if(modulationIdTuplet == None):

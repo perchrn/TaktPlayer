@@ -96,6 +96,9 @@ class Configuration(object):
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
 
+    def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupFadeListGui(plane, sizer, parentSizer, parentClass)
+
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupModulationGui(plane, sizer, parentSizer, parentClass)
 
@@ -123,6 +126,9 @@ class Configuration(object):
     def getFadeTemplate(self, configName):
         return self._globalConf.getFadeTemplate(configName)
 
+    def getFadeTemplateByIndex(self, index):
+        return self._globalConf.getFadeTemplateByIndex(index)
+
     def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
         return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
 
@@ -134,6 +140,12 @@ class Configuration(object):
 
     def deleteFadeTemplate(self, configName):
         return self._globalConf.deleteFadeTemplate(configName)
+
+    def duplicateEffectTemplate(self, configName):
+        return self._globalConf.duplicateEffectTemplate(configName)
+
+    def duplicateFadeTemplate(self, configName):
+        return self._globalConf.duplicateFadeTemplate(configName)
 
     def verifyEffectTemplateUsed(self):
         effectsConfigNames =  self._globalConf.getEffectTemplateNamesList()
@@ -171,8 +183,8 @@ class Configuration(object):
         self._mediaPoolConf.renameFadeTemplateUsed(oldName, newName)
         self._mediaMixerConf.renameFadeTemplateUsed(oldName, newName)
 
-    def updateModulationGui(self, modulationString, widget, closeCallback):
-        self._globalConf.updateModulationGui(modulationString, widget, closeCallback)
+    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback):
+        self._globalConf.updateModulationGui(modulationString, widget, closeCallback, saveCallback)
 
     def updateModulationGuiButton(self, widget, modulationString):
         self._globalConf.updateModulationGuiButton(modulationString, widget)
@@ -180,8 +192,11 @@ class Configuration(object):
     def stopModulationGui(self):
         self._globalConf.stopModulationGui()
 
-    def updateFadeGui(self, configName):
-        self._globalConf.updateFadeGui(configName)
+    def updateFadeGui(self, configName, editField = None):
+        self._globalConf.updateFadeGui(configName, editField)
+
+    def updateFadeList(self, selectedName):
+        self._globalConf.updateFadeList(selectedName)
 
     def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
         self._globalConf.updateFadeGuiButtons(configName, modeWidget, modulationWidget, levelWidget)

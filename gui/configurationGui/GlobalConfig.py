@@ -28,7 +28,7 @@ class GlobalConfig(object):
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, 800, 600)
         self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
-        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming)
+        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
@@ -57,6 +57,9 @@ class GlobalConfig(object):
 
     def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
         self._fadeGui.setupFadeGui(plane, sizer, parentSizer, parentClass)
+
+    def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
+        self._fadeGui.setupFadeListGui(plane, sizer, parentSizer, parentClass)
 
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
         self._modulationGui.setupModulationGui(plane, sizer, parentSizer, parentClass)
@@ -95,14 +98,17 @@ class GlobalConfig(object):
     def deleteEffectTemplate(self, configName):
         self._effectsConfiguration.deleteTemplate(configName)
 
+    def duplicateEffectTemplate(self, configName):
+        self._effectsConfiguration.duplicateTemplate(configName)
+
     def getEffectTemplateNamesList(self):
         return self._effectsConfiguration.getTemplateNamesList()
 
     def checkIfNameIsDefaultEffectName(self, configName):
         return self._effectsConfiguration.checkIfNameIsDefaultName(configName)
 
-    def updateModulationGui(self, modulationString, widget, closeCallback):
-        self._modulationGui.updateGui(modulationString, widget, closeCallback)
+    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback):
+        self._modulationGui.updateGui(modulationString, widget, closeCallback, saveCallback)
 
     def updateModulationGuiButton(self, modulationString, widget):
         self._modulationGui.updateModulationGuiButton(modulationString, widget)
@@ -110,10 +116,13 @@ class GlobalConfig(object):
     def stopModulationGui(self):
         self._modulationGui.stopModulationUpdate()
 
-    def updateFadeGui(self, configName):
+    def updateFadeGui(self, configName, editField):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
-            self._fadeGui.updateGui(template)
+            self._fadeGui.updateGui(template, editField)
+
+    def updateFadeList(self, selectedName):
+        self._fadeGui.updateFadeList(self._fadeConfiguration, selectedName)
 
     def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
         template = self._fadeConfiguration.getTemplate(configName)
@@ -122,11 +131,17 @@ class GlobalConfig(object):
     def getFadeTemplate(self, configName):
         return self._fadeConfiguration.getTemplate(configName)
 
+    def getFadeTemplateByIndex(self, index):
+        return self._fadeConfiguration.getTemplateByIndex(index)
+
     def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
         return self._fadeConfiguration.createTemplate(saveName, fadeMode, fadeMod, levelMod)
 
     def deleteFadeTemplate(self, configName):
         self._fadeConfiguration.deleteTemplate(configName)
+
+    def duplicateFadeTemplate(self, configName):
+        return self._fadeConfiguration.duplicateTemplate(configName)
 
     def getFadeTemplateNamesList(self):
         return self._fadeConfiguration.getTemplateNamesList()
@@ -363,10 +378,10 @@ class EffectsGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        deleteButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Duplicate') #@UndefinedVariable
-        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-#        self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
+        duplicateButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Duplicate') #@UndefinedVariable
+        duplicateButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDuplicateButton, id=duplicateButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(duplicateButton, 1, wx.ALL, 5) #@UndefinedVariable
         deleteButton = wx.Button(self._mainEffectsListPlane, wx.ID_ANY, 'Delete') #@UndefinedVariable
         deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
@@ -438,35 +453,35 @@ Selects the effect.
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Ammount
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton, None)
 
     def _onArg1Edit(self, event):
         self._showModulationCallback()
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg1
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton, None)
 
     def _onArg2Edit(self, event):
         self._showModulationCallback()
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg2
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton, None)
 
     def _onArg3Edit(self, event):
         self._showModulationCallback()
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg3
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton, None)
 
     def _onArg4Edit(self, event):
         self._showModulationCallback()
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelection.Arg4
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
 
     def _onCloseButton(self, event):
         self._selectedEditor = self.EditSelection.Unselected
@@ -484,6 +499,14 @@ Selects the effect.
         self._highlightButton(self._selectedEditor)
         self._mainConfig.stopModulationGui()
 
+    def _onListDuplicateButton(self, event):
+        if(self._effectListSelectedIndex >= 0):
+            effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+            if(effectTemplate != None):
+                effectName = effectTemplate.getName()
+                newName = self._mainConfig.duplicateEffectTemplate(effectName)
+                self._mainConfig.updateEffectList(newName)
+
     def _onListDeleteButton(self, event):
         if(self._effectListSelectedIndex >= 0):
             effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
@@ -491,7 +514,7 @@ Selects the effect.
                 effectName = effectTemplate.getName()
                 inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(effectName)
                 text = "Are you sure you want to delete \"%s\"? (It is used %d times)" % (effectName, inUseNumber)
-                dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                dlg = wx.MessageDialog(self._mainEffectsListPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                 dlg.Destroy()
                 if(result == True):
@@ -925,14 +948,15 @@ Selects the effect.
         self._arg4Field.SetValue(config.getValue("Arg4"))
 
 class FadeGui(object):
-    def __init__(self, mainConfing, midiTiming):
+    def __init__(self, mainConfing, midiTiming, modulationGui):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
+        self._modulationGui = modulationGui
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._selectedEditor = self.EditSelected.Unselected
         self._fadeModes = FadeMode()
 
-        self._blankFadeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._blankFadeBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
         self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
         self._fadeWhiteBitmap = wx.Bitmap("graphics/fadeToWhite.png") #@UndefinedVariable
 
@@ -950,6 +974,8 @@ class FadeGui(object):
         self._mainFadeGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideFadeCallback = parentClass.hideFadeGui
+        self._showFadeCallback = parentClass.showFadeGui
+        self._showFadeListCallback = parentClass.showFadeListGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
@@ -1009,7 +1035,63 @@ class FadeGui(object):
         saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        listButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'List') #@UndefinedVariable
+        listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(listButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+    def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainFadeListPlane = plane
+        self._mainFadeListGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideFadeListCallback = parentClass.hideFadeListGui
+
+        self._fadeImageList = wx.ImageList(25, 16) #@UndefinedVariable
+
+        self._modeIdImageIndex = []
+        index = self._fadeImageList.Add(self._fadeBlackBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._fadeWhiteBitmap)
+        self._modeIdImageIndex.append(index)
+
+        self._modIdImageIndex = []
+        for i in range(self._modulationGui.getModulationImageCount()):
+            bitmap = self._modulationGui.getModulationImageBitmap(i)
+            index = self._fadeImageList.Add(bitmap)
+            self._modIdImageIndex.append(index)
+
+        self._oldListHeight = 376
+        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(220,self._oldListHeight), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._fadeListWidget.SetImageList(self._fadeImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
+        self._fadeListWidget.SetBackgroundColour((170,170,170))
+
+        self._fadeListWidget.InsertColumn(0, 'Name', width=150)
+        self._fadeListWidget.InsertColumn(1, 'Fade', width=34)
+        self._fadeListWidget.InsertColumn(2, 'Level', width=36)
+
+        self._mainFadeListGuiSizer.Add(self._fadeListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_COL_CLICK, self._onListItemMouseDown, self._fadeListWidget)
+        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListItemSelected, self._fadeListWidget)
+        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_DESELECTED, self._onListItemDeselected, self._fadeListWidget)
+        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._fadeListWidget)
+        self._fadeListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = wx.Button(self._mainFadeListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
+        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        duplicateButton = wx.Button(self._mainFadeListPlane, wx.ID_ANY, 'Duplicate') #@UndefinedVariable
+        duplicateButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeListPlane.Bind(wx.EVT_BUTTON, self._onListDuplicateButton, id=duplicateButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(duplicateButton, 1, wx.ALL, 5) #@UndefinedVariable
+        deleteButton = wx.Button(self._mainFadeListPlane, wx.ID_ANY, 'Delete') #@UndefinedVariable
+        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _onFadeModeChosen(self, event):
         pass
@@ -1041,14 +1123,14 @@ Decides if this image fades to black or white.
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelected.Fade
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, None)
 
     def _onLevelModulationEdit(self, event):
         self._showModulationCallback()
         self._fixEffectGuiLayout()
         self._selectedEditor = self.EditSelected.Level
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton)
+        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, None)
 
     def _onCloseButton(self, event):
         self._hideFadeCallback()
@@ -1056,6 +1138,75 @@ Decides if this image fades to black or white.
         self._selectedEditor = self.EditSelected.Unselected
         self._highlightButton(self._selectedEditor)
         self._mainConfig.stopModulationGui()
+
+    def _onListCloseButton(self, event):
+        self._hideModulationCallback()
+        self._hideFadeCallback()
+        self._hideFadeListCallback()
+        self._selectedEditor = self.EditSelected.Unselected
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.stopModulationGui()
+
+    def _onListDuplicateButton(self, event):
+        if(self._fadeListSelectedIndex >= 0):
+            fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+            if(fadeTemplate != None):
+                fadeName = fadeTemplate.getName()
+                newName = self._mainConfig.duplicateFadeTemplate(fadeName)
+                self._mainConfig.updateFadeList(newName)
+
+    def _onListDeleteButton(self, event):
+        if(self._fadeListSelectedIndex >= 0):
+            fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+            if(fadeTemplate != None):
+                fadeName = fadeTemplate.getName()
+                inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeName)
+                text = "Are you sure you want to delete \"%s\"? (It is used %d times)" % (fadeName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainFadeListPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    self._mainConfig.deleteFadeTemplate(fadeName)
+                    self._mainConfig.verifyFadeTemplateUsed()
+                    self._mainConfig.updateFadeList(None)
+                    self._mainConfig.updateNoteGui()
+                    self._mainConfig.updateMixerGui()
+
+    def _onListItemMouseDown(self, event):
+        self._fadeListSelectedIndex = event.m_itemIndex
+        self._fadeListDraggedIndex = -1
+
+    def _onListItemSelected(self, event):
+        self._fadeListSelectedIndex = event.m_itemIndex
+        self._fadeListDraggedIndex = -1
+
+    def _onListItemDeselected(self, event):
+        self._fadeListDraggedIndex = -1
+        self._fadeListSelectedIndex = -1
+
+    def _onListDragStart(self, event):
+        self._fadeListSelectedIndex = event.m_itemIndex
+        self._fadeListDraggedIndex = event.m_itemIndex
+        self._setDragCursor()
+
+    def getDraggedFxIndex(self):
+        draggedIndex = self._fadeListDraggedIndex
+        self._fadeListWidget.SetItemState(draggedIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        self._fadeListWidget.SetItemState(draggedIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        self._fadeListWidget.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
+        return draggedIndex
+
+    def _onListDoubbleClick(self, event):
+        self._fadeListDraggedIndex = -1
+        fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+        if(fadeTemplate != None):
+            self.updateGui(fadeTemplate, None)
+            self._showFadeCallback()
+
+    def _onListButton(self, event):
+        fadeConfigName = self._templateNameField.GetValue()
+        self._mainConfig.updateFadeList(fadeConfigName)
+        self._showFadeListCallback()
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
@@ -1103,7 +1254,7 @@ Decides if this image fades to black or white.
             else:
                 oldTemplate.update(fadeMode, fadeMod, levelMod)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate)
+            self.updateGui(savedTemplate, None)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
 
@@ -1145,7 +1296,37 @@ Decides if this image fades to black or white.
             fadeLevel = config.getValue("Level")
             self._mainConfig.updateModulationGuiButton(levelWidget, fadeLevel)
 
-    def updateGui(self, fadeTemplate):
+    def updateFadeList(self, effectConfiguration, selectedName):
+        self._fadeListWidget.DeleteAllItems()
+        selectedIndex = -1
+        for effectConfig in effectConfiguration.getList():
+            config = effectConfig.getConfigHolder()
+            selectedMode = config.getValue("Mode")
+            if(selectedMode.lower() == "white"):
+                bitmapId = self._modeIdImageIndex[0]
+            else:
+                bitmapId = self._modeIdImageIndex[1]
+            configName = effectConfig.getName()
+            index = self._fadeListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
+            if(configName == selectedName):
+                selectedIndex = index
+            modulationString = config.getValue("Modulation")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._fadeListWidget.SetStringItem(index, 1, "", imageId)
+            modulationString = config.getValue("Level")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._fadeListWidget.SetStringItem(index, 2, "", imageId)
+
+            if(index % 2):
+                self._fadeListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable
+            else:
+                self._fadeListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
+        if(selectedIndex > -1):
+            self._fadeListWidget.Select(selectedIndex)
+
+    def updateGui(self, fadeTemplate, editField):
         config = fadeTemplate.getConfigHolder()
         self._selectedEditor = self.EditSelected.Unselected
         self._highlightButton(self._selectedEditor)
@@ -1154,4 +1335,12 @@ Decides if this image fades to black or white.
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
         self._fadeModulationField.SetValue(config.getValue("Modulation"))
         self._levelModulationField.SetValue(config.getValue("Level"))
+        if(editField == "Modulation"):
+            self._selectedEditor = self.EditSelected.Fade
+            self._highlightButton(self._selectedEditor)
+            self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
+        if(editField == "Level"):
+            self._selectedEditor = self.EditSelected.Level
+            self._highlightButton(self._selectedEditor)
+            self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
 

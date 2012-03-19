@@ -9,6 +9,8 @@ import  wx.lib.newevent #@UnresolvedImport
 DragStartEvent, EVT_DRAG_START_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
 DragDoneEvent, EVT_DRAG_DONE_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
 
+DoubleEvent, EVT_DOUBLE_CLICK_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
+
 def addKeyboardButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
     oldX, oldY = baseBitmap.GetSize()
     
@@ -248,7 +250,7 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
     def on_left_dclick(self, event):
         if(self._singleClickTimer.IsRunning() == True):
             self._singleClickTimer.Stop()
-            self._doubleClicked = True
+        self._doubleClicked = True
         self.on_left_down(event)
     def on_single_click(self, event):
         self.post_event()
@@ -258,13 +260,13 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
                 self.post_event()
         else:
             if(self._doubleClicked == True):
-                dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
-                dragDoneEvent.SetEventObject(self)
-                dragDoneEvent.SetEventType(wx.EVT_LEFT_DCLICK.typeId) #@UndefinedVariable
-                wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
+                doubleEvent = wx.CommandEvent() #@UndefinedVariable
+                doubleEvent.SetEventObject(self)
+                doubleEvent.SetEventType(EVT_DOUBLE_CLICK_EVENT.typeId) #@UndefinedVariable
+                wx.PostEvent(self, doubleEvent) #@UndefinedVariable
             else:
                 if self.clicked:
-                    self._singleClickTimer.Start(200, oneShot=True)#1/2 sec
+                    self._singleClickTimer.Start(100, oneShot=True)#1/2 sec
                     self.Bind(wx.EVT_TIMER, self.on_single_click) #@UndefinedVariable
         self.clicked = False
         self._doubleClicked = False

@@ -1426,7 +1426,6 @@ All notes on events are quantized to this.
         self._openModulationEditor("Level")
 
     def _onDragFx1Done(self, event):
-        print "DEBUG _onDragFx1Done()"
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
@@ -1436,7 +1435,6 @@ All notes on events are quantized to this.
         self.clearDragCursor()
 
     def _onDragFx2Done(self, event):
-        print "DEBUG _onDragFx2Done()"
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
@@ -1446,7 +1444,6 @@ All notes on events are quantized to this.
         self.clearDragCursor()
 
     def _onFxButton(self, event):
-        print "DEBUG _onFxButton()"
         buttonId = event.GetEventObject().GetId()
         effectConfigName = None
         if(self._config != None):
@@ -1482,7 +1479,6 @@ All notes on events are quantized to this.
                     effectConfigName =  noteConfig.getValue("Effect1Config")
                 if(buttonId == self._overviewTrackFx2Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect2Config")
-        print "DEBUG _onFxButtonDouble() highlight: effectConfigName = " + str(effectConfigName)
         self._mainConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
@@ -1618,7 +1614,6 @@ All notes on events are quantized to this.
         self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         noteText = self._config.getValue("Note")
         self._noteField.SetValue(noteText)
-        print "DEBUG setting note text *****************************************"
         self._overviewClipNoteLabel.SetLabel("NOTE: " + noteText)
         length = self._config.getValue("SyncLength")
         self._syncField.SetValue(str(length))
@@ -1647,7 +1642,6 @@ All notes on events are quantized to this.
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None)
 
-        print "DEBUG check save button *****************************************"
         self._showOrHideSaveButton()
 
     def clearGui(self, midiNote):

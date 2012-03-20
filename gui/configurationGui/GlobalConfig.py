@@ -80,9 +80,7 @@ class GlobalConfig(object):
 
     def getDraggedFxName(self):
         fxIndex = self._effectsGui.getDraggedFxIndex()
-        print "DEBUG: getDraggedFxName() fxIndex: " + str(fxIndex)
         effect = self._effectsConfiguration.getTemplateByIndex(fxIndex)
-        print "DEBUG: getDraggedFxName() effect: " + str(effect)
         if(effect != None):
             return effect.getName()
         else:
@@ -508,7 +506,6 @@ Selects the effect.
             if(effectTemplate != None):
                 effectName = effectTemplate.getName()
                 newName = self._mainConfig.duplicateEffectTemplate(effectName)
-                print "DEBUG: duplicate name: " + str(newName)
                 self._mainConfig.updateEffectList(newName)
 
     def _onListDeleteButton(self, event):

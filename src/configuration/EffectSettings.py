@@ -40,7 +40,6 @@ class ConfigurationTemplates(object):
         if((index >= 0) and (index < len(self._configurationTemplates))):
             return self._configurationTemplates[index]
         else:
-            print "DEBUG getTemplateByIndex() bad index: " + str(index) + " (len=" + str(len(self._configurationTemplates)) + ")"
             return None
 
     def getList(self):

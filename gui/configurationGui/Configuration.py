@@ -61,7 +61,6 @@ class Configuration(object):
         self._guiPlayerConfig.setValue("MidiEnabled", newValue)
 
     def setFromXml(self, config):
-        print "DEBUG: Setting from XML"
         self._playerConfigurationTree.setFromXml(config)
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
         self._mediaMixerConf.checkAndUpdateFromConfiguration()

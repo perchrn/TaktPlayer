@@ -72,8 +72,6 @@ class MediaMixerConfig(object):
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
             print "MediaMixerConfig config is updated..."
-        else:
-            print "DEBUG: MediaMixerConfig.checkAndUpdateFromConfiguration NOT updated..."
 
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0

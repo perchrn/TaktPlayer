@@ -232,6 +232,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._skippedConfigStateRequests = 99
         self._skippedConfigListRequests = 99
         self._skippedLatestControllersRequests = 0
+        self._stoppingWebRequests = True
         self._lastConfigState = -1
         self._latestControllersRequestResult = None
         self._dragSource = None
@@ -316,9 +317,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._checkServerResponse()
         self._checkForStaleTasks()
         self._requestConfigState()
-        self._requestConfigList()
         self._requestTrackState()
         self._requestPreview()
+        self._requestConfigList()
         self._requestLatestControllers()
 
     def _checkServerResponse(self):
@@ -383,10 +384,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.TrackStateError):
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
+                if((result[1] == "timeout") or (result[1] == "connectionRefused") or (result[1] == "resolvError")):
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
+                        self._skippedTrackStateRequests = 99
             if(result[0] == GuiClient.ResponseTypes.TrackState):
 #                print "GuiClient.ResponseTypes.TrackState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
                 if(result[1] != None):
+                    self._stoppingWebRequests = False
                     noteList = result[1]
                     for i in range(16):
                         note = int(noteList[i])
@@ -504,13 +513,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         checkTime = time.time()
         for task in self._taskQueue:
             if(task.isStale(checkTime)):
-                print task.getDescription() + " is stale..."
+                if(self._stoppingWebRequests == True):
+                    if(task.getType() != TaskHolder.RequestTypes.Track):
+                        task.taskDone()
+                        self._taskQueue.remove(task)
+                        return
                 if(task.getType() == TaskHolder.RequestTypes.ActiveNotes):
                     self._guiClient.requestActiveNoteList()
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.Track):
                     self._guiClient.requestTrackState()
                     task.setState(TaskHolder.States.Sendt)
+                    self._stoppingWebRequests = True
                 elif(task.getType() == TaskHolder.RequestTypes.Preview):
                     self._guiClient.requestPreview()
                     task.setState(TaskHolder.States.Sendt)
@@ -528,7 +542,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     task.setState(TaskHolder.States.Sendt)
 
     def _requestTrackState(self):
-        if(self._skippedTrackStateRequests > 10):
+        if(self._skippedTrackStateRequests > 5):
             self._skippedTrackStateRequests = 0
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
             if(foundTask == None):
@@ -541,49 +555,53 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _requestPreview(self):
         if(self._skippedPreviewRequests > 5):
-            self._skippedPreviewRequests = 0
-            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
-            if(foundTask == None):
-                previewRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Preview, None, None)
-                self._taskQueue.append(previewRequestTask)
-                self._guiClient.requestPreview()
-                previewRequestTask.setState(TaskHolder.States.Sendt)
+            if(self._stoppingWebRequests == False):
+                self._skippedPreviewRequests = 0
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
+                if(foundTask == None):
+                    previewRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Preview, None, None)
+                    self._taskQueue.append(previewRequestTask)
+                    self._guiClient.requestPreview()
+                    previewRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedPreviewRequests += 1
 
     def _requestConfigState(self):
         if(self._skippedConfigStateRequests > 30):
-            self._skippedConfigStateRequests = 0
-            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
-            if(foundTask == None):
-                configStateRequestTask = TaskHolder("Config state request", TaskHolder.RequestTypes.ConfigState, None, None)
-                self._taskQueue.append(configStateRequestTask)
-                self._guiClient.requestConfigState(self._lastConfigState)
-                configStateRequestTask.setState(TaskHolder.States.Sendt)
+            if(self._stoppingWebRequests == False):
+                self._skippedConfigStateRequests = 0
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
+                if(foundTask == None):
+                    configStateRequestTask = TaskHolder("Config state request", TaskHolder.RequestTypes.ConfigState, None, None)
+                    self._taskQueue.append(configStateRequestTask)
+                    self._guiClient.requestConfigState(self._lastConfigState)
+                    configStateRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedConfigStateRequests += 1
 
     def _requestConfigList(self):
         if(self._skippedConfigListRequests > 60):
-            self._skippedConfigListRequests = 0
-            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
-            if(foundTask == None):
-                configStateRequestTask = TaskHolder("Config list request", TaskHolder.RequestTypes.ConfigFileList, None, None)
-                self._taskQueue.append(configStateRequestTask)
-                self._guiClient.requestConfigList()
-                configStateRequestTask.setState(TaskHolder.States.Sendt)
+            if(self._stoppingWebRequests == False):
+                self._skippedConfigListRequests = 0
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
+                if(foundTask == None):
+                    configStateRequestTask = TaskHolder("Config list request", TaskHolder.RequestTypes.ConfigFileList, None, None)
+                    self._taskQueue.append(configStateRequestTask)
+                    self._guiClient.requestConfigList()
+                    configStateRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedConfigListRequests += 1
 
     def _requestLatestControllers(self):
         if(self._skippedLatestControllersRequests > 20):
-            self._skippedLatestControllersRequests = 0
-            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
-            if(foundTask == None):
-                controllersRequestTask = TaskHolder("Latest MIDI controllers request", TaskHolder.RequestTypes.LatestControllers, None, None)
-                self._taskQueue.append(controllersRequestTask)
-                self._guiClient.requestLatestControllers()
-                controllersRequestTask.setState(TaskHolder.States.Sendt)
+            if(self._stoppingWebRequests == False):
+                self._skippedLatestControllersRequests = 0
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
+                if(foundTask == None):
+                    controllersRequestTask = TaskHolder("Latest MIDI controllers request", TaskHolder.RequestTypes.LatestControllers, None, None)
+                    self._taskQueue.append(controllersRequestTask)
+                    self._guiClient.requestLatestControllers()
+                    controllersRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedLatestControllersRequests += 1
 

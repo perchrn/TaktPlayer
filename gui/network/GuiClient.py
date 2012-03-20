@@ -12,6 +12,7 @@ import os
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import mimetypes
 import time
+import socket
 
 def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
     run = True
@@ -41,7 +42,7 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 elif(commandXml.tag == "trackStateRequest"):
                     urlArgs = "?trackState=true"
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
-                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml", "trackStateRequest")
                     resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "configStateRequest"):
                     oldId = getFromXml(commandXml, "id", "-1")
@@ -80,9 +81,9 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
         except Empty:
             pass
 
-def requestUrl(hostPort, urlArgs, excpectedMimeType = "text/xml"):
+def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "servermessage"):
     try:
-        httpConnection = httplib.HTTPConnection(hostPort)
+        httpConnection = httplib.HTTPConnection(hostPort, timeout=5)
         httpConnection.request("GET", urlArgs)
         serverResponse = httpConnection.getresponse()
         if(serverResponse.status == 200):
@@ -95,7 +96,7 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType = "text/xml"):
                     if((pathDir == "/thumbs") or (pathDir == "thumbs")):
                         filePath = "thumbs/%s" % pathFile
                     else:
-                        serverMessageXml = MiniXml("servermessage", "Bad directory request sending 404: %s" % pathDir)
+                        serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory request sending 404: %s" % pathDir)
                         return serverMessageXml.getXmlString()
                     fileHandle=open(filePath, 'wb')
                     fileHandle.write(serverResponse.read())
@@ -107,23 +108,40 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType = "text/xml"):
                     serverResponseData = serverResponse.read()
                     return serverResponseData
             else:
-                clientMessageXml = MiniXml("servermessage", "Bad file type from server! Got: %s Expected: %s" % (resposeType, excpectedMimeType))
+                clientMessageXml = MiniXml(xmlErrorResponseName, "Bad file type from server! Got: %s Expected: %s" % (resposeType, excpectedMimeType))
                 return clientMessageXml.getXmlString()
         else:
-            clientMessageXml = MiniXml("servermessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
+            clientMessageXml = MiniXml(xmlErrorResponseName, "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
             return clientMessageXml.getXmlString()
         httpConnection.close()
-    except:
-        clientMessageXml = MiniXml("servermessage", "Got exception while requesting URL.")
+    except socket.timeout:
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        clientMessageXml.addAttribute("exception", "timeout")
+        return clientMessageXml.getXmlString()
+    except socket.error as (errno, strerror):
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        if(errno == 10060):
+            clientMessageXml.addAttribute("exception", "timeout")
+        elif(errno == 10061):
+            clientMessageXml.addAttribute("exception", "connectionRefused")
+        elif(errno == 11004):
+            clientMessageXml.addAttribute("exception", "resolvError")
+        else:
+            clientMessageXml.addAttribute("exception", str(errno))
+            clientMessageXml.addAttribute("description", str(strerror))
+        return clientMessageXml.getXmlString()
+    except Exception, e:
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        clientMessageXml.addAttribute("exception", str(e))
         return clientMessageXml.getXmlString()
 
-def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString):
+def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString, xmlErrorResponseName = "servermessage"):
     try:
         files = [(fileType, fileName, xmlString)]
         fields = urlSignaturer.getSigantureFieldsForFile(fileType, fileName, xmlString)
         content_type, body = encode_multipart_formdata(fields, files)
         headers = {"Content-type": content_type}
-        httpConnection = httplib.HTTPConnection(hostPort)
+        httpConnection = httplib.HTTPConnection(hostPort, timeout=10)
         httpConnection.request("POST", "", body, headers)
         serverResponse = httpConnection.getresponse()
         if(serverResponse.status == 200):
@@ -132,14 +150,27 @@ def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString):
                 serverResponseData = serverResponse.read()
                 return serverResponseData
             else:
-                clientMessageXml = MiniXml("servermessage", "Bad file type from server! Got: %s Expected: %s" % (resposeType, "text/xml"))
+                clientMessageXml = MiniXml(xmlErrorResponseName, "Bad file type from server! Got: %s Expected: %s" % (resposeType, "text/xml"))
                 return clientMessageXml.getXmlString()
         else:
-            clientMessageXml = MiniXml("servermessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
+            clientMessageXml = MiniXml(xmlErrorResponseName, "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
             return clientMessageXml.getXmlString()
         httpConnection.close()
-    except:
-        clientMessageXml = MiniXml("servermessage", "Got exception while requesting URL.")
+    except socket.error as (errno, strerror):
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while posting file: " + fileName)
+        if(errno == 10060):
+            clientMessageXml.addAttribute("exception", "timeout")
+        elif(errno == 10061):
+            clientMessageXml.addAttribute("exception", "connectionRefused")
+        elif(errno == 11004):
+            clientMessageXml.addAttribute("exception", "resolvError")
+        else:
+            clientMessageXml.addAttribute("exception", str(errno))
+            clientMessageXml.addAttribute("description", str(strerror))
+        return clientMessageXml.getXmlString()
+    except Exception, e:
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while posting file: " + fileName)
+        clientMessageXml.addAttribute("exception", str(e))
         return clientMessageXml.getXmlString()
 
 def encode_multipart_formdata(fields, files):
@@ -266,7 +297,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, Preview, NoteList, TrackState, ConfigState, Configuration, LatestControllers, ConfigFileList = range(9)
+        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, LatestControllers, ConfigFileList = range(10)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -301,8 +332,22 @@ class GuiClient(object):
                 elif(serverXml.tag == "trackStateRequest"):
 #                    returnValue = (self.ResponseTypes.TrackState, None)
                     listTxt = serverXml.get("list")
-#                    print "Got trackStateRequest response: list: %s" % (listTxt)
-                    returnValue = (self.ResponseTypes.TrackState, listTxt.split(',', 128))
+                    if(listTxt != None):
+#                        print "Got trackStateRequest response: list: %s" % (listTxt)
+                        returnValue = (self.ResponseTypes.TrackState, listTxt.split(',', 128))
+                    else:
+                        exception  = serverXml.get("exception")
+                        if(exception == "timeout"):
+                            print "Track request timed out."
+                            returnValue = (self.ResponseTypes.TrackStateError, "timeout")
+                        elif(exception == "connectionRefused"):
+                            print "Track request connection was refused."
+                            returnValue = (self.ResponseTypes.TrackStateError, "connectionRefused")
+                        elif(exception == "resolvError"):
+                            print "Track request connection error could not resolve host."
+                            returnValue = (self.ResponseTypes.TrackStateError, "resolvError")
+                        else:
+                            print "Unknown Error: " + serverResponse
                 elif(serverXml.tag == "configStateRequest"):
 #                    returnValue = (self.ResponseTypes.ConfigState, None)
                     configId = serverXml.get("id")

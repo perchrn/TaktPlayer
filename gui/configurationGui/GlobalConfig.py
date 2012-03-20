@@ -80,7 +80,9 @@ class GlobalConfig(object):
 
     def getDraggedFxName(self):
         fxIndex = self._effectsGui.getDraggedFxIndex()
+        print "DEBUG: getDraggedFxName() fxIndex: " + str(fxIndex)
         effect = self._effectsConfiguration.getTemplateByIndex(fxIndex)
+        print "DEBUG: getDraggedFxName() effect: " + str(effect)
         if(effect != None):
             return effect.getName()
         else:
@@ -99,7 +101,7 @@ class GlobalConfig(object):
         self._effectsConfiguration.deleteTemplate(configName)
 
     def duplicateEffectTemplate(self, configName):
-        self._effectsConfiguration.duplicateTemplate(configName)
+        return self._effectsConfiguration.duplicateTemplate(configName)
 
     def getEffectTemplateNamesList(self):
         return self._effectsConfiguration.getTemplateNamesList()
@@ -157,6 +159,7 @@ class EffectsGui(object):
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._startConfigName = ""
         self._selectedEditor = self.EditSelection.Unselected
+        self._effectListSelectedIndex = -1
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
         self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
@@ -505,6 +508,7 @@ Selects the effect.
             if(effectTemplate != None):
                 effectName = effectTemplate.getName()
                 newName = self._mainConfig.duplicateEffectTemplate(effectName)
+                print "DEBUG: duplicate name: " + str(newName)
                 self._mainConfig.updateEffectList(newName)
 
     def _onListDeleteButton(self, event):
@@ -542,11 +546,12 @@ Selects the effect.
         self._setDragCursor()
 
     def getDraggedFxIndex(self):
-        draggedIndex = self._effectListDraggedIndex
-        self._effectListWidget.SetItemState(draggedIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
-        self._effectListWidget.SetItemState(draggedIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        dragIndex = self._effectListDraggedIndex # Gets updated by state calls
+        if(dragIndex > -1):
+            self._effectListWidget.SetItemState(dragIndex, 0, ultimatelistctrl.ULC_STATE_SELECTED)
+            self._effectListWidget.SetItemState(dragIndex, ultimatelistctrl.ULC_STATE_SELECTED, ultimatelistctrl.ULC_STATE_SELECTED) #@UndefinedVariable
         self._effectListWidget.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
-        return draggedIndex
+        return dragIndex
 
     def _onListDoubbleClick(self, event):
         self._effectListDraggedIndex = -1
@@ -614,6 +619,7 @@ Selects the effect.
             self.updateGui(savedTemplate, self._midiNote)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
+            self._mainConfig.updateEffectList(saveName)
 
     def _onSlidersButton(self, event):
         self._showSlidersCallback()
@@ -861,7 +867,7 @@ Selects the effect.
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Colorize):
             self._setLabels("Amount:", "Red", "Green", "Blue", "Mode")
-            self._setupValueLabels(None, None, None, None, self._golorizeModes.getChoices())
+            self._setupValueLabels(None, None, None, None, self._colorizeModes.getChoices())
         elif(self._chosenEffectId == EffectTypes.Invert):
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
@@ -925,6 +931,9 @@ Selects the effect.
             else:
                 self._effectListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
         if(selectedIndex > -1):
+            self._effectListSelectedIndex = selectedIndex
+            self._effectListWidget.Focus(selectedIndex)
+            self._effectListWidget.Update()
             self._effectListWidget.Select(selectedIndex)
 
     def updateEffectListHeight(self, height):
@@ -955,6 +964,7 @@ class FadeGui(object):
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._selectedEditor = self.EditSelected.Unselected
         self._fadeModes = FadeMode()
+        self._fadeListSelectedIndex = -1
 
         self._blankFadeBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
         self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
@@ -1050,9 +1060,9 @@ class FadeGui(object):
         self._fadeImageList = wx.ImageList(25, 16) #@UndefinedVariable
 
         self._modeIdImageIndex = []
-        index = self._fadeImageList.Add(self._fadeBlackBitmap)
-        self._modeIdImageIndex.append(index)
         index = self._fadeImageList.Add(self._fadeWhiteBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._fadeBlackBitmap)
         self._modeIdImageIndex.append(index)
 
         self._modIdImageIndex = []
@@ -1190,11 +1200,12 @@ Decides if this image fades to black or white.
         self._setDragCursor()
 
     def getDraggedFxIndex(self):
-        draggedIndex = self._fadeListDraggedIndex
-        self._fadeListWidget.SetItemState(draggedIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
-        self._fadeListWidget.SetItemState(draggedIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        dragIndex = self._fadeListDraggedIndex # Gets updated by state calls
+        if(dragIndex > -1):
+            self._fadeListWidget.SetItemState(dragIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+            self._fadeListWidget.SetItemState(dragIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
         self._fadeListWidget.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
-        return draggedIndex
+        return dragIndex
 
     def _onListDoubbleClick(self, event):
         self._fadeListDraggedIndex = -1
@@ -1257,6 +1268,7 @@ Decides if this image fades to black or white.
             self.updateGui(savedTemplate, None)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
+            self._mainConfig.updateFadeList(saveName)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -1324,6 +1336,7 @@ Decides if this image fades to black or white.
             else:
                 self._fadeListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
         if(selectedIndex > -1):
+            self._fadeListSelectedIndex = selectedIndex
             self._fadeListWidget.Select(selectedIndex)
 
     def updateGui(self, fadeTemplate, editField):

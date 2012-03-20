@@ -124,6 +124,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingEditAreaPanel.SetSizer(editAreaSizer)
 
         self._trackGui = MediaTrackGui(self._configuration)
+        self._configuration.setMixerGui(self._trackGui)
         self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui)
         self._configuration.setNoteGui(self._noteGui)
         trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable

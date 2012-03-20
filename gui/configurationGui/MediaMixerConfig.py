@@ -7,7 +7,7 @@ Created on 6. feb. 2012
 import wx
 from video.media.MediaFileModes import MixMode
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame
+    addTrackButtonFrame, EVT_DOUBLE_CLICK_EVENT
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -135,16 +135,23 @@ class MediaTrackGui(object): #@UndefinedVariable
 
         self.updateMixmodeThumb = parentClass.updateMixmodeThumb
         self.updateEffectThumb = parentClass.updateEffectThumb
+        self.showEffectList = parentClass.showEffectList
 
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
         inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
         PcnImageButton(self._mainTrackOverviewPlane, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Pre FX:", pos=(4, 164)) #@UndefinedVariable
         self._overviewPreFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewPreFxButton.enableDoubleClick()
+        self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
+        self._overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (51, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
         self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewPostFxButton.enableDoubleClick()
+        self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
+        self._overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
         outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
         PcnImageButton(self._mainTrackOverviewPlane, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
 
@@ -298,6 +305,16 @@ Replace:\tNo mixing. Just use this image.
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
 
+    def _onPreFxButtonDouble(self, event):
+        selectedEffectConfig = self._preEffectField.GetValue()
+        self._mainConfig.updateEffectList(selectedEffectConfig)
+        self.showEffectList()
+
+    def _onPostFxButtonDouble(self, event):
+        selectedEffectConfig = self._postEffectField.GetValue()
+        self._mainConfig.updateEffectList(selectedEffectConfig)
+        self.showEffectList()
+
     def _onCloseButton(self, event):
         self._hideTrackGuiCallback()
         self._hideEffectsCallback()
@@ -309,7 +326,6 @@ Replace:\tNo mixing. Just use this image.
     def _onSaveButton(self, event):
         if(self._config != None):
             self._mixMode = self._mixField.GetValue()
-            print "DEBUG saving mix mode: " + self._mixMode
             self._config.setValue("MixMode", self._mixMode)
             self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
             preEffectConfig = self._preEffectField.GetValue()
@@ -326,9 +342,10 @@ Replace:\tNo mixing. Just use this image.
         self._overviewPreviewButton.setBitmapFile(fileName)
 
     def updateGui(self, trackConfig, trackId, noteMixMode):
-        self._trackId = trackId
-        self._config = trackConfig
-        self._latestOverviewMixMode = noteMixMode
+        if(trackConfig != None):
+            self._trackId = trackId
+            self._config = trackConfig
+            self._latestOverviewMixMode = noteMixMode
         if(self._config == None):
             return
         self._trackField.SetValue(str(self._trackId + 1))

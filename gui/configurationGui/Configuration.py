@@ -74,12 +74,12 @@ class Configuration(object):
         if(self._noteGui != None):
             self._noteGui.updateGui(None, None)
 
-    def setMixerGui(self, noteGui):
-        self._mixerGui = noteGui
+    def setMixerGui(self, trackGui):
+        self._mixerGui = trackGui
 
     def updateMixerGui(self):
         if(self._mixerGui != None):
-            self._mixerGui.updateGui(None, None)
+            self._mixerGui.updateGui(None, None, None)
 
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()

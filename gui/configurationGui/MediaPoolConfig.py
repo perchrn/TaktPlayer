@@ -647,7 +647,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx1Button.enableDoubleClick()
-        self._overviewFx1Button.enableDoubleClick()
+        self._overviewFx2Button.enableDoubleClick()
         self._overviewClipModeButton.Bind(wx.EVT_BUTTON, self._onClipModeButton) #@UndefinedVariable
         self._overviewClipMixButton.Bind(wx.EVT_BUTTON, self._onClipMixButton) #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx1Done)
@@ -1175,8 +1175,9 @@ All notes on events are quantized to this.
 #        elif(mixModeId == self._mixModes.Subtrackt):
 #            widget.setBitmaps(self._mixBitmapSubtract, self._mixBitmapSubtract)
 
-    def updateEffectThumb(self, widget, preEffectConfig):
-        effectTemplate = self._mainConfig.getEffectTemplate(preEffectConfig)
+    def updateEffectThumb(self, widget, effectConfigName):
+        effectTemplate = self._mainConfig.getEffectTemplate(effectConfigName)
+        effectTemplate.checkAndUpdateFromConfiguration()
         effectName = effectTemplate.getEffectName()
         effectId = getEffectId(effectName)
         if(effectId == None):
@@ -1241,10 +1242,8 @@ All notes on events are quantized to this.
         self.showNoteGui()
 
     def _onOverviewClipSaveButton(self, event):
-        if(self._config != None):
-            if(self._overviewClipSaveButtonDissabled == False):
-                print "DEBUG: SAVE!!!!!!!!!!!!"
-                self._onSaveButton(event)
+        if(self._overviewClipSaveButtonDissabled == False):
+            self._onSaveButton(event)
 
     def _onMouseRelease(self, event):
         print "DEBUG mouse RELEASE " * 5
@@ -1271,6 +1270,7 @@ All notes on events are quantized to this.
             modeText = self._mixLabels[index]
             self._updateMixModeChoices(self._mixField, modeText, "Add")
             self.updateMixmodeThumb(self._overviewClipMixButton, modeText, modeText)
+            self._showOrHideSaveButton()
 
     def _onClipModeButton(self, event):
         self._clipOverviewGuiPlane.PopupMenu(self._overviewClipModeButtonPopup, (77,13))
@@ -1336,6 +1336,7 @@ All notes on events are quantized to this.
                 self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
             else:
                 self._overviewClipModeButton.setBitmaps(self._modeImages[index], self._modeImages[index])
+            self._showOrHideSaveButton()
 
     def _onClipFadeModeChosen(self, index):
         if((index >= 0) and (index < len(self._fadeModeLabels))):
@@ -1375,6 +1376,7 @@ All notes on events are quantized to this.
                                         oldConfig.update(fadeMode, None, None)
                                     self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                                     self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                                    self._showOrHideSaveButton()
 
     def _onClipFadeButton(self, event):
         self._clipOverviewGuiPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (71,128))
@@ -1407,6 +1409,7 @@ All notes on events are quantized to this.
                             self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                             self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                             self._mainConfig.updateFadeList(newFadeConfigName)
+                            self._showOrHideSaveButton()
                     fadeConfigName = newFadeConfigName
                 if(fadeConfig != None):
                     self._mainConfig.updateFadeGui(fadeConfigName, name)
@@ -1423,51 +1426,46 @@ All notes on events are quantized to this.
         self._openModulationEditor("Level")
 
     def _onDragFx1Done(self, event):
+        print "DEBUG _onDragFx1Done()"
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
                 self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
                 self.updateEffectThumb(self._overviewFx1Button, fxName)
+                self._showOrHideSaveButton()
         self.clearDragCursor()
 
     def _onDragFx2Done(self, event):
+        print "DEBUG _onDragFx2Done()"
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
                 self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
                 self.updateEffectThumb(self._overviewFx2Button, fxName)
+                self._showOrHideSaveButton()
         self.clearDragCursor()
 
     def _onFxButton(self, event):
+        print "DEBUG _onFxButton()"
         buttonId = event.GetEventObject().GetId()
+        effectConfigName = None
         if(self._config != None):
             if(buttonId == self._overviewFx1Button.GetId()):
                 effectConfigName = self._config.getValue("Effect1Config")
-                self.showEffectsGui()
-                self._selectedEditor = self.EditSelection.Effect1
-                self._highlightButton(self._selectedEditor)
-                self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
-                self.showEffectsGui()
-                self._selectedEditor = self.EditSelection.Effect2
-                self._highlightButton(self._selectedEditor)
-                self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
         if(self._activeTrackClipNoteId > -1):
             noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
             if(noteConfig != None):
                 if(buttonId == self._overviewTrackFx1Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect1Config")
-                    self.showEffectsGui()
-                    self._selectedEditor = self.EditSelection.Unselected
-                    self._highlightButton(self._selectedEditor)
-                    self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
                 if(buttonId == self._overviewTrackFx2Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect2Config")
-                    self.showEffectsGui()
-                    self._selectedEditor = self.EditSelection.Unselected
-                    self._highlightButton(self._selectedEditor)
-                    self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+        if(effectConfigName != None):
+            self.showEffectsGui()
+            self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
 
     def _onFxButtonDouble(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -1484,6 +1482,7 @@ All notes on events are quantized to this.
                     effectConfigName =  noteConfig.getValue("Effect1Config")
                 if(buttonId == self._overviewTrackFx2Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect2Config")
+        print "DEBUG _onFxButtonDouble() highlight: effectConfigName = " + str(effectConfigName)
         self._mainConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
@@ -1535,62 +1534,65 @@ All notes on events are quantized to this.
         guiType = self._typeField.GetValue()
         configType = self._config.getValue("Type")
         if(guiType != configType):
-            print "DEBUG Type!"
             return True
         guiFileName = self._fileNameField.GetValue()
         configFileName = os.path.basename(self._config.getValue("FileName"))
         if(guiFileName != configFileName):
             return True
-            print "DEBUG FileName!"
         if(configType == "VideoLoop"):
             guiMode = self._subModeField.GetValue()
             configMode = self._config.getValue("LoopMode")
             if(guiMode != configMode):
-                print "DEBUG LoopMode!"
                 return True
         if(self._type == "ImageSequence"):
             guiMode = self._subModeField.GetValue()
             configMode = self._config.getValue("SequenceMode")
             if(guiMode != configMode):
-                print "DEBUG SequenceMode!"
                 return True
             guiSubMode = self._subModulationField.GetValue()
             configSubMode = self._config.getValue("PlayBackModulation")
             if(guiSubMode != configSubMode):
-                print "DEBUG PlayBackModulation!"
                 return True
         guiSyncLength = float(self._syncField.GetValue())
         configSyncLength = float(self._config.getValue("SyncLength"))
         if(guiSyncLength != configSyncLength):
-            print "DEBUG SyncLength! gui: " + str(guiSyncLength) + " " + str(type(guiSyncLength)) + " != conf: " + str(configSyncLength) + " " + str(type(configSyncLength))
             return True
         guiQLength = float(self._quantizeField.GetValue())
         configQLength = float(self._config.getValue("QuantizeLength"))
         if(guiQLength != configQLength):
-            print "DEBUG QuantizeLength!"
             return True
         guiMix = self._mixField.GetValue()
         configMix = self._config.getValue("MixMode")
+#        print "DEBUG test mixmode GUI: " + str(guiMix) + " cfg: " + str(configMix)
         if(guiMix != configMix):
-            print "DEBUG MixMode!"
+#            print "DEBUG MixMode differs!"
             return True
         guiFx1 = self._effect1Field.GetValue()
         configFx1 = self._config.getValue("Effect1Config")
         if(guiFx1 != configFx1):
-            print "DEBUG Effect1Config!"
             return True
         guiFx2 = self._effect2Field.GetValue()
         configFx2 = self._config.getValue("Effect2Config")
         if(guiFx2 != configFx2):
-            print "DEBUG Effect1Config!"
             return True
         guiFade = self._fadeField.GetValue()
         configFade = self._config.getValue("FadeConfig")
         if(guiFade != configFade):
-            print "DEBUG FadeConfig!"
             return True
         return False
 
+    def _showOrHideSaveButton(self):
+        updated = self._checkIfUpdated()
+        if(updated == False):
+            if((self._config == None) and (self._midiNote != None)):
+                updated = True
+            else:
+                self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+                self._overviewClipSaveButtonDissabled = True
+        if(updated == True):
+            self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._overviewClipSaveButtonDissabled = False
+        
     def updateGui(self, noteConfig, midiNote):
         if(noteConfig != None):
             config = noteConfig.getConfig()
@@ -1616,6 +1618,7 @@ All notes on events are quantized to this.
         self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         noteText = self._config.getValue("Note")
         self._noteField.SetValue(noteText)
+        print "DEBUG setting note text *****************************************"
         self._overviewClipNoteLabel.SetLabel("NOTE: " + noteText)
         length = self._config.getValue("SyncLength")
         self._syncField.SetValue(str(length))
@@ -1644,12 +1647,8 @@ All notes on events are quantized to this.
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None)
 
-        if(self._checkIfUpdated() == True):
-            self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
-            self._overviewClipSaveButtonDissabled = False
-        else:
-            self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-            self._overviewClipSaveButtonDissabled = True
+        print "DEBUG check save button *****************************************"
+        self._showOrHideSaveButton()
 
     def clearGui(self, midiNote):
         self._config = None
@@ -1687,7 +1686,6 @@ All notes on events are quantized to this.
         self._overviewClipNoteLabel.SetLabel("NOTE: " + midiNoteString)
         self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
-        self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-        self._overviewClipSaveButtonDissabled = True
+        self._showOrHideSaveButton()
 
 

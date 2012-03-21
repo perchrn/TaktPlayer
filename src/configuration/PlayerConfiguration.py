@@ -12,11 +12,28 @@ class PlayerConfiguration(object):
         self._playerConfigurationTree.addTextParameter("StartConfig", "PovRay_1.cfg") #TODO: change this to a default config.
 
         self._screenConfig = self._playerConfigurationTree.addChildUnique("Screen")
-        self._screenConfig.addIntParameter("ResolutionX", 800)
-        self._screenConfig.addIntParameter("ResolutionY", 600)
+        self._screenConfig.addIntParameter("ResolutionX", 1024)
+        self._screenConfig.addIntParameter("ResolutionY", 768)
+        self._screenConfig.addTextParameter("FullscreenMode", "off") #on, off, auto
         self._internalResolutionX =  self._screenConfig.getValue("ResolutionX")
         self._internalResolutionY =  self._screenConfig.getValue("ResolutionY")
+        self._fullscreenMode =  self._screenConfig.getValue("FullscreenMode")
 
+        self._screenConfig.addTextParameter("Position", "auto") #auto, xpos,ypos, 0,0 etc.
+        self._positionAutoMode = True
+        self._positionTuplet = (-1, -1)
+        positionString = self._screenConfig.getValue("Position")
+        if(positionString.lower != "auto"):
+            positionList = positionString.split(',')
+            if(len(positionList) < 2):
+                positionList = positionString.split('.')
+            if(len(positionList) < 2):
+                positionList = positionString.split('x')
+            if(len(positionList) < 2):
+                positionList = positionString.split('X')
+            if(len(positionList) == 2):
+                self._positionTuplet = (int(positionList[0]), int(positionList[1]))
+                self._positionAutoMode = False
         self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
         self._serverConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._serverConfig.addIntParameter("MidiPort", 2020)
@@ -25,6 +42,15 @@ class PlayerConfiguration(object):
 
     def getResolution(self):
         return (self._internalResolutionX, self._internalResolutionY)
+
+    def getFullscreenMode(self):
+        return self._fullscreenMode
+
+    def isAutoPositionEnabled(self):
+        return self._positionAutoMode
+
+    def getPosition(self):
+        return self._positionTuplet
 
     def getMidiServerAddress(self):
         print "MidiAdr: " + str(self._serverConfig.getValue("MidiBindAddress"))

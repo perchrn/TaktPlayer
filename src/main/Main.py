@@ -10,6 +10,7 @@ from configuration.EffectSettings import EffectTemplates, FadeTemplates
 from configuration.GuiServer import GuiServer
 import multiprocessing
 from configuration.PlayerConfiguration import PlayerConfiguration
+from kivy.config import Config
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -37,6 +38,9 @@ import signal
 import logging
 logging.root.setLevel(logging.ERROR)
 
+internalResolutionX = 800
+internalResolutionY = 600
+
 class MyKivyApp(App):
 #    icon = 'custom-kivy-icon.png'
     title = 'Musical Video Player'
@@ -50,7 +54,8 @@ class MyKivyApp(App):
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
         self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
         self._playerConfiguration = PlayerConfiguration(self._playerConfigurationTree)
-        self._internalResolutionX, self._internalResolutionY =  self._playerConfiguration.getResolution()
+        self._internalResolutionX = internalResolutionX
+        self._internalResolutionY =  internalResolutionY
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
 #        self._configurationTree.loadConfig("DefaultConfig.cfg")
@@ -60,8 +65,7 @@ class MyKivyApp(App):
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
-
-        self._pcnVideoWidget = PcnVideo(resolution=(self._internalResolutionX, self._internalResolutionY))
+        self._pcnVideoWidget = PcnVideo(internalResolution=(self._internalResolutionX, self._internalResolutionY))
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
@@ -141,6 +145,46 @@ class MyKivyApp(App):
 
 if __name__ in ('__android__', '__main__'):
     multiprocessing.freeze_support()
+
+    playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
+    playerConfigurationTree.loadConfig("PlayerConfig.cfg")
+    playerConfiguration = PlayerConfiguration(playerConfigurationTree)
+    global internalResolutionX
+    global internalResolutionY
+    internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
+    fullscreenMode = playerConfiguration.getFullscreenMode()
+
+    from win32api import GetSystemMetrics #@UnresolvedImport
+    currentWidth = GetSystemMetrics (0)
+    currentHeight = GetSystemMetrics (1)
+    if(fullscreenMode == "auto"):
+        internalResolutionX = currentWidth
+        internalResolutionY = currentHeight
+        Config.set('graphics', 'fullscreen', "auto")
+        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
+    elif(fullscreenMode == "on"):
+        Config.set('graphics', 'width', str(internalResolutionX))
+        Config.set('graphics', 'height', str(internalResolutionY))
+        Config.set('graphics', 'fullscreen', "auto")
+        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
+    else:
+        windowWidth = min(currentWidth, (internalResolutionX + 100))
+        windowHeight = min(currentHeight, (internalResolutionY + 100))
+        Config.set('graphics', 'width', str(windowWidth))
+        Config.set('graphics', 'height', str(windowHeight))
+        Config.set('graphics', 'fullscreen', "0")
+        autoMode = playerConfiguration.isAutoPositionEnabled()
+        if(autoMode == True):
+            Config.set('graphics', 'position', "auto")
+        else:
+            positionX, postionY = playerConfiguration.getPosition()
+            Config.set('graphics', 'position', "custom")
+            Config.set('graphics', 'left', str(positionX))
+            Config.set('graphics', 'top', str(postionY))
+            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
+        print "Startup windowed: Width: " + str(windowWidth) + " Height: " + str(windowHeight)
+    Config.write()
+
     try:
         mainApp = MyKivyApp()
         Clock.schedule_interval(mainApp.getNextFrame, 0)

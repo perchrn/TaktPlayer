@@ -12,8 +12,8 @@ class PlayerConfiguration(object):
         self._playerConfigurationTree.addTextParameter("StartConfig", "PovRay_1.cfg") #TODO: change this to a default config.
 
         self._screenConfig = self._playerConfigurationTree.addChildUnique("Screen")
-        self._screenConfig.addIntParameter("ResolutionX", 1024)
-        self._screenConfig.addIntParameter("ResolutionY", 768)
+        self._screenConfig.addIntParameter("ResolutionX", 800)
+        self._screenConfig.addIntParameter("ResolutionY", 600)
         self._screenConfig.addTextParameter("FullscreenMode", "off") #on, off, auto
         self._internalResolutionX =  self._screenConfig.getValue("ResolutionX")
         self._internalResolutionY =  self._screenConfig.getValue("ResolutionY")
@@ -35,6 +35,7 @@ class PlayerConfiguration(object):
                 self._positionTuplet = (int(positionList[0]), int(positionList[1]))
                 self._positionAutoMode = False
         self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
+        self._serverConfig.addBoolParameter("MidiBroadcast", True)
         self._serverConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._serverConfig.addIntParameter("MidiPort", 2020)
         self._serverConfig.addTextParameter("WebBindAddress", "0.0.0.0")
@@ -51,6 +52,10 @@ class PlayerConfiguration(object):
 
     def getPosition(self):
         return self._positionTuplet
+
+    def getMidiServerUsesBroadcast(self):
+        print "UseBcast: " + str(self._serverConfig.getValue("MidiBroadcast"))
+        return self._serverConfig.getValue("MidiBroadcast")
 
     def getMidiServerAddress(self):
         print "MidiAdr: " + str(self._serverConfig.getValue("MidiBindAddress"))

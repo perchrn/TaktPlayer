@@ -11,13 +11,14 @@ from utilities import MultiprocessLogger
 from multiprocessing import Process, Queue
 from Queue import Empty
 
-def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
-#        while(True):
-#            if(midiSocket)
+def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue):
     processLogger = logging.getLogger('networkDaemon')
     processLogger.setLevel(logging.DEBUG)
     MultiprocessLogger.configureProcessLogger(processLogger, logQueue)
     midiSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if(useBroadcast == True):
+        midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        host = ''
     try:
         midiSocket.bind((host, port))
     except:
@@ -25,10 +26,15 @@ def networkDaemon(host, port, outputQueue, commandQueue, logQueue):
         #Ask process hogging port to shut down
         import ctypes
         udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if(useBroadcast == True):
+            udpClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         buffer = ctypes.create_string_buffer(6) #@ReservedAssignment
         for i in range(6): #fa-fa-fa (*2) like in Allo Allo:-P
             buffer[i] = chr(0xfa)
-        udpClientSocket.sendto(buffer, ("127.0.0.1", port))
+        if(useBroadcast == True):
+            udpClientSocket.sendto(buffer, ('<broadcast>', port))
+        else:
+            udpClientSocket.sendto(buffer, ("127.0.0.1", port))
         time.sleep(2)
         try:
             midiSocket.bind((host, port))
@@ -84,9 +90,9 @@ class TcpMidiListner(object):
 #    def __del__(self):
 #        if(self._connection != None):
 #            self._connection.close()
-    def startDaemon(self, host, port):
+    def startDaemon(self, host, port, useBroadcast):
         self._log.debug("Starting TcpMidiListner daemon")
-        self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, self._midiQueue, self._midiListnerCommandQueue, self._multiprocessLogger.getLogQueue()))
+        self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, useBroadcast, self._midiQueue, self._midiListnerCommandQueue, self._multiprocessLogger.getLogQueue()))
         self._midiListnerProcess.name = "midiUdpListner"
 #        self._midiListnerProcess.daemon = True
         self._midiListnerProcess.start()
@@ -196,7 +202,7 @@ class TcpMidiListner(object):
             if(decodeOk != True):
                 print "Unknown message: %02x %02x %02x %02x" % (command, data1, data2, data3)
 
-    def getData(self):
+    def getData(self, clockOnly):
         while(True):
             try:
                 dataTimeStamp, self._conectedAddress, data = self._midiQueue.get_nowait()

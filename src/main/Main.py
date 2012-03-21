@@ -82,7 +82,7 @@ class MyKivyApp(App):
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
-        self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort())
+        self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
 
@@ -131,7 +131,7 @@ class MyKivyApp(App):
 #            if (dt > self._timingThreshold):
 #                self._log.info("Too slow main schedule " + str(dt))
             timeStamp = time.time()
-            self._midiListner.getData()
+            self._midiListner.getData(False)
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()
             self.checkAndUpdateFromConfiguration()

@@ -437,7 +437,8 @@ class MidiChannelStateHolder(object):
             return unquantizedNote.getNote()
         return -1
 
-    def cleanupFutureNotes(self, songPosition, timeLimit):
+    def cleanupFutureNotes(self, songPositionTuplet, timeLimit):
+        midiSync, songPosition = songPositionTuplet #@UnusedVariable
         for note in range(128):
             testNote = self._nextNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):

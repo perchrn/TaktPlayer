@@ -40,14 +40,19 @@ class MidiOverNetSender(object):
 
 #        self._host = "10.242.10.145"
 #        self._port = 2020
-    def startMidiOverNetProcess(self, inputId, host, port):
+    def startMidiOverNetProcess(self, inputId, host, port, useBroadcast, filterClock):
         if((inputId < len(self._midiInputList)) and (inputId >= 0)):
             midiName, midiOpen, pygameMidiId = self._midiInputList[inputId] #@UnusedVariable
-            print "Starting MidiOverNetPorcess. From MIDI input: \"%s\" to host: %s:%d" %(midiName, host, port)
+            if(useBroadcast == True):
+                host = '<broadcast>'
+            clockInfo = "Sending MIDI clock."
+            if(filterClock == True):
+                clockInfo = "Filtering MIDI clock!"
+            print "Starting MidiOverNetPorcess. From MIDI input: \"%s\" to host: %s:%d %s" %(midiName, host, port, clockInfo)
             self._midiOverNetQueue = Queue(32)
             self._statusQueue = Queue(1024)
             self._debugPrintQueue = Queue(1024)
-            self._midiOverNetProcess = Process(target=midiOverNetProcess, args=(host, port, pygameMidiId, self._midiOverNetQueue, self._statusQueue, self._debugPrintQueue))
+            self._midiOverNetProcess = Process(target=midiOverNetProcess, args=(host, port, useBroadcast, filterClock, pygameMidiId, self._midiOverNetQueue, self._statusQueue, self._debugPrintQueue))
             self._midiOverNetProcess.name = "midiUdpSender"
             self._midiOverNetProcess.start()
 
@@ -91,12 +96,15 @@ class MidiOverNetSender(object):
                 pass
         return (daemon, clocks, midis)
 
-def midiOverNetProcess(host, port, pygameMidiId, commandQueue, statusQueue, debugPrintQueue):
+def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, commandQueue, statusQueue, debugPrintQueue):
     pygame.midi.init()
     midiDevice = pygame.midi.Input(pygameMidiId)
     if(midiDevice == None):
         return
     udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if(useBroadcast == True):
+        udpClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        host = '<broadcast>'
     buffer = ctypes.create_string_buffer(4) #@ReservedAssignment
     midiClicksSentSinceLastSPP = 9999
     sppValue = 0
@@ -109,30 +117,42 @@ def midiOverNetProcess(host, port, pygameMidiId, commandQueue, statusQueue, debu
             command, data1, data2, data3 = midiData
             #bufferStruct.pack_into(buffer, 0, midiData)
             if(command == 0xf2):
-                sppValue = int(data1)+(int(data2 << 7)) * 6
-                lastTimeEventWasSPP = True
-                statusQueue.put_nowait(1)#MIDI Time.
-            elif(command == 0xf8):
-                if(lastTimeEventWasSPP == True):
-                    #Don't increase or calculate new position when we just got a SPP from MIDI host
-                    lastTimeEventWasSPP = False
-                else:
-                    sppValue += 1
-                if(midiClicksSentSinceLastSPP > 95):
-                    calcSpp = sppValue / 6
-                    sppLsb = calcSpp & 0x7f
-                    sppMsb = (calcSpp >> 7) & 0x7f
-                    sppExtraBits = (calcSpp >> 14) & 0x7f
-                    debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
-                    midiClicksSentSinceLastSPP = 0
-                    buffer[0] = chr(0xf2)
-                    buffer[1] = chr(sppLsb)
-                    buffer[2] = chr(sppMsb)
-                    buffer[3] = chr(sppExtraBits)
+                if(filterClock == False):
+                    sppValue = int(data1)+(int(data2 << 7)) * 6
+                    lastTimeEventWasSPP = True
+                    statusQueue.put_nowait(1)#MIDI Time.
+                    buffer[0] = chr(command)
+                    buffer[1] = chr(data1)
+                    buffer[2] = chr(data2)
+                    buffer[3] = chr(data3)
                     udpClientSocket.sendto(buffer, (host, port))
-                else:
-                    midiClicksSentSinceLastSPP += 1
-                statusQueue.put_nowait(1)#MIDI Time.
+            elif(command == 0xf8):
+                if(filterClock == False):
+                    if(lastTimeEventWasSPP == True):
+                        #Don't increase or calculate new position when we just got a SPP from MIDI host
+                        lastTimeEventWasSPP = False
+                    else:
+                        sppValue += 1
+                    if(midiClicksSentSinceLastSPP > 95):
+                        calcSpp = sppValue / 6
+                        sppLsb = calcSpp & 0x7f
+                        sppMsb = (calcSpp >> 7) & 0x7f
+                        sppExtraBits = (calcSpp >> 14) & 0x7f
+                        debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
+                        midiClicksSentSinceLastSPP = 0
+                        buffer[0] = chr(0xf2)
+                        buffer[1] = chr(sppLsb)
+                        buffer[2] = chr(sppMsb)
+                        buffer[3] = chr(sppExtraBits)
+                        udpClientSocket.sendto(buffer, (host, port))
+                    else:
+                        midiClicksSentSinceLastSPP += 1
+                    buffer[0] = chr(command)
+                    buffer[1] = chr(data1)
+                    buffer[2] = chr(data2)
+                    buffer[3] = chr(data3)
+                    udpClientSocket.sendto(buffer, (host, port))
+                    statusQueue.put_nowait(1)#MIDI Time.
             else:
                 buffer[0] = chr(command)
                 buffer[1] = chr(data1)

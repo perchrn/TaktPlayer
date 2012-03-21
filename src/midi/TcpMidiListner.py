@@ -128,7 +128,7 @@ class TcpMidiListner(object):
         elif(command == 0xf1):
             print "Time Code!"
         elif(command == 0xf2):
-            if(self._midiTiming._updateSongPostiton(dataTimeStamp, data1, data2) == True):
+            if(self._midiTiming._updateSongPostiton(dataTimeStamp, data1, data2, data3) == True):
                 self._midiStateHolder.cleanupFutureNotes(self._midiTiming.getSongPosition(dataTimeStamp), self._midiTiming.getTicksPerQuarteNote())
         elif(command == 0xf3):
             print "Song Select!"

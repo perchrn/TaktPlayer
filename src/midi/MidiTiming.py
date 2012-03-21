@@ -16,14 +16,11 @@ class MidiTiming(object):
 #        self._midiTimeing = (4,4);
         self._midiTicksPerQuarteNote = 24
         self._midiTicksPerBar = self._midiTicksPerQuarteNote * 4
-        self._midiTicksTimestamps = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-                                     -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-                                     -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-                                     -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-                                     -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-                                     -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
-        self._midiTicksTimestampsPos = -1
         self._midiTicksTimestampsLength = 96
+        self._midiTicksTimestamps = []
+        for i in range(self._midiTicksTimestampsLength): #@UnusedVariable
+            self._midiTicksTimestamps.append(-1.0)
+        self._midiTicksTimestampsPos = -1
         self._midiInitTime = self.getTime()
         self._midiBpm = 120.0
         self._midiMaxSyncBarsMissed = 16 * self._midiTicksPerQuarteNote
@@ -55,6 +52,9 @@ class MidiTiming(object):
         ourSongPosition = self._midiOurSongPosition + subsubPos
         return (midiSync, ourSongPosition)
 
+    def getBpm(self):
+        return self._midiBpm
+
     def convertToMidiPosition(self, midiSync, ourSongPosition):
         bar = int(ourSongPosition / self._midiTicksPerBar) + 1
         beat = int((ourSongPosition % self._midiTicksPerBar) / self._midiTicksPerQuarteNote) + 1
@@ -83,7 +83,7 @@ class MidiTiming(object):
         self._midiTicksTimestampsPos = -1
         self._midiInitTime = self.getTime()
 
-    def _updateSongPostiton(self, dataTimeStamp, data1 = None, data2 = None):
+    def _updateSongPostiton(self, dataTimeStamp, data1 = None, data2 = None, data3 = 0):
         if(data1 == None):
             midiSync, subsubPos = self._calculateSubSubPos(dataTimeStamp)
             if(midiSync == False and self._midiTicksTimestampsPos != -1):
@@ -109,7 +109,7 @@ class MidiTiming(object):
             else:
                 self._midiBpm = 60 * self._midiTicksTimestampsLength / (self._midiTicksPerQuarteNote * (dataTimeStamp - startPosTimeStamp))
         else:
-            sppValue = int(data1)+(int(data2 << 7))
+            sppValue = (int(data1)+(int(data2 << 7))+int(data3 << 14)) * 6
             oldSpp = self._midiOurSongPosition
             self._midiOurSongPosition = sppValue
             self._midiLastTimeEventWasSPP = True

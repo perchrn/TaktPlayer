@@ -11,6 +11,7 @@ from configuration.GuiServer import GuiServer
 import multiprocessing
 from configuration.PlayerConfiguration import PlayerConfiguration
 from kivy.config import Config
+import sys
 os.environ['KIVY_CAMERA'] = 'opencv'
 import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
@@ -154,9 +155,17 @@ if __name__ in ('__android__', '__main__'):
     internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
     fullscreenMode = playerConfiguration.getFullscreenMode()
 
-    from win32api import GetSystemMetrics #@UnresolvedImport
-    currentWidth = GetSystemMetrics (0)
-    currentHeight = GetSystemMetrics (1)
+    if(sys.platform == "win32"):
+        from win32api import GetSystemMetrics #@UnresolvedImport
+        currentWidth = GetSystemMetrics (0)
+        currentHeight = GetSystemMetrics (1)
+    elif(sys.platform == "darwin"):
+        import AppKit #@UnresolvedImport
+        screen = AppKit.NSScreen.screens()[0]
+        currentWidth = screen.frame().size.width
+        currentHeight = screen.frame().size.height
+    else:
+        print "do xrandr | grep '*' and parse to get resolution on linux etc..."
     if(fullscreenMode == "auto"):
         internalResolutionX = currentWidth
         internalResolutionY = currentHeight

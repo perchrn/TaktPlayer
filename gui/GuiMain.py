@@ -19,6 +19,7 @@ import subprocess
 import multiprocessing
 from utilities.UrlSignature import UrlSignature
 from configurationGui.MediaMixerConfig import MediaTrackGui
+from media.VideoConvert import VideoConverterDialog
 
 APP_NAME = "MusicalVideoPlayer"
 
@@ -85,6 +86,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._videoDirectory = self._configuration.getGuiVideoDir()
+        self._videoSaveSubDir = ""
+        self._videoScaleX = self._configuration.getVideoScaleX()
+        self._videoScaleY = self._configuration.getVideoScaleY()
+        if((self._videoScaleX == -1) or (self._videoScaleY == -1)):
+            self._videoScaleMode = "No scale"
+        else:
+            self._videoScaleMode = "Custom"
+        self._videoCropMode = "No crop"
         self._oldServerConfigurationString = ""
         self._oldServerConfigList = ""
         self._oldServerActiveConfig = ""
@@ -752,8 +761,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._noteWidgetIds[i] == widgetId):
                 destNoteId = i
                 break
+        ffmpegPath = os.path.normpath(self._configuration.getFfmpegBinary())
         if(destNoteId != None):
-            ffmpegString = self._call_command(os.path.normpath("../ffmpeg/bin/ffmpeg") + " -i " + fileName)
+            ffmpegString = self._call_command(ffmpegPath + " -i " + fileName)
             inputCount = 0
             streamcount = 0
             inputIsVideo = True
@@ -800,7 +810,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
                         text = "Convert file: " + fileName
-                        dlg = wx.MessageDialog(self, text, 'DEBUG', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+                        dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
+                                                   ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, 
+                                                   self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY) #@UndefinedVariable
                         dlg.ShowModal()
                         dlg.Destroy()
                 if(inputOk == True):
@@ -824,6 +836,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             dlg = wx.MessageDialog(self, text, 'File error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
             dlg.ShowModal()
             dlg.Destroy()
+
+    def _updateValuesFromConvertDialogCallback(self, videoSaveSubDir, videoCropMode, videoScaleMode, scaleX, scaleY):
+        self._videoSaveSubDir = videoSaveSubDir
+        self._videoCropMode = videoCropMode
+        self._videoScaleMode = videoScaleMode
+        self._videoScaleX = scaleX
+        self._videoScaleY = scaleY
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

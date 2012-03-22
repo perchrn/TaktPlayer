@@ -8,6 +8,7 @@ from configurationGui.GlobalConfig import GlobalConfig
 from configurationGui.MediaPoolConfig import MediaPoolConfig
 from configurationGui.MediaMixerConfig import MediaMixerConfig
 from network.SendMidiOverNet import SendMidiOverNet
+import os
 
 class Configuration(object):
     def __init__(self):
@@ -33,6 +34,9 @@ class Configuration(object):
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
         self._guiConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video")
+        self._guiConfigurationTree.addTextParameter("FfmpegBinary", os.path.normpath("../ffmpeg/bin/ffmpeg"))
+        self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
+        self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()
@@ -50,6 +54,15 @@ class Configuration(object):
 
     def getGuiVideoDir(self):
         return self._guiConfigurationTree.getValue("VideoDir")
+
+    def getFfmpegBinary(self):
+        return self._guiConfigurationTree.getValue("FfmpegBinary")
+
+    def getVideoScaleX(self):
+        return self._guiConfigurationTree.getValue("ScaleVideoX")
+
+    def getVideoScaleY(self):
+        return self._guiConfigurationTree.getValue("ScaleVideoY")
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback

@@ -416,6 +416,7 @@ class GuiServer(object):
                 elif(webCommandXml.tag == "configuration"):
                     print "Updating configuration..."
                     self._configurationTree.setFromXml(webCommandXml)
+                    return True
                 elif(webCommandXml.tag == "configFileRequest"):
                     reqType = getFromXml(webCommandXml, "type", "list")
                     fileName = getFromXml(webCommandXml, "fileName", "None")
@@ -438,6 +439,7 @@ class GuiServer(object):
                 print "ERROR! Web server command is not a valid XML: " + str(webCommand)
         except Empty:
             pass
+        return False
 
 
 

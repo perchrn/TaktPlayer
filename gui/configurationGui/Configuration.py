@@ -32,7 +32,7 @@ class Configuration(object):
         self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
-        self._guiConfigurationTree.addTextParameter("VideoDir", "")
+        self._guiConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video")
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()

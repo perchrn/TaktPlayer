@@ -69,10 +69,11 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
+        self._videoDirectory = videoDir
         self.setFileName(fileName)
         self._midiTiming = midiTimingClass
         self._internalResolutionX =  internalResolutionX
@@ -95,7 +96,7 @@ class MediaFile(object):
         self._log.setLevel(logging.WARNING)
 
         self._configurationTree.addTextParameterStatic("Type", self.getType())
-        self._configurationTree.addTextParameterStatic("FileName", self._filename)
+        self._configurationTree.addTextParameterStatic("FileName", self._cfgFileName)
         self._midiModulation = None
         self._setupConfiguration()
 
@@ -162,14 +163,15 @@ class MediaFile(object):
         return "Unknown"
 
     def equalFileName(self, fileName):
-        print "equalFileName " + self._filename + " == " + os.path.normcase(fileName)
-        return self._filename == os.path.normcase(fileName)
+        print "equalFileName " + self._cfgFileName + " == " + os.path.normpath(fileName)
+        return self._cfgFileName == os.path.normcase(fileName)
 
     def getFileName(self):
-        return self._filename
+        return self._cfgFileName
 
     def setFileName(self, fileName):
-        self._filename = os.path.normcase(fileName)
+        self._cfgFileName = os.path.normpath(fileName)
+        self._fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), self._cfgFileName)
 
     def isFileOk(self):
         return self._fileOk
@@ -269,10 +271,10 @@ class MediaFile(object):
         pass
 
     def openVideoFile(self, midiLength):
-        if (os.path.isfile(self._filename) == False):
-            self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
-        self._videoFile = cv.CaptureFromFile(self._filename)
+        self._videoFile = cv.CaptureFromFile(self._fullFilePath)
         try:
             self._captureImage = cv.QueryFrame(self._videoFile)
             self._firstImage = copyImage(self._captureImage)
@@ -280,18 +282,18 @@ class MediaFile(object):
             self._secondImage = copyImage(self._captureImage)
             self._captureImage = self._firstImage
         except:
-            self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
-            print "Exception while reading: " + os.path.basename(self._filename)
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         if (self._captureImage == None):
-            self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
-            print "Could not read frames from: " + os.path.basename(self._filename)
+            self._log.warning("Could not read frames from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read frames from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
         try:
             self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
             self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
         except:
-            self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._filename))
+            self._log.warning("Exception while getting number of frames from: %s", os.path.basename(self._cfgFileName))
             raise MediaError("File caused exception!")
         if(self._numberOfFrames < 20):
             try:
@@ -302,8 +304,8 @@ class MediaFile(object):
                     self._captureImage = cv.QueryFrame(self._videoFile)
                     self._bufferedImageList.append(copyImage(self._captureImage))
             except:
-                self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
-                print "Exception while reading: " + os.path.basename(self._filename)
+                self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+                print "Exception while reading: " + os.path.basename(self._cfgFileName)
                 raise MediaError("File caused exception!")
         self._captureImage = self._firstImage
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
@@ -311,7 +313,7 @@ class MediaFile(object):
             if(midiLength <= 0.0):
                 midiLength = self._midiTiming.guessMidiLength(self._originalTime)
             self.setMidiLengthInBeats(midiLength)
-        self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._filename), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
+        self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._cfgFileName), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
     def getThumbnailId(self, videoPosition):
@@ -329,7 +331,7 @@ class MediaFile(object):
         else:
             videoPosition = 0.0
 
-        filenameHash = hashlib.sha224(self._filename).hexdigest()
+        filenameHash = hashlib.sha224(self._cfgFileName).hexdigest()
         thumbnailName = "thumbs/%s_%0.2f.jpg" % (filenameHash, videoPosition)
         osFileName = os.path.normpath(thumbnailName)
         if (os.path.isfile(osFileName) == False):
@@ -362,8 +364,8 @@ class MediaFile(object):
             return mixedImage
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._getConfiguration()
 
     def getType(self):
@@ -380,27 +382,27 @@ class ImageFile(MediaFile):
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeValue)
 
     def openFile(self, midiLength):
-        if (os.path.isfile(self._filename) == False):
-            self._log.warning("Could not find file: %s in directory: %s", self._filename, os.getcwd())
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            self._captureImage = cv.LoadImage(self._filename)
+            self._captureImage = cv.LoadImage(self._fullFilePath)
         except:
-            self._log.warning("Exception while reading: %s", os.path.basename(self._filename))
-            print "Exception while reading: " + os.path.basename(self._filename)
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         if (self._captureImage == None):
-            self._log.warning("Could not read frames from: %s", os.path.basename(self._filename))
-            print "Could not read frames from: " + os.path.basename(self._filename)
+            self._log.warning("Could not read frames from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read frames from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
         self._firstImage = self._captureImage
         self._originalTime = 1.0
-        self._log.warning("Read image file %s", os.path.basename(self._filename))
+        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
 
@@ -440,8 +442,8 @@ class CameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
@@ -530,8 +532,8 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()

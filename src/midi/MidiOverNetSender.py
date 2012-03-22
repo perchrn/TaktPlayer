@@ -138,7 +138,7 @@ def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, comm
                         sppLsb = calcSpp & 0x7f
                         sppMsb = (calcSpp >> 7) & 0x7f
                         sppExtraBits = (calcSpp >> 14) & 0x7f
-                        debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
+#                        debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
                         midiClicksSentSinceLastSPP = 0
                         buffer[0] = chr(0xf2)
                         buffer[1] = chr(sppLsb)

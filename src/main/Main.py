@@ -78,7 +78,7 @@ class MyKivyApp(App):
         confChild = self._configurationTree.addChildUnique("MediaMixer")
         self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY)
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
@@ -135,7 +135,9 @@ class MyKivyApp(App):
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()
             self.checkAndUpdateFromConfiguration()
-            self._guiServer.processGuiRequests()
+            updateConfig = self._guiServer.processGuiRequests()
+            if(updateConfig == True):
+                self._configCheckCounter = self._configCheckEveryNRound + 1
 #            timeUsed = time.time() - timeStamp
 #            if((timeUsed / self._lastDelta) > 0.9):
 #                print "PCN time: " + str(timeUsed) + " last delta: " + str(self._lastDelta)
@@ -145,13 +147,13 @@ class MyKivyApp(App):
             raise
 
 if __name__ in ('__android__', '__main__'):
+    global internalResolutionX
+    global internalResolutionY
     multiprocessing.freeze_support()
 
     playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
     playerConfigurationTree.loadConfig("PlayerConfig.cfg")
     playerConfiguration = PlayerConfiguration(playerConfigurationTree)
-    global internalResolutionX
-    global internalResolutionY
     internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
     fullscreenMode = playerConfiguration.getFullscreenMode()
 

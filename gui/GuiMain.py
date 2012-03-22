@@ -84,6 +84,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             size=(800, 576))
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
+        self._videoDirectory = self._configuration.getGuiVideoDir()
         self._oldServerConfigurationString = ""
         self._oldServerConfigList = ""
         self._oldServerActiveConfig = ""
@@ -364,7 +365,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.NoteList):
-#                print "GuiClient.ResponseTypes.NoteList"
+                print "GuiClient.ResponseTypes.NoteList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ActiveNotes, None)
                 if(result[1] != None):
                     noteList = result[1]
@@ -464,10 +465,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                     loadConfig = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
-                            self.updateKeyboardImages()
                             print "#" * 150
                             self._configuration.printConfiguration()
                             print "#" * 150
+                        self.updateKeyboardImages()
                     self._oldServerConfigurationString = newConfigString
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -803,12 +804,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         dlg.ShowModal()
                         dlg.Destroy()
                 if(inputOk == True):
-                    print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), fileName)
+                    relativeFileName = os.path.relpath(fileName, self._videoDirectory)
+                    print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
                     if(destinationConfig == None):
-                        destinationConfig = self._configuration.makeNoteConfig(fileName, noteToNoteString(destNoteId), destNoteId)
+                        destinationConfig = self._configuration.makeNoteConfig(relativeFileName, noteToNoteString(destNoteId), destNoteId)
                     if(destinationConfig != None):
-                        destinationConfig.updateFileName(fileName, inputIsVideo)
+                        destinationConfig.updateFileName(relativeFileName, inputIsVideo)
                         self._noteWidgets[destNoteId].setBitmap(self._newNoteBitmap)
                         self._noteGui.updateGui(destinationConfig, destNoteId)
                     return

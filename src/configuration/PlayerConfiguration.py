@@ -8,7 +8,7 @@ class PlayerConfiguration(object):
     def __init__(self, configHolder):
         self._playerConfigurationTree = configHolder
 
-        self._playerConfigurationTree.addTextParameter("VideoDir", "")
+        self._playerConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video") #TODO: change this
         self._playerConfigurationTree.addTextParameter("StartConfig", "PovRay_1.cfg") #TODO: change this to a default config.
 
         self._screenConfig = self._playerConfigurationTree.addChildUnique("Screen")

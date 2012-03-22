@@ -288,6 +288,7 @@ class MediaFileGui(object): #@UndefinedVariable
     def __init__(self, parentPlane, mainConfig, trackGui):
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
+        self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._trackGui = trackGui
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming)
@@ -747,7 +748,7 @@ class MediaFileGui(object): #@UndefinedVariable
         else:
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-                self._fileName = dlg.GetPath()
+                self._fileName = os.path.relpath(dlg.GetPath(), self._videoDirectory)
                 self._fileNameField.SetValue(os.path.basename(self._fileName))
             dlg.Destroy()
 

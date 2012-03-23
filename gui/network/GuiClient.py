@@ -210,6 +210,7 @@ class GuiClient(object):
     def __init__(self):
         self._commandQueue = None
         self._resultQueue = None
+        self._lastTrackRequestError = None
 
     def startGuiClientProcess(self, host, port, passwd):
         if(passwd == None):
@@ -335,19 +336,28 @@ class GuiClient(object):
                     if(listTxt != None):
 #                        print "Got trackStateRequest response: list: %s" % (listTxt)
                         returnValue = (self.ResponseTypes.TrackState, listTxt.split(',', 128))
+                        self._lastTrackRequestError = None
                     else:
                         exception  = serverXml.get("exception")
                         if(exception == "timeout"):
-                            print "Track request timed out."
+                            if(self._lastTrackRequestError != "timeout"):
+                                print "Track request timed out."
+                                self._lastTrackRequestError = "timeout"
                             returnValue = (self.ResponseTypes.TrackStateError, "timeout")
                         elif(exception == "connectionRefused"):
-                            print "Track request connection was refused."
+                            if(self._lastTrackRequestError != "connectionRefused"):
+                                print "Track request connection was refused."
+                                self._lastTrackRequestError = "connectionRefused"
                             returnValue = (self.ResponseTypes.TrackStateError, "connectionRefused")
                         elif(exception == "resolvError"):
-                            print "Track request connection error could not resolve host."
+                            if(self._lastTrackRequestError != "resolvError"):
+                                print "Track request connection error could not resolve host."
+                                self._lastTrackRequestError = "resolvError"
                             returnValue = (self.ResponseTypes.TrackStateError, "resolvError")
                         else:
-                            print "Unknown Error: " + serverResponse
+                            if(self._lastTrackRequestError != "unknown"):
+                                print "Unknown Error: " + serverResponse
+                                self._lastTrackRequestError = "unknown"
                 elif(serverXml.tag == "configStateRequest"):
 #                    returnValue = (self.ResponseTypes.ConfigState, None)
                     configId = serverXml.get("id")

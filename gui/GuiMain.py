@@ -88,12 +88,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._videoDirectory = self._configuration.getGuiVideoDir()
         self._videoSaveSubDir = ""
         self._videoScaleX = self._configuration.getVideoScaleX()
+        if(self._videoScaleX == None):
+            self._videoScaleX = -1
         self._videoScaleY = self._configuration.getVideoScaleY()
+        if(self._videoScaleY == None):
+            self._videoScaleY = -1
         if((self._videoScaleX == -1) or (self._videoScaleY == -1)):
             self._videoScaleMode = "No scale"
         else:
             self._videoScaleMode = "Custom"
         self._videoCropMode = "No crop"
+        self._convertionWentOk = False
+        self._convertionOutputFileName = ""
         self._oldServerConfigurationString = ""
         self._oldServerConfigList = ""
         self._oldServerActiveConfig = ""
@@ -810,11 +816,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
                         text = "Convert file: " + fileName
+                        self._convertionWentOk = False
                         dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
                                                    ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, 
-                                                   self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY) #@UndefinedVariable
+                                                   self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY)
                         dlg.ShowModal()
                         dlg.Destroy()
+                        if(self._convertionWentOk == True):
+                            fileName = self._convertionOutputFileName
+                            inputOk = True
+                #TODO: Check and ask if we should "move" file...
                 if(inputOk == True):
                     relativeFileName = os.path.relpath(fileName, self._videoDirectory)
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
@@ -837,12 +848,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             dlg.ShowModal()
             dlg.Destroy()
 
-    def _updateValuesFromConvertDialogCallback(self, videoSaveSubDir, videoCropMode, videoScaleMode, scaleX, scaleY):
+    def _updateValuesFromConvertDialogCallback(self, videoSaveSubDir, videoCropMode, videoScaleMode, scaleX, scaleY, convertionWentOk, convertionOutputFileName):
         self._videoSaveSubDir = videoSaveSubDir
         self._videoCropMode = videoCropMode
         self._videoScaleMode = videoScaleMode
         self._videoScaleX = scaleX
         self._videoScaleY = scaleY
+        self._convertionWentOk = convertionWentOk
+        self._convertionOutputFileName = convertionOutputFileName
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

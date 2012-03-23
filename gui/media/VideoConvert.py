@@ -6,6 +6,11 @@ Created on 22. mars 2012
 
 import wx
 import os
+import subprocess
+from multiprocessing import Process, Queue
+from Queue import Empty
+import sys
+import time
 
 class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
     
@@ -21,6 +26,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         self._scaleMode = scaleModeValue
         self._scaleXValue = scaleXValue
         self._scaleYValue = scaleYValue
+        self._convertionWentOk = False
 
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
@@ -88,8 +94,8 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         convertButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         cancelButton = wx.Button(self, wx.ID_ANY, 'Cancel', size=(60,-1)) #@UndefinedVariable
         cancelButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        buttonsSizer.Add(convertButton, 0, wx.ALL, 5) #@UndefinedVariable
-        buttonsSizer.Add(cancelButton, 0, wx.ALL, 5) #@UndefinedVariable
+        buttonsSizer.Add(convertButton, 1, wx.ALL, 5) #@UndefinedVariable
+        buttonsSizer.Add(cancelButton, 1, wx.ALL, 5) #@UndefinedVariable
         convertButton.Bind(wx.EVT_BUTTON, self._onConvert) #@UndefinedVariable
         cancelButton.Bind(wx.EVT_BUTTON, self._onCancel) #@UndefinedVariable
         dialogSizer.Add(buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -157,24 +163,165 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         cropMode = self._cropModeField.GetValue()
         cropOptions = ""
         if(cropMode == "16:9->4:3"):
-            cropOptions = "-vf crop=3/4*in_w:in_h"
+            cropOptions = " -vf crop=3/4*in_w:in_h"
         elif(cropMode == "4.3->16:9"):
-            cropOptions = "-vf crop=in_w:3/4*in_h"
+            cropOptions = " -vf crop=in_w:3/4*in_h"
         scaleMode = self._scaleModeField.GetValue()
         scaleOptions = ""
         if(scaleMode != "No scale"):
             xscale = int(self._scaleXField.GetValue())
             yscale = int(self._scaleYField.GetValue())
-            scaleOptions = "-vf scale=%d:%d" % (xscale, yscale)
+            scaleOptions = " -vf scale=%d:%d" % (xscale, yscale)
 
         if(convertFile == True):
             print "Open converter dialog..."
             print "Show ffmpeg output realtime etc."
-            print "%s -i %s %s %s -vcodec mjpeg -qscale 1 -an -y %s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
-            self._valuesSaveCallback(self._dirName, cropMode, scaleMode, int(self._scaleXField.GetValue()), int(self._scaleYField.GetValue()))
+            ffmpegCommand = "%s -i %s%s%s -vcodec mjpeg -qscale 1 -an -y %s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
+            dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback)
+            dlg.ShowModal()
+            dlg.Destroy()
+            self._valuesSaveCallback(self._dirName, cropMode, scaleMode, int(self._scaleXField.GetValue()), int(self._scaleYField.GetValue()), self._convertionWentOk, outputFileName)
             self.Destroy()
+
+    def _okConvertionCallback(self):
+        self._convertionWentOk = True
 
     def _onCancel(self, event):
         self.Destroy()
 
+class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
+    
+    def __init__(self, parent, title, ffmpegCommand, okConvertionCallback):
+        super(VideoConverterStatusDialog, self).__init__(parent=parent, title=title, size=(800, 320))
 
+        self._okConvertionCallback = okConvertionCallback
+
+        dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
+        self.SetBackgroundColour((180,180,180))
+
+        commandSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        commandLabel = wx.StaticText(self, wx.ID_ANY, "Running:") #@UndefinedVariable
+        commandField = wx.TextCtrl(self, wx.ID_ANY, ffmpegCommand) #@UndefinedVariable
+        commandField.SetEditable(False)
+        commandField.SetBackgroundColour((222,222,222))
+        commandSizer.Add(commandLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        commandSizer.Add(commandField, 1, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(commandSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        ffmpegOutputSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        self._ffmpegOutputArea = wx.TextCtrl(self, style=wx.TE_MULTILINE, size=(-1,200)) #@UndefinedVariable
+        self._ffmpegOutputArea.SetEditable(False)
+        self._ffmpegOutputArea.SetBackgroundColour((232,232,232))
+        ffmpegOutputSizer.Add(self._ffmpegOutputArea, 1, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(ffmpegOutputSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        self._doneButton = wx.Button(self, wx.ID_ANY, 'Done', size=(60,-1)) #@UndefinedVariable
+        self._doneButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._backgroundButton = wx.Button(self, wx.ID_ANY, 'Background', size=(60,-1)) #@UndefinedVariable
+        self._backgroundButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._cancelButton = wx.Button(self, wx.ID_ANY, 'Cancel', size=(60,-1)) #@UndefinedVariable
+        self._cancelButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._buttonsSizer.Add(self._doneButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Hide(self._doneButton)
+        self._buttonsSizer.Add(self._backgroundButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._cancelButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._doneButton.Bind(wx.EVT_BUTTON, self._onCancel) #@UndefinedVariable
+        self._backgroundButton.Bind(wx.EVT_BUTTON, self._onBackground) #@UndefinedVariable
+        self._cancelButton.Bind(wx.EVT_BUTTON, self._onCancel) #@UndefinedVariable
+        dialogSizer.Add(self._buttonsSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self.SetSizer(dialogSizer)
+
+        self._commandProcess = None
+        self._startConvertion(ffmpegCommand)
+
+        self._printTimer = wx.Timer(self, -1) #@UndefinedVariable
+        self._printTimer.Start(50)#20 times a second
+        self.Bind(wx.EVT_TIMER, self._onGetOutputTimer) #@UndefinedVariable
+
+    def _startConvertion(self, command):
+        self._commandPrintQueue = Queue(0)
+        self._returnValueQueue = Queue(1)
+        self._commandQueue = Queue(1)
+        self._commandProcess = Process(target=callCommandProcess, args=(command, self._commandQueue, self._commandPrintQueue, self._returnValueQueue))
+        self._commandProcess.name = "convertionCommandProcess"
+        self._commandProcess.start()
+
+    def _stopConvertion(self, kill = False):
+        if(self._commandProcess != None):
+            if(self._commandProcess.is_alive()):
+                if(kill == True):
+                    print "Killing command."
+                    self._commandQueue.put(True)
+                    time.sleep(1)
+                    self._onGetOutputTimer(None)
+        if(self._commandProcess != None):
+            if(self._commandProcess.is_alive()):
+                print "Terminating command process."
+                self._commandProcess.terminate()
+        self._commandProcess = None
+        self._printTimer.Stop()
+
+    def _onGetOutputTimer(self, event):
+        outputText = ""
+        skippedCount = 0
+        try:
+            while(True):
+                outputText += self._commandPrintQueue.get_nowait()
+                if(skippedCount < 25):
+                    skippedCount += 1
+                else:
+                    self._ffmpegOutputArea.AppendText(outputText)
+                    sys.stdout.write(outputText)
+                    outputText = ""
+                    skippedCount = 0
+        except Empty:
+            if(outputText != ""):
+                self._ffmpegOutputArea.AppendText(outputText)
+                sys.stdout.write(outputText)
+        if(self._commandProcess.is_alive() == False):
+            self._stopConvertion()
+            try:
+                returnValue = self._returnValueQueue.get_nowait()
+                if(returnValue == 0):
+                    returnedOk = True
+                else:
+                    returnedOk = False
+            except Empty:
+                returnedOk = False
+            if(returnedOk == True):
+                self._buttonsSizer.Show(self._doneButton)
+                self._buttonsSizer.Hide(self._cancelButton)
+                self._okConvertionCallback()
+            self._buttonsSizer.Hide(self._backgroundButton)
+            self.Layout()
+
+    def _onBackground(self, event):
+        self._stopConvertion(False)
+        self.Destroy()
+
+    def _onCancel(self, event):
+        self._stopConvertion(True)
+        self.Destroy()
+
+def callCommandProcess(command, commandQueue, printQueue, returnValueQueue):
+    process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    printQueue.put("Running: " + command + "\n")
+    while True:
+        out = process.stdout.read(1)
+        if out == '' and process.poll() != None:
+            break
+        if out != '':
+            printQueue.put(out)
+        try:
+            stop = commandQueue.get_nowait()
+            if(stop == True):
+                printQueue.put("\n\nTerminated by user!\n")
+                process.terminate()
+                break
+        except Empty:
+            pass
+    printQueue.put(process.communicate()[0])
+    printQueue.put("Done.")
+    returnValueQueue.put(process.returncode)

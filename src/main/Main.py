@@ -91,8 +91,9 @@ class MyKivyApp(App):
 
         self._guiServer = GuiServer(self._configurationTree, self._mediaPool, self._midiStateHolder)
         self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
-#        self._guiServer.startWithNote(self._playerConfiguration.getStartNote()) #TODO: Fix startupNote...
-#        self._midiStateHolder.noteOn(0, 0x18, 0x40, (True, 0.0))
+        startNote = self._playerConfiguration.getStartNoteNumber()
+        if((startNote > -1) and (startNote < 128)):
+            self._midiStateHolder.noteOn(0, self._playerConfiguration.getStartNoteNumber(), 0x40, (True, 0.0))
 
 
         print self._configurationTree.getConfigurationXMLString()

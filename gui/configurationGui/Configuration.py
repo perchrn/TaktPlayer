@@ -36,7 +36,7 @@ class Configuration(object):
         self._guiConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video")
         self._guiConfigurationTree.addTextParameter("FfmpegBinary", os.path.normpath("../ffmpeg/bin/ffmpeg"))
         self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
-        self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
+        self._guiConfigurationTree.addIntParameter("ScaleVideoY", -1)
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()

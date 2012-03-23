@@ -234,7 +234,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
-        self.Bind(wx.EVT_TIMER, self._timedUpdate) #@UndefinedVariable
+        self.Bind(wx.EVT_TIMER, self._timedUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
@@ -935,8 +935,21 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _onClose(self, event):
-        self.Destroy()
-        self._guiClient.stopGuiClientProcess()
+        self._guiClient.requestGuiClientProcessToStop()
+        self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
+        self._shutdownTimer.Start(100)#10 times a second
+        self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
+        self._shutdownTimerCounter = 0
+
+    def _onShutdownTimer(self, event):
+        if(self._guiClient.hasGuiClientProcessToShutdownNicely()):
+            print "All done."
+            self.Destroy()
+        else:
+            self._shutdownTimerCounter += 1
+            if(self._shutdownTimerCounter > 200):
+                self._guiClient.forceGuiClientProcessToStop()
+                self.Destroy()
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

@@ -221,19 +221,22 @@ class GuiClient(object):
         self._guiClientProcess.name = "guiNetworkClient"
         self._guiClientProcess.start()
 
-    def stopGuiClientProcess(self):
+    def requestGuiClientProcessToStop(self):
         if(self._guiClientProcess != None):
             print "Stopping guiNetworkClient"
             self._commandQueue.put("QUIT")
-            roundsLeft = 20
-            while(roundsLeft >= 0):
-                if(self._guiClientProcess.is_alive()):
-                    print ".",
-                    time.sleep(1)
-                    roundsLeft -= 1
-                else:
-                    roundsLeft = -1
-            print ":"
+
+    def hasGuiClientProcessToShutdownNicely(self):
+        if(self._guiClientProcess == None):
+            return True
+        else:
+            if(self._guiClientProcess.is_alive() == False):
+                self._guiClientProcess = None
+                return True
+            return False
+
+    def forceGuiClientProcessToStop(self):
+        if(self._guiClientProcess != None):
             if(self._guiClientProcess.is_alive()):
                 print "GuiNetworkClient did not respond to quit command. Terminating."
                 self._guiClientProcess.terminate()

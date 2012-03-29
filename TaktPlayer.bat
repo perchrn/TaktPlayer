@@ -40,5 +40,5 @@ ECHO ##################################
 ECHO done bootstraping kivy...\n
 set PATH=%taktRoot%OpenCV\bin;%PATH%
 set PYTHONPATH=%taktRoot%src;%PYTHONPATH%
-python.exe  %taktRoot%Main.py
+python.exe  %taktRoot%PlayerMain.py
 IF %errorlevel% NEQ 0 (PAUSE)

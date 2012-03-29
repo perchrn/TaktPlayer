@@ -21,7 +21,7 @@ from utilities.UrlSignature import UrlSignature
 from configurationGui.MediaMixerConfig import MediaTrackGui
 from media.VideoConvert import VideoConverterDialog
 
-APP_NAME = "MusicalVideoPlayer"
+APP_NAME = "TaktPlayerGui"
 
 class TaskHolder(object):
     class States():
@@ -83,6 +83,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
             size=(800, 576))
+
+        wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO)
+        self.SetIcon(wxIcon)
+
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._videoDirectory = self._configuration.getGuiVideoDir()
@@ -953,12 +957,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(self._guiClient.hasGuiClientProcessToShutdownNicely()):
             print "All done."
             self.Destroy()
+            wx.Exit()
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):
                 self._guiClient.forceGuiClientProcessToStop()
                 self.Destroy()
-
+                wx.Exit()
+      
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     dirOk = True
@@ -971,8 +977,8 @@ if __name__ == '__main__':
 #    print "CWD: %s" % os.getcwd()
     if(dirOk):
 #        print "Starting wx"
-        app = wx.App(redirect = 0, filename = APP_NAME + ".log") #@UndefinedVariable
-        MusicalVideoPlayerGui(None, title=APP_NAME)
+        app = wx.App(redirect = 1, filename = APP_NAME + ".log") #@UndefinedVariable
+        MusicalVideoPlayerGui(None, title="Takt Player GUI")
         app.MainLoop()
 #        print "wx Done"
     else:

@@ -43,8 +43,8 @@ internalResolutionX = 800
 internalResolutionY = 600
 
 class MyKivyApp(App):
-#    icon = 'custom-kivy-icon.png'
-    title = 'Musical Video Player'
+    icon = os.path.normpath('graphics/TaktPlayer.png')
+    title = 'Takt Player'
 
     def build(self):
         #Multithreaded logging utility and regular logging:

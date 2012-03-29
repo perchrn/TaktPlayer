@@ -40,6 +40,8 @@ ECHO done bootstraping kivy...\n
 ::Adding local ffmpeg to path
 set PATH=%taktRoot%ffmpeg\bin;%PATH%
 
+copy %taktRoot%GuiMain.py %taktRoot%GuiMain.pyw
 set PYTHONPATH=%taktRoot%gui;%taktRoot%src;%PYTHONPATH%
-python.exe  %taktRoot%GuiMain.py
+start %taktRoot%GuiMain.pyw
 IF %errorlevel% NEQ 0 (PAUSE)
+exit

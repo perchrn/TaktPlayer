@@ -114,7 +114,7 @@ class MediaPool(object):
                     if(oldMedia.getType() == mediaType):
                         print "MediaType OK"
                         keepOld= True
-                        print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName)
+                        print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
                         if(midiLength != None):
                             oldMedia.setMidiLengthInBeats(midiLength)
                         oldMedia.checkAndUpdateFromConfiguration()
@@ -145,7 +145,7 @@ class MediaPool(object):
                         mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                 except MediaError, mediaError:
-                    print "Error opening media file: %s Message: %s" % (fileName, str(mediaError))
+                    print "Error opening media file: %s Message: %s" % (fileName.encode("utf-8"), str(mediaError))
                     mediaFile = None
 
         self._mediaPool[midiNote] = mediaFile

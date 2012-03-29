@@ -148,8 +148,6 @@ class MyKivyApp(App):
             raise
 
 if __name__ in ('__android__', '__main__'):
-    global internalResolutionX
-    global internalResolutionY
     multiprocessing.freeze_support()
 
     playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")

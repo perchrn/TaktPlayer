@@ -274,7 +274,7 @@ class MediaFile(object):
         if (os.path.isfile(self._fullFilePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
-        self._videoFile = cv.CaptureFromFile(self._fullFilePath)
+        self._videoFile = cv.CaptureFromFile(self._fullFilePath.encode("utf-8"))
         try:
             self._captureImage = cv.QueryFrame(self._videoFile)
             self._firstImage = copyImage(self._captureImage)
@@ -331,8 +331,8 @@ class MediaFile(object):
         else:
             videoPosition = 0.0
 
-        filenameHash = hashlib.sha224(self._cfgFileName).hexdigest()
-        thumbnailName = "thumbs/%s_%0.2f.jpg" % (filenameHash, videoPosition)
+        filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()
+        thumbnailName = "thumbs/%s.jpg" % (filenameHash)
         osFileName = os.path.normpath(thumbnailName)
         if (os.path.isfile(osFileName) == False):
             print "Thumb file does not exist. Generating... " + thumbnailName
@@ -618,7 +618,7 @@ class VideoLoopFile(MediaFile):
 
 class MediaError(Exception):
     def __init__(self, value):
-        self.value = value
+        self.value = value.encode("utf-8")
 
     def __str__(self):
         return repr(self.value)

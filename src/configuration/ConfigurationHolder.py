@@ -279,7 +279,11 @@ class ConfigurationHolder(object):
 
     def _addXMLAttributes(self, node):
         for param in self._parameters:
-            node.attrib[param.getName()] = str(param.getValue())
+            value = param.getValue()
+            if isinstance( value, basestring ):
+                node.attrib[param.getName()] = value.encode("utf-8").decode("utf-8")
+            else:
+                node.attrib[param.getName()] = str(value)
 
     def _findChild(self, name, idName = None, idValue = None):
         lowername = name.lower()

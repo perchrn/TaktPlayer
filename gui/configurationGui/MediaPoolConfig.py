@@ -78,7 +78,7 @@ class MediaPoolConfig(object):
     def addXmlMedia(self, xmlConfig):
         fileName = xmlConfig.get("filename")
         noteLetter = xmlConfig.get("note")
-        print "Adding " + str(fileName) + " - " + str(noteLetter)
+        print "Adding " + fileName.encode("utf-8") + " - " + str(noteLetter)
         return self.addMedia(fileName, noteLetter, xmlConfig)
 
     def addMedia(self, fileName, noteLetter, xmlConfig = None):

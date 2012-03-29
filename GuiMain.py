@@ -111,25 +111,25 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self.SetBackgroundColour((120,120,120))
 
         self._mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
-        menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         menuSeperatorSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        trackAndEditAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._trackAndEditAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         editAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
         menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
         menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
-        menuPannel.SetSizer(menuSizer) #@UndefinedVariable
+        menuPannel.SetSizer(self._menuSizer) #@UndefinedVariable
         menuSeperatorPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
         menuSeperatorPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
 
-        scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
-        scrollingKeyboardPannel.SetupScrolling(True, False)
-        scrollingKeyboardPannel.SetSizer(keyboardSizer)
-        self._keyboardPanel = wx.Panel(scrollingKeyboardPannel, wx.ID_ANY, size=(3082,60)) #@UndefinedVariable
-        scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
+        self._scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
+        self._scrollingKeyboardPannel.SetupScrolling(True, False)
+        self._scrollingKeyboardPannel.SetSizer(keyboardSizer)
+        self._keyboardPanel = wx.Panel(self._scrollingKeyboardPannel, wx.ID_ANY, size=(3082,60)) #@UndefinedVariable
+        self._scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
@@ -147,13 +147,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._configuration.setMixerGui(self._trackGui)
         self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui)
         self._configuration.setNoteGui(self._noteGui)
-        trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._mainSizer.Add(menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(self._menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
-        self._mainSizer.Add(trackAndEditAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        self._mainSizer.Add(scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(self._trackAndEditAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainSizer.Add(self._scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._sendButton = wx.Button(menuPannel, wx.ID_ANY, 'Send') #@UndefinedVariable
         self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -167,13 +167,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._loadButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._saveButton = wx.Button(menuPannel, wx.ID_ANY, 'Save') #@UndefinedVariable
         self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(confLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(self._activeConfLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(confLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._activeConfLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onSendButton, id=self._sendButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
@@ -952,6 +952,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._shutdownTimer.Start(100)#10 times a second
         self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
         self._shutdownTimerCounter = 0
+        self._mainSizer.Hide(self._menuSizer)
+        self._mainSizer.Hide(self._trackAndEditAreaSizer)
+        self._mainSizer.Hide(self._scrollingKeyboardPannel)
 
     def _onShutdownTimer(self, event):
         if(self._guiClient.hasGuiClientProcessToShutdownNicely()):

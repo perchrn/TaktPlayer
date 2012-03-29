@@ -33,8 +33,8 @@ class Configuration(object):
         self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
-        self._guiConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video")
-        self._guiConfigurationTree.addTextParameter("FfmpegBinary", os.path.normpath("../ffmpeg/bin/ffmpeg"))
+        self._guiConfigurationTree.addTextParameter("VideoDir", "video")
+        self._guiConfigurationTree.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
         self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
         self._guiConfigurationTree.addIntParameter("ScaleVideoY", -1)
 

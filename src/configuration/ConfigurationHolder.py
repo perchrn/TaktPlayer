@@ -101,7 +101,11 @@ class ConfigurationHolder(object):
         self._loadedXML = xmlPart
 
     def loadConfig(self, configName):
-        filePath = os.path.normcase(os.path.normpath(os.getcwd() + "/config/" + configName))
+        filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        if(os.path.isfile(filePath) == False):
+            print "********** Error loading configuration: \"%s\" **********" %(filePath)
+            print "**********          Using default configuration.          **********"
+            return
         try:
             loadFile = open(filePath, 'r')
             xmlString = loadFile.read()
@@ -110,16 +114,18 @@ class ConfigurationHolder(object):
             self._updateFromXml(self._loadedXML)
             self._loadedFileName = configName
         except:
-            print "Error loading configuration."
+            print "********** Error loading configuration: \"%s\" **********" %(filePath)
+            raise
 
     def saveConfigFile(self, configName):
-        filePath = os.path.normpath(os.path.normpath(os.getcwd() + "/config/" + configName))
+        filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
         try:
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
             saveFile.write(xmlString)
         except:
-            print "Error saving configuration."
+            print "********** Error saving configuration: \"%s\" **********" %(filePath)
+            raise
 
     def getConfigFileList(self):
         fileList = os.listdir(os.path.normpath(os.getcwd() + "/config/"))

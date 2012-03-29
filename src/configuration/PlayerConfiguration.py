@@ -12,7 +12,7 @@ class PlayerConfiguration(object):
 
         self._startupConfig = self._playerConfigurationTree.addChildUnique("Startup")
         self._startupConfig.addTextParameter("VideoDir", "video")
-        self._startupConfig.addTextParameter("StartConfig", "Defaut.cfg")
+        self._startupConfig.addTextParameter("StartConfig", "Default.cfg")
         self._startupConfig.addTextParameter("StartNote", "0C") #"" "-1D", "0C", "2H" etc.
 
         self._screenConfig = self._playerConfigurationTree.addChildUnique("Screen")

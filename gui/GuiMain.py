@@ -386,6 +386,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     noteList = result[1]
                     for i in range(128):
                         found = False
+                        print "DEBUG notelist: " + str(noteList)
                         for listEntryTxt in noteList:
                             if(int(listEntryTxt) == i):
 #                                print "requesting i= " + str(i)

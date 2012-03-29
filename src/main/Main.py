@@ -55,8 +55,10 @@ class MyKivyApp(App):
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
         self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
         self._playerConfiguration = PlayerConfiguration(self._playerConfigurationTree)
+        print self._playerConfigurationTree.getConfigurationXMLString()
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY =  internalResolutionY
+        self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
 #        self._configurationTree.loadConfig("DefaultConfig.cfg")
@@ -94,6 +96,7 @@ class MyKivyApp(App):
         startNote = self._playerConfiguration.getStartNoteNumber()
         if((startNote > -1) and (startNote < 128)):
             self._midiStateHolder.noteOn(0, self._playerConfiguration.getStartNoteNumber(), 0x40, (True, 0.0))
+            self._midiStateHolder.noteOff(0, self._playerConfiguration.getStartNoteNumber(), 0x40, (True, 0.000000001))
 
 
         print self._configurationTree.getConfigurationXMLString()

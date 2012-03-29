@@ -80,6 +80,11 @@ class ConfigurationHolder(object):
         self._configId = -1
         self._updateId()
 
+        self._selfClosingList = None
+
+    def setSelfclosingTags(self, tagList):
+        self._selfClosingList = tagList
+
     def _updateId(self):
         newId = self._configId
         while(newId == self._configId):
@@ -108,7 +113,7 @@ class ConfigurationHolder(object):
             print "Error loading configuration."
 
     def saveConfigFile(self, configName):
-        filePath = os.path.normcase(os.path.normpath(os.getcwd() + "/config/" + configName))
+        filePath = os.path.normpath(os.path.normpath(os.getcwd() + "/config/" + configName))
         try:
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
@@ -263,12 +268,18 @@ class ConfigurationHolder(object):
     def getConfigurationXMLString(self):
         root = self.getConfigurationXML()
         xmlString = ElementTree.tostring(root, encoding="utf-8", method="xml")
-        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
+        if(self._selfClosingList != None):
+            soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
+        else:
+            soup = BeautifulStoneSoup(xmlString)
         return soup.prettify()
 
     def _printXml(self, xml):
         xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")
-        soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
+        if(self._selfClosingList != None):
+            soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
+        else:
+            soup = BeautifulStoneSoup(xmlString)
         print soup.prettify()
 
     def _addSelfToXML(self, parentNode):

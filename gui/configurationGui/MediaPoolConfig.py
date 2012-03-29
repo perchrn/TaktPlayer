@@ -1093,7 +1093,9 @@ All notes on events are quantized to this.
             if(self._config != None):
                 self._selectedSubMode = self._config.getValue("SequenceMode")
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
-                self._subModulationField.SetValue(self._config.getValue("PlayBackModulation"))
+                playbackMod = self._config.getValue("PlayBackModulation")
+                print "DEBUG playbackMod: " + str(playbackMod)
+                self._subModulationField.SetValue(playbackMod)
             else:
                 self._selectedSubMode = self._subModeField.GetValue()
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")

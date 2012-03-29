@@ -8,10 +8,12 @@ from midi.MidiUtilities import noteStringToNoteNumber
 class PlayerConfiguration(object):
     def __init__(self, configHolder):
         self._playerConfigurationTree = configHolder
+        self._playerConfigurationTree.setSelfclosingTags(['startup', 'screen', 'server'])
 
-        self._playerConfigurationTree.addTextParameter("VideoDir", "C:\Users\pcn\Video") #TODO: change this
-        self._playerConfigurationTree.addTextParameter("StartConfig", "PovRay_1.cfg") #TODO: change this to a default config.
-        self._playerConfigurationTree.addTextParameter("StartNote", "0C") #"" "-1D", "0C", "2H" etc.
+        self._startupConfig = self._playerConfigurationTree.addChildUnique("Startup")
+        self._startupConfig.addTextParameter("VideoDir", "video")
+        self._startupConfig.addTextParameter("StartConfig", "Defaut.cfg")
+        self._startupConfig.addTextParameter("StartNote", "0C") #"" "-1D", "0C", "2H" etc.
 
         self._screenConfig = self._playerConfigurationTree.addChildUnique("Screen")
         self._screenConfig.addIntParameter("ResolutionX", 800)
@@ -36,6 +38,7 @@ class PlayerConfiguration(object):
             if(len(positionList) == 2):
                 self._positionTuplet = (int(positionList[0]), int(positionList[1]))
                 self._positionAutoMode = False
+
         self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
         self._serverConfig.addBoolParameter("MidiBroadcast", True)
         self._serverConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
@@ -76,13 +79,13 @@ class PlayerConfiguration(object):
         return self._serverConfig.getValue("WebPort")
 
     def getVideoDir(self):
-        return self._playerConfigurationTree.getValue("VideoDir")
+        return self._startupConfig.getValue("VideoDir")
 
     def getStartConfig(self):
-        return self._playerConfigurationTree.getValue("StartConfig")
+        return self._startupConfig.getValue("StartConfig")
 
     def getStartNoteNumber(self):
-        noteString = self._playerConfigurationTree.getValue("StartNote")
+        noteString = self._startupConfig.getValue("StartNote")
         if(noteString == None):
             return -1
         else:

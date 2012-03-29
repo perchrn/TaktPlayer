@@ -11,7 +11,6 @@ import httplib
 import os
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import mimetypes
-import time
 import socket
 
 def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
@@ -92,17 +91,20 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "ser
                 if(excpectedMimeType == "image/jpg"):
                     pathDir = os.path.dirname(urlArgs)
                     pathFile = os.path.basename(urlArgs)
+                    playerFilePath = ""
                     filePath = ""
                     if((pathDir == "/thumbs") or (pathDir == "thumbs")):
-                        filePath = "thumbs/%s" % pathFile
+                        playerFilePath = os.path.normpath("thumbs/%s" % pathFile)
+                        filePath = os.path.normpath("guiThumbs/%s" % pathFile)
                     else:
-                        serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory request sending 404: %s" % pathDir)
+                        serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory in response: %s" % pathDir)
                         return serverMessageXml.getXmlString()
                     fileHandle=open(filePath, 'wb')
                     fileHandle.write(serverResponse.read())
                     fileHandle.close()
                     downloadMessageXml = MiniXml("fileDownloaded")
                     downloadMessageXml.addAttribute("fileName", filePath)
+                    downloadMessageXml.addAttribute("playerFileName", playerFilePath)
                     return downloadMessageXml.getXmlString()
                 else:
                     serverResponseData = serverResponse.read()
@@ -312,12 +314,15 @@ class GuiClient(object):
                 if(serverXml.tag == "servermessage"):
                     print "GuiClient Message: " + serverXml.get("message")
                 elif(serverXml.tag == "fileDownloaded"):
+                    playerFileName = serverXml.get("playerFileName")
                     fileName = serverXml.get("fileName")
+                    if(playerFileName == None):
+                        playerFileName = ""
                     if(fileName == None):
                         print "ERRORRRRRRR!!!!! file"
                         returnValue = (self.ResponseTypes.FileDownload, None)
                     else:
-                        returnValue = (self.ResponseTypes.FileDownload, fileName)
+                        returnValue = (self.ResponseTypes.FileDownload, (fileName, playerFileName))
                 elif(serverXml.tag == "thumbRequest"):
                     noteTxt = serverXml.get("note")
                     noteTime = float(serverXml.get("time", "0.0"))

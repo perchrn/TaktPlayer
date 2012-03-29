@@ -344,8 +344,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(result[0] == GuiClient.ResponseTypes.FileDownload):
 #                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
-                    fileName = result[1]
-                    if(fileName == "thumbs/preview.jpg"):
+                    fileName, playerFileName = result[1]
+                    if(playerFileName == "thumbs/preview.jpg"):
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
                         self._trackGui.updatePreviewImage(osFileName)
@@ -353,7 +353,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             foundTask.taskDone()
                             self._taskQueue.remove(foundTask)
                     else:
-                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, fileName)
+                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, playerFileName)
                         if(foundTask == None):
                             print "Could not find task that belongs to this answer: " + fileName
                         else:

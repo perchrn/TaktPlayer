@@ -412,8 +412,8 @@ class CameraInput(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, internalResolutionX, internalResolutionY):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState, internalResolutionX, internalResolutionY)
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
             self._image = None
             return

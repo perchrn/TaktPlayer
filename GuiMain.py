@@ -745,21 +745,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._dragSource = None
 
     def _onMouseClick(self, event):
-        print "DEBUG mouse CLICK " * 5
         self._dragSource = None
         self._noteGui.clearDragCursor()
 
     def _call_command(self, command):
-        print "command: " + command
-        process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         outputString = ""
-        while True:
-            out = process.stdout.read(1)
-            if out == '' and process.poll() != None:
-                break
-            if out != '':
-                outputString += out
-        outputString += process.communicate()[0]
+        try:
+            process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except:
+            text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
+            text += " from directory: \"" + os.getcwd() + "\"\n"
+            text += "\nPlease check your path or update GuiMain.bat.\n"
+            dlg = wx.MessageDialog(self, text, 'ffmpeg error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            while True:
+                out = process.stdout.read(1)
+                if out == '' and process.poll() != None:
+                    break
+                if out != '':
+                    outputString += out
+            outputString += process.communicate()[0]
         return outputString
 
     def fileDropped(self, widgetId, fileName):

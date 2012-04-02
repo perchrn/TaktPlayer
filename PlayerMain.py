@@ -109,11 +109,17 @@ class MyKivyApp(App):
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
             if(self._configurationTree.isConfigurationUpdated()):
+                print "**********" * 10
                 print "config is updated..."
                 self._getConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
+                self._effectsConfiguration.checkAndUpdateFromConfiguration()
+                self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
                 #TODO: autosave...
+                print "**********" * 10
+                print self._configurationTree.getConfigurationXMLString()
+                print "**********" * 10
             self._configCheckCounter = 0
         else:
             self._configCheckCounter += 1

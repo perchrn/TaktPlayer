@@ -15,6 +15,7 @@ class ConfigurationTemplates(object):
         self._configurationTemplates = []
         self._setupConfiguration()
         self._getConfiguration()
+        self._templateTypeName = "Unknown template type"
 
     def _setupConfiguration(self):
         pass
@@ -24,7 +25,9 @@ class ConfigurationTemplates(object):
         self._validateDefault()
 
     def checkAndUpdateFromConfiguration(self):
-        pass
+        if(self._configurationTree.isConfigurationUpdated()):
+            print self._templateTypeName + " config is updated..."
+            self._getConfiguration()
 
     def getMidiTiming(self):
         return self._midiTiming
@@ -127,6 +130,8 @@ class EffectTemplates(ConfigurationTemplates):
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY = internalResolutionY
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "EffectModulation")
+        self._templateTypeName = "Effect templates"
+
 
     def getInternalResolution(self):
         return (self._internalResolutionX, self._internalResolutionY)
@@ -235,6 +240,7 @@ class EffectSettings(object):
 class FadeTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming):
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "FadeAndLevelTemplates")
+        self._templateTypeName = "Effect templates"
 
     def _validateDefault(self):
         name = "Default"

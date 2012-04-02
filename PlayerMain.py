@@ -112,9 +112,9 @@ class MyKivyApp(App):
                 print "**********" * 10
                 print "config is updated..."
                 self._getConfiguration()
-                self._mediaPool.checkAndUpdateFromConfiguration()
                 self._effectsConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()
+                self._mediaPool.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
                 #TODO: autosave...
                 print "**********" * 10

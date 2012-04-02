@@ -379,13 +379,13 @@ class GuiServer(object):
                     resposeXml.addAttribute("fileName", thumbnailFileName)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "noteListRequest"):
-                    print "GuiServer client request for note list."
+#                    print "GuiServer client request for note list."
                     noteListString = self._mediaPool.requestNoteList()
                     resposeXml = MiniXml("noteListRequest")
                     resposeXml.addAttribute("list", noteListString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "trackStateRequest"):
-                    print "GuiServer client request for note list."
+#                    print "GuiServer client request for track state list."
                     trackStateString = self._mediaPool.requestTrackState(time.time())
                     resposeXml = MiniXml("trackStateRequest")
                     resposeXml.addAttribute("list", trackStateString)
@@ -394,13 +394,13 @@ class GuiServer(object):
                     configStateString = self._configurationTree.getConfigId()
                     resposeXml = MiniXml("configStateRequest")
                     resposeXml.addAttribute("id", configStateString)
-                    print "GuiServer client request for config state. Current configId: " + str(configStateString)
+#                    print "GuiServer client request for config state. Current configId: " + str(configStateString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "latestMidiControllersRequest"):
                     latestMidiControllers = self._midiStateHolder.getLatestMidiControllersString()
                     resposeXml = MiniXml("latestMidiControllersRequest")
                     resposeXml.addAttribute("controllers", latestMidiControllers)
-                    print "GuiServer client request for latest MIDI controllers. List: " + latestMidiControllers
+#                    print "GuiServer client request for latest MIDI controllers. List: " + latestMidiControllers
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configRequest"):
                     path = webCommandXml.get("path")

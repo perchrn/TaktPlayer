@@ -7,7 +7,7 @@ from cv2 import cv
 import numpy #@UnusedImport
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
-    ScrollModes
+    ScrollModes, ContrastModes, HueSatModes
         
 def getEmptyImage(x, y):
     resizeMat = createMat(x,y)
@@ -164,7 +164,7 @@ class ZoomEffect(object):
             outputRect = True
         if((height < 1) or (width < 1)):
             return self._blankImage
-#        print "Zoom: " + str(zoomXFraction) + " Y: " + str(zoomYFraction) + " R:(+) " + str(rangeFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
+#        print "Zoom src: " + str(zoomXFraction) + " Y: " + str(zoomYFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
         src_region = cv.GetSubRect(image, (left, top, width, height) )
         if(outputRect):
             if(outPutWidth < 0):
@@ -554,9 +554,6 @@ class DesaturateEffect(object):
         self._sat2Mat = createMask(self._internalResolutionX, self._internalResolutionY)
         self._valMat = createMask(self._internalResolutionX, self._internalResolutionY)
 
-    class Modes():
-        Plus, Minus, Mask = range(3)
-
     def findMode(self, value):
         modeSelected = int(value*2.99)
         if(modeSelected == DesaturateModes.Plus):
@@ -601,15 +598,36 @@ class ContrastBrightnessEffect(object):
         self._internalResolutionY = internalResY
         self._scaleMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
+    def findMode(self, value):
+        modeSelected = int(value*3.99)
+        if(modeSelected == ContrastModes.Increase):
+            return ContrastModes.Increase
+        elif(modeSelected == ContrastModes.IncDec):
+            return ContrastModes.IncDec
+        elif(modeSelected == ContrastModes.Decrease):
+            return ContrastModes.Decrease
+        else:
+            return ContrastModes.Full
+
     def getName(self):
         return "ContrastBrightness"
 
-    def applyEffect(self, image, contrast, brightness, dummy2, dummy3, dummy4):
-        return self.contrastBrightness(image, contrast, brightness)
+    def applyEffect(self, image, contrast, brightness, mode, dummy3, dummy4):
+        return self.contrastBrightness(image, contrast, brightness, self.findMode(mode))
 
-    def contrastBrightness(self, image, contrast, brightness):
-        contrast = (2 * contrast) -1.0
-        brightnessVal = 256 * brightness
+    def contrastBrightness(self, image, contrast, brightness, mode):
+        if(mode == ContrastModes.Full):
+            contrast = (2 * contrast) -1.0
+            brightnessVal = (512 * brightness) - 256 #TODO: Fix negative brightness
+        if(mode == ContrastModes.Increase):
+            contrastVal = contrast
+            brightnessVal = 256 * brightness
+        if(mode == ContrastModes.IncDec):
+            contrastVal = contrast
+            brightnessVal = -256 * brightness #TODO: Fix negative brightness
+        if(mode == ContrastModes.Decrease):
+            contrastVal = 1.0 - contrast
+            brightnessVal = 256 * brightness
         if(contrast < 0.0):
             contrastVal = 1.0 + contrast
         elif(contrast > 0.0):
@@ -629,18 +647,35 @@ class HueSaturationEffect(object):
         self._internalResolutionY = internalResY
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
+    def findMode(self, value):
+        modeSelected = int(value*2.99)
+        if(modeSelected == HueSatModes.Increase):
+            return HueSatModes.Increase
+        elif(modeSelected == HueSatModes.Decrease):
+            return HueSatModes.Decrease
+        else:
+            return HueSatModes.Full
+
     def getName(self):
         return "HueSaturation"
 
-    def applyEffect(self, image, hueRot, saturation, brightness, dummy3, dummy4):
-        return self.hueSaturationBrightness(image, hueRot, saturation, brightness)
+    def applyEffect(self, image, hueRot, saturation, brightness, mode, dummy4):
+        return self.hueSaturationBrightness(image, hueRot, saturation, brightness, self.findMode(mode))
 
-    def hueSaturationBrightness(self, image, rotate, saturation, brightness):
+    def hueSaturationBrightness(self, image, rotate, saturation, brightness, mode):
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
-        rotCalc = (rotate * 512) - 256
-        satCalc = (saturation * 512) - 256
-        brightCalc = (brightness * 512) - 256
-        rgbColor = cv.CV_RGB(rotCalc, satCalc, brightCalc)
+        rotCalc = (((rotate * 512) + 256) % 512) - 256
+        if(mode == HueSatModes.Increase):
+            satCalc = saturation * -256
+            brightCalc = brightness * -256
+        elif(mode == HueSatModes.Decrease):
+            satCalc = saturation * 256
+            brightCalc = brightness * 256
+        else: #(mode == HueSatModes.Full):
+            satCalc = (saturation * 512) - 256
+            brightCalc = (brightness * 512) - 256
+#        print "DEBUG hueSat: rot: " + str(rotCalc) + " sat: " + str(satCalc) + " bright: " + str(brightCalc)
+        rgbColor = cv.CV_RGB(brightCalc, satCalc, rotCalc)
         cv.SubS(self._colorMat, rgbColor, image)
         cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
         return self._colorMat
@@ -711,10 +746,16 @@ class InvertEffect(object):
         return self.invert(image, amount)
 
     def invert(self, image, amount):
-        brightnessVal = -256 * amount
-        if((brightnessVal > -0.01) and (brightnessVal < 0.01)):
+        brightnessVal = -255 * amount
+        if((brightnessVal > -1) and (brightnessVal < 1)):
+            print "DEBUG no invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             return image
+#        if(brightnessVal < -253):
+#            print "DEBUG invert!!!!"
+#            cv.Invert(image, self._scaleMat)
+#            return self._scaleMat
         else:
+            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             cv.ConvertScaleAbs(image, self._scaleMat, 1.0, brightnessVal)
             return self._scaleMat
 

@@ -124,12 +124,18 @@ class MediaFile(object):
         self._effect2ConfigStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect1OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect2OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._effect1 = None
+        self._effect2 = None
 
     def _getConfiguration(self):
         self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
+        oldName = "None"
+        if(self._effect1 != None):
+            oldName = self._effect1.getName()
+        print "DEBUG get media effect config: oldName: " + oldName + " newName: " + self._effect1Settings.getEffectName()
         self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
         self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
@@ -163,8 +169,8 @@ class MediaFile(object):
         return "Unknown"
 
     def equalFileName(self, fileName):
-        print "equalFileName " + self._cfgFileName + " == " + os.path.normpath(fileName)
-        return self._cfgFileName == os.path.normcase(fileName)
+        print "DEBUG equalFileName " + self._cfgFileName + " == " + os.path.normpath(fileName)
+        return self._cfgFileName.encode("utf-8") == os.path.normpath(fileName).encode("utf-8")
 
     def getFileName(self):
         return self._cfgFileName

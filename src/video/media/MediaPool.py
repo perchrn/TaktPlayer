@@ -92,7 +92,7 @@ class MediaPool(object):
 
         if(len(fileName) <= 0):
             if(oldMedia != None):
-                print "Removing old media. " + noteLetter + " filename: " + oldMedia.getFileName()
+                print "New file is empty: Removing old media. " + noteLetter + " filename: " + oldMedia.getFileName()
                 if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
                     print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
                 else:

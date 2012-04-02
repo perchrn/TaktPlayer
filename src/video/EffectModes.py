@@ -140,9 +140,21 @@ class DesaturateModes():
     def getChoices(self):
         return ["Plus", "Minus", "Mask"]
 
+class ContrastModes():
+    Increase, IncDec, Decrease, Full = range(4)
+
+    def getChoices(self):
+        return ["Increase", "IncDec", "Decrease", "Full"]
+
+class HueSatModes():
+    Increase, Decrease, Full = range(3)
+
+    def getChoices(self):
+        return ["Increase", "Decrease", "Full"]
+
 class ColorizeModes():
     Add, Subtract, SubtractFrom, Multiply = range(4)
 
     def getChoices(self):
-        return ["Add", "Subtract", "SubtractFrom", "Multiply"]
+        return ["Add", "Subtract", "SubFrom", "Multiply"]
 

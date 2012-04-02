@@ -220,7 +220,6 @@ class MidiControllerLatestModified(object):
         self._latestControllers = []
 
     def controllerUpdated(self, controllerId):
-        print "DEBUG controllerUpdated()"
         oldestIndex = None
         currentTime = time.time()
         oldestTime = currentTime
@@ -351,7 +350,6 @@ class MidiChannelStateHolder(object):
             for i in range(128):
                 self._controllerValues[i] = 0.0
         else:
-            print "DEBUG controllerChange()"
             self._controllerValues[controllerId] = (float(value) / 127)
             self._midiControllerLatestModified.controllerUpdated(controllerId)
 

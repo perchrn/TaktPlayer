@@ -12,7 +12,7 @@ from midi.MidiController import MidiControllers
 from video.media.MediaFileModes import FadeMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
-    EdgeColourModes
+    EdgeColourModes, ContrastModes, HueSatModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 
@@ -305,6 +305,8 @@ class EffectsGui(object):
         self._edgeModes = EdgeModes()
         self._edgeColourModes = EdgeColourModes()
         self._desaturateModes = DesaturateModes()
+        self._contrastModes = ContrastModes()
+        self._hueSatModes = HueSatModes()
         self._colorizeModes = ColorizeModes()
         self._midiControllers = MidiControllers()
 
@@ -857,11 +859,11 @@ Selects the effect.
             self._setLabels("Colour:", "Range", "Mode", None, None)
             self._setupValueLabels(None, None, self._desaturateModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Contrast):
-            self._setLabels("Contrast:", "Brightness", None, None, None)
-            self._setupValueLabels(None, None, None, None, None)
+            self._setLabels("Contrast:", "Brightness", "Mode", None, None)
+            self._setupValueLabels(None, None, self._contrastModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.HueSaturation):
-            self._setLabels("Color rotate:", "Saturation", "Brightness", None, None)
-            self._setupValueLabels(None, None, None, None, None)
+            self._setLabels("Color rotate:", "Saturation", "Brightness", "Mode", None)
+            self._setupValueLabels(None, None, None, self._hueSatModes.getChoices(), None)
         elif(self._chosenEffectId == EffectTypes.Colorize):
             self._setLabels("Amount:", "Red", "Green", "Blue", "Mode")
             self._setupValueLabels(None, None, None, None, self._colorizeModes.getChoices())

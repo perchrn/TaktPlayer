@@ -349,7 +349,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName, playerFileName = result[1]
-                    if(playerFileName == "thumbs/preview.jpg"):
+                    print "DEBUG: thumb fileName: " + fileName + " playerFileName: " + playerFileName
+                    if(playerFileName == os.path.normpath("thumbs/preview.jpg")):
+                        print "DEBUG Got preview!!!"
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
                         self._trackGui.updatePreviewImage(osFileName)
@@ -390,7 +392,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     noteList = result[1]
                     for i in range(128):
                         found = False
-                        print "DEBUG notelist: " + str(noteList)
                         for listEntryTxt in noteList:
                             if(int(listEntryTxt) == i):
 #                                print "requesting i= " + str(i)
@@ -980,7 +981,7 @@ if __name__ == '__main__':
 #    print "CWD: %s" % os.getcwd()
     if(dirOk):
 #        print "Starting wx"
-        app = wx.App(redirect = 1, filename = APP_NAME + ".log") #@UndefinedVariable
+        app = wx.App(redirect = 0, filename = APP_NAME + ".log") #@UndefinedVariable
         MusicalVideoPlayerGui(None, title="Takt Player GUI")
         app.MainLoop()
 #        print "wx Done"

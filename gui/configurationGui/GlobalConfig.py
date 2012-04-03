@@ -12,7 +12,7 @@ from midi.MidiController import MidiControllers
 from video.media.MediaFileModes import FadeMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
-    EdgeColourModes, ContrastModes, HueSatModes
+    EdgeColourModes, ContrastModes, HueSatModes, ScrollModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 
@@ -301,6 +301,7 @@ class EffectsGui(object):
 
         self._flipModes = FlipModes()
         self._zoomModes = ZoomModes()
+        self._scrollModes = ScrollModes()
         self._distortionModes = DistortionModes()
         self._edgeModes = EdgeModes()
         self._edgeColourModes = EdgeColourModes()
@@ -840,6 +841,9 @@ Selects the effect.
         if(self._chosenEffectId == EffectTypes.Zoom):
             self._setLabels("Amount:", "XY ratio", "X position", "Y position", "Zoom mode")
             self._setupValueLabels(None, None, None, None, self._zoomModes.getChoices())
+        if(self._chosenEffectId == EffectTypes.Scroll):
+            self._setLabels("X amount:", "Y amount", "Scroll mode", None, None)
+            self._setupValueLabels(None, None, self._scrollModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Flip):
             self._setLabels("Flip mode:", None, None, None, None)
             self._setupValueLabels(self._flipModes.getChoices(), None, None, None, None)

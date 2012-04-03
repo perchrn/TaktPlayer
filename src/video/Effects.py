@@ -200,9 +200,9 @@ class ScrollEffect(object):
         if(modeSelected == ScrollModes.NoFlip):
             return ScrollModes.NoFlip
         elif(modeSelected == ScrollModes.Flip):
-            return ScrollModes.NoRepeat
-        elif(modeSelected == ScrollModes.NoRepeat):
             return ScrollModes.Flip
+        elif(modeSelected == ScrollModes.NoRepeat):
+            return ScrollModes.NoRepeat
         else:
             return ScrollModes.NoFlip
 
@@ -223,7 +223,9 @@ class ScrollEffect(object):
             print "FLIP!"
             left = int(originalWidth * xcenter * 2.0)
             top = int(originalHeight * ycenter * 2.0)
-        if(flipMode == ScrollModes.NoRepeat):
+            doubbleH = (originalH * 2)
+            doubbleW = (originalW * 2)
+        elif(flipMode == ScrollModes.NoRepeat):
             print "NO REPEAT!"
             left = int((originalWidth - width) * xcenter * 2.0)
             top = int((originalHeight - height) * ycenter * 2.0)
@@ -240,47 +242,163 @@ class ScrollEffect(object):
                 oldFlipW, oldFlipH = cv.GetSize(self._flipMat)
                 if((oldFlipW != originalW) or (oldFlipH != originalH)):
                     self._flipMat = createMat(originalW, originalH)
-        if(left < originalWidth):
-            if(top < originalHeight):
+        if(left < originalW):
+            if(top < originalH):
                 originalRight = right
                 originalBottom = bottom
-                if(right > originalWidth):
+                if(right > originalW):
                     originalRight = originalW
-                if(bottom > originalHeight):
+                if(bottom > originalH):
                     originalBottom = originalH
                 print "1: Left: " + str(left) + " top: " + str(top) + " 'right: " + str(originalRight-left) + " 'bottom: " + str(originalBottom-top)
                 src_region = cv.GetSubRect(image, (left, top, originalRight-left, originalBottom-top) )
                 dst_region = cv.GetSubRect(self._scrollMat, (0, 0, originalRight-left, originalBottom-top) )
                 cv.Copy(src_region, dst_region)
-        if(right > originalWidth):
-            if(top < originalHeight):
-                if(flipMode == ScrollModes.Flip):
-                    print "FLIP TODO"
-                elif(flipMode == ScrollModes.NoFlip):
+        if(right > originalW):
+            if(flipMode == ScrollModes.Flip):
+                print "FLIPPING"
+                if(left < doubbleW):
                     newWidth = right - originalW
                     newBottom = bottom
-                    if(bottom > originalHeight):
+                    if(bottom > originalH):
                         newBottom = originalH
+                    startLeft = 0
+                    dstLeft = originalW - left
+                    if(newWidth > originalW):
+                        startLeft = left - originalW
+                        newWidth = originalW - startLeft
+                        dstLeft = 0
+                    if((newBottom-top > 0) and (newWidth > 0)):
+                        print "2 1: dstLeft: " + str(dstLeft) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
+                        cv.Flip(image, self._flipMat, 1)
+                        src_region = cv.GetSubRect(self._flipMat, (startLeft, top, newWidth, newBottom-top) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (dstLeft, 0, newWidth, newBottom-top) )
+                        cv.Copy(src_region, dst_region)
+                if(right > doubbleW):
+                    newWidth = right - doubbleW
+                    newBottom = bottom
+                    if(bottom > originalH):
+                        newBottom = originalH
+                    if((newBottom-top > 0) and (newWidth > 0)):
+                        print "2 2: doubbleW-left: " + str(doubbleW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
+                        src_region = cv.GetSubRect(image, (0, top, newWidth, newBottom-top) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, 0, newWidth, newBottom-top) )
+                        cv.Copy(src_region, dst_region)
+            elif(flipMode == ScrollModes.NoFlip):
+                newWidth = right - originalW
+                newBottom = bottom
+                if(bottom > originalH):
+                    newBottom = originalH
+                if((newBottom-top > 0) and (newWidth > 0)):
                     print "2: originalW-left: " + str(originalW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
                     src_region = cv.GetSubRect(image, (0, top, newWidth, newBottom-top) )
                     dst_region = cv.GetSubRect(self._scrollMat, (originalW-left, 0, newWidth, newBottom-top) )
                     cv.Copy(src_region, dst_region)
-        if(bottom > originalHeight):
+        if(bottom > originalH):
             if(flipMode == ScrollModes.Flip):
-                print "FLIP TODO"
+                print "FLIPPING"
+                if(top < doubbleH):
+                    newHeight = bottom - originalH
+                    newRight = right
+                    if(right > originalW):
+                        newRight = originalW
+                    startTop = 0
+                    destTop = originalH - top
+                    if(newHeight > originalH):
+                        startTop = top - originalH
+                        newHeight = originalH - startTop
+                        destTop = 0
+                    if((newRight-left > 0) and (newHeight > 0)):
+                        print "3 1: destTop: " + str(destTop) + " top: " + str(top) + " 'newRight-left: " + str(newRight-left) + " 'newHeight: " + str(newHeight)
+                        cv.Flip(image, self._flipMat, 0)
+                        src_region = cv.GetSubRect(self._flipMat, (left, startTop, newRight-left, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (0, destTop, newRight-left, newHeight) )
+                        cv.Copy(src_region, dst_region)
+                if(bottom > doubbleH):
+                    newHeight = bottom - doubbleH
+                    newRight = right
+                    if(right > originalW):
+                        newRight = originalW
+                    if((newRight-left > 0) and (newHeight > 0)):
+                        print "3 2: left: " + str(left) + " doubbleH-top: " + str(doubbleH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
+                        src_region = cv.GetSubRect(image, (left, 0, newRight-left, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (0, doubbleH-top, newRight-left, newHeight) )
+                        cv.Copy(src_region, dst_region)
             elif(flipMode == ScrollModes.NoFlip):
                 newHeight = bottom - originalH
                 newRight = right
-                if(right > originalWidth):
+                if(right > originalW):
                     newRight = originalW
-                print "3: left: " + str(left) + " originalH-top: " + str(originalH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
-                src_region = cv.GetSubRect(image, (left, 0, newRight-left, newHeight) )
-                dst_region = cv.GetSubRect(self._scrollMat, (0, originalH-top, newRight-left, newHeight) )
-                cv.Copy(src_region, dst_region)
-        if(bottom > originalHeight):
-            if(right > originalWidth):
+                if((newRight-left > 0) and (newHeight > 0)):
+                    print "3: left: " + str(left) + " originalH-top: " + str(originalH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
+                    src_region = cv.GetSubRect(image, (left, 0, newRight-left, newHeight) )
+                    dst_region = cv.GetSubRect(self._scrollMat, (0, originalH-top, newRight-left, newHeight) )
+                    cv.Copy(src_region, dst_region)
+        if(bottom > originalH):
+            if(right > originalW):
                 if(flipMode == ScrollModes.Flip):
-                    print "FLIP TODO"
+                    print "FLIPING"
+                    if( (top < doubbleH) and (left < doubbleW)):
+                        newBottom = bottom
+                        newRight = right
+                        if(bottom >= doubbleH):
+                            newBottom = doubbleH - 1
+                        if(right >= doubbleW):
+                            newRight = doubbleW - 1
+                        newHeight = bottom - originalH
+                        newWidth = right - originalW
+                        newTop = originalH-top
+                        newLeft = originalW-left
+                        sourceLeft = 0
+                        sourceTop = 0
+                        if(newTop < 0):
+                            sourceTop =  -newTop
+                            newHeight += (newTop * 2)
+                            newTop = 0
+                        if(newLeft < 0):
+                            sourceLeft =  -newLeft
+                            newWidth += (newLeft * 2)
+                            newLeft = 0
+                        print "4 1: newLeft: " + str(newLeft) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        cv.Flip(image, self._flipMat, -1)
+                        src_region = cv.GetSubRect(self._flipMat, (sourceLeft, sourceTop, newWidth, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (newLeft, newTop, newWidth, newHeight) )
+                        cv.Copy(src_region, dst_region)
+                    if((right > doubbleW) and (top < doubbleH)):
+                        newHeight = bottom - originalH
+                        newWidth = right - doubbleW
+                        newTop = originalH-top
+                        sourceTop = 0
+                        if(newTop < 0):
+                            sourceTop =  -newTop
+                            newHeight += (newTop * 2)
+                            newTop = 0
+                        print "4 2: doubbleW-left: " + str(doubbleW-left) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        cv.Flip(image, self._flipMat, 0)
+                        src_region = cv.GetSubRect(self._flipMat, (0, sourceTop, newWidth, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, newTop, newWidth, newHeight) )
+                        cv.Copy(src_region, dst_region)
+                    if((bottom > doubbleH) and (left < doubbleW)):
+                        newWidth = right - originalW
+                        newHeight = bottom - doubbleH
+                        newLeft = originalW-left
+                        sourceLeft = 0
+                        if(newLeft < 0):
+                            sourceLeft =  -newLeft
+                            newWidth += (newLeft * 2)
+                            newLeft = 0
+                        print "4 3: newLeft: " + str(newLeft) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        cv.Flip(image, self._flipMat, 1)
+                        src_region = cv.GetSubRect(self._flipMat, (sourceLeft, 0, newWidth, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (newLeft, doubbleH-top, newWidth, newHeight) )
+                        cv.Copy(src_region, dst_region)
+                    if( (bottom > doubbleH) and (right > doubbleW)):
+                        newHeight = bottom - doubbleH
+                        newWidth = right - doubbleW
+                        print "4 4: doubbleW-left: " + str(doubbleW-left) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        src_region = cv.GetSubRect(image, (0, 0, newWidth, newHeight) )
+                        dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, doubbleH-top, newWidth, newHeight) )
+                        cv.Copy(src_region, dst_region)
                 elif(flipMode == ScrollModes.NoFlip):
                     newHeight = bottom - originalH
                     newWidth = right - originalW

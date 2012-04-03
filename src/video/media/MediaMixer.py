@@ -24,7 +24,6 @@ class MediaMixer(object):
 
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._mixMat3 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
         self._previewMat = createMat(160, 120)
@@ -109,6 +108,7 @@ class MediaMixer(object):
         if(postEffectSettings == None):
             postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        print "DEBUG trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 
         self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, postEffect, postEffectSettings)
         return trackId
@@ -150,11 +150,17 @@ class MediaMixer(object):
             if(currenMedia != None):
                 if(imageMix == None):
                     imageMix = currenMedia.getImage()
+                    if(imageMix != None):
+                        # Apply effects...
+                        if(imageMix == self._mixMat1):
+                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMask)
+                        else:
+                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMask)
                 else:
                     if(imageMix == self._mixMat1):
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMat2, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMask)
                     else:
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMat3, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMask)
         if(imageMix == None):
             imageMix = self._blankImage
         self._nextImage = imageMix

@@ -31,16 +31,12 @@ def fadeImage(image, value, mode, tmpMat):
         cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
     return tmpMat
 
-def mixImageSelfMask(image1, image2, mixMask, mixMat1, mixMat2):
-    cv.Copy(image2, mixMat2)
+def mixImageSelfMask(image1, image2, mixMask, mixMat1):
+    cv.Copy(image2, mixMat1)
     cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
     cv.CmpS(mixMask, 10, mixMask, cv.CV_CMP_GT)
-#    cv.Copy(mixMat2, image1, mixMask)
-#    return mixMat2
-    cv.Merge(mixMask, mixMask, mixMask, None, mixMat1)
-    cv.Sub(image1, mixMat1, mixMat1)
-    cv.Add(mixMat1, mixMat2, image2)
-    return image2
+    cv.Copy(mixMat1, image1, mixMask)
+    return image1
 
 def mixImagesAdd(image1, image2, mixMat):
     cv.Add(image1, image2, mixMat)
@@ -50,13 +46,13 @@ def mixImagesMultiply(image1, image2, mixMat):
     cv.Mul(image1, image2, mixMat, 0.003)
     return mixMat
 
-def mixImages(mode, image1, image2, mixMat1, mixMat2, mixMask):
+def mixImages(mode, image1, image2, mixMat1, mixMask):
     if(mode == MixMode.Add):
         return mixImagesAdd(image1, image2, mixMat1)
     elif(mode == MixMode.Multiply):
         return mixImagesMultiply(image1, image2, mixMat1)
     elif(mode == MixMode.LumaKey):
-        return mixImageSelfMask(image1, image2, mixMask, mixMat1, mixMat2)
+        return mixImageSelfMask(image1, image2, mixMask, mixMat1)
     elif(mode == MixMode.Replace):
         return image2
     else:
@@ -369,7 +365,7 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, midiNoteState, mixMat1, mixMat2, mixMask):
+    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
             return image
         else:
@@ -382,8 +378,8 @@ class MediaFile(object):
             dummy1Values = (None, None, None, None, None)
             dummy2Values = None
             (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
-            mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMask)
+            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
             return mixedImage
     
 class ImageFile(MediaFile):

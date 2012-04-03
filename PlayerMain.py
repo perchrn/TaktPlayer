@@ -115,6 +115,7 @@ class MyKivyApp(App):
                 self._effectsConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
+                self._mediaMixer.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
                 #TODO: autosave...
                 print "**********" * 10

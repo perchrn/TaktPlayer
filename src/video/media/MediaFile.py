@@ -242,22 +242,39 @@ class MediaFile(object):
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder):
         if(effectSettings != None):
             effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+#            print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
+            effectSCV0 = None
             if(effectAmount == effectStartControllerValues[0]):
-                effectAmount = effectStartValues[0]
+                if(effectAmount != effectStartValues[0]):
+                    effectAmount = effectStartValues[0]
+                    effectSCV0 = effectStartControllerValues[0]
+            effectSCV1 = None
             if(effectArg1 == effectStartControllerValues[1]):
-                effectArg1 = effectStartValues[1]
+                if(effectArg1 != effectStartValues[1]):
+                    effectArg1 = effectStartValues[1]
+                    effectSCV1 = effectStartControllerValues[1]
+            effectSCV2 = None
             if(effectArg2 == effectStartControllerValues[2]):
-                effectArg2 = effectStartValues[2]
+                if(effectArg2 != effectStartValues[2]):
+                    effectArg2 = effectStartValues[2]
+                    effectSCV2 = effectStartControllerValues[2]
+            effectSCV3 = None
             if(effectArg3 == effectStartControllerValues[3]):
-                effectArg3 = effectStartValues[3]
+                if(effectArg3 != effectStartValues[3]):
+                    effectArg3 = effectStartValues[3]
+                    effectSCV3 = effectStartControllerValues[3]
+            effectSCV4 = None
             if(effectArg4 == effectStartControllerValues[4]):
-                effectArg4 = effectStartValues[4]
+                if(effectArg4 != effectStartValues[4]):
+                    effectArg4 = effectStartValues[4]
+                    effectSCV4 = effectStartControllerValues[4]
             if(effect != None):
                 image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-            return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
+#            print "DEBUG modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
+            return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4), (effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
         else:
-            return (image, (0.0, 0.0, 0.0, 0.0, 0.0))
+            return (image, (0.0, 0.0, 0.0, 0.0, 0.0), (None, None, None, None, None))
 
     def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeValue):
         imageSize = cv.GetSize(self._captureImage)
@@ -266,8 +283,8 @@ class MediaFile(object):
         else:
             self._image = copyImage(self._captureImage)
 
-        (self._image, self._effect1OldValues) = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, self._effect1StartControllerValues, self._effect1StartValues, currentSongPosition, midiChannelState, midiNoteState)
-        (self._image, self._effect2OldValues) = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, self._effect2StartControllerValues, self._effect2StartValues, currentSongPosition, midiChannelState, midiNoteState)
+        (self._image, self._effect1OldValues, self._effect1StartControllerValues) = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, self._effect1StartControllerValues, self._effect1StartValues, currentSongPosition, midiChannelState, midiNoteState)
+        (self._image, self._effect2OldValues, self._effect2StartControllerValues) = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, self._effect2StartControllerValues, self._effect2StartValues, currentSongPosition, midiChannelState, midiNoteState)
 
         if(fadeValue < 0.99):
             self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
@@ -364,9 +381,9 @@ class MediaFile(object):
                 preEffect, preEffectSettings, postEffect, postEffectSettings = (None, None, None, None)
             dummy1Values = (None, None, None, None, None)
             dummy2Values = None
-            (self._image, usedValues) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMat2, mixMask)
-            (self._image, usedValues) = self._applyOneEffect(self._image, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
             return mixedImage
     
 class ImageFile(MediaFile):

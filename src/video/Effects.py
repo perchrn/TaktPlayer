@@ -672,12 +672,19 @@ class HueSaturationEffect(object):
             satCalc = saturation * 256
             brightCalc = brightness * 256
         else: #(mode == HueSatModes.Full):
-            satCalc = (saturation * 512) - 256
-            brightCalc = (brightness * 512) - 256
+            satCalc = (saturation * -512) + 256
+            brightCalc = (brightness * -512) + 256
+        darkCalc = None
+        if(brightCalc < 0):
+            darkCalc = float(256 - brightCalc) / 256.0
+            brightCalc = 0
 #        print "DEBUG hueSat: rot: " + str(rotCalc) + " sat: " + str(satCalc) + " bright: " + str(brightCalc)
         rgbColor = cv.CV_RGB(brightCalc, satCalc, rotCalc)
         cv.SubS(self._colorMat, rgbColor, image)
         cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
+        if(darkCalc != None):
+            cv.ConvertScaleAbs(self._colorMat, image, darkCalc, 0)
+            return image
         return self._colorMat
 
 
@@ -750,10 +757,6 @@ class InvertEffect(object):
         if((brightnessVal > -1) and (brightnessVal < 1)):
             print "DEBUG no invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             return image
-#        if(brightnessVal < -253):
-#            print "DEBUG invert!!!!"
-#            cv.Invert(image, self._scaleMat)
-#            return self._scaleMat
         else:
             print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             cv.ConvertScaleAbs(image, self._scaleMat, 1.0, brightnessVal)

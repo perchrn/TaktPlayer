@@ -344,7 +344,7 @@ class MidiChannelStateHolder(object):
         self._activeNotes[note].setPreasure(preasure)
 
     def controllerChange(self, controllerId, value, songPosition):
-#        print "DEBUG got controller: " + getControllerName(controllerId) + " (id: " + str(controllerId) + ")"
+#        print "DEBUG got controller: " + self._midiControllers.getName(controllerId) + " (id: " + str(controllerId) + ") value: " + str(value)
         if(controllerId == self._midiControllers.ResetAllControllers):
             self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
             for i in range(128):

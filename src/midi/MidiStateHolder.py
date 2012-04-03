@@ -445,12 +445,33 @@ class MidiChannelStateHolder(object):
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)
 
+
+class GuiControllerValues(object):
+    def __init__(self, myId):
+        self._id = myId
+        self._lastMidiChannel = -1
+        self._controllerStates = []
+        for i in range(16): #@UnusedVariable
+            self._controllerStates.append(None)
+
+    def controllerChange(self, midiChannel, value, command):
+        self._lastMidiChannel = midiChannel
+        controllerNr = int(command & 0x0f)
+        self._controllerStates[controllerNr] = (float(value) / 127)
+        print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
+
 class MidiStateHolder(object):
     def __init__(self):
         self._midiChannelStateHolder = []
         self._midiControllerLatestModified = MidiControllerLatestModified()
         for i in range(16):
             self._midiChannelStateHolder.append(MidiChannelStateHolder(i+1, self._midiControllerLatestModified))
+        self._guiControllerNoteValues = []
+        for i in range(128):
+            self._guiControllerNoteValues.append(GuiControllerValues(i))
+        self._guiControllerChannelValues = []
+        for i in range(16):
+            self._guiControllerChannelValues.append(GuiControllerValues(i))
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
         self._midiChannelStateHolder[midiChannel].noteEvent(True, data1, data2, songPosition)
@@ -463,6 +484,13 @@ class MidiStateHolder(object):
 
     def controller(self, midiChannel, data1, data2, songPosition):
         self._midiChannelStateHolder[midiChannel].controllerChange(data1, data2, songPosition)
+
+    def guiController(self, midiChannel, data1, data2, data3):
+        if((data3 & 0xf0) == 0xf0):
+            note = min(max(0, data1), 127)
+            self._guiControllerNoteValues[note].controllerChange(midiChannel, data2, data3)
+        if((data3 & 0xf0) == 0xe0):
+            self._guiControllerChannelValues[midiChannel].controllerChange(midiChannel, data2, data3)
 
     def programChange(self, midiChannel, data1, data2, songPosition):
         print "programChange............ " + str(data1) + " : " + str(data2)

@@ -118,6 +118,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mixModes = MixMode()
         self._mixMode = MixMode.Default
         self._latestOverviewMixMode = MixMode.Add
+        self._midiNote = -1
         self._selectedEditor = self.EditSelection.Unselected
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
@@ -292,7 +293,7 @@ Replace:\tNo mixing. Just use this image.
         selectedEffectConfig = self._preEffectField.GetValue()
         self._selectedEditor = self.EditSelection.PreEffect
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
 
     def _onPostEffectEdit(self, event):
         self._showEffectsCallback()
@@ -301,7 +302,7 @@ Replace:\tNo mixing. Just use this image.
         selectedEffectConfig = self._postEffectField.GetValue()
         self._selectedEditor = self.EditSelection.PostEffect
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
 
     def _onPreFxButtonDouble(self, event):
         selectedEffectConfig = self._preEffectField.GetValue()
@@ -339,10 +340,11 @@ Replace:\tNo mixing. Just use this image.
     def updatePreviewImage(self, fileName):
         self._overviewPreviewButton.setBitmapFile(fileName)
 
-    def updateGui(self, trackConfig, trackId, noteMixMode):
+    def updateGui(self, trackConfig, trackId, midiNote, noteMixMode):
         if(trackConfig != None):
             self._trackId = trackId
             self._config = trackConfig
+            self._midiNote = midiNote
             self._latestOverviewMixMode = noteMixMode
         if(self._config == None):
             return

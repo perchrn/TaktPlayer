@@ -935,7 +935,7 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect1Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect1
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1")
 
     def _onEffect2Edit(self, event):
         self._configSizer.Show(self._effectConfigPanel)
@@ -946,7 +946,7 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect2Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect2
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2")
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
@@ -1449,21 +1449,31 @@ All notes on events are quantized to this.
     def _onFxButton(self, event):
         buttonId = event.GetEventObject().GetId()
         effectConfigName = None
+        effectId = None
+        midiNote = None
         if(self._config != None):
             if(buttonId == self._overviewFx1Button.GetId()):
                 effectConfigName = self._config.getValue("Effect1Config")
+                effectId = "Effect1"
+                midiNote = self._midiNote
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
+                effectId = "Effect2"
+                midiNote = self._midiNote
         if(self._activeTrackClipNoteId > -1):
             noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
             if(noteConfig != None):
                 if(buttonId == self._overviewTrackFx1Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect1Config")
+                    effectId = "Effect1"
+                    midiNote = self._activeTrackClipNoteId
                 if(buttonId == self._overviewTrackFx2Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect2Config")
+                    effectId = "Effect2"
+                    midiNote = self._activeTrackClipNoteId
         if(effectConfigName != None):
             self.showEffectsGui()
-            self._mainConfig.updateEffectsGui(effectConfigName, self._midiNote)
+            self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
 

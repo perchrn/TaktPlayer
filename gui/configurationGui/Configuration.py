@@ -117,8 +117,8 @@ class Configuration(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
-    def updateEffectsGui(self, configName, midiNote):
-        self._globalConf.updateEffectsGui(configName, midiNote)
+    def updateEffectsGui(self, configName, midiNote, effectId):
+        self._globalConf.updateEffectsGui(configName, midiNote, effectId)
 
     def updateEffectList(self, selectedName):
         self._globalConf.updateEffectList(selectedName)

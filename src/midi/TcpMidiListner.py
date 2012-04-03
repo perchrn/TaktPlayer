@@ -182,8 +182,12 @@ class TcpMidiListner(object):
             if((command > 0xaf) and (command < 0xc0)):
                 midiChannel = int(command & 0x0f)
                 decodeOk = True
-                self._midiStateHolder.controller(midiChannel, data1, data2, self._midiTiming.getSongPosition(dataTimeStamp))
-                #print "Controller: " + str(data1) + " value: " + str(data2) + " channel: " + str(midiChannel)
+                if(data3 == 0x00):
+                    self._midiStateHolder.controller(midiChannel, data1, data2, self._midiTiming.getSongPosition(dataTimeStamp))
+                    #print "MIDI controller: " + str(data1) + " value: " + str(data2) + " channel: " + str(midiChannel)
+                else:
+                    self._midiStateHolder.guiController(midiChannel, data1, data2, data3)
+                    #print "GUI controller note: " + str(data1) + " value: " + str(data2) + " command: 0x%02x" % (data3)
             if((command > 0xbf) and (command < 0xd0)):
                 midiChannel = int(command & 0x0f)
                 decodeOk = True

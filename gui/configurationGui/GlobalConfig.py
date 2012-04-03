@@ -67,10 +67,10 @@ class GlobalConfig(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
-    def updateEffectsGui(self, configName, midiNote):
+    def updateEffectsGui(self, configName, midiNote, effectId):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
-            self._effectsGui.updateGui(template, midiNote)
+            self._effectsGui.updateGui(template, midiNote, effectId)
 
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
@@ -177,6 +177,8 @@ class EffectsGui(object):
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._effectListDraggedIndex = -1
+        self._midiNote = -1
+        self._activeEffectId = None
 
     class EditSelection():
         Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
@@ -710,46 +712,60 @@ Selects the effect.
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
         midiChannel = self._mainConfig.getSelectedMidiChannel()
-        if(sliderId == self._amountSliderId):
-            if((midiChannel > -1) and (midiChannel < 16)):
-                self.sendMidi(midiChannel, self._ammountField.GetValue(), self._ammountSlider.GetValue())
-        elif(sliderId == self._arg1SliderId):
-            if((midiChannel > -1) and (midiChannel < 16)):
-                self.sendMidi(midiChannel, self._arg1Field.GetValue(), self._arg1Slider.GetValue())
-        elif(sliderId == self._arg2SliderId):
-            if((midiChannel > -1) and (midiChannel < 16)):
-                self.sendMidi(midiChannel, self._arg2Field.GetValue(), self._arg2Slider.GetValue())
-        elif(sliderId == self._arg3SliderId):
-            if((midiChannel > -1) and (midiChannel < 16)):
-                self.sendMidi(midiChannel, self._arg3Field.GetValue(), self._arg3Slider.GetValue())
-        elif(sliderId == self._arg4SliderId):
-            if((midiChannel > -1) and (midiChannel < 16)):
-                self.sendMidi(midiChannel, self._arg4Field.GetValue(), self._arg4Slider.GetValue())
+        baseId = 0
+        if((self._activeEffectId == "Effect2") or (self._activeEffectId == "PostEffect")):
+            baseId = 5
+        isChannelController = False
+        if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+            isChannelController = True
+        if((midiChannel > -1) and (midiChannel < 16)):
+            if(sliderId == self._amountSliderId):
+                self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId, self._ammountSlider.GetValue())
+            elif(sliderId == self._arg1SliderId):
+                self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+1, self._arg1Slider.GetValue())
+            elif(sliderId == self._arg2SliderId):
+                self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+2, self._arg2Slider.GetValue())
+            elif(sliderId == self._arg3SliderId):
+                self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+3, self._arg3Slider.GetValue())
+            elif(sliderId == self._arg4SliderId):
+                self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+4, self._arg4Slider.GetValue())
         self._updateValueLabels()
 
     def _onEffectChosen(self, event):
         selectedEffectId = self._effectNameField.GetSelection()
         self._setEffect(getEffectName(selectedEffectId-1))
 
-    def sendMidi(self, channel, controllerDescription, value):
+    def sendGuiController(self, isChannelController, channel, note, guiControllerId, value):
+        guiControllerId = (guiControllerId & 0x0f)
+        if(isChannelController == True):
+            command = 0xe0
+            note = 0
+        else:
+            command = 0xf0
+        command += guiControllerId
         midiSender = self._mainConfig.getMidiSender()
-        if(controllerDescription.startswith("MidiChannel.")):
-            descriptionSplit = controllerDescription.split('.', 6)
-            if(len(descriptionSplit) > 1):
-                if(descriptionSplit[1] == "Controller"):
-                    if(len(descriptionSplit) > 2):
-                        controllerId = self._midiControllers.getId(descriptionSplit[2])
-                        midiSender.sendMidiController(channel, controllerId, value)
-                elif(descriptionSplit[1] == "PitchBend"):
-                    midiSender.sendPitchbend(channel, value)
-                elif(descriptionSplit[1] == "Aftertouch"):
-                    midiSender.sendAftertouch(channel, value)
-        if(controllerDescription.startswith("MidiNote.")):
-            descriptionSplit = controllerDescription.split('.', 6)
-            if(len(descriptionSplit) > 1):
-                if((descriptionSplit[1] == "NotePreasure") or (descriptionSplit[1] == "Preasure")):
-                    if(self._midiNote != None):
-                        midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
+        print "DEBUG sending GUI controller: " + str(command) + " note: " + str(note) + " value: " + str(value)
+        midiSender.sendGuiController(channel, note, command, value)
+
+#    def sendMidi(self, channel, controllerDescription, value):
+#        midiSender = self._mainConfig.getMidiSender()
+#        if(controllerDescription.startswith("MidiChannel.")):
+#            descriptionSplit = controllerDescription.split('.', 6)
+#            if(len(descriptionSplit) > 1):
+#                if(descriptionSplit[1] == "Controller"):
+#                    if(len(descriptionSplit) > 2):
+#                        controllerId = self._midiControllers.getId(descriptionSplit[2])
+#                        midiSender.sendMidiController(channel, controllerId, value)
+#                elif(descriptionSplit[1] == "PitchBend"):
+#                    midiSender.sendPitchbend(channel, value)
+#                elif(descriptionSplit[1] == "Aftertouch"):
+#                    midiSender.sendAftertouch(channel, value)
+#        if(controllerDescription.startswith("MidiNote.")):
+#            descriptionSplit = controllerDescription.split('.', 6)
+#            if(len(descriptionSplit) > 1):
+#                if((descriptionSplit[1] == "NotePreasure") or (descriptionSplit[1] == "Preasure")):
+#                    if(self._midiNote != None):
+#                        midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
 
     def _setLabels(self, amountLabel, arg1Label, arg2Label, arg3Label, arg4Label):
         self._amountLabel.SetLabel(amountLabel)
@@ -947,8 +963,9 @@ Selects the effect.
 ##            self._mainEffectsListPlane.SetSize((340,height+40))
 #            self._oldListHeight = height
 
-    def updateGui(self, effectTemplate, midiNote):
+    def updateGui(self, effectTemplate, midiNote, effectId):
         self._midiNote = midiNote
+        self._activeEffectId = effectId
         config = effectTemplate.getConfigHolder()
         self._startConfigName = config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)

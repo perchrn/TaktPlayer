@@ -349,9 +349,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName, playerFileName = result[1]
-                    print "DEBUG: thumb fileName: " + fileName + " playerFileName: " + playerFileName
                     if(playerFileName == os.path.normpath("thumbs/preview.jpg")):
-                        print "DEBUG Got preview!!!"
+#                        print "DEBUG Got preview!!!"
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
                         self._trackGui.updatePreviewImage(osFileName)
@@ -898,7 +897,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 else:
                     noteMixMode = "None"
                     self._noteGui.clearTrackOverviewGui()
-                self._trackGui.updateGui(destinationConfig, foundTrackId, noteMixMode)
+                self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
 
     def _onTrackEditButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -927,7 +926,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 else:
                     noteMixMode = "None"
                     self._noteGui.clearTrackOverviewGui()
-                self._trackGui.updateGui(destinationConfig, foundTrackId, noteMixMode)
+                self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
                 self._noteGui.showTrackGui()
                 self._noteGui.hideNoteGui()
 

@@ -17,8 +17,8 @@ class SendMidiOverNet(object):
         if((command > 0x7f) and (command <= 0xff)):
             data1 = min(max(0, data1), 127)
             data2 = min(max(0, data2), 127)
-            data3 = min(max(0, data3), 127)
-#            print "command: 0x%2x 0x%2x 0x%2x 0x%2x" % (command, data1, data2, data3)
+            data3 = min(max(0, data3), 255)
+            print "command: 0x%02x 0x%02x 0x%02x 0x%02x" % (command, data1, data2, data3)
             self._midiCommandBuffer[0] = chr(command)
             self._midiCommandBuffer[1] = chr(data1)
             self._midiCommandBuffer[2] = chr(data2)
@@ -53,6 +53,16 @@ class SendMidiOverNet(object):
             self.sendNoteOff(midiChannel, note)
         else:
             print "sendNoteOnOff Bad MIDI channel: " + str(midiChannel)
+
+    def sendGuiController(self, midiChannel, note, subCommand, value):
+        if((midiChannel > -1) and (midiChannel < 16)):
+            if((note > -1) and (note < 128)):
+                command = 0xb0 + midiChannel
+                self._sendMidiData(command, note, value, subCommand) # Setting velocity to 0x40
+            else:
+                print "sendMidiController Bad note id: " + str(note)
+        else:
+            print "sendMidiController Bad MIDI channel: " + str(midiChannel)
 
     def sendMidiController(self, midiChannel, controllerId, value):
         if((midiChannel > -1) and (midiChannel < 16)):

@@ -165,6 +165,7 @@ class EffectsGui(object):
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
         self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
         self._fxBitmapBlurMul = wx.Bitmap("graphics/fxBlurMultiply.png") #@UndefinedVariable
+        self._fxBitmapFeedback = wx.Bitmap("graphics/fxFeedback.png") #@UndefinedVariable
         self._fxBitmapColorize = wx.Bitmap("graphics/fxColorize.png") #@UndefinedVariable
         self._fxBitmapContrast = wx.Bitmap("graphics/fxContrast.png") #@UndefinedVariable
         self._fxBitmapDeSat = wx.Bitmap("graphics/fxDeSat.png") #@UndefinedVariable
@@ -341,6 +342,8 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapBlur)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapBlurMul)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapFeedback)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapDist)
         self._fxIdImageIndex.append(index)
@@ -909,6 +912,9 @@ Selects the effect.
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.BlurContrast):
             self._setLabels("Amount:", None, None, None, None)
+            self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Feedback):
+            self._setLabels("Amount:", "Darker", None, None, None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Distortion):
             self._setLabels("Distortion amount:", "Distortion mode", None, None, None)

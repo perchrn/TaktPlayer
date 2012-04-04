@@ -37,6 +37,8 @@ def getEffectById(effectType, configurationTree, internalResX, internalResY):
         return BlurEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.BlurContrast):
         return BluredContrastEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Feedback):
+        return FeedbackEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
         return DistortionEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Edge):
@@ -488,6 +490,33 @@ class BluredContrastEffect(object):
         cv.Smooth(image, self._blurMat1, cv.CV_BLUR, xSize, ySize)
         cv.Mul(image, self._blurMat1, self._blurMat2, 0.006)
         return self._blurMat2
+
+class FeedbackEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._gotMemory = False
+        self._memoryMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        cv.SetZero(self._memoryMat)
+        self._tmpMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "Feedback"
+
+    def applyEffect(self, image, amount, arg1, dummy2, dummy3, dummy4):
+        return self.addFeedbackImage(image, amount, arg1)
+
+    def addFeedbackImage(self, image, value, darker):
+        if(value < 0.01):
+            if(self._gotMemory == True):
+                cv.SetZero(self._memoryMat)
+            return image
+        darkerVal = -256 * darker
+        self._gotMemory = True
+        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, value, darkerVal)
+        cv.Add(image, self._tmpMat, self._memoryMat)
+        return self._memoryMat
 
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):

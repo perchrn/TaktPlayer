@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Scroll, Blur, BlurContrast, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(13)
+    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(14)
 
     def getChoices(self):
         return ["None",
@@ -13,6 +13,7 @@ class EffectTypes():
                 "Scroll",
                 "Blur",
                 "BlurContrast",
+                "Feedback",
                 "Distortion",
                 "Edge",
                 "Desaturate",
@@ -28,6 +29,7 @@ class EffectTypes():
                 "Scroll image.",
                 "Blur video.",
                 "Blur and multiply with self.",
+                "Adds last frame to self.",
                 "Distort image to black or white.",
                 "Edge detection effects.",
                 "Selective desaturation effects.",
@@ -49,6 +51,8 @@ def getEffectId(name):
         return EffectTypes.Blur
     elif(lowername == "blurcontrast"):
         return EffectTypes.BlurContrast
+    elif(lowername == "feedback"):
+        return EffectTypes.Feedback
     elif(lowername == "distortion"):
         return EffectTypes.Distortion
     elif(lowername == "edge"):
@@ -79,6 +83,8 @@ def getEffectName(effectId):
         return "Blur"
     elif(effectId == EffectTypes.BlurContrast):
         return "BlurContrast"
+    elif(effectId == EffectTypes.Feedback):
+        return "Feedback"
     elif(effectId == EffectTypes.Distortion):
         return "Distortion"
     elif(effectId == EffectTypes.Edge):

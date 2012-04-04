@@ -458,7 +458,7 @@ class GuiControllerValues(object):
         self._lastMidiChannel = midiChannel
         controllerNr = int(command & 0x0f)
         self._controllerStates[controllerNr] = (float(value) / 127)
-        print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
+        #print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
 
     def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues

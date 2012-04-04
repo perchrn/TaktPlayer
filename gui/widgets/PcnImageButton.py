@@ -11,6 +11,34 @@ DragDoneEvent, EVT_DRAG_DONE_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVaria
 
 DoubleEvent, EVT_DOUBLE_CLICK_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
 
+class PcnPopupMenu(wx.Menu): #@UndefinedVariable
+    def __init__(self, parent, imageList, nameList, onChosenCallback):
+        super(PcnPopupMenu, self).__init__()
+        self._onChosenCallback = onChosenCallback
+
+        self._menuIds = []
+        for i in range(len(imageList)):
+            image = imageList[i]
+            name = nameList[i]
+            
+            menuItem = wx.MenuItem(self, wx.NewId(), name) #@UndefinedVariable
+            menuItem.SetBitmap(image) #@UndefinedVariable
+            menuItem.SetBackgroundColour((190,190,190))
+            self.AppendItem(menuItem)
+            self._menuIds.append(menuItem.GetId())
+            self.Bind(wx.EVT_MENU, self._onChoice, menuItem) #@UndefinedVariable
+
+
+    def _onChoice(self, event):
+        menuId = event.GetId()
+        foundMenuIndex = None
+        for i in range(len(self._menuIds)):
+            if(self._menuIds[i] == menuId):
+                foundMenuIndex = i
+                break
+        self._onChosenCallback(foundMenuIndex)
+
+
 def addKeyboardButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
     oldX, oldY = baseBitmap.GetSize()
     
@@ -107,7 +135,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
             self._isSelected = True
             self.Refresh()
 
-    def setSetSelected(self):
+    def unsetSelected(self):
         if(self._isSelected != False):
             self._isSelected = False
             self.Refresh()
@@ -202,7 +230,7 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
             self._isSelected = True
             self.Refresh()
 
-    def setSetSelected(self):
+    def unsetSelected(self):
         if(self._isSelected != False):
             self._isSelected = False
             self.Refresh()

@@ -6,40 +6,14 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DOUBLE_CLICK_EVENT
+    addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DOUBLE_CLICK_EVENT,\
+    PcnPopupMenu
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes, MixMode, getMixModeFromName
 from video.EffectModes import getEffectId, EffectTypes
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
-
-class PcnPopupMenu(wx.Menu): #@UndefinedVariable
-    def __init__(self, parent, imageList, nameList, onChosenCallback):
-        super(PcnPopupMenu, self).__init__()
-        self._onChosenCallback = onChosenCallback
-
-        self._menuIds = []
-        for i in range(len(imageList)):
-            image = imageList[i]
-            name = nameList[i]
-            
-            menuItem = wx.MenuItem(self, wx.NewId(), name) #@UndefinedVariable
-            menuItem.SetBitmap(image) #@UndefinedVariable
-            menuItem.SetBackgroundColour((190,190,190))
-            self.AppendItem(menuItem)
-            self._menuIds.append(menuItem.GetId())
-            self.Bind(wx.EVT_MENU, self._onChoice, menuItem) #@UndefinedVariable
-
-
-    def _onChoice(self, event):
-        menuId = event.GetId()
-        foundMenuIndex = None
-        for i in range(len(self._menuIds)):
-            if(self._menuIds[i] == menuId):
-                foundMenuIndex = i
-                break
-        self._onChosenCallback(foundMenuIndex)
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -359,8 +333,8 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._overviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(168,-1)) #@UndefinedVariable
-        self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,264), pos=(0,0)) #@UndefinedVariable
-        self._clipOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,264), pos=(84,0)) #@UndefinedVariable
+        self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(0,0)) #@UndefinedVariable
+        self._clipOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(84,0)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
@@ -606,7 +580,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._selectedEditor = self.EditSelection.Unselected
         self._activeTrackClipNoteId = -1
         self._type = "VideoLoop"
-        self._setupSubConfig()
+        self._setupSubConfig(self._config)
 
     def setupTrackClipOverviewGui(self, overviewPanel):
         self._mainTrackOverviewPlane = overviewPanel
@@ -759,7 +733,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._fileNameField.SetValue(str(self._cameraId))
         else:
             self._fileNameField.SetValue(os.path.basename(self._fileName))
-        self._setupSubConfig()
+        self._setupSubConfig(self._config)
 
     def _onTypeHelp(self, event):
         text = """
@@ -1081,19 +1055,19 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._subModulationSizer)
         self.refreshLayout()
 
-    def _setupSubConfig(self):
+    def _setupSubConfig(self, config):
         if(self._type == "VideoLoop"):
             self._subModeLabel.SetLabel("Loop mode:")
-            if(self._config != None):
-                self._updateLoopModeChoices(self._subModeField, self._config.getValue("LoopMode"), "Normal")
+            if(config != None):
+                self._updateLoopModeChoices(self._subModeField, config.getValue("LoopMode"), "Normal")
             else:
                 self._updateLoopModeChoices(self._subModeField, self._subModeField.GetValue(), "Normal")
         elif(self._type == "ImageSequence"):
             self._subModeLabel.SetLabel("Sequence mode:")
-            if(self._config != None):
-                self._selectedSubMode = self._config.getValue("SequenceMode")
+            if(config != None):
+                self._selectedSubMode = config.getValue("SequenceMode")
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
-                playbackMod = self._config.getValue("PlayBackModulation")
+                playbackMod = config.getValue("PlayBackModulation")
                 print "DEBUG playbackMod: " + str(playbackMod)
                 self._subModulationField.SetValue(playbackMod)
             else:
@@ -1158,7 +1132,7 @@ All notes on events are quantized to this.
         else:
             widget.SetStringSelection(defaultValue)
 
-    def updateMixmodeThumb(self, widget, mixMode, noteMixMode):
+    def updateMixmodeThumb(self, widget, mixMode, noteMixMode, showDefault = False):
         if(mixMode == "Default"):
             if(noteMixMode == "None"):
                 widget.setBitmaps(self._mixBitmapDefault, self._mixBitmapDefault)
@@ -1168,7 +1142,10 @@ All notes on events are quantized to this.
         if(mixModeId == self._mixModes.Add):
             widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)
         elif(mixModeId == self._mixModes.Default):
-            widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)#Default is Add!
+            if(showDefault == True):
+                widget.setBitmaps(self._mixBitmapDefault, self._mixBitmapDefault)#Default is Add!
+            else:
+                widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)#Default is Add!
         elif(mixModeId == self._mixModes.LumaKey):
             widget.setBitmaps(self._mixBitmapLumaKey, self._mixBitmapLumaKey)
         elif(mixModeId == self._mixModes.Multiply):
@@ -1213,13 +1190,19 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapZoom, self._fxBitmapZoom)
 
     def updateMediaTypeThumb(self, widget, configHolder):
-        mediaType = configHolder.getValue("Type")
+        if(configHolder != None):
+            mediaType = configHolder.getValue("Type")
+        else:
+            mediaType = self._type
         if(mediaType == "Camera"):
             widget.setBitmaps(self._modeBitmapCamera, self._modeBitmapCamera)
         elif(mediaType == "Image"):
             widget.setBitmaps(self._modeBitmapImage, self._modeBitmapImage)
         elif(mediaType == "VideoLoop"):
-            loopMode = configHolder.getValue("LoopMode")
+            if(configHolder != None):
+                loopMode = configHolder.getValue("LoopMode")
+            else:
+                loopMode = self._subModeField.GetValue()
             if(loopMode == "Normal"):
                 widget.setBitmaps(self._modeBitmapLoop, self._modeBitmapLoop)
             elif(loopMode == "Reverse"):
@@ -1233,7 +1216,10 @@ All notes on events are quantized to this.
             elif(loopMode == "DontLoopReverse"):
                 widget.setBitmaps(self._modeBitmapPlayOnceReverse, self._modeBitmapPlayOnceReverse)
         elif(mediaType == "ImageSequence"):
-            seqMode = configHolder.getValue("SequenceMode")
+            if(configHolder != None):
+                seqMode = configHolder.getValue("SequenceMode")
+            else:
+                seqMode = self._subModeField.GetValue()
             if(seqMode == "Time"):
                 widget.setBitmaps(self._modeBitmapImageSeqTime, self._modeBitmapImageSeqTime)
             elif(seqMode == "ReTrigger"):
@@ -1281,7 +1267,6 @@ All notes on events are quantized to this.
     def _onClipModeChosen(self, index):
         if((index >= 0) and (index < len(self._modeLabels))):
             modeText = self._modeLabels[index]
-            sequenceMode = None
             loopMode = None
             if(modeText == "VideoLoop"):
                 self._type = "VideoLoop"
@@ -1315,30 +1300,17 @@ All notes on events are quantized to this.
     #            self._type = "ImageSequence"
             elif(modeText == "ImageSeqTime"):
                 self._type = "ImageSequence"
-                sequenceMode = "Time"
                 self._updateSequenceModeChoices(self._subModeField, "Time", "Time")
             elif(modeText == "ImageSeqReTrigger"):
                 self._type = "ImageSequence"
-                sequenceMode = "ReTrigger"
                 self._updateSequenceModeChoices(self._subModeField, "ReTrigger", "Time")
             elif(modeText == "ImageSeqModulation"):
                 self._type = "ImageSequence"
-                sequenceMode = "Modulation"
                 self._updateSequenceModeChoices(self._subModeField, "Modulation", "Time")
 
-            if(self._config != None):
-                self._config.setValue("Type", self._type)
-                if(sequenceMode != None):
-                    self._config.setValue("SequenceMode", sequenceMode)
-                if(loopMode != None):
-                    self._config.setValue("LoopMode", loopMode)
-
             self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
-            self._setupSubConfig()
-            if(self._config != None):
-                self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
-            else:
-                self._overviewClipModeButton.setBitmaps(self._modeImages[index], self._modeImages[index])
+            self._setupSubConfig(None)
+            self.updateMediaTypeThumb(self._overviewClipModeButton, None)
             self._showOrHideSaveButton()
 
     def _onClipFadeModeChosen(self, index):
@@ -1624,7 +1596,7 @@ All notes on events are quantized to this.
             self._fileName = self._config.getValue("FileName")
             self._fileNameField.SetValue(os.path.basename(self._fileName))
         self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
-        self._setupSubConfig()
+        self._setupSubConfig(self._config)
         self.updateMediaTypeThumb(self._overviewClipModeButton, self._config)
         noteText = self._config.getValue("Note")
         self._noteField.SetValue(noteText)
@@ -1667,7 +1639,8 @@ All notes on events are quantized to this.
         self._fileNameField.SetValue("")
         self._type = "VideoLoop"
         self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
-        self._setupSubConfig()
+        self._updateLoopModeChoices(self._subModeField, "Normal", "Normal")
+        self._setupSubConfig(self._config)
         self._noteField.SetValue(midiNoteString)
         self._syncField.SetValue("4.0")
         self._quantizeField.SetValue("1.0")

@@ -321,10 +321,6 @@ class EffectsGui(object):
         self._mainEffectsListGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideEffectsListCallback = parentClass.hideEffectsListGui
-#        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
-#        self._showSlidersCallback = parentClass.showSlidersGui
-#        self._showModulationCallback = parentClass.showModulationGui
-#        self._hideModulationCallback = parentClass.hideModulationGui
 
         self._effectImageList = wx.ImageList(32, 22) #@UndefinedVariable
         self._blankEffectIndex = self._effectImageList.Add(self._blankFxBitmap)
@@ -574,6 +570,7 @@ Selects the effect.
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getEffectTemplate(saveName)
         rename = False
+        move = False
         cancel = False
         if(saveName != self._startConfigName):
             inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(self._startConfigName)
@@ -586,19 +583,35 @@ Selects the effect.
                 if(result == False):
                     cancel = True
                 else:
+                    if(inUseNumber > 0):
+                        text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            move = True
+                    else:
+                        text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
+                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            rename = True
+            else:
+                if(inUseNumber > 0):
                     text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                     dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                     result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                     dlg.Destroy()
                     if(result == True):
+                        move = True
+                else:
+                    text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
+                    dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                    result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                    dlg.Destroy()
+                    if(result == True):
                         rename = True
-            else:
-                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
-                dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                dlg.Destroy()
-                if(result == True):
-                    rename = True
         effectName = self._effectNameField.GetValue()
         ammountMod = self._midiModulation.validateModulationString(self._ammountField.GetValue())
         arg1Mod = self._midiModulation.validateModulationString(self._arg1Field.GetValue())
@@ -612,10 +625,15 @@ Selects the effect.
             self._arg3Field.SetValue(arg3Mod)
             self._arg4Field.SetValue(arg4Mod)
         else:
+            if(rename == True):
+                oldTemplate = self._mainConfig.getEffectTemplate(self._startConfigName)
+                oldTemplate.setName(saveName)
+                if(move == True):
+                    self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
             if(oldTemplate == None):
                 print "Make new template..."
                 savedTemplate = self._mainConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
-                if(rename == True):
+                if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyEffectTemplateUsed()
             else:

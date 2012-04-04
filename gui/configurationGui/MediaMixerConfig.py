@@ -7,7 +7,8 @@ Created on 6. feb. 2012
 import wx
 from video.media.MediaFileModes import MixMode
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame, EVT_DOUBLE_CLICK_EVENT
+    addTrackButtonFrame, EVT_DOUBLE_CLICK_EVENT, EVT_DRAG_DONE_EVENT,\
+    PcnPopupMenu
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -75,23 +76,28 @@ class MediaMixerConfig(object):
 
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0
-#        for trackConfig in self._mediaPool:
-#            if(trackConfig != None):
-#                returnNumer += trackConfig.countNumberOfTimeEffectTemplateUsed(effectConfigName)
+        for trackConfig in self._mediaTrackConfigs:
+            if(trackConfig != None):
+                for configName in ["PreEffectConfig", "PostEffectConfig"]:
+                    usedConfigName = trackConfig.getValue(configName)
+                    if(usedConfigName == effectConfigName):
+                        returnNumer += 1
         return returnNumer
 
     def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
         returnNumer = 0
-#        for trackConfig in self._mediaPool:
+#        for trackConfig in self._mediaTrackConfigs:
 #            if(trackConfig != None):
 #                returnNumer += trackConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
         return returnNumer
 
     def renameEffectTemplateUsed(self, oldName, newName):
-        pass
-#        for trackConfig in self._mediaPool:
-#            if(trackConfig != None):
-#                trackConfig.renameEffectTemplateUsed(oldName, newName)
+        for trackConfig in self._mediaTrackConfigs:
+            if(trackConfig != None):
+                for configName in ["PreEffectConfig", "PostEffectConfig"]:
+                    usedConfigName = trackConfig.getValue(configName)
+                    if(usedConfigName == oldName):
+                        trackConfig.setValue(configName, newName)
 
     def renameFadeTemplateUsed(self, oldName, newName):
         pass
@@ -100,10 +106,24 @@ class MediaMixerConfig(object):
 #                trackConfig.renameFadeTemplateUsed(oldName, newName)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
-        pass
-#        for trackConfig in self._mediaPool:
-#            if(trackConfig != None):
-#                trackConfig.verifyEffectTemplateUsed(effectConfigNameList)
+        for trackConfig in self._mediaTrackConfigs:
+            if(trackConfig != None):
+                usedConfigName = trackConfig.getValue("PreEffectConfig")
+                nameOk = False
+                for configName in effectConfigNameList:
+                    if(usedConfigName == configName):
+                        nameOk = True
+                        break
+                if(nameOk == False):
+                    trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
+                usedConfigName = trackConfig.getValue("PostEffectConfig")
+                nameOk = False
+                for configName in effectConfigNameList:
+                    if(usedConfigName == configName):
+                        nameOk = True
+                        break
+                if(nameOk == False):
+                    trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
 
     def verifyFadeTemplateUsed(self, fadeConfigNameList):
         pass
@@ -135,6 +155,9 @@ class MediaTrackGui(object): #@UndefinedVariable
         self.updateMixmodeThumb = parentClass.updateMixmodeThumb
         self.updateEffectThumb = parentClass.updateEffectThumb
         self.showEffectList = parentClass.showEffectList
+        self._clearDragCursorCallback = parentClass.clearDragCursor
+        self._mixImages = parentClass._mixImages
+        self._mixLabels = parentClass._mixLabels
 
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
         inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
@@ -144,25 +167,41 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._overviewPreFxButton.enableDoubleClick()
         self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
         self._overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
+        self._overviewPreFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPreFxDone)
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (51, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        self._overviewTrackMixModeButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onTrackMixModeChosen)
+        self._overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
         self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewPostFxButton.enableDoubleClick()
         self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
         self._overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
+        self._overviewPostFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPostFxDone)
         outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
         PcnImageButton(self._mainTrackOverviewPlane, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
 
-        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 266)) #@UndefinedVariable
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+        self._overviewTrackSaveButtonDissabled = True
+        self._overviewTrackEditButton = PcnImageButton(self._mainTrackOverviewPlane, self._editBitmap, self._editPressedBitmap, (25, 260), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewTrackEditButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackEditButton) #@UndefinedVariable
+        self._overviewTrackSaveButton = PcnImageButton(self._mainTrackOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (45, 260), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewTrackSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackSaveButton) #@UndefinedVariable
+
+        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 290)) #@UndefinedVariable
         previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
-        self._overviewPreviewButton = PcnKeyboardButton(self._mainOverviePlane, previewBitmap, (3, 280), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
+        self._overviewPreviewButton = PcnKeyboardButton(self._mainOverviePlane, previewBitmap, (3, 304), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
         self._overviewPreviewButton.setFrqameAddingFunction(addTrackButtonFrame)
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):
         self._mainTrackPlane = plane
         self._mainTrackGuiSizer = sizer
         self._parentSizer = parentSizer
+        self._showTrackGuiCallback = parentClass.showTrackGui
         self._hideTrackGuiCallback = parentClass.hideTrackGui
         self._showEffectsCallback = parentClass.showEffectsGui
         self._hideEffectsCallback = parentClass.hideEffectsGui
@@ -252,6 +291,7 @@ class MediaTrackGui(object): #@UndefinedVariable
             widget.SetStringSelection(value)
         else:
             widget.SetStringSelection(defaultValue)
+        self._showOrHideSaveButton()
 
     def _onTrackHelp(self, event):
         text = """
@@ -286,6 +326,16 @@ Replace:\tNo mixing. Just use this image.
         else:
             self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
 
+    def _onTrackMixButton(self, event):
+        self._mainTrackOverviewPlane.PopupMenu(self._overviewTrackMixModeButtonPopup, (77,183))
+
+    def _onTrackMixModeChosen(self, index):
+        if((index >= 0) and (index < len(self._mixLabels))):
+            self._mixMode = self._mixLabels[index]
+            self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
+            self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, self._mixMode, True)
+            self._showOrHideSaveButton()
+
     def _onPreEffectEdit(self, event):
         self._showEffectsCallback()
         if(self._selectedEditor != self.EditSelection.PreEffect):
@@ -294,6 +344,7 @@ Replace:\tNo mixing. Just use this image.
         self._selectedEditor = self.EditSelection.PreEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+        self._showOrHideSaveButton()
 
     def _onPostEffectEdit(self, event):
         self._showEffectsCallback()
@@ -303,6 +354,7 @@ Replace:\tNo mixing. Just use this image.
         self._selectedEditor = self.EditSelection.PostEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+        self._showOrHideSaveButton()
 
     def _onPreFxButtonDouble(self, event):
         selectedEffectConfig = self._preEffectField.GetValue()
@@ -313,6 +365,31 @@ Replace:\tNo mixing. Just use this image.
         selectedEffectConfig = self._postEffectField.GetValue()
         self._mainConfig.updateEffectList(selectedEffectConfig)
         self.showEffectList()
+
+    def _onDragPreFxDone(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            if(self._trackId != None):
+                self._updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
+                self.updateEffectThumb(self._overviewPreFxButton, fxName)
+                self._showOrHideSaveButton()
+        self._clearDragCursorCallback()
+
+    def _onDragPostFxDone(self, event):
+        fxName = self._mainConfig.getDraggedFxName()
+        if(fxName != None):
+            if(self._trackId != None):
+                self._updateEffecChoices(self._postEffectField, fxName, "MixPreDefault")
+                self.updateEffectThumb(self._overviewPostFxButton, fxName)
+                self._showOrHideSaveButton()
+        self._clearDragCursorCallback()
+
+    def _onOverviewTrackEditButton(self, event):
+        self._showTrackGuiCallback()
+
+    def _onOverviewTrackSaveButton(self, event):
+        if(self._overviewTrackSaveButtonDissabled == False):
+            self._onSaveButton(event)
 
     def _onCloseButton(self, event):
         self._hideTrackGuiCallback()
@@ -333,9 +410,37 @@ Replace:\tNo mixing. Just use this image.
             postEffectConfig = self._postEffectField.GetValue()
             self._config.setValue("PostEffectConfig", postEffectConfig)
             self.updateEffectThumb(self._overviewPostFxButton, postEffectConfig)
+        self._showOrHideSaveButton()
+
+    def _checkIfUpdated(self):
+        if(self._config == None):
+            return False
+        guiMixMode = self._mixField.GetValue()
+        configMixMode = self._config.getValue("MixMode")
+        if(guiMixMode != configMixMode):
+            return True
+        guiPreEffect = self._preEffectField.GetValue()
+        configPreEffect = self._config.getValue("PreEffectConfig")
+        if(guiPreEffect != configPreEffect):
+            return True
+        guiPostEffect = self._postEffectField.GetValue()
+        configPostEffect = self._config.getValue("PostEffectConfig")
+        if(guiPostEffect != configPostEffect):
+            return True
+        return False
+
+    def _showOrHideSaveButton(self):
+        updated = self._checkIfUpdated()
+        if(updated == False):
+            self._overviewTrackSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+            self._overviewTrackSaveButtonDissabled = True
+        if(updated == True):
+            self._overviewTrackSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._overviewTrackSaveButtonDissabled = False
 
     def updateMixModeOverviewThumb(self, noteMixMode):
         self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
+        self._showOrHideSaveButton()
 
     def updatePreviewImage(self, fileName):
         self._overviewPreviewButton.setBitmapFile(fileName)
@@ -365,4 +470,5 @@ Replace:\tNo mixing. Just use this image.
             elif(self._selectedEditor == self.EditSelection.PostEffect):
                 self._onPostEffectEdit(None)
 
+        self._showOrHideSaveButton()
 

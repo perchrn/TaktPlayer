@@ -1472,8 +1472,9 @@ All notes on events are quantized to this.
                     effectId = "Effect2"
                     midiNote = self._activeTrackClipNoteId
         if(effectConfigName != None):
-            self.showEffectsGui()
             self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId)
+            self._mainConfig.showSliderGuiEditButton()
+            self.showSlidersGui()
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
 

@@ -75,6 +75,9 @@ class GlobalConfig(object):
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
 
+    def showSliderGuiEditButton(self):
+        self._effectsGui.showSliderGuiEditButton()
+
     def updateEffectListHeight(self, height):
         self._effectsGui.updateEffectListHeight(height)
 
@@ -559,7 +562,7 @@ Selects the effect.
         self._effectListDraggedIndex = -1
         effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
         if(effectTemplate != None):
-            self.updateGui(effectTemplate, None)
+            self.updateGui(effectTemplate, None, self._activeEffectId)
             self._showEffectsCallback()
 
     def _onListButton(self, event):
@@ -618,7 +621,7 @@ Selects the effect.
             else:
                 oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate, self._midiNote)
+            self.updateGui(savedTemplate, self._midiNote, self._activeEffectId)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateEffectList(saveName)
@@ -702,12 +705,19 @@ Selects the effect.
         closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onSliderCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._sliderButtonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._editButton = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSliderEditButton, id=self._editButton.GetId()) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._editButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Hide(self._editButton)
         self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
     def _onSliderCloseButton(self, event):
         self._hideSlidersCallback()
+
+    def _onSliderEditButton(self, event):
+        self._showEffectsCallback()
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -718,7 +728,13 @@ Selects the effect.
         isChannelController = False
         if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
             isChannelController = True
-        if((midiChannel > -1) and (midiChannel < 16)):
+        if((isChannelController == True) and ((midiChannel < 0) or (midiChannel >= 16))):
+            print "No MIDI channel selected for channel controller message!"
+        elif((isChannelController == False) and ((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128))):
+            print "No note selected for note controller message!"
+        else:
+            if(isChannelController == False):
+                midiChannel = min(max(0, midiChannel), 15)
             if(sliderId == self._amountSliderId):
                 self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId, self._ammountSlider.GetValue())
             elif(sliderId == self._arg1SliderId):
@@ -744,7 +760,6 @@ Selects the effect.
             command = 0xf0
         command += guiControllerId
         midiSender = self._mainConfig.getMidiSender()
-        print "DEBUG sending GUI controller: " + str(command) + " note: " + str(note) + " value: " + str(value)
         midiSender.sendGuiController(channel, note, command, value)
 
 #    def sendMidi(self, channel, controllerDescription, value):
@@ -955,6 +970,9 @@ Selects the effect.
             self._effectListWidget.Update()
             self._effectListWidget.Select(selectedIndex)
 
+    def showSliderGuiEditButton(self):
+        self._sliderButtonsSizer.Show(self._editButton)
+
     def updateEffectListHeight(self, height):
         pass
 #        if((self._oldListHeight != height) and (height >= 100)):
@@ -975,6 +993,7 @@ Selects the effect.
         self._arg2Field.SetValue(config.getValue("Arg2"))
         self._arg3Field.SetValue(config.getValue("Arg3"))
         self._arg4Field.SetValue(config.getValue("Arg4"))
+        self._sliderButtonsSizer.Hide(self._editButton)
 
 class FadeGui(object):
     def __init__(self, mainConfing, midiTiming, modulationGui):

@@ -91,7 +91,7 @@ class Configuration(object):
 
     def updateMixerGui(self):
         if(self._mixerGui != None):
-            self._mixerGui.updateGui(None, None, None)
+            self._mixerGui.updateGui(None, None, None, None)
 
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
@@ -119,6 +119,9 @@ class Configuration(object):
 
     def updateEffectsGui(self, configName, midiNote, effectId):
         self._globalConf.updateEffectsGui(configName, midiNote, effectId)
+
+    def showSliderGuiEditButton(self):
+        self._globalConf.showSliderGuiEditButton()
 
     def updateEffectList(self, selectedName):
         self._globalConf.updateEffectList(selectedName)

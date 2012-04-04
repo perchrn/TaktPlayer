@@ -65,9 +65,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._guiCtrlStateHolder = guiCtrlStateHolder
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         self._videoDirectory = videoDir
         self.setFileName(fileName)
@@ -235,10 +236,11 @@ class MediaFile(object):
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         return fadeMode, fadeValue
 
-    def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+    def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
-            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
-#            print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
+            midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules)
+            #print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
             effectSCV0 = None
             if(effectAmount == effectStartControllerValues[0]):
@@ -279,8 +281,8 @@ class MediaFile(object):
         else:
             self._image = copyImage(self._captureImage)
 
-        (self._image, self._effect1OldValues, self._effect1StartControllerValues) = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, self._effect1StartControllerValues, self._effect1StartValues, currentSongPosition, midiChannelState, midiNoteState)
-        (self._image, self._effect2OldValues, self._effect2StartControllerValues) = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, self._effect2StartControllerValues, self._effect2StartValues, currentSongPosition, midiChannelState, midiNoteState)
+        (self._image, self._effect1OldValues, self._effect1StartControllerValues) = self._applyOneEffect(self._image, self._effect1, self._effect1Settings, self._effect1StartControllerValues, self._effect1StartValues, currentSongPosition, midiChannelState, midiNoteState, self._guiCtrlStateHolder, 0)
+        (self._image, self._effect2OldValues, self._effect2StartControllerValues) = self._applyOneEffect(self._image, self._effect2, self._effect2Settings, self._effect2StartControllerValues, self._effect2StartValues, currentSongPosition, midiChannelState, midiNoteState, self._guiCtrlStateHolder, 5)
 
         if(fadeValue < 0.99):
             self._image = fadeImage(self._image, fadeValue, self._fadeMode, self._fadeMat)
@@ -365,7 +367,7 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
             return image
         else:
@@ -377,14 +379,14 @@ class MediaFile(object):
                 preEffect, preEffectSettings, postEffect, postEffectSettings = (None, None, None, None)
             dummy1Values = (None, None, None, None, None)
             dummy2Values = None
-            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMask)
-            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState) #@UnusedVariable
+            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return mixedImage
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._getConfiguration()
 
     def getType(self):
@@ -420,8 +422,8 @@ class ImageFile(MediaFile):
         self._fileOk = True
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
 
@@ -461,8 +463,8 @@ class CameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
@@ -551,8 +553,8 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()

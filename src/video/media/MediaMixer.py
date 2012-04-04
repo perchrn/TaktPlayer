@@ -146,6 +146,7 @@ class MediaMixer(object):
             mixMode = self._mediaTracksMixMode[midiChannel]
             effects = self._mediaTracksEffects[midiChannel]
             midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
+            guiCtrlStateHolder = self._midiStateHolder.getMidiChannelControllerStateHolder(midiChannel)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(currenMedia != None):
                 if(imageMix == None):
@@ -153,14 +154,14 @@ class MediaMixer(object):
                     if(imageMix != None):
                         # Apply effects...
                         if(imageMix == self._mixMat1):
-                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMask)
+                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                         else:
-                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMask)
+                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
                 else:
                     if(imageMix == self._mixMat1):
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat1, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, midiNoteState, self._mixMat2, self._mixMask)
+                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
         if(imageMix == None):
             imageMix = self._blankImage
         self._nextImage = imageMix

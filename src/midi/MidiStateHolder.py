@@ -460,6 +460,20 @@ class GuiControllerValues(object):
         self._controllerStates[controllerNr] = (float(value) / 127)
         print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
 
+    def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
+        effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
+        if(self._controllerStates[guiCtrlStateStartId] != None):
+            effectAmount = self._controllerStates[guiCtrlStateStartId]
+        if(self._controllerStates[guiCtrlStateStartId+1] != None):
+            effectArg1 = self._controllerStates[guiCtrlStateStartId+1]
+        if(self._controllerStates[guiCtrlStateStartId+2] != None):
+            effectArg2 = self._controllerStates[guiCtrlStateStartId+2]
+        if(self._controllerStates[guiCtrlStateStartId+3] != None):
+            effectArg3 = self._controllerStates[guiCtrlStateStartId+3]
+        if(self._controllerStates[guiCtrlStateStartId+4] != None):
+            effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
+        return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+        
 class MidiStateHolder(object):
     def __init__(self):
         self._midiChannelStateHolder = []
@@ -524,4 +538,12 @@ class MidiStateHolder(object):
 
     def getLatestMidiControllersString(self):
         return self._midiControllerLatestModified.getLatestControllersString()
+
+    def getGuiNoteControllerStareHolder(self, midiNote):
+        note = min(max(0, midiNote), 127)
+        return self._guiControllerNoteValues[note]
+
+    def getMidiChannelControllerStateHolder(self, midiChannel):
+        channel = min(max(0, midiChannel), 15)
+        return self._guiControllerChannelValues[channel]
 

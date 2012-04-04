@@ -196,13 +196,11 @@ class ScrollEffect(object):
         self._flipMat = None
 
     def findMode(self, value):
-        modeSelected = int(value*2.99)
+        modeSelected = int(value*1.99)
         if(modeSelected == ScrollModes.NoFlip):
             return ScrollModes.NoFlip
         elif(modeSelected == ScrollModes.Flip):
             return ScrollModes.Flip
-        elif(modeSelected == ScrollModes.NoRepeat):
-            return ScrollModes.NoRepeat
         else:
             return ScrollModes.NoFlip
 
@@ -211,30 +209,29 @@ class ScrollEffect(object):
 
     def applyEffect(self, image, xcenter, ycenter, mode, dummy3, dummy4):
         flipMode = self.findMode(mode)
-        return self.zoomImage(image, xcenter, ycenter, flipMode)
+        return self.zoomImage(image, xcenter, ycenter, flipMode, False)
 
-    def zoomImage(self, image, xcenter, ycenter, flipMode):
+    def zoomImage(self, image, xcenter, ycenter, flipMode, isNotRepeat):
         originalW, originalH = cv.GetSize(image)
         originalWidth = float(originalW)
         originalHeight = float(originalH)
         width = self._internalResolutionX
         height = self._internalResolutionY
-        if(flipMode == ScrollModes.Flip):
-            print "FLIP!"
+        if(isNotRepeat == True):
+            print "NO REPEAT! " * 20
+            left = int((originalWidth - width) * xcenter * 2.0)
+            top = int((originalHeight - height) * ycenter * 2.0)
+        elif(flipMode == ScrollModes.Flip):
             left = int(originalWidth * xcenter * 2.0)
             top = int(originalHeight * ycenter * 2.0)
             doubbleH = (originalH * 2)
             doubbleW = (originalW * 2)
-        elif(flipMode == ScrollModes.NoRepeat):
-            print "NO REPEAT!"
-            left = int((originalWidth - width) * xcenter * 2.0)
-            top = int((originalHeight - height) * ycenter * 2.0)
         else:
             left = int(originalWidth * xcenter)
             top = int(originalHeight * ycenter)
         right = left + width
         bottom = top + height
-        print "Left: " + str(left) + " top: " + str(top) + " width: " + str(width) + " height: " + str(height)
+        #print "Left: " + str(left) + " top: " + str(top) + " width: " + str(width) + " height: " + str(height)
         if(flipMode == ScrollModes.Flip):
             if(self._flipMat == None):
                 self._flipMat = createMat(originalW, originalH)
@@ -250,13 +247,12 @@ class ScrollEffect(object):
                     originalRight = originalW
                 if(bottom > originalH):
                     originalBottom = originalH
-                print "1: Left: " + str(left) + " top: " + str(top) + " 'right: " + str(originalRight-left) + " 'bottom: " + str(originalBottom-top)
+                #print "1: Left: " + str(left) + " top: " + str(top) + " 'right: " + str(originalRight-left) + " 'bottom: " + str(originalBottom-top)
                 src_region = cv.GetSubRect(image, (left, top, originalRight-left, originalBottom-top) )
                 dst_region = cv.GetSubRect(self._scrollMat, (0, 0, originalRight-left, originalBottom-top) )
                 cv.Copy(src_region, dst_region)
         if(right > originalW):
             if(flipMode == ScrollModes.Flip):
-                print "FLIPPING"
                 if(left < doubbleW):
                     newWidth = right - originalW
                     newBottom = bottom
@@ -269,7 +265,7 @@ class ScrollEffect(object):
                         newWidth = originalW - startLeft
                         dstLeft = 0
                     if((newBottom-top > 0) and (newWidth > 0)):
-                        print "2 1: dstLeft: " + str(dstLeft) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
+                        #print "2 1: dstLeft: " + str(dstLeft) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
                         cv.Flip(image, self._flipMat, 1)
                         src_region = cv.GetSubRect(self._flipMat, (startLeft, top, newWidth, newBottom-top) )
                         dst_region = cv.GetSubRect(self._scrollMat, (dstLeft, 0, newWidth, newBottom-top) )
@@ -280,7 +276,7 @@ class ScrollEffect(object):
                     if(bottom > originalH):
                         newBottom = originalH
                     if((newBottom-top > 0) and (newWidth > 0)):
-                        print "2 2: doubbleW-left: " + str(doubbleW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
+                        #print "2 2: doubbleW-left: " + str(doubbleW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
                         src_region = cv.GetSubRect(image, (0, top, newWidth, newBottom-top) )
                         dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, 0, newWidth, newBottom-top) )
                         cv.Copy(src_region, dst_region)
@@ -290,13 +286,12 @@ class ScrollEffect(object):
                 if(bottom > originalH):
                     newBottom = originalH
                 if((newBottom-top > 0) and (newWidth > 0)):
-                    print "2: originalW-left: " + str(originalW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
+                    #print "2: originalW-left: " + str(originalW-left) + " top: " + str(top) + " 'newWidth: " + str(newWidth) + " 'newBottom-top: " + str(newBottom-top)
                     src_region = cv.GetSubRect(image, (0, top, newWidth, newBottom-top) )
                     dst_region = cv.GetSubRect(self._scrollMat, (originalW-left, 0, newWidth, newBottom-top) )
                     cv.Copy(src_region, dst_region)
         if(bottom > originalH):
             if(flipMode == ScrollModes.Flip):
-                print "FLIPPING"
                 if(top < doubbleH):
                     newHeight = bottom - originalH
                     newRight = right
@@ -309,7 +304,7 @@ class ScrollEffect(object):
                         newHeight = originalH - startTop
                         destTop = 0
                     if((newRight-left > 0) and (newHeight > 0)):
-                        print "3 1: destTop: " + str(destTop) + " top: " + str(top) + " 'newRight-left: " + str(newRight-left) + " 'newHeight: " + str(newHeight)
+                        #print "3 1: destTop: " + str(destTop) + " top: " + str(top) + " 'newRight-left: " + str(newRight-left) + " 'newHeight: " + str(newHeight)
                         cv.Flip(image, self._flipMat, 0)
                         src_region = cv.GetSubRect(self._flipMat, (left, startTop, newRight-left, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (0, destTop, newRight-left, newHeight) )
@@ -320,7 +315,7 @@ class ScrollEffect(object):
                     if(right > originalW):
                         newRight = originalW
                     if((newRight-left > 0) and (newHeight > 0)):
-                        print "3 2: left: " + str(left) + " doubbleH-top: " + str(doubbleH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
+                        #print "3 2: left: " + str(left) + " doubbleH-top: " + str(doubbleH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
                         src_region = cv.GetSubRect(image, (left, 0, newRight-left, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (0, doubbleH-top, newRight-left, newHeight) )
                         cv.Copy(src_region, dst_region)
@@ -330,14 +325,13 @@ class ScrollEffect(object):
                 if(right > originalW):
                     newRight = originalW
                 if((newRight-left > 0) and (newHeight > 0)):
-                    print "3: left: " + str(left) + " originalH-top: " + str(originalH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
+                    #print "3: left: " + str(left) + " originalH-top: " + str(originalH-top) + " 'newHeight: " + str(newHeight) + " 'newRight-left: " + str(newRight-left)
                     src_region = cv.GetSubRect(image, (left, 0, newRight-left, newHeight) )
                     dst_region = cv.GetSubRect(self._scrollMat, (0, originalH-top, newRight-left, newHeight) )
                     cv.Copy(src_region, dst_region)
         if(bottom > originalH):
             if(right > originalW):
                 if(flipMode == ScrollModes.Flip):
-                    print "FLIPING"
                     if( (top < doubbleH) and (left < doubbleW)):
                         newBottom = bottom
                         newRight = right
@@ -359,7 +353,7 @@ class ScrollEffect(object):
                             sourceLeft =  -newLeft
                             newWidth += (newLeft * 2)
                             newLeft = 0
-                        print "4 1: newLeft: " + str(newLeft) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        #print "4 1: newLeft: " + str(newLeft) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
                         cv.Flip(image, self._flipMat, -1)
                         src_region = cv.GetSubRect(self._flipMat, (sourceLeft, sourceTop, newWidth, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (newLeft, newTop, newWidth, newHeight) )
@@ -373,7 +367,7 @@ class ScrollEffect(object):
                             sourceTop =  -newTop
                             newHeight += (newTop * 2)
                             newTop = 0
-                        print "4 2: doubbleW-left: " + str(doubbleW-left) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        #print "4 2: doubbleW-left: " + str(doubbleW-left) + " newTop: " + str(newTop) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
                         cv.Flip(image, self._flipMat, 0)
                         src_region = cv.GetSubRect(self._flipMat, (0, sourceTop, newWidth, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, newTop, newWidth, newHeight) )
@@ -387,7 +381,7 @@ class ScrollEffect(object):
                             sourceLeft =  -newLeft
                             newWidth += (newLeft * 2)
                             newLeft = 0
-                        print "4 3: newLeft: " + str(newLeft) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        #print "4 3: newLeft: " + str(newLeft) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
                         cv.Flip(image, self._flipMat, 1)
                         src_region = cv.GetSubRect(self._flipMat, (sourceLeft, 0, newWidth, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (newLeft, doubbleH-top, newWidth, newHeight) )
@@ -395,14 +389,14 @@ class ScrollEffect(object):
                     if( (bottom > doubbleH) and (right > doubbleW)):
                         newHeight = bottom - doubbleH
                         newWidth = right - doubbleW
-                        print "4 4: doubbleW-left: " + str(doubbleW-left) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                        #print "4 4: doubbleW-left: " + str(doubbleW-left) + " doubbleH-top: " + str(doubbleH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
                         src_region = cv.GetSubRect(image, (0, 0, newWidth, newHeight) )
                         dst_region = cv.GetSubRect(self._scrollMat, (doubbleW-left, doubbleH-top, newWidth, newHeight) )
                         cv.Copy(src_region, dst_region)
                 elif(flipMode == ScrollModes.NoFlip):
                     newHeight = bottom - originalH
                     newWidth = right - originalW
-                    print "4: originalW-left: " + str(originalW-left) + " originalH-top: " + str(originalH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
+                    #print "4: originalW-left: " + str(originalW-left) + " originalH-top: " + str(originalH-top) + " 'newWidth: " + str(newWidth) + " 'newHeight: " + str(newHeight)
                     src_region = cv.GetSubRect(image, (0, 0, newWidth, newHeight) )
                     dst_region = cv.GetSubRect(self._scrollMat, (originalW-left, originalH-top, newWidth, newHeight) )
                     cv.Copy(src_region, dst_region)

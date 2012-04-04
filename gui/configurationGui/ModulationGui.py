@@ -314,7 +314,7 @@ class ModulationGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        saveButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Update') #@UndefinedVariable
         saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable

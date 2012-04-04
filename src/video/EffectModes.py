@@ -105,10 +105,10 @@ class ZoomModes():
         return ["In", "Out", "InOut", "Full"]
 
 class ScrollModes():
-    NoFlip, Flip, NoRepeat = range(3)
+    NoFlip, Flip = range(2)
 
     def getChoices(self):
-        return ["NoFlip", "Flip", "NoRepeat"]
+        return ["NoFlip", "Flip"]
 
 class FlipModes():
     NoFlip, Vertical, Horizontal, Both = range(4)

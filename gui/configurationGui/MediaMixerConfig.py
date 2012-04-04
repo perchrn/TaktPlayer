@@ -215,6 +215,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._trackField = wx.TextCtrl(self._mainTrackPlane, wx.ID_ANY, str(self._trackId + 1), size=(200, -1)) #@UndefinedVariable
         self._trackField.SetEditable(False)
         self._trackField.SetBackgroundColour((232,232,232))
+        self._trackField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         trackHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         trackHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onTrackHelp, id=trackHelpButton.GetId()) #@UndefinedVariable
@@ -226,6 +227,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         mixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText6 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Mix mode:") #@UndefinedVariable
         self._mixField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._mixField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._updateChoices(self._mixField, self._mixModes.getChoices, "Default", "Default")
         mixHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
@@ -239,6 +241,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
+        self._preEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._preEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._preEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPreEffectEdit, id=self._preEffectButton.GetId()) #@UndefinedVariable
@@ -251,6 +254,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
+        self._postEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._postEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPostEffectEdit, id=self._postEffectButton.GetId()) #@UndefinedVariable
@@ -263,11 +267,11 @@ class MediaTrackGui(object): #@UndefinedVariable
         closeButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        saveButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
+        self._saveButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def _updateEffecChoices(self, widget, value, defaultValue):
@@ -291,7 +295,6 @@ class MediaTrackGui(object): #@UndefinedVariable
             widget.SetStringSelection(value)
         else:
             widget.SetStringSelection(defaultValue)
-        self._showOrHideSaveButton()
 
     def _onTrackHelp(self, event):
         text = """
@@ -429,13 +432,18 @@ Replace:\tNo mixing. Just use this image.
             return True
         return False
 
+    def _onUpdate(self, event):
+        self._showOrHideSaveButton()
+
     def _showOrHideSaveButton(self):
         updated = self._checkIfUpdated()
         if(updated == False):
             self._overviewTrackSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+            self._saveButton.SetBackgroundColour((210,210,210))
             self._overviewTrackSaveButtonDissabled = True
         if(updated == True):
             self._overviewTrackSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._saveButton.SetBackgroundColour((255,180,180))
             self._overviewTrackSaveButtonDissabled = False
 
     def updateMixModeOverviewThumb(self, noteMixMode):

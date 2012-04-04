@@ -182,6 +182,7 @@ class EffectsGui(object):
         self._effectListDraggedIndex = -1
         self._midiNote = -1
         self._activeEffectId = None
+        self._config = None
 
     class EditSelection():
         Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
@@ -203,6 +204,7 @@ class EffectsGui(object):
         tmpText1 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
         self._templateNameField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "MediaDefault1", size=(200, -1)) #@UndefinedVariable
         self._templateNameField.SetInsertionPoint(0)
+        self._templateNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         templateNameButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         templateNameButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onTemplateNameHelp, id=templateNameButton.GetId()) #@UndefinedVariable
@@ -229,6 +231,7 @@ class EffectsGui(object):
         self._amountLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._ammountField.SetInsertionPoint(0)
+        self._ammountField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._ammountButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._ammountButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=self._ammountButton.GetId()) #@UndefinedVariable
@@ -241,6 +244,7 @@ class EffectsGui(object):
         self._arg1Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 1:") #@UndefinedVariable
         self._arg1Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg1Field.SetInsertionPoint(0)
+        self._arg1Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._arg1Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._arg1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=self._arg1Button.GetId()) #@UndefinedVariable
@@ -253,6 +257,7 @@ class EffectsGui(object):
         self._arg2Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 2:") #@UndefinedVariable
         self._arg2Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg2Field.SetInsertionPoint(0)
+        self._arg2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._arg2Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._arg2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=self._arg2Button.GetId()) #@UndefinedVariable
@@ -265,6 +270,7 @@ class EffectsGui(object):
         self._arg3Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 3:") #@UndefinedVariable
         self._arg3Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg3Field.SetInsertionPoint(0)
+        self._arg3Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._arg3Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._arg3Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=self._arg3Button.GetId()) #@UndefinedVariable
@@ -277,6 +283,7 @@ class EffectsGui(object):
         self._arg4Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Argument 4:") #@UndefinedVariable
         self._arg4Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg4Field.SetInsertionPoint(0)
+        self._arg4Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._arg4Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._arg4Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=self._arg4Button.GetId()) #@UndefinedVariable
@@ -290,10 +297,10 @@ class EffectsGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._saveButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         listButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'List') #@UndefinedVariable
         listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
@@ -768,6 +775,7 @@ Selects the effect.
     def _onEffectChosen(self, event):
         selectedEffectId = self._effectNameField.GetSelection()
         self._setEffect(getEffectName(selectedEffectId-1))
+        self._showOrHideSaveButton()
 
     def sendGuiController(self, isChannelController, channel, note, guiControllerId, value):
         guiControllerId = (guiControllerId & 0x0f)
@@ -931,6 +939,49 @@ Selects the effect.
             self._setupValueLabels(None, None, None, None, None)
         self._updateValueLabels()
 
+    def _checkIfUpdated(self):
+        if(self._config == None):
+            return False
+        guiName = self._templateNameField.GetValue()
+        configName = self._config.getValue("Name")
+        if(guiName != configName):
+            return True
+        guiEffect = self._effectNameField.GetValue()
+        configEffect = self._config.getValue("Effect")
+        if(guiEffect != configEffect):
+            return True
+        guiArg = self._ammountField.GetValue()
+        configArg = self._config.getValue("Amount")
+        if(guiArg != configArg):
+            return True
+        guiArg = self._arg1Field.GetValue()
+        configArg = self._config.getValue("Arg1")
+        if(guiArg != configArg):
+            return True
+        guiArg = self._arg2Field.GetValue()
+        configArg = self._config.getValue("Arg2")
+        if(guiArg != configArg):
+            return True
+        guiArg = self._arg3Field.GetValue()
+        configArg = self._config.getValue("Arg3")
+        if(guiArg != configArg):
+            return True
+        guiArg = self._arg4Field.GetValue()
+        configArg = self._config.getValue("Arg4")
+        if(guiArg != configArg):
+            return True
+        return False
+
+    def _onUpdate(self, event):
+        self._showOrHideSaveButton()
+
+    def _showOrHideSaveButton(self):
+        updated = self._checkIfUpdated()
+        if(updated == False):
+            self._saveButton.SetBackgroundColour((210,210,210))
+        if(updated == True):
+            self._saveButton.SetBackgroundColour((255,180,180))
+
     def _setEffect(self, value):
         if(value == None):
             self._chosenEffectId = -1
@@ -1002,15 +1053,15 @@ Selects the effect.
     def updateGui(self, effectTemplate, midiNote, effectId):
         self._midiNote = midiNote
         self._activeEffectId = effectId
-        config = effectTemplate.getConfigHolder()
-        self._startConfigName = config.getValue("Name")
+        self._config = effectTemplate.getConfigHolder()
+        self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
-        self._setEffect(config.getValue("Effect"))
-        self._ammountField.SetValue(config.getValue("Amount"))
-        self._arg1Field.SetValue(config.getValue("Arg1"))
-        self._arg2Field.SetValue(config.getValue("Arg2"))
-        self._arg3Field.SetValue(config.getValue("Arg3"))
-        self._arg4Field.SetValue(config.getValue("Arg4"))
+        self._setEffect(self._config.getValue("Effect"))
+        self._ammountField.SetValue(self._config.getValue("Amount"))
+        self._arg1Field.SetValue(self._config.getValue("Arg1"))
+        self._arg2Field.SetValue(self._config.getValue("Arg2"))
+        self._arg3Field.SetValue(self._config.getValue("Arg3"))
+        self._arg4Field.SetValue(self._config.getValue("Arg4"))
         self._sliderButtonsSizer.Hide(self._editButton)
 
 class FadeGui(object):
@@ -1029,6 +1080,7 @@ class FadeGui(object):
 
         self._fadeModeImages = [self._fadeBlackBitmap, self._fadeWhiteBitmap]
         self._fadeModeLabels = self._fadeModes.getChoices()
+        self._config = None
 
     def getFadeModeLists(self):
         return (self._fadeModeImages, self._fadeModeLabels)
@@ -1051,6 +1103,7 @@ class FadeGui(object):
         tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
         self._templateNameField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
         self._templateNameField.SetInsertionPoint(0)
+        self._templateNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -1059,6 +1112,7 @@ class FadeGui(object):
         tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
         self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
+        self._fadeModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
         fadeModeButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModeHelp, id=fadeModeButton.GetId()) #@UndefinedVariable
@@ -1072,6 +1126,7 @@ class FadeGui(object):
         tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
         self._fadeModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._fadeModulationField.SetInsertionPoint(0)
+        self._fadeModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._fadeModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._fadeModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit, id=self._fadeModulationButton.GetId()) #@UndefinedVariable
@@ -1084,6 +1139,7 @@ class FadeGui(object):
         tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
         self._levelModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._levelModulationField.SetInsertionPoint(0)
+        self._levelModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._levelModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._levelModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit, id=self._levelModulationButton.GetId()) #@UndefinedVariable
@@ -1098,10 +1154,10 @@ class FadeGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._saveButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         listButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'List') #@UndefinedVariable
         listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
@@ -1343,6 +1399,37 @@ Decides if this image fades to black or white.
         else:
             widget.SetStringSelection(defaultValue)
 
+    def _checkIfUpdated(self):
+        if(self._config == None):
+            return False
+        guiName = self._templateNameField.GetValue()
+        configName = self._config.getValue("Name")
+        if(guiName != configName):
+            return True
+        guiMode = self._fadeModesField.GetValue()
+        configMode = self._config.getValue("Mode")
+        if(guiMode != configMode):
+            return True
+        guiModulation = self._fadeModulationField.GetValue()
+        configModulation = self._config.getValue("Modulation")
+        if(guiModulation != configModulation):
+            return True
+        guiLevel = self._levelModulationField.GetValue()
+        configLevel = self._config.getValue("Level")
+        if(guiLevel != configLevel):
+            return True
+        return False
+
+    def _onUpdate(self, event):
+        self._showOrHideSaveButton()
+
+    def _showOrHideSaveButton(self):
+        updated = self._checkIfUpdated()
+        if(updated == False):
+            self._saveButton.SetBackgroundColour((210,210,210))
+        if(updated == True):
+            self._saveButton.SetBackgroundColour((255,180,180))
+
     def updateFadeModeThumb(self, widget, fadeMode):
         if(fadeMode == "None"):
             widget.setBitmaps(self._blankFadeBitmap, self._blankFadeBitmap)
@@ -1397,14 +1484,14 @@ Decides if this image fades to black or white.
             self._fadeListWidget.Select(selectedIndex)
 
     def updateGui(self, fadeTemplate, editField):
-        config = fadeTemplate.getConfigHolder()
+        self._config = fadeTemplate.getConfigHolder()
         self._selectedEditor = self.EditSelected.Unselected
         self._highlightButton(self._selectedEditor)
-        self._startConfigName = config.getValue("Name")
+        self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
-        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, config.getValue("Mode"), "Black")
-        self._fadeModulationField.SetValue(config.getValue("Modulation"))
-        self._levelModulationField.SetValue(config.getValue("Level"))
+        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, self._config.getValue("Mode"), "Black")
+        self._fadeModulationField.SetValue(self._config.getValue("Modulation"))
+        self._levelModulationField.SetValue(self._config.getValue("Level"))
         if(editField == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
             self._highlightButton(self._selectedEditor)
@@ -1414,3 +1501,4 @@ Decides if this image fades to black or white.
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
 
+        self._showOrHideSaveButton()

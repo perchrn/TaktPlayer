@@ -201,6 +201,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             dropTarget = FileDrop(keyboardButton.GetId(), self.fileDropped)
             keyboardButton.SetDropTarget(dropTarget)
 
+        self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
+        self._noteGui.clearGui(24)
+        self._selectKeyboardKey(24)
+
         self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
         self._trackEditBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
         self._trackEditPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable

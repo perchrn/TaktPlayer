@@ -8,6 +8,7 @@ import numpy #@UnusedImport
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
     ScrollModes, ContrastModes, HueSatModes
+import math
         
 def getEmptyImage(x, y):
     resizeMat = createMat(x,y)
@@ -39,6 +40,8 @@ def getEffectById(effectType, configurationTree, internalResX, internalResY):
         return BluredContrastEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Feedback):
         return FeedbackEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Delay):
+        return DelayEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
         return DistortionEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Edge):
@@ -211,9 +214,9 @@ class ScrollEffect(object):
 
     def applyEffect(self, image, xcenter, ycenter, mode, dummy3, dummy4):
         flipMode = self.findMode(mode)
-        return self.zoomImage(image, xcenter, ycenter, flipMode, False)
+        return self.scrollImage(image, xcenter, ycenter, flipMode, False)
 
-    def zoomImage(self, image, xcenter, ycenter, flipMode, isNotRepeat):
+    def scrollImage(self, image, xcenter, ycenter, flipMode, isNotRepeat):
         originalW, originalH = cv.GetSize(image)
         originalWidth = float(originalW)
         originalHeight = float(originalH)
@@ -496,26 +499,82 @@ class FeedbackEffect(object):
         self._configurationTree = configurationTree
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
+        self._radians360 = math.radians(360)
         self._gotMemory = False
         self._memoryMat = createMat(self._internalResolutionX, self._internalResolutionY)
         cv.SetZero(self._memoryMat)
         self._tmpMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._replaceMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
     def getName(self):
         return "Feedback"
 
-    def applyEffect(self, image, amount, arg1, dummy2, dummy3, dummy4):
-        return self.addFeedbackImage(image, amount, arg1)
+    def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
+        return self.addFeedbackImage(image, amount, arg1, arg2, arg3, arg4)
 
-    def addFeedbackImage(self, image, value, darker):
+    def addFeedbackImage(self, image, value, invert, move, direction, zoom):
         if(value < 0.01):
             if(self._gotMemory == True):
                 cv.SetZero(self._memoryMat)
             return image
-        darkerVal = -256 * darker
         self._gotMemory = True
-        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, value, darkerVal)
-        cv.Add(image, self._tmpMat, self._memoryMat)
+        #Fade
+        calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
+        invertVal = -256 * invert
+        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, calcValue, invertVal)
+        addImage = self._tmpMat
+        if((zoom > 0.003) or (move > 0.003)):
+            zoom = 1.0 - zoom
+            xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
+            ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
+            addImage = self._zoomEffect.zoomImage(addImage, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
+        cv.Add(image, addImage, self._memoryMat)
+        return self._memoryMat
+
+class DelayEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._radians360 = math.radians(360)
+        self._gotMemory = False
+        self._memoryMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        cv.SetZero(self._memoryMat)
+        self._tmpMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._replaceMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
+
+    def getName(self):
+        return "Delay"
+
+    def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
+        return self.addDelayImage(image, amount, arg1, arg2, arg3, arg4)
+
+    def addDelayImage(self, image, value, lumaKey, move, direction, zoom):
+        if(value < 0.01):
+            if(self._gotMemory == True):
+                cv.SetZero(self._memoryMat)
+            return image
+        self._gotMemory = True
+        #Fade
+        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, value, 0)
+        tmpImage = self._tmpMat
+        if((zoom > 0.003) or (move > 0.003)):
+            zoom = 1.0 - zoom
+            xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
+            ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
+            tmpImage = self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
+        cv.Copy(tmpImage, self._memoryMat)
+        cv.CvtColor(image, self._replaceMask, cv.CV_BGR2GRAY);
+        if(lumaKey < 0.5):
+            lumaThreshold = int(512 * lumaKey)
+            cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_GT)
+            cv.Copy(image, self._memoryMat, self._replaceMask)
+        elif(lumaKey > 0.5):
+            lumaThreshold = int(512 * (lumaKey - 0.5))
+            cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_LT)
+            cv.Copy(image, self._memoryMat, self._replaceMask)
         return self._memoryMat
 
 class DistortionEffect(object):

@@ -52,19 +52,11 @@ class MyKivyApp(App):
 #        self._log.setLevel(logging.WARNING)
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
-        self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
-        self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
-        self._playerConfiguration = PlayerConfiguration(self._playerConfigurationTree)
-        print self._playerConfigurationTree.getConfigurationXMLString()
+        self._playerConfiguration = PlayerConfiguration()
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY =  internalResolutionY
-        self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-#        self._configurationTree.loadConfig("DefaultConfig.cfg")
-#        self._configurationTree.loadConfig("NerverIEnBunt_1.cfg")
-#        self._configurationTree.loadConfig("HongKong_1.cfg")
-#        self._configurationTree.loadConfig("Baertur_1.cfg")
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
@@ -160,9 +152,7 @@ class MyKivyApp(App):
 if __name__ in ('__android__', '__main__'):
     multiprocessing.freeze_support()
 
-    playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
-    playerConfigurationTree.loadConfig("PlayerConfig.cfg")
-    playerConfiguration = PlayerConfiguration(playerConfigurationTree)
+    playerConfiguration = PlayerConfiguration()
     internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
     fullscreenMode = playerConfiguration.getFullscreenMode()
 

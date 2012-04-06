@@ -1018,10 +1018,10 @@ All notes on events are quantized to this.
             noteFileName = str(self._cameraId)
         else:
             guiVideoDir = self._mainConfig.getGuiVideoDir()
+            noteFileName = self._fileName
             if((guiVideoDir != "") and (self._fileName != "")):
-                noteFileName = os.path.relpath(self._fileName, guiVideoDir)
-            else:
-                noteFileName = self._fileName
+                if(os.path.isabs(self._fileName)):
+                    noteFileName = os.path.relpath(self._fileName, guiVideoDir)
         noteLetter = noteToNoteString(self._midiNote)
         if(self._config == None):
             newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
@@ -1086,7 +1086,6 @@ All notes on events are quantized to this.
                 self._selectedSubMode = config.getValue("SequenceMode")
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
                 playbackMod = config.getValue("PlayBackModulation")
-                print "DEBUG playbackMod: " + str(playbackMod)
                 self._subModulationField.SetValue(str(playbackMod))
             else:
                 self._selectedSubMode = self._subModeField.GetValue()
@@ -1261,17 +1260,17 @@ All notes on events are quantized to this.
         self._mainConfig.getDraggedFxName()
         self.clearDragCursor()
 
-    def _onDragTrackFxPreDone(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
-        if(fxName != None):
-            print "Dragged fx: " + fxName + " to TrackFX1"
-        self.clearDragCursor()
-
-    def _onDragTrackFxPostDone(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
-        if(fxName != None):
-            print "Dragged fx: " + fxName + " to TrackFX2"
-        self.clearDragCursor()
+#TODO: DELETE    def _onDragTrackFxPreDone(self, event):
+#        fxName = self._mainConfig.getDraggedFxName()
+#        if(fxName != None):
+#            print "Dragged fx: " + fxName + " to TrackFX1"
+#        self.clearDragCursor()
+#
+#    def _onDragTrackFxPostDone(self, event):
+#        fxName = self._mainConfig.getDraggedFxName()
+#        if(fxName != None):
+#            print "Dragged fx: " + fxName + " to TrackFX2"
+#        self.clearDragCursor()
 
     def _onClipMixButton(self, event):
         self._clipOverviewGuiPlane.PopupMenu(self._overviewClipMixButtonPopup, (77,30))

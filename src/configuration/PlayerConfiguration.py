@@ -4,11 +4,13 @@ Created on 16. feb. 2012
 @author: pcn
 '''
 from midi.MidiUtilities import noteStringToNoteNumber
+from configuration.ConfigurationHolder import ConfigurationHolder
 
 class PlayerConfiguration(object):
-    def __init__(self, configHolder):
-        self._playerConfigurationTree = configHolder
+    def __init__(self):
+        self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayerPlayer")
         self._playerConfigurationTree.setSelfclosingTags(['startup', 'screen', 'server'])
+        self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
 
         self._startupConfig = self._playerConfigurationTree.addChildUnique("Startup")
         self._startupConfig.addTextParameter("VideoDir", "video")
@@ -45,6 +47,8 @@ class PlayerConfiguration(object):
         self._serverConfig.addIntParameter("MidiPort", 2020)
         self._serverConfig.addTextParameter("WebBindAddress", "0.0.0.0")
         self._serverConfig.addIntParameter("WebPort", 2021)
+
+        self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
 
     def getResolution(self):
         return (self._internalResolutionX, self._internalResolutionY)

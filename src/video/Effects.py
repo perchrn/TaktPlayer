@@ -997,10 +997,10 @@ class InvertEffect(object):
     def invert(self, image, amount):
         brightnessVal = -255 * amount
         if((brightnessVal > -1) and (brightnessVal < 1)):
-            print "DEBUG no invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
+#            print "DEBUG no invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             return image
         else:
-            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
+#            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             cv.ConvertScaleAbs(image, self._scaleMat, 1.0, brightnessVal)
             return self._scaleMat
 

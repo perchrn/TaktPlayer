@@ -109,7 +109,10 @@ class ConfigurationHolder(object):
         try:
             loadFile = open(filePath, 'r')
             xmlString = loadFile.read()
-            soup = BeautifulStoneSoup(xmlString)#, selfClosingTags=['global'])
+            if(self._selfClosingList != None):
+                soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
+            else:
+                soup = BeautifulStoneSoup(xmlString)
             self._loadedXML = ElementTree.XML(soup.prettify())
             self._updateFromXml(self._loadedXML)
             self._loadedFileName = configName
@@ -365,6 +368,7 @@ class ConfigurationHolder(object):
         if(idName != None):
             idName = idName.lower()
         if(loadedXml != None):
+#            print "loadedXml len = " + str(len(loadedXml))
             for xmlChild in loadedXml:#self._loadedXML.findall(name):
 #                print "tag: " + str(xmlChild.tag)
                 if(name == xmlChild.tag):

@@ -13,8 +13,11 @@ import os
 class Configuration(object):
     def __init__(self):
         self._guiConfigurationTree = ConfigurationHolder("MusicalVideoPlayerGUI")
+        self._guiConfigurationTree.setSelfclosingTags(['video', 'player'])
         self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
         self.setupGuiConfiguration()
+        self._guiConfigurationTree.saveConfigFile("GuiConfig.cfg")
+
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._globalConf = GlobalConfig(self._playerConfigurationTree, self)
         self._mediaMixerConf = MediaMixerConfig(self._playerConfigurationTree)
@@ -33,10 +36,11 @@ class Configuration(object):
         self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
-        self._guiConfigurationTree.addTextParameter("VideoDir", "video")
-        self._guiConfigurationTree.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
-        self._guiConfigurationTree.addIntParameter("ScaleVideoX", -1)
-        self._guiConfigurationTree.addIntParameter("ScaleVideoY", -1)
+        self._guiVideoConfig = self._guiConfigurationTree.addChildUnique("Video")
+        self._guiVideoConfig.addTextParameter("VideoDir", "video")
+        self._guiVideoConfig.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
+        self._guiVideoConfig.addIntParameter("ScaleVideoX", -1)
+        self._guiVideoConfig.addIntParameter("ScaleVideoY", -1)
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()
@@ -53,16 +57,16 @@ class Configuration(object):
         return (host, port)
 
     def getGuiVideoDir(self):
-        return self._guiConfigurationTree.getValue("VideoDir")
+        return self._guiVideoConfig.getValue("VideoDir")
 
     def getFfmpegBinary(self):
-        return self._guiConfigurationTree.getValue("FfmpegBinary")
+        return self._guiVideoConfig.getValue("FfmpegBinary")
 
     def getVideoScaleX(self):
-        return self._guiConfigurationTree.getValue("ScaleVideoX")
+        return self._guiVideoConfig.getValue("ScaleVideoX")
 
     def getVideoScaleY(self):
-        return self._guiConfigurationTree.getValue("ScaleVideoY")
+        return self._guiVideoConfig.getValue("ScaleVideoY")
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback

@@ -159,8 +159,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._midiButton = wx.Button(menuPannel, wx.ID_ANY, 'MIDI on') #@UndefinedVariable
         self._updateMidiButtonColor(self._configuration.isMidiEnabled())
-        confLabel = wx.StaticText(menuPannel, wx.ID_ANY, "Configuration:") #@UndefinedVariable
-        self._activeConfLabel = wx.StaticText(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
+        self._configNameField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
         self._configFileSelector = wx.ComboBox(menuPannel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
         self._configFileSelector.SetStringSelection("N/A")
         self._loadButton = wx.Button(menuPannel, wx.ID_ANY, 'Load') #@UndefinedVariable
@@ -169,8 +168,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(confLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(self._activeConfLabel, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._configNameField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
@@ -496,7 +494,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                     loadConfig = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
-                            print "DEBUG update gui..."
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
                             if(noteConfig == None):
                                 self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
@@ -548,7 +545,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             self._configFileSelector.SetStringSelection(selectedValue)
                         else:
                             self._configFileSelector.SetStringSelection("active configuration")
-                        self._activeConfLabel.SetLabel(activeConfig)
+                        self._configNameField.SetValue(activeConfig)
                     self._oldServerConfigList = configurationFileListString
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -679,7 +676,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.requestConfigChange(selectedConfig)
 
     def _onSaveButton(self, event):
-        selectedConfig = self._configFileSelector.GetValue()
+        selectedConfig = self._configNameField.GetValue()
         print "SAVE: " + str(selectedConfig)
         self._guiClient.requestConfigSave(selectedConfig)
 

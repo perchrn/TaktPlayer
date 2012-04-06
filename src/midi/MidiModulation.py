@@ -148,6 +148,7 @@ class AttackDecaySustainRelease(object):
                     else:
                         return 1.0 - self._sustainValue
         else:
+            print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
             if((self._releaseLengthCalc > 0.0)):
                 if((noteOffSPP - noteOnSPP) < self._sustainStartCalc):
                     releaseStartValue = self.getValue(noteOffSPP, (noteOnSPP, 0.0, 0.0))
@@ -422,14 +423,15 @@ class MidiModulation(object):
                 returnString += "." + str(subModId[1])
             else:
                 returnString += ".0.0"
-            if(len(subModId) > 2):
-                returnString += "|" + str(subModId[2])
-            else:
-                returnString += "|0.0"
-            if(len(subModId) > 3):
-                returnString += "|" + str(subModId[3])
-            else:
-                returnString += "|1.0"
+            if(subModId[0] != adsrType.AR):
+                if(len(subModId) > 2):
+                    returnString += "|" + str(subModId[2])
+                else:
+                    returnString += "|0.0"
+                if(len(subModId) > 3):
+                    returnString += "|" + str(subModId[3])
+                else:
+                    returnString += "|1.0"
             if(len(subModId) > 4):
                 returnString += "|" + str(subModId[4])
             else:

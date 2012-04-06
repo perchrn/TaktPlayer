@@ -201,9 +201,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             dropTarget = FileDrop(keyboardButton.GetId(), self.fileDropped)
             keyboardButton.SetDropTarget(dropTarget)
 
+        self._activeNoteId = 24
         self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
-        self._noteGui.clearGui(24)
-        self._selectKeyboardKey(24)
+        self._noteGui.clearGui(self._activeNoteId)
+        self._selectKeyboardKey(self._activeNoteId)
 
         self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
         self._trackEditBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
@@ -235,9 +236,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             trackPlayButton.Bind(wx.EVT_BUTTON, self._onTrackPlayButton) #@UndefinedVariable
 
         self._selectedMidiChannel = 0
-        destinationConfig = self._configuration.getTrackConfiguration(self._selectedMidiChannel)
-        self._trackGui.updateGui(destinationConfig, self._selectedMidiChannel, -1, "None")
         self._selectTrackKey(self._selectedMidiChannel)
+        self._trackSelected(self._selectedMidiChannel)
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(50)#20 times a second
@@ -368,6 +368,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             osFileName = os.path.normpath(fileName)
                             if(os.path.isfile(osFileName)):
                                 foundTask.getWidget().setBitmapFile(osFileName)
+                            if((self._activeNoteId >= 0) and (self._activeNoteId < 128)):
+                                noteWidget = self._noteWidgets[self._activeNoteId]
+                                noteBitmap = noteWidget.getBitmap()
+                                self._noteGui.updateOverviewClipBitmap(noteBitmap)
             if(result[0] == GuiClient.ResponseTypes.ThumbRequest):
 #                print "GuiClient.ResponseTypes.ThumbRequest"
                 if(result[1] != None):
@@ -380,6 +384,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         osFileName = os.path.normpath(fileName)
                         if(os.path.isfile(osFileName)):
                             self._noteWidgets[noteId].setBitmapFile(osFileName)
+                            if((self._activeNoteId >= 0) and (self._activeNoteId < 128)):
+                                noteWidget = self._noteWidgets[self._activeNoteId]
+                                noteBitmap = noteWidget.getBitmap()
+                                self._noteGui.updateOverviewClipBitmap(noteBitmap)
                         else:
                             fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
                             self._taskQueue.append(fileRequestTask)
@@ -453,7 +461,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(result[1] != None):
                     configId = result[1]
                     if(configId != self._lastConfigState):
-                        print "Config is updated on server.... TADA! Please do the right thing man :-P " + str(self._lastConfigState) + " != " + str(configId)
+                        print "Config is updated on server.... ID: " + str(self._lastConfigState) + " != " + str(configId)
                         configRequestTask = TaskHolder("Configuration request", TaskHolder.RequestTypes.Configuration, None, None)
                         self._taskQueue.append(configRequestTask)
                         self._guiClient.requestConfiguration()
@@ -472,11 +480,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
                         if(currentGuiConfigString != self._oldServerConfigurationString):
-                            print "GUI " * 50
-                            print currentGuiConfigString
-                            print "NEW " * 50
-                            print newConfigString
-                            print "XXX " * 50
+#                            print "GUI " * 50
+#                            print currentGuiConfigString
+#                            print "NEW " * 50
+#                            print newConfigString
+#                            print "XXX " * 50
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
@@ -488,6 +496,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                     loadConfig = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
+                            print "DEBUG update gui..."
+                            noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
+                            if(noteConfig == None):
+                                self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
+                                self._noteGui.clearGui(self._activeNoteId)
+                            else:
+                                noteWidget = self._noteWidgets[self._activeNoteId]
+                                noteBitmap = noteWidget.getBitmap()
+                                self._noteGui.updateOverviewClipBitmap(noteBitmap)
+                                self._noteGui.updateGui(noteConfig, self._activeNoteId)
+                            self._selectTrackKey(self._selectedMidiChannel)
+                            self._configuration.updateEffectList(None)
+                            self._configuration.updateFadeList(None)
                             print "#" * 150
                             self._configuration.printConfiguration()
                             print "#" * 150
@@ -698,18 +719,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 break
 
         if(foundNoteId != None):
-            self._selectKeyboardKey(foundNoteId)
+            self._activeNoteId = foundNoteId
+            self._selectKeyboardKey(self._activeNoteId)
             if(self._selectedMidiChannel > -1):
-                self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, foundNoteId)
-            noteConfig = self._configuration.getNoteConfiguration(foundNoteId)
+                self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, self._activeNoteId)
+            noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
             if(noteConfig == None):
                 self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
-                self._noteGui.clearGui(foundNoteId)
+                self._noteGui.clearGui(self._activeNoteId)
             else:
-                noteWidget = self._noteWidgets[foundNoteId]
+                noteWidget = self._noteWidgets[self._activeNoteId]
                 noteBitmap = noteWidget.getBitmap()
                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
-                self._noteGui.updateGui(noteConfig, foundNoteId)
+                self._noteGui.updateGui(noteConfig, self._activeNoteId)
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
@@ -875,26 +897,29 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 foundTrackId = i
                 break
         if(foundTrackId != None):
-            self._activeTrackId = foundTrackId
             self._selectTrackKey(foundTrackId)
-            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
-            if(destinationConfig != None):
-                activeNoteId = self._activeTrackNotes[foundTrackId]
-                noteMixMode = "Default"
-                if((activeNoteId >= 0) and (activeNoteId < 128)):
-                    activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                    if(activeNoteConfig != None):
-                        noteWidget = self._noteWidgets[activeNoteId]
-                        noteBitmap = noteWidget.getBitmap()
-                        noteMixMode = activeNoteConfig.getMixMode()
-                        self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                        self._noteGui.updateTrackOverviewGui(activeNoteConfig, activeNoteId)
-                    else:
-                        self._noteGui.clearTrackOverviewGui()
+            self._trackSelected(foundTrackId)
+
+    def _trackSelected(self, selectedTrackId):
+        self._activeTrackId = selectedTrackId
+        destinationConfig = self._configuration.getTrackConfiguration(self._activeTrackId)
+        if(destinationConfig != None):
+            activeNoteId = self._activeTrackNotes[self._activeTrackId]
+            noteMixMode = "Default"
+            if((activeNoteId >= 0) and (activeNoteId < 128)):
+                activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                if(activeNoteConfig != None):
+                    noteWidget = self._noteWidgets[activeNoteId]
+                    noteBitmap = noteWidget.getBitmap()
+                    noteMixMode = activeNoteConfig.getMixMode()
+                    self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
+                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, activeNoteId)
                 else:
-                    noteMixMode = "None"
                     self._noteGui.clearTrackOverviewGui()
-                self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
+            else:
+                noteMixMode = "None"
+                self._noteGui.clearTrackOverviewGui()
+            self._trackGui.updateGui(destinationConfig, self._activeTrackId, activeNoteId, noteMixMode)
 
     def _onTrackPlayButton(self, event):
         buttonId = event.GetEventObject().GetId()

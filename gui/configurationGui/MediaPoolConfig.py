@@ -913,23 +913,25 @@ All notes on events are quantized to this.
         else:
             self._fadeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
 
-    def _onEffect1Edit(self, event):
-        self._configSizer.Show(self._effectConfigPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        if(self._selectedEditor != self.EditSelection.Effect1):
-            self._configSizer.Hide(self._moulationConfigPanel)
-        self.refreshLayout()
+    def _onEffect1Edit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            self._configSizer.Show(self._effectConfigPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            if(self._selectedEditor != self.EditSelection.Effect1):
+                self._configSizer.Hide(self._moulationConfigPanel)
+            self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect1
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1")
 
-    def _onEffect2Edit(self, event):
-        self._configSizer.Show(self._effectConfigPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        if(self._selectedEditor != self.EditSelection.Effect2):
-            self._configSizer.Hide(self._moulationConfigPanel)
-        self.refreshLayout()
+    def _onEffect2Edit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            self._configSizer.Show(self._effectConfigPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            if(self._selectedEditor != self.EditSelection.Effect2):
+                self._configSizer.Hide(self._moulationConfigPanel)
+            self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect2
         self._highlightButton(self._selectedEditor)
@@ -988,13 +990,14 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._slidersPanel)
         self.refreshLayout()
 
-    def _onFadeEdit(self, event):
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        if(self._selectedEditor != self.EditSelection.Fade):
-            self._configSizer.Hide(self._moulationConfigPanel)
-        self._configSizer.Show(self._fadeConfigPanel)
-        self.refreshLayout()
+    def _onFadeEdit(self, event, showFadeGui=True):
+        if(showFadeGui == True):
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._slidersPanel)
+            if(self._selectedEditor != self.EditSelection.Fade):
+                self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Show(self._fadeConfigPanel)
+            self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
         self._selectedEditor = self.EditSelection.Fade
         self._highlightButton(self._selectedEditor)
@@ -1447,10 +1450,12 @@ All notes on events are quantized to this.
                 effectConfigName = self._config.getValue("Effect1Config")
                 effectId = "Effect1"
                 midiNote = self._midiNote
+                self._selectedEditor = self.EditSelection.Effect1
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
                 effectId = "Effect2"
                 midiNote = self._midiNote
+                self._selectedEditor = self.EditSelection.Effect2
         if(self._activeTrackClipNoteId > -1):
             noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
             if(noteConfig != None):
@@ -1458,15 +1463,16 @@ All notes on events are quantized to this.
                     effectConfigName =  noteConfig.getValue("Effect1Config")
                     effectId = "Effect1"
                     midiNote = self._activeTrackClipNoteId
+                    self._selectedEditor = self.EditSelection.Unselected
                 if(buttonId == self._overviewTrackFx2Button.GetId()):
                     effectConfigName =  noteConfig.getValue("Effect2Config")
                     effectId = "Effect2"
                     midiNote = self._activeTrackClipNoteId
+                    self._selectedEditor = self.EditSelection.Unselected
         if(effectConfigName != None):
             self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId)
             self._mainConfig.showSliderGuiEditButton()
             self.showSlidersGui()
-        self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
 
     def _onFxButtonDouble(self, event):
@@ -1646,11 +1652,11 @@ All notes on events are quantized to this.
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.Effect1):
-                self._onEffect1Edit(None)
+                self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
-                self._onEffect2Edit(None)
+                self._onEffect2Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
-                self._onFadeEdit(None)
+                self._onFadeEdit(None, False)
 
         self._showOrHideSaveButton()
 
@@ -1675,11 +1681,11 @@ All notes on events are quantized to this.
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.Effect1):
-                self._onEffect1Edit(None)
+                self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
-                self._onEffect2Edit(None)
+                self._onEffect2Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
-                self._onFadeEdit(None)
+                self._onFadeEdit(None, False)
 
         self._overviewClipButton.setBitmap(self._trackThumbnailBitmap)
         self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)

@@ -231,6 +231,11 @@ class MediaFile(object):
             self._effect1StartValues = self._effect1OldValues
             self._effect2StartValues = self._effect2OldValues
 
+        if(self._effect1 != None):
+            self._effect1.reset()
+        if(self._effect2 != None):
+            self._effect2.reset()
+
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)

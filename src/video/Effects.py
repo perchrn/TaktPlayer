@@ -99,6 +99,9 @@ class ZoomEffect(object):
     def getName(self):
         return "Zoom"
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, xyrate, xcenter, ycenter, mode):
         zoomMode = self.findMode(mode)
         xzoom = 1.0 - amount
@@ -211,6 +214,9 @@ class ScrollEffect(object):
 
     def getName(self):
         return "Scroll"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, xcenter, ycenter, mode, dummy3, dummy4):
         flipMode = self.findMode(mode)
@@ -438,6 +444,9 @@ class FlipEffect(object):
         else:
             return -1
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
         mode = self.findMode(amount)
         flipValue = self.findValue(mode)
@@ -460,6 +469,9 @@ class BlurEffect(object):
     def getName(self):
         return "Blur"
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
         return self.blurImage(image, amount)
 
@@ -481,6 +493,9 @@ class BluredContrastEffect(object):
 
     def getName(self):
         return "BluredContrast"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
         return self.blurMultiply(image, amount)
@@ -509,6 +524,9 @@ class FeedbackEffect(object):
 
     def getName(self):
         return "Feedback"
+
+    def reset(self):
+        cv.SetZero(self._memoryMat)
 
     def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
         return self.addFeedbackImage(image, amount, arg1, arg2, arg3, arg4)
@@ -548,6 +566,9 @@ class DelayEffect(object):
     def getName(self):
         return "Delay"
 
+    def reset(self):
+        cv.SetZero(self._memoryMat)
+
     def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
         return self.addDelayImage(image, amount, arg1, arg2, arg3, arg4)
 
@@ -564,11 +585,11 @@ class DelayEffect(object):
             zoom = 1.0 - zoom
             xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
             ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
-            tmpImage = self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
+            tmpImage = self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.30) #TODO: Fix the zoom range... Config?
         cv.Copy(tmpImage, self._memoryMat)
         cv.CvtColor(image, self._replaceMask, cv.CV_BGR2GRAY);
         if(lumaKey < 0.5):
-            lumaThreshold = int(512 * lumaKey)
+            lumaThreshold = int(506 * lumaKey) + 3
             cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_GT)
             cv.Copy(image, self._memoryMat, self._replaceMask)
         elif(lumaKey > 0.5):
@@ -586,6 +607,9 @@ class DistortionEffect(object):
 
     def getName(self):
         return "Distortion"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
         return self.dilateErode(image, amount, mode)
@@ -690,6 +714,9 @@ class EdgeEffect(object):
             green = int(green * (1.0 - (2.0*(sat - 0.5))))
         return (red, green, blue)
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, mode, hsv, lineHue, lineSat):
         red, green, blue = self.modifyHue(self.getHueColor(lineHue), lineSat)
         edgeMode = self.findMode(mode)
@@ -766,6 +793,9 @@ class DesaturateEffect(object):
     def getName(self):
         return "Desaturate"
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, value, valRange, mode, dummy3, dummy4):
         satMode = self.findMode(mode)
         return self.selectiveDesaturate(image, value, valRange, satMode)
@@ -811,6 +841,9 @@ class ContrastBrightnessEffect(object):
 
     def getName(self):
         return "ContrastBrightness"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, contrast, brightness, mode, dummy3, dummy4):
         return self.contrastBrightness(image, contrast, brightness, self.findMode(mode))
@@ -858,6 +891,9 @@ class HueSaturationEffect(object):
 
     def getName(self):
         return "HueSaturation"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, hueRot, saturation, brightness, mode, dummy4):
         return self.hueSaturationBrightness(image, hueRot, saturation, brightness, self.findMode(mode))
@@ -909,6 +945,9 @@ class ColorizeEffect(object):
         else:
             return ColorizeModes.Multiply
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, red, green, blue, modeVal):
         mode = self.findMode(modeVal)
         return self.colorize(image, amount, red, green, blue, mode)
@@ -949,6 +988,9 @@ class InvertEffect(object):
     def getName(self):
         return "Invert"
 
+    def reset(self):
+        pass
+
     def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
         return self.invert(image, amount)
 
@@ -972,6 +1014,9 @@ class ThresholdEffect(object):
 
     def getName(self):
         return "Threshold"
+
+    def reset(self):
+        pass
 
     def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
         return self.threshold(image, amount)

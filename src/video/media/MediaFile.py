@@ -11,7 +11,8 @@ from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
-    FadeMode, getMixModeFromName, ModulationValueMode
+    FadeMode, getMixModeFromName, ModulationValueMode,\
+    getModulationValueModeFromName
 
 def copyImage(image):
     return cv.CloneImage(image)
@@ -31,10 +32,15 @@ def fadeImage(image, value, mode, tmpMat):
         cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
     return tmpMat
 
-def mixImageSelfMask(image1, image2, mixMask, mixMat1):
+def mixImageSelfMask(image1, image2, mixMask, mixMat1, whiteMode):
     cv.Copy(image2, mixMat1)
     cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
-    cv.CmpS(mixMask, 10, mixMask, cv.CV_CMP_GT)
+    if(whiteMode == True):
+        print "DEBUG white luma key! " * 5
+        cv.CmpS(mixMask, 250, mixMask, cv.CV_CMP_LT)
+    else:
+        print "DEBUG black luma key!"
+        cv.CmpS(mixMask, 5, mixMask, cv.CV_CMP_GT)
     cv.Copy(mixMat1, image1, mixMask)
     return image1
 
@@ -52,7 +58,9 @@ def mixImages(mode, image1, image2, mixMat1, mixMask):
     elif(mode == MixMode.Multiply):
         return mixImagesMultiply(image1, image2, mixMat1)
     elif(mode == MixMode.LumaKey):
-        return mixImageSelfMask(image1, image2, mixMask, mixMat1)
+        return mixImageSelfMask(image1, image2, mixMask, mixMat1, False)
+    elif(mode == MixMode.WhiteLumaKey):
+        return mixImageSelfMask(image1, image2, mixMask, mixMat1, True)
     elif(mode == MixMode.Replace):
         return image2
     else:
@@ -107,6 +115,7 @@ class MediaFile(object):
         self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
         self._defaultFadeSettingsName = "Default"
         self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+        self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         
         self._syncLength = -1.0
         self._quantizeLength = -1.0
@@ -117,27 +126,43 @@ class MediaFile(object):
         self._effect2StartControllerValues = (None, None, None, None, None)
         self._effect1StartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect2StartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-        self._effect1ConfigStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-        self._effect2ConfigStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect1OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect2OldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._effect1 = None
         self._effect2 = None
+        self._effect1Settings = None
+        self._effect2Settings = None
 
     def _getConfiguration(self):
+        oldEffect1Name = "None"
+        oldEffect1Values = "0.0|0.0|0.0|0.0|0.0"
+        if(self._effect1Settings != None):
+            oldEffect1Name = self._effect1Settings.getEffectName()
+            oldEffect1Values = self._effect1Settings.getStartValuesString()
         self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
-        oldName = "None"
-        if(self._effect1 != None):
-            oldName = self._effect1.getName()
         self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
+            print "DEBUG start values or effect1 updated setting start values to: " + self._effect1Settings.getStartValuesString()
+            self._effect1StartValues = self._effect1Settings.getStartValues()
+            self._effect1OldValues = self._effect1StartValues
+
+        oldEffect2Name = "None"
+        oldEffect2Values = "0.0|0.0|0.0|0.0|0.0"
+        if(self._effect2Settings != None):
+            oldEffect2Name = self._effect2Settings.getEffectName()
+            oldEffect2Values = self._effect2Settings.getStartValuesString()
         self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
         self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
+            print "DEBUG start values or effect2 updated setting start values to: " + self._effect1Settings.getStartValuesString()
+            self._effect2StartValues = self._effect2Settings.getStartValues()
+            self._effect2OldValues = self._effect2StartValues
 
         self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
         self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
@@ -149,6 +174,9 @@ class MediaFile(object):
 
         mixMode = self._configurationTree.getValue("MixMode")
         self._mixMode = getMixModeFromName(mixMode)
+
+        modulationRestartMode = self._configurationTree.getValue("ModulationValuesMode")
+        self._modulationRestartMode = getModulationValueModeFromName(modulationRestartMode)
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -223,8 +251,8 @@ class MediaFile(object):
             self._effect1StartControllerValues = (None, None, None, None, None)
             self._effect2StartControllerValues = (None, None, None, None, None)
         if(self._modulationRestartMode == ModulationValueMode.ResetToDefault):
-            self._effect1StartValues = self._effect1ConfigStartValues
-            self._effect2StartValues = self._effect2ConfigStartValues
+            self._effect1StartValues = self._effect1Settings.getStartValues()
+            self._effect2StartValues = self._effect2Settings.getStartValues()
         else: #KeepOldValues
             self._effect1StartValues = self._effect1OldValues
             self._effect2StartValues = self._effect2OldValues
@@ -377,14 +405,12 @@ class MediaFile(object):
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
             if(effects != None):
-                preEffect, preEffectSettings, postEffect, postEffectSettings = effects
+                preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
             else:
-                preEffect, preEffectSettings, postEffect, postEffectSettings = (None, None, None, None)
-            dummy1Values = (None, None, None, None, None)
-            dummy2Values = None
-            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preEffect, preEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
+                preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
+            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMask)
-            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postEffect, postEffectSettings, dummy1Values, dummy1Values, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
+            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return mixedImage
     
 class ImageFile(MediaFile):

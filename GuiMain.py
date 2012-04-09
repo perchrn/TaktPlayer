@@ -478,14 +478,15 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
                         if(currentGuiConfigString != self._oldServerConfigurationString):
-#                            print "GUI " * 50
-#                            print currentGuiConfigString
-#                            print "NEW " * 50
-#                            print newConfigString
-#                            print "XXX " * 50
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
+                                print "Both configs are updated! " * 5
+                                print "GUI " * 50
+                                print currentGuiConfigString
+                                print "NEW " * 50
+                                print newConfigString
+                                print "XXX " * 50
                                 text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
                                 dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                                 dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable

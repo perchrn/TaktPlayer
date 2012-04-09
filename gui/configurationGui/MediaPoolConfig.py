@@ -138,6 +138,7 @@ class MediaFile(object):
         self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
         self._defaultFadeSettingsName = "Default"
         self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+        self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
         elif(mediaType == "ImageSequence"):
@@ -180,6 +181,7 @@ class MediaFile(object):
         self._configurationTree.setValue("Effect1Config", sourceConfigTree.getValue("Effect1Config"))
         self._configurationTree.setValue("Effect2Config", sourceConfigTree.getValue("Effect2Config"))
         self._configurationTree.setValue("FadeConfig", sourceConfigTree.getValue("FadeConfig"))
+        self._configurationTree.setValue("ModulationValuesMode", sourceConfigTree.getValue("ModulationValuesMode"))
 
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
@@ -303,12 +305,13 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mixBitmapAdd = wx.Bitmap("graphics/mixAdd.png") #@UndefinedVariable
         self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
         self._mixBitmapLumaKey = wx.Bitmap("graphics/mixLumaKey.png") #@UndefinedVariable
+        self._mixBitmapWhiteLumaKey = wx.Bitmap("graphics/mixWhiteLumaKey.png") #@UndefinedVariable
         self._mixBitmapMultiply = wx.Bitmap("graphics/mixMultiply.png") #@UndefinedVariable
         self._mixBitmapReplace = wx.Bitmap("graphics/mixReplace.png") #@UndefinedVariable
         self._mixBitmapSubtract = wx.Bitmap("graphics/mixSubtract.png") #@UndefinedVariable
 
         self._mixImages = [self._mixBitmapDefault, self._mixBitmapAdd, self._mixBitmapMultiply,
-                            self._mixBitmapLumaKey, self._mixBitmapReplace]
+                            self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapReplace]
         self._mixLabels = self._mixModes.getChoices()
 
         self._fadeModeImages, self._fadeModeLabels = self._mainConfig.getFadeModeLists()
@@ -1165,6 +1168,8 @@ All notes on events are quantized to this.
                 widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)#Default is Add!
         elif(mixModeId == self._mixModes.LumaKey):
             widget.setBitmaps(self._mixBitmapLumaKey, self._mixBitmapLumaKey)
+        elif(mixModeId == self._mixModes.WhiteLumaKey):
+            widget.setBitmaps(self._mixBitmapWhiteLumaKey, self._mixBitmapWhiteLumaKey)
         elif(mixModeId == self._mixModes.Multiply):
             widget.setBitmaps(self._mixBitmapMultiply, self._mixBitmapMultiply)
         elif(mixModeId == self._mixModes.Replace):

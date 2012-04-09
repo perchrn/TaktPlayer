@@ -148,8 +148,8 @@ class Configuration(object):
     def getFadeTemplateByIndex(self, index):
         return self._globalConf.getFadeTemplateByIndex(index)
 
-    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
-        return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
+        return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
 
     def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
         return self._globalConf.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)

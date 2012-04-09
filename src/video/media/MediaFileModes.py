@@ -5,10 +5,10 @@ Created on 7. feb. 2012
 '''
 
 class MixMode:
-    Default, Add, Multiply, LumaKey, Replace = range(5)
+    Default, Add, Multiply, LumaKey, WhiteLumaKey, Replace = range(6)
 
     def getChoices(self):
-        return ["Default", "Add", "Multiply", "LumaKey", "Replace"]
+        return ["Default", "Add", "Multiply", "LumaKey", "WhiteLumaKey", "Replace"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
@@ -23,6 +23,8 @@ def getMixModeFromName(name):
         return MixMode.Multiply
     elif(name == "LumaKey"):
         return MixMode.LumaKey
+    elif(name == "WhiteLumaKey"):
+        return MixMode.WhiteLumaKey
     elif(name == "Replace"):
         return MixMode.Replace
     else:

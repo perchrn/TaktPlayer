@@ -110,7 +110,13 @@ class MediaMixer(object):
         postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 #        print "DEBUG trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 
-        self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, postEffect, postEffectSettings)
+        preEffectStartControllerValues = (None, None, None, None, None)
+        postEffectStartControllerValues = (None, None, None, None, None)
+        preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        preEffectOldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        postEffectOldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
         return trackId
 
     def deafultTrackSettings(self, trackIndex):

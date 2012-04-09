@@ -95,8 +95,8 @@ class GlobalConfig(object):
     def getEffectTemplateByIndex(self, index):
         return self._effectsConfiguration.getTemplateByIndex(index)
 
-    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
-        return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
+        return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
 
     def deleteEffectTemplate(self, configName):
         self._effectsConfiguration.deleteTemplate(configName)
@@ -293,6 +293,19 @@ class EffectsGui(object):
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        startValuesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        startValuesLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Start values:") #@UndefinedVariable
+        self._startValuesField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "0.0|0.0|0.0|0.0|0.0", size=(200, -1)) #@UndefinedVariable
+        self._startValuesField.SetInsertionPoint(0)
+        self._startValuesField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        startValuesButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
+        startValuesButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onStartValuesHelp, id=startValuesButton.GetId()) #@UndefinedVariable
+        startValuesSizer.Add(startValuesLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        startValuesSizer.Add(self._startValuesField, 2, wx.ALL, 5) #@UndefinedVariable
+        startValuesSizer.Add(startValuesButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(startValuesSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
@@ -501,6 +514,14 @@ Selects the effect.
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
 
+    def _onStartValuesHelp(self, event):
+        text = """
+A list of start values for the effect modulation.
+"""
+        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Template name help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onCloseButton(self, event):
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
@@ -631,6 +652,7 @@ Selects the effect.
         arg2Mod = self._midiModulation.validateModulationString(self._arg2Field.GetValue())
         arg3Mod = self._midiModulation.validateModulationString(self._arg3Field.GetValue())
         arg4Mod = self._midiModulation.validateModulationString(self._arg4Field.GetValue())
+        startValuesString = self._startValuesField.GetValue()
         if(cancel == True):
             self._ammountField.SetValue(ammountMod)
             self._arg1Field.SetValue(arg1Mod)
@@ -644,13 +666,12 @@ Selects the effect.
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
             if(oldTemplate == None):
-                print "Make new template..."
-                savedTemplate = self._mainConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+                savedTemplate = self._mainConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyEffectTemplateUsed()
             else:
-                oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+                oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 savedTemplate = oldTemplate
             self.updateGui(savedTemplate, self._midiNote, self._activeEffectId)
             self._mainConfig.updateNoteGui()
@@ -740,6 +761,9 @@ Selects the effect.
         plane.Bind(wx.EVT_BUTTON, self._onSliderEditButton, id=self._editButton.GetId()) #@UndefinedVariable
         self._sliderButtonsSizer.Add(self._editButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._sliderButtonsSizer.Hide(self._editButton)
+        self._updateButton = wx.Button(plane, wx.ID_ANY, 'Set start values') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onSliderUpdateButton, id=self._updateButton.GetId()) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._updateButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
@@ -749,6 +773,14 @@ Selects the effect.
 
     def _onSliderEditButton(self, event):
         self._showEffectsCallback()
+
+    def _onSliderUpdateButton(self, event):
+        valueString = str("%.2f" % (float(self._ammountSlider.GetValue()) / 127.0))
+        valueString += "|" + str("%.2f" % (float(self._arg1Slider.GetValue()) / 127.0))
+        valueString += "|" + str("%.2f" % (float(self._arg2Slider.GetValue()) / 127.0))
+        valueString += "|" + str("%.2f" % (float(self._arg3Slider.GetValue()) / 127.0))
+        valueString += "|" + str("%.2f" % (float(self._arg4Slider.GetValue()) / 127.0))
+        self._startValuesField.SetValue(valueString)
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -981,6 +1013,10 @@ Selects the effect.
         configArg = self._config.getValue("Arg4")
         if(guiArg != configArg):
             return True
+        guiStart = self._startValuesField.GetValue()
+        configStart = self._config.getValue("StartValues")
+        if(guiStart != configStart):
+            return True
         return False
 
     def _onUpdate(self, event):
@@ -1073,6 +1109,7 @@ Selects the effect.
         self._arg2Field.SetValue(self._config.getValue("Arg2"))
         self._arg3Field.SetValue(self._config.getValue("Arg3"))
         self._arg4Field.SetValue(self._config.getValue("Arg4"))
+        self._startValuesField.SetValue(self._config.getValue("StartValues"))
         self._sliderButtonsSizer.Hide(self._editButton)
 
 class FadeGui(object):

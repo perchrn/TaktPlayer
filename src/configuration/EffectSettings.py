@@ -150,10 +150,10 @@ class EffectTemplates(ConfigurationTemplates):
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
-    def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
+    def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         effectConfigTree = self._templateConfig.addChildUniqueId("Template", "Name", saveName, saveName)
         newTemplate = EffectSettings(saveName, self, effectConfigTree)
-        newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod)
+        newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
 
@@ -192,8 +192,16 @@ class EffectSettings(object):
         self._effectArg2ModulationId = -1
         self._effectArg3ModulationId = -1
         self._effectArg4ModulationId = -1
+
         self._configurationTree.addTextParameter("Effect", "None")
         self._effectName = "None"
+
+        self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0|0.0|0.0")
+        self._effectAmountStartValue = 0.0
+        self._effectArg1StartValue = 0.0
+        self._effectArg2StartValue = 0.0
+        self._effectArg3StartValue = 0.0
+        self._effectArg4StartValue = 0.0
 
     def getConfigHolder(self):
         return self._configurationTree
@@ -205,18 +213,23 @@ class EffectSettings(object):
         self._effectArg3ModulationId = self._midiModulation.connectModulation("Arg3")
         self._effectArg4ModulationId = self._midiModulation.connectModulation("Arg4")
         self._effectName = self._configurationTree.getValue("Effect")
+        startValues = self._configurationTree.getValue("StartValues")
+        self._setStartValuesString(startValues)
 #        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
     def getEffectName(self):
         return self._effectName
 
-    def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod):
+    def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         self._configurationTree.setValue("Effect", effectName)
         self._midiModulation.setValue("Amount", ammountMod)
         self._midiModulation.setValue("Arg1", arg1Mod)
         self._midiModulation.setValue("Arg2", arg2Mod)
         self._midiModulation.setValue("Arg3", arg3Mod)
         self._midiModulation.setValue("Arg4", arg4Mod)
+        #Validate and set:
+        self._setStartValuesString(startValuesString)
+        self._configurationTree.setValue("StartValues", self.getStartValuesString())
         
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -236,6 +249,26 @@ class EffectSettings(object):
         arg4 =  self._midiModulation.getModlulationValue(self._effectArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         return (amount, arg1, arg2, arg3, arg4)
 
+    def getStartValues(self):
+        return (self._effectAmountStartValue, self._effectArg1StartValue, self._effectArg2StartValue, self._effectArg3StartValue, self._effectArg4StartValue)
+
+    def _setStartValuesString(self, startValues):
+        if(startValues != None):
+            startValuesSplit = startValues.split('|', 6)
+            if(len(startValuesSplit) == 5):
+                self._effectAmountStartValue = min(max(0.0, float(startValuesSplit[0])), 1.0)
+                self._effectArg1StartValue = min(max(0.0, float(startValuesSplit[1])), 1.0)
+                self._effectArg2StartValue = min(max(0.0, float(startValuesSplit[2])), 1.0)
+                self._effectArg3StartValue = min(max(0.0, float(startValuesSplit[3])), 1.0)
+                self._effectArg4StartValue = min(max(0.0, float(startValuesSplit[4])), 1.0)
+
+    def getStartValuesString(self):
+        valueString = str(self._effectAmountStartValue)
+        valueString += "|" + str(self._effectArg1StartValue)
+        valueString += "|" + str(self._effectArg2StartValue)
+        valueString += "|" + str(self._effectArg3StartValue)
+        valueString += "|" + str(self._effectArg4StartValue)
+        return valueString
 
 class FadeTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming):

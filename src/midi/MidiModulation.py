@@ -148,7 +148,7 @@ class AttackDecaySustainRelease(object):
                     else:
                         return 1.0 - self._sustainValue
         else:
-            print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
+            #print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
             if((self._releaseLengthCalc > 0.0)):
                 if((noteOffSPP - noteOnSPP) < self._sustainStartCalc):
                     releaseStartValue = self.getValue(noteOffSPP, (noteOnSPP, 0.0, 0.0))
@@ -217,7 +217,7 @@ class MidiModulation(object):
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
-            print "mediaMod config is updated..."
+            #print "mediaMod config is updated..."
             self._getConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
@@ -355,7 +355,7 @@ class MidiModulation(object):
                                             release = tmpRelease
                                     except:
                                         pass #Keep default
-                    print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
+                    #print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
                     return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release))
         if(sourceDescription != "None"):
             print "Invalid modulation description: \"%s\"" % sourceDescription

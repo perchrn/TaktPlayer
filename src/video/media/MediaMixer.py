@@ -114,8 +114,6 @@ class MediaMixer(object):
         postEffectStartControllerValues = (None, None, None, None, None)
         preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-        preEffectOldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-        postEffectOldValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
         return trackId
 
@@ -132,7 +130,11 @@ class MediaMixer(object):
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
-        self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, postEffect, postEffectSettings)
+        preEffectStartControllerValues = (None, None, None, None, None)
+        postEffectStartControllerValues = (None, None, None, None, None)
+        preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
 
     def getImage(self):
         return self._currentImage
@@ -168,6 +170,11 @@ class MediaMixer(object):
                         imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
                         imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+            else:
+                if(effects[0] != None):
+                    effects[0].reset()
+                if(effects[4] != None):
+                    effects[4].reset()
         if(imageMix == None):
             imageMix = self._blankImage
         self._nextImage = imageMix

@@ -460,6 +460,10 @@ class GuiControllerValues(object):
         self._controllerStates[controllerNr] = (float(value) / 127)
         #print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
 
+    def resetState(self):
+        for i in range(16):
+            self._controllerStates[i] = None
+
     def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
         if(self._controllerStates[guiCtrlStateStartId] != None):

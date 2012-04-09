@@ -736,6 +736,8 @@ class EdgeEffect(object):
         else:
             cv.Split(self._colorMat, self._splitMat, None, None, None)
         if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
+            if((value < 0.01) and (edgeMode == EdgeModes.CannyOnTop)):
+                return image
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
             if(edgeMode == EdgeModes.CannyOnTop):

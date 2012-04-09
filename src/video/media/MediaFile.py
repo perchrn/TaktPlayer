@@ -36,10 +36,8 @@ def mixImageSelfMask(image1, image2, mixMask, mixMat1, whiteMode):
     cv.Copy(image2, mixMat1)
     cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
     if(whiteMode == True):
-        print "DEBUG white luma key! " * 5
         cv.CmpS(mixMask, 250, mixMask, cv.CV_CMP_LT)
     else:
-        print "DEBUG black luma key!"
         cv.CmpS(mixMask, 5, mixMask, cv.CV_CMP_GT)
     cv.Copy(mixMat1, image1, mixMask)
     return image1
@@ -244,6 +242,7 @@ class MediaFile(object):
         return self._currentFrame
 
     def noteJustTriggered(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        self._guiCtrlStateHolder.resetState()
         if(self._modulationRestartMode != ModulationValueMode.RawInput):
             self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
             self._effect2StartControllerValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)

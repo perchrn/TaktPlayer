@@ -306,7 +306,7 @@ class MediaFile(object):
 
     def _applyEffects(self, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue):
         imageSize = cv.GetSize(self._captureImage)
-        if((imageSize[0] != self._internalResolutionX) and (imageSize[1] != self._internalResolutionY)):
+        if((imageSize[0] != self._internalResolutionX) or (imageSize[1] != self._internalResolutionY)):
             self._image = resizeImage(self._captureImage, self._resizeMat)
         else:
             self._image = copyImage(self._captureImage)

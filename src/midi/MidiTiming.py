@@ -115,8 +115,8 @@ class MidiTiming(object):
             self._midiLastTimeEventWasSPP = True
             self._log.info("Got Song Position Pointer from host. SPP %d" %(self._midiOurSongPosition))
             if(abs(oldSpp - sppValue) > self._midiTicksPerQuarteNote):
-                return True
-        return False
+                return oldSpp
+        return None
 #        if((self._midiOurSongPosition % self._midiTicksPerQuarteNote) == 0):
 #            self.printMidiPosition()
 

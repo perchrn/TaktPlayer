@@ -145,7 +145,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._trackGui = MediaTrackGui(self._configuration)
         self._configuration.setMixerGui(self._trackGui)
-        self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui)
+        self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
         self._configuration.setNoteGui(self._noteGui)
         self._trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -350,7 +350,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName, playerFileName = result[1]
-                    if(playerFileName == os.path.normpath("thumbs/preview.jpg")):
+                    if(playerFileName == "thumbs/preview.jpg"):
 #                        print "DEBUG Got preview!!!"
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
@@ -359,9 +359,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             foundTask.taskDone()
                             self._taskQueue.remove(foundTask)
                     else:
+                        print "DEBUG got thumb!!!"
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, playerFileName)
                         if(foundTask == None):
-                            print "Could not find task that belongs to this answer: " + fileName
+                            print "Could not find task that belongs to this answer: " + playerFileName
                         else:
                             osFileName = os.path.normpath(fileName)
                             if(os.path.isfile(osFileName)):
@@ -379,22 +380,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + noteTxt + ":" + noteTime + " -> " + fileName
                     else:
-                        osFileName = os.path.normpath(fileName)
-                        if(os.path.isfile(osFileName)):
-                            self._noteWidgets[noteId].setBitmapFile(osFileName)
-                            if((self._activeNoteId >= 0) and (self._activeNoteId < 128)):
-                                noteWidget = self._noteWidgets[self._activeNoteId]
-                                noteBitmap = noteWidget.getBitmap()
-                                self._noteGui.updateOverviewClipBitmap(noteBitmap)
-                        else:
-                            fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
-                            self._taskQueue.append(fileRequestTask)
-                            self._guiClient.requestImageFile(fileName)
-                            fileRequestTask.setState(TaskHolder.States.Sendt)
+                        if(fileName.startswith("thumbs")):
+                            namePart = fileName[6:]
+                            guiFileName = "guiThumbs" + namePart
+                            osFileName = os.path.normpath(guiFileName)
+                            print "DEBUG: FileName: " + fileName + " -> GUI: " + guiFileName + " -> OS: " + osFileName
+                            if(os.path.isfile(osFileName)):
+                                print "DEBUG: File found!!!!"
+                                self._noteWidgets[noteId].setBitmapFile(osFileName)
+                                if((self._activeNoteId >= 0) and (self._activeNoteId < 128)):
+                                    noteWidget = self._noteWidgets[self._activeNoteId]
+                                    noteBitmap = noteWidget.getBitmap()
+                                    self._noteGui.updateOverviewClipBitmap(noteBitmap)
+                            else:
+                                print "DEBUG: Request file!!!"
+                                fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
+                                self._taskQueue.append(fileRequestTask)
+                                self._guiClient.requestImageFile(fileName)
+                                fileRequestTask.setState(TaskHolder.States.Sendt)
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.NoteList):
-                print "GuiClient.ResponseTypes.NoteList"
+#                print "GuiClient.ResponseTypes.NoteList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ActiveNotes, None)
                 if(result[1] != None):
                     noteList = result[1]
@@ -403,10 +410,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         for listEntryTxt in noteList:
                             if(int(listEntryTxt) == i):
 #                                print "requesting i= " + str(i)
-                                imageRequestTask = TaskHolder("Note request for note %d:%.2f" %(i, 0.0), TaskHolder.RequestTypes.Note, self._noteWidgets[i], i)
-                                self._taskQueue.append(imageRequestTask)
-                                self._guiClient.requestImage(i, 0.0)
-                                imageRequestTask.setState(TaskHolder.States.Sendt)
+                                self._requestNote(i, 0.0)
                                 found = True
                         if(found == False):
                             widget = self._noteWidgets[i]
@@ -595,6 +599,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 trackRequestTask.setState(TaskHolder.States.Sendt)
         else:
             self._skippedTrackStateRequests += 1
+
+    def _requestNote(self, noteId, noteTime, forceUpdate = False):
+        imageRequestTask = TaskHolder("Note request for note %d:%.2f" %(noteId, noteTime), TaskHolder.RequestTypes.Note, self._noteWidgets[noteId], noteId)
+        self._taskQueue.append(imageRequestTask)
+        self._guiClient.requestImage(noteId, noteTime, forceUpdate)
+        imageRequestTask.setState(TaskHolder.States.Sendt)
 
     def _requestPreview(self):
         if(self._skippedPreviewRequests > 5):
@@ -969,7 +979,7 @@ if __name__ == '__main__':
 #    print "CWD: %s" % os.getcwd()
     if(dirOk):
 #        print "Starting wx"
-        app = wx.App(redirect = 0, filename = APP_NAME + ".log") #@UndefinedVariable
+        app = wx.App(redirect = 1, filename = APP_NAME + ".log") #@UndefinedVariable
         MusicalVideoPlayerGui(None, title="Takt Player GUI")
         app.MainLoop()
 #        print "wx Done"

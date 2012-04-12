@@ -261,11 +261,12 @@ class MediaFile(object):
             self._configurationTree.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaFileGui(object): #@UndefinedVariable
-    def __init__(self, parentPlane, mainConfig, trackGui):
+    def __init__(self, parentPlane, mainConfig, trackGui, noteRequestCallback):
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._trackGui = trackGui
+        self._requestThumbCallback = noteRequestCallback
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
@@ -584,10 +585,14 @@ class MediaFileGui(object): #@UndefinedVariable
         closeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
+        thumbButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'New thumb') #@UndefinedVariable
+        thumbButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onThumbButton, id=thumbButton.GetId()) #@UndefinedVariable
         self._saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
         self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(thumbButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -1015,6 +1020,10 @@ All notes on events are quantized to this.
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
+
+    def _onThumbButton(self, event):
+        if((self._midiNote > 0) and (self._midiNote < 128)):
+            self._requestThumbCallback(self._midiNote, -1.0, True)
 
     def _onSaveButton(self, event):
         if(self._type == "Camera"):

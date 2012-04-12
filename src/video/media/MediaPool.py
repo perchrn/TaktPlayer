@@ -176,10 +176,10 @@ class MediaPool(object):
                 noteListString += "-1"
         return noteListString
 
-    def requestVideoThumbnail(self, noteId, videoPosition):
+    def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):
-            return noteMedia.getThumbnailId(videoPosition)
+            return noteMedia.getThumbnailId(videoPosition, forceUpdate)
         else:
             return None
 

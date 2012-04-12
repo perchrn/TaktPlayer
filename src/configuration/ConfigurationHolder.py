@@ -135,7 +135,7 @@ class ConfigurationHolder(object):
         fileListString = ""
         for aFile in fileList:
             if(aFile.endswith(".cfg")):
-                if(aFile != "PlayerConfig.cfg"):
+                if((aFile != "PlayerConfig.cfg") and(aFile != "GuiConfig.cfg")):
                     if(fileListString != ""):
                         fileListString += ";"
                     fileListString += aFile

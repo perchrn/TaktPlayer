@@ -28,8 +28,9 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 if(commandXml.tag == "thumbnailRequest"):
                     noteTxt = getFromXml(commandXml, "note", None)
                     noteTime = getFromXml(commandXml, "time", "0.0")
+                    noteForceUpdate = getFromXml(commandXml, "forceUpdate", "False")
                     if(noteTxt != None):
-                        urlArgs = "?imageThumb=%s&time=%s" %(noteTxt, noteTime)
+                        urlArgs = "?imageThumb=%s&time=%s&forceUpdate=%s" %(noteTxt, noteTime, noteForceUpdate)
                         urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                         resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                         resultQueue.put(resposeXmlString)
@@ -94,8 +95,8 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "ser
                     playerFilePath = ""
                     filePath = ""
                     if((pathDir == "/thumbs") or (pathDir == "thumbs")):
-                        playerFilePath = os.path.normpath("thumbs/%s" % pathFile)
-                        filePath = os.path.normpath("guiThumbs/%s" % pathFile)
+                        playerFilePath = "thumbs/%s" % pathFile
+                        filePath = "guiThumbs/%s" % pathFile
                     else:
                         serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory in response: %s" % pathDir)
                         return serverMessageXml.getXmlString()
@@ -248,10 +249,14 @@ class GuiClient(object):
         commandXml = MiniXml("noteListRequest")
         self._commandQueue.put(commandXml.getXmlString())
 
-    def requestImage(self, noteId, videoPos = 0.0):
+    def requestImage(self, noteId, videoPos = 0.0, forceUpdate = False):
         commandXml = MiniXml("thumbnailRequest")
         commandXml.addAttribute("note", str(noteId))
         commandXml.addAttribute("time", "%.2f" % videoPos)
+        if(forceUpdate == True):
+            commandXml.addAttribute("forceUpdate", "True")
+        else:
+            commandXml.addAttribute("forceUpdate", "False")
         self._commandQueue.put(commandXml.getXmlString())
 
     def requestPreview(self):

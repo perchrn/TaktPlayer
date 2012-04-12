@@ -95,9 +95,11 @@ class PcnWebHandler(BaseHTTPRequestHandler):
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
+                    thumbForceUpdate = self._getKeyValueFromList(queryDict, 'forceUpdate', "False")
                     thumbRequestXml = MiniXml("thumbRequest")
                     thumbRequestXml.addAttribute("note", imageThumbNote)
                     thumbRequestXml.addAttribute("time", "%.2f" % thumbTime)
+                    thumbRequestXml.addAttribute("forceUpdate", thumbForceUpdate)
                     webInputQueue.put(thumbRequestXml.getXmlString())
                     try:
                         thumbnailAnswerXmlString = webOutputQueue.get(True, 5.0)
@@ -370,9 +372,13 @@ class GuiServer(object):
                 elif(webCommandXml.tag == "thumbRequest"):
                     noteText = getFromXml(webCommandXml, "note", "24")
                     imageTime = float(getFromXml(webCommandXml, "time", "0.0"))
-                    print "GuiServer client request for note: %s at %f" % (noteText, imageTime)
+                    forceText = getFromXml(webCommandXml, "forceUpdate", "False")
+                    forceUpdate = False
+                    if(forceText == "True"):
+                        forceUpdate = True
+                    print "GuiServer client request for note: %s at %f (force update: %s)" % (noteText, imageTime, forceText)
                     noteId = max(min(int(noteText), 127), 0)
-                    thumbnailFileName = self._mediaPool.requestVideoThumbnail(noteId, imageTime)
+                    thumbnailFileName = self._mediaPool.requestVideoThumbnail(noteId, imageTime, forceUpdate)
                     resposeXml = MiniXml("thumbRequest")
                     resposeXml.addAttribute("note", str(noteId))
                     resposeXml.addAttribute("time", "%.2F" % imageTime)

@@ -54,6 +54,16 @@ class SendMidiOverNet(object):
         else:
             print "sendNoteOnOff Bad MIDI channel: " + str(midiChannel)
 
+    def sendGuiRelease(self, midiChannel, note, subCommand):
+        if((midiChannel > -1) and (midiChannel < 16)):
+            if((note > -1) and (note < 128)):
+                command = 0xb0 + midiChannel
+                self._sendMidiData(command, note, 0, subCommand) # Setting velocity to 0x40
+            else:
+                print "sendGuiController Bad note id: " + str(note)
+        else:
+            print "sendGuiController Bad MIDI channel: " + str(midiChannel)
+
     def sendGuiController(self, midiChannel, note, subCommand, value):
         if((midiChannel > -1) and (midiChannel < 16)):
             if((note > -1) and (note < 128)):
@@ -63,6 +73,9 @@ class SendMidiOverNet(object):
                 print "sendGuiController Bad note id: " + str(note)
         else:
             print "sendGuiController Bad MIDI channel: " + str(midiChannel)
+
+    def sendGuiClearChannelNotes(self, midiChannel):
+        self.sendGuiController(midiChannel, 0, 0x80, 0)
 
     def sendMidiController(self, midiChannel, controllerId, value):
         if((midiChannel > -1) and (midiChannel < 16)):

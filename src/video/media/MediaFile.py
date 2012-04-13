@@ -5,7 +5,7 @@ Created on 12. okt. 2011
 '''
 import os.path
 import logging
-from cv2 import cv
+from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName
@@ -143,7 +143,6 @@ class MediaFile(object):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
         self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
-            print "DEBUG start values or effect1 updated setting start values to: " + self._effect1Settings.getStartValuesString()
             self._effect1StartValues = self._effect1Settings.getStartValues()
             self._effect1OldValues = self._effect1StartValues
 
@@ -158,7 +157,6 @@ class MediaFile(object):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
         self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
-            print "DEBUG start values or effect2 updated setting start values to: " + self._effect1Settings.getStartValuesString()
             self._effect2StartValues = self._effect2Settings.getStartValues()
             self._effect2OldValues = self._effect2StartValues
 
@@ -262,9 +260,12 @@ class MediaFile(object):
             self._effect2.reset()
 
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
+        noteDone = False
         fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+        if(fadeValue > 0.999999):
+            noteDone = True
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
-        return fadeMode, fadeValue
+        return fadeMode, fadeValue, noteDone
 
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
@@ -429,11 +430,12 @@ class ImageFile(MediaFile):
         pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
-            return
+            return noteDone
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
 
     def openFile(self, midiLength):
         if (os.path.isfile(self._fullFilePath) == False):
@@ -467,12 +469,13 @@ class CameraInput(MediaFile):
         pass
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black, fadeValue < 0.00001)):
             self._image = None
-            return
+            return noteDone
         self._captureImage = cv.QueryFrame(self._videoFile)
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
 
     def openFile(self, midiLength):
         self._videoFile = cv.CaptureFromCAM(self._cameraId)
@@ -543,11 +546,10 @@ class ImageSequenceFile(MediaFile):
         return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
-            print "Faded out: value = " + str(fadeValue)
-            return
+            return noteDone
 
         lastFrame = self._currentFrame
         
@@ -575,7 +577,7 @@ class ImageSequenceFile(MediaFile):
                     if(self._captureImage == None):
                         self._captureImage = self._firstImage
             self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-            return True
+            return False
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
             self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
@@ -617,10 +619,10 @@ class VideoLoopFile(MediaFile):
         return "VideoLoop"
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.01)):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
-            return
+            return noteDone
         lastFrame = self._currentFrame
 
         framePos = int(((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames)
@@ -661,7 +663,7 @@ class VideoLoopFile(MediaFile):
                 if(self._captureImage == None):
                     self._captureImage = self._firstImage
             self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-            return True
+            return False
         else:
             self._log.debug("Same frame %d currentSongPosition %f", self._currentFrame, currentSongPosition)
             self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)

@@ -1033,10 +1033,19 @@ class ThresholdEffect(object):
 #TODO: add effects
 #class MirrorEffect(object):
 #class RotateEffect(object):
+#class SliceEffect(object):
 
 #class StutterEffect(object):
-#class EchoEffect(object):
+#class BaerturEffect(object):
 
+#class EchoEffect2(object):
+
+#class CurveEffect(object):
+#class CromaKeyGeneratorEffect(object):
+
+#class MaskEffect(object): #Two list of masks and add images to select from ;-)
+
+#class SpriteImage(MediaFile):
 #class ScrollingImage(MediaFile):
 #replaces:
     #class InterferenceEffect(object):

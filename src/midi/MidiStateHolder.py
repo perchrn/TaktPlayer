@@ -416,6 +416,18 @@ class MidiChannelStateHolder(object):
                     self._activeNote = testNote
         return self._activeNote
 
+    def removeDoneActiveNote(self):
+        noteId = self._activeNote.getNote()
+        if(noteId != -1):
+            self._activeNotes[noteId] = NoteState()#reset note
+            self._activeNote = self._activeNotes[noteId]
+
+    def removeAllNotes(self):
+        for i in range(128):
+            self._activeNotes[i] = NoteState()
+            self._nextNotes[i] = NoteState()
+        self._activeNote = self._activeNotes[0]
+
     def _activateNextNote(self, nextNote):
         noteId = nextNote.getNote()
         self._activeNote = nextNote
@@ -466,9 +478,14 @@ class GuiControllerValues(object):
         self._controllerStates[controllerNr] = (float(value) / 127)
         #print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
 
-    def resetState(self):
-        for i in range(16):
-            self._controllerStates[i] = None
+    def resetState(self, command = None):
+        if(command == None):
+            for i in range(16):
+                self._controllerStates[i] = None
+        else:
+            baseController = int(command & 0x0f)
+            for i in range(5):
+                self._controllerStates[baseController + i] = None
 
     def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
@@ -515,6 +532,14 @@ class MidiStateHolder(object):
             self._guiControllerNoteValues[note].controllerChange(midiChannel, data2, data3)
         if((data3 & 0xf0) == 0xe0):
             self._guiControllerChannelValues[midiChannel].controllerChange(midiChannel, data2, data3)
+        if((data3 & 0xf0) == 0xd0):
+            note = min(max(0, data1), 127)
+            self._guiControllerNoteValues[note].resetState(data3)
+        if((data3 & 0xf0) == 0xc0):
+            self._guiControllerChannelValues[midiChannel].resetState(data3)
+
+        if((data3 & 0xf0) == 0x80):
+            self._midiChannelStateHolder[midiChannel].removeAllNotes()
 
     def programChange(self, midiChannel, data1, data2, songPosition):
         print "programChange............ " + str(data1) + " : " + str(data2)

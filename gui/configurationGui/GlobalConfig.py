@@ -75,8 +75,8 @@ class GlobalConfig(object):
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
 
-    def showSliderGuiEditButton(self):
-        self._effectsGui.showSliderGuiEditButton()
+    def showSliderGuiEditButton(self, show = True):
+        self._effectsGui.showSliderGuiEditButton(show)
 
     def updateEffectListHeight(self, height):
         self._effectsGui.updateEffectListHeight(height)
@@ -679,6 +679,7 @@ A list of start values for the effect modulation.
             self._mainConfig.updateEffectList(saveName)
 
     def _onSlidersButton(self, event):
+        self.showSliderGuiEditButton(False)
         self._showSlidersCallback()
         self._fixEffectGuiLayout()
 
@@ -756,14 +757,17 @@ A list of start values for the effect modulation.
         self._sliderButtonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = wx.Button(plane, wx.ID_ANY, 'Close') #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onSliderCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        self._sliderButtonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._editButton = wx.Button(plane, wx.ID_ANY, 'Edit') #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onSliderEditButton, id=self._editButton.GetId()) #@UndefinedVariable
-        self._sliderButtonsSizer.Add(self._editButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._editButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._sliderButtonsSizer.Hide(self._editButton)
         self._updateButton = wx.Button(plane, wx.ID_ANY, 'Set start values') #@UndefinedVariable
         plane.Bind(wx.EVT_BUTTON, self._onSliderUpdateButton, id=self._updateButton.GetId()) #@UndefinedVariable
-        self._sliderButtonsSizer.Add(self._updateButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._updateButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._resetButton = wx.Button(plane, wx.ID_ANY, 'Release sliders') #@UndefinedVariable
+        plane.Bind(wx.EVT_BUTTON, self._onResetButton, id=self._resetButton.GetId()) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._resetButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
@@ -773,6 +777,9 @@ A list of start values for the effect modulation.
 
     def _onSliderEditButton(self, event):
         self._showEffectsCallback()
+        self._sliderButtonsSizer.Hide(self._editButton)
+        self._sliderButtonsSizer.Show(self._updateButton)
+        self._sliderButtonsSizer.Layout()
 
     def _onSliderUpdateButton(self, event):
         valueString = str("%.2f" % (float(self._ammountSlider.GetValue()) / 127.0))
@@ -781,6 +788,23 @@ A list of start values for the effect modulation.
         valueString += "|" + str("%.2f" % (float(self._arg3Slider.GetValue()) / 127.0))
         valueString += "|" + str("%.2f" % (float(self._arg4Slider.GetValue()) / 127.0))
         self._startValuesField.SetValue(valueString)
+
+    def _onResetButton(self, event):
+        midiChannel = self._mainConfig.getSelectedMidiChannel()
+        baseId = 0
+        if((self._activeEffectId == "Effect2") or (self._activeEffectId == "PostEffect")):
+            baseId = 5
+        isChannelController = False
+        if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+            isChannelController = True
+        if((isChannelController == True) and ((midiChannel < 0) or (midiChannel >= 16))):
+            print "No MIDI channel selected for channel controller message!"
+        elif((isChannelController == False) and ((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128))):
+            print "No note selected for note controller message!"
+        else:
+            if(isChannelController == False):
+                midiChannel = min(max(0, midiChannel), 15)
+            self.sendGuiRelease(isChannelController, midiChannel, self._midiNote, baseId)
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -814,6 +838,17 @@ A list of start values for the effect modulation.
         selectedEffectId = self._effectNameField.GetSelection()
         self._setEffect(getEffectName(selectedEffectId-1))
         self._showOrHideSaveButton()
+
+    def sendGuiRelease(self, isChannelController, channel, note, guiControllerId):
+        guiControllerId = (guiControllerId & 0x0f)
+        if(isChannelController == True):
+            command = 0xc0
+            note = 0
+        else:
+            command = 0xd0
+        command += guiControllerId
+        midiSender = self._mainConfig.getMidiSender()
+        midiSender.sendGuiRelease(channel, note, command)
 
     def sendGuiController(self, isChannelController, channel, note, guiControllerId, value):
         guiControllerId = (guiControllerId & 0x0f)
@@ -1086,8 +1121,14 @@ A list of start values for the effect modulation.
             self._effectListWidget.Update()
             self._effectListWidget.Select(selectedIndex)
 
-    def showSliderGuiEditButton(self):
-        self._sliderButtonsSizer.Show(self._editButton)
+    def showSliderGuiEditButton(self, show):
+        if(show == True):
+            self._sliderButtonsSizer.Show(self._editButton)
+            self._sliderButtonsSizer.Hide(self._updateButton)
+        else:
+            self._sliderButtonsSizer.Hide(self._editButton)
+            self._sliderButtonsSizer.Show(self._updateButton)
+        self._sliderButtonsSizer.Layout()
 
     def updateEffectListHeight(self, height):
         pass
@@ -1111,6 +1152,8 @@ A list of start values for the effect modulation.
         self._arg4Field.SetValue(self._config.getValue("Arg4"))
         self._startValuesField.SetValue(self._config.getValue("StartValues"))
         self._sliderButtonsSizer.Hide(self._editButton)
+        self._sliderButtonsSizer.Show(self._updateButton)
+        self._sliderButtonsSizer.Layout()
 
 class FadeGui(object):
     def __init__(self, mainConfing, midiTiming, modulationGui):

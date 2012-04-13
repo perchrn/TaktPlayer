@@ -124,8 +124,8 @@ class Configuration(object):
     def updateEffectsGui(self, configName, midiNote, effectId):
         self._globalConf.updateEffectsGui(configName, midiNote, effectId)
 
-    def showSliderGuiEditButton(self):
-        self._globalConf.showSliderGuiEditButton()
+    def showSliderGuiEditButton(self, show = True):
+        self._globalConf.showSliderGuiEditButton(show)
 
     def updateEffectList(self, selectedName):
         self._globalConf.updateEffectList(selectedName)

@@ -9,21 +9,7 @@ from midi.MidiStateHolder import MidiChannelStateHolder, NoteState,\
     MidiChannelModulationSources, NoteModulationSources
 from midi.MidiController import MidiControllers
 
-# Modulation examples:
-#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.ModWheel")
-#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.Volume")
-#MidiModulation.connectModulation("PlayBack", "MidiChannel.Controller.Pan")
-#MidiModulation.connectModulation("PlayBack", "MidiChannel.PitchBend")
-#MidiModulation.connectModulation("PlayBack", "MidiChannel.Aftertouch")
-#MidiModulation.connectModulation("PlayBack", "MidiNote.Velocity")
-#MidiModulation.connectModulation("PlayBack", "MidiNote.ReleaseVelocity")
-#MidiModulation.connectModulation("PlayBack", "MidiNote.NotePreasure")
-#MidiModulation.connectModulation("PlayBack", "LFO.Triangle.4.0|0.0|0.25|0.75")
-#MidiModulation.connectModulation("PlayBack", "ADSR.ADSR.4.0|0.0|1.0|4.0")
-#MidiModulation.connectModulation("PlayBack", "ADSR.AR.4.0|4.0")
-#MidiModulation.connectModulation("PlayBack", "None")#Always 0.0
-#MidiModulation.connectModulation("PlayBack", "Value.1.0")
-
+# Modulation ideas:
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Contoller.ModWheel")
 #MidiModulation.connectModulation("FadeInOut", "OtherMidiChannel.16.Note.1C.ADSR")
 
@@ -131,10 +117,11 @@ class AttackDecaySustainRelease(object):
         self._decayLengthCalc = decay * self._midiTiming.getTicksPerQuarteNote()
         self._sustainStartCalc = self._attackLengthCalc + self._decayLengthCalc
         self._releaseLengthCalc = release * self._midiTiming.getTicksPerQuarteNote()
+        self._postReleaseLengthCalc = self._releaseLengthCalc + (16.0 * self._midiTiming.getTicksPerQuarteNote())
 
     def getValue(self, songPosition, argument):
         noteOnSPP, noteOffSPP, originalLength = argument
-        if((originalLength < 0.001)):
+        if((originalLength < 0.0001)):
             if(songPosition < noteOnSPP):
                 return 0.0
             elif((songPosition - noteOnSPP) < self._attackLengthCalc):
@@ -155,7 +142,10 @@ class AttackDecaySustainRelease(object):
                 else:
                     releaseStartValue = self._sustainValue
                 if((songPosition - noteOffSPP) <= self._releaseLengthCalc):
-                    return (((float(songPosition) - noteOffSPP) / self._releaseLengthCalc) * releaseStartValue) + (1.0 - releaseStartValue)
+                    returnValue = (((float(songPosition) - noteOffSPP) / self._releaseLengthCalc) * releaseStartValue) + (1.0 - releaseStartValue)
+                    if((returnValue == 0.0) and (songPosition - noteOffSPP) <= self._postReleaseLengthCalc):
+                        returnValue = 0.00001
+                    return returnValue
             return 1.0
 
     def getAttackLength(self):

@@ -209,6 +209,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._trackEditPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
         self._trackPlayBitmap = wx.Bitmap("graphics/playButton.png") #@UndefinedVariable
         self._trackPlayPressedBitmap = wx.Bitmap("graphics/playButtonPressed.png") #@UndefinedVariable
+        self._trackStopBitmap = wx.Bitmap("graphics/stopButton.png") #@UndefinedVariable
+        self._trackStopPressedBitmap = wx.Bitmap("graphics/stopButtonPressed.png") #@UndefinedVariable
         self._trackWidgets = []
         self._activeTrackNotes = []
         self._activeTrackId = -1
@@ -216,6 +218,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._trackEditWidgetsIds = []
         self._trackPlayWidgets = []
         self._trackPlayWidgetsIds = []
+        self._trackStopWidgets = []
+        self._trackStopWidgetsIds = []
         for track in range(16):
             extraSpace = ""
             if(track < 9):
@@ -224,16 +228,21 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             trackButton = PcnKeyboardButton(self._midiTrackPanel, self._trackThumbnailBitmap, (16, 4+36*track), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
             trackButton.setFrqameAddingFunction(addTrackButtonFrame)
             trackButton.setBitmap(self._emptyBitMap)
+            trackStopButton = PcnImageButton(self._midiTrackPanel, self._trackStopBitmap, self._trackStopPressedBitmap, (60, 4+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
             trackPlayButton = PcnImageButton(self._midiTrackPanel, self._trackPlayBitmap, self._trackPlayPressedBitmap, (60, 21+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
             self._trackWidgets.append(trackButton)
             self._activeTrackNotes.append(-1)
+            self._trackStopWidgets.append(trackStopButton)
             self._trackPlayWidgets.append(trackPlayButton)
             self._trackWidgetIds.append(trackButton.GetId())
+            self._trackStopWidgetsIds.append(trackStopButton.GetId())
             self._trackPlayWidgetsIds.append(trackPlayButton.GetId())
             trackButton.Bind(wx.EVT_BUTTON, self._onTrackButton) #@UndefinedVariable
+            trackStopButton.Bind(wx.EVT_BUTTON, self._onTrackStopButton) #@UndefinedVariable
             trackPlayButton.Bind(wx.EVT_BUTTON, self._onTrackPlayButton) #@UndefinedVariable
 
         self._selectedMidiChannel = 0
+        self._selectTrackPlayer(self._selectedMidiChannel)
         self._selectTrackKey(self._selectedMidiChannel)
         self._trackSelected(self._selectedMidiChannel)
 
@@ -907,6 +916,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(foundTrackId != None):
             self._selectTrackKey(foundTrackId)
             self._trackSelected(foundTrackId)
+            if(True): #TODO make configurable:
+                self._selectedMidiChannel = foundTrackId
+                self._selectTrackPlayer(foundTrackId)
+                self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _trackSelected(self, selectedTrackId):
         self._activeTrackId = selectedTrackId
@@ -944,6 +957,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 self._selectedMidiChannel = foundTrackId
                 self._selectTrackPlayer(foundTrackId)
             self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+
+    def _onTrackStopButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackStopWidgetsIds[i] == buttonId):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            self._configuration.getMidiSender().sendGuiClearChannelNotes(foundTrackId)
 
     def _onClose(self, event):
         self._guiClient.requestGuiClientProcessToStop()

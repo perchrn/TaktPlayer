@@ -212,7 +212,10 @@ class MediaPool(object):
                     newMedia.setStartPosition(midiNoteState.getStartPosition())
                     activeMedia = newMedia
             if(activeMedia != None):
-                activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)
+                noteIsDone = activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)
+                if(noteIsDone == True):
+                    print "DEBUG remove done note!"
+                    midiChannelState.removeDoneActiveNote()
                 self._mediaMixer.gueueImage(activeMedia, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, midiChannel)

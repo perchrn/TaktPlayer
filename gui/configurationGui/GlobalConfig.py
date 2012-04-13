@@ -67,10 +67,10 @@ class GlobalConfig(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
-    def updateEffectsGui(self, configName, midiNote, effectId):
+    def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
-            self._effectsGui.updateGui(template, midiNote, effectId)
+            self._effectsGui.updateGui(template, midiNote, editFieldName, editFieldWidget)
 
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
@@ -119,10 +119,10 @@ class GlobalConfig(object):
     def stopModulationGui(self):
         self._modulationGui.stopModulationUpdate()
 
-    def updateFadeGui(self, configName, editField):
+    def updateFadeGui(self, configName, editFieldName, editFieldWidget):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
-            self._fadeGui.updateGui(template, editField)
+            self._fadeGui.updateGui(template, editFieldName, editFieldWidget)
 
     def updateFadeList(self, selectedName):
         self._fadeGui.updateFadeList(self._fadeConfiguration, selectedName)
@@ -185,6 +185,7 @@ class EffectsGui(object):
         self._midiNote = -1
         self._activeEffectId = None
         self._config = None
+        self._editFieldWidget = None
 
     class EditSelection():
         Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
@@ -201,6 +202,7 @@ class EffectsGui(object):
         self._hideModulationCallback = parentClass.hideModulationGui
         self._showEffectListCallback = parentClass.showEffectList
         self._setDragCursor = parentClass.setDragCursor
+        self._effectNameFieldUpdateCallback = parentClass.updateEffecChoices
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -673,10 +675,15 @@ A list of start values for the effect modulation.
             else:
                 oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate, self._midiNote, self._activeEffectId)
+            self.updateGui(savedTemplate, self._midiNote, self._activeEffectId, self._editFieldWidget)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateEffectList(saveName)
+            if(self._editFieldWidget != None):
+                if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+                    print "DEBUG track FX TODO: " + saveName #TODO:
+                else:
+                    self._effectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _onSlidersButton(self, event):
         self.showSliderGuiEditButton(False)
@@ -1138,9 +1145,10 @@ A list of start values for the effect modulation.
 ##            self._mainEffectsListPlane.SetSize((340,height+40))
 #            self._oldListHeight = height
 
-    def updateGui(self, effectTemplate, midiNote, effectId):
+    def updateGui(self, effectTemplate, midiNote, editFieldName, editFieldWidget = None):
         self._midiNote = midiNote
-        self._activeEffectId = effectId
+        self._activeEffectId = editFieldName
+        self._editFieldWidget = editFieldWidget
         self._config = effectTemplate.getConfigHolder()
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
@@ -1172,6 +1180,7 @@ class FadeGui(object):
         self._fadeModeImages = [self._fadeBlackBitmap, self._fadeWhiteBitmap]
         self._fadeModeLabels = self._fadeModes.getChoices()
         self._config = None
+        self._editFieldWidget = None
 
     def getFadeModeLists(self):
         return (self._fadeModeImages, self._fadeModeLabels)
@@ -1189,6 +1198,7 @@ class FadeGui(object):
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
+        self._fadeNameFieldUpdateCallback = parentClass.updateFadeChoices
 
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
@@ -1473,6 +1483,8 @@ Decides if this image fades to black or white.
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateFadeList(saveName)
+            if(self._editFieldWidget != None):
+                self._fadeNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -1574,20 +1586,21 @@ Decides if this image fades to black or white.
             self._fadeListSelectedIndex = selectedIndex
             self._fadeListWidget.Select(selectedIndex)
 
-    def updateGui(self, fadeTemplate, editField):
+    def updateGui(self, fadeTemplate, editFieldName, editFieldWidget = None):
         self._config = fadeTemplate.getConfigHolder()
         self._selectedEditor = self.EditSelected.Unselected
+        self._editFieldWidget = editFieldWidget
         self._highlightButton(self._selectedEditor)
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, self._config.getValue("Mode"), "Black")
         self._fadeModulationField.SetValue(self._config.getValue("Modulation"))
         self._levelModulationField.SetValue(self._config.getValue("Level"))
-        if(editField == "Modulation"):
+        if(editFieldName == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
-        if(editField == "Level"):
+        if(editFieldName == "Level"):
             self._selectedEditor = self.EditSelected.Level
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)

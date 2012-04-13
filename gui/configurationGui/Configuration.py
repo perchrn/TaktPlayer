@@ -121,8 +121,8 @@ class Configuration(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
-    def updateEffectsGui(self, configName, midiNote, effectId):
-        self._globalConf.updateEffectsGui(configName, midiNote, effectId)
+    def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget = None):
+        self._globalConf.updateEffectsGui(configName, midiNote, editFieldName, editFieldWidget)
 
     def showSliderGuiEditButton(self, show = True):
         self._globalConf.showSliderGuiEditButton(show)
@@ -211,8 +211,8 @@ class Configuration(object):
     def stopModulationGui(self):
         self._globalConf.stopModulationGui()
 
-    def updateFadeGui(self, configName, editField = None):
-        self._globalConf.updateFadeGui(configName, editField)
+    def updateFadeGui(self, configName, editFieldName = None, editFieldWidget = None):
+        self._globalConf.updateFadeGui(configName, editFieldName, editFieldWidget)
 
     def updateFadeList(self, selectedName):
         self._globalConf.updateFadeList(selectedName)

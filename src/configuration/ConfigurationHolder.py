@@ -104,7 +104,7 @@ class ConfigurationHolder(object):
         filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
         if(os.path.isfile(filePath) == False):
             print "********** Error loading configuration: \"%s\" **********" %(filePath)
-            print "**********          Using default configuration.          **********"
+            print "**********          Keeping last configuration.          **********"
             return
         try:
             loadFile = open(filePath, 'r')
@@ -121,11 +121,14 @@ class ConfigurationHolder(object):
             raise
 
     def saveConfigFile(self, configName):
+        if(configName.endswith(".cfg") == False):
+            configName = configName + ".cfg"
         filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
         try:
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
             saveFile.write(xmlString)
+            self._loadedFileName = configName
         except:
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
             raise

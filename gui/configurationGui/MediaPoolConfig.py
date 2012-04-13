@@ -545,7 +545,7 @@ class MediaFileGui(object): #@UndefinedVariable
         effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
         self._effect1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
+        self.updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
         self._effect1Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect1Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._effect1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -558,7 +558,7 @@ class MediaFileGui(object): #@UndefinedVariable
         effect2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
         self._effect2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
+        self.updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._effect2Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect2Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._effect2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -571,7 +571,7 @@ class MediaFileGui(object): #@UndefinedVariable
         fadeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Fade template:") #@UndefinedVariable
         self._fadeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateFadeChoices(self._fadeField, "Default", "Default")
+        self.updateFadeChoices(self._fadeField, "Default", "Default")
         self._fadeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._fadeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
         self._fadeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
@@ -931,7 +931,7 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect1Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect1
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1")
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
 
     def _onEffect2Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
@@ -943,7 +943,7 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect2Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect2
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2")
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect1Field)
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
@@ -1009,7 +1009,7 @@ All notes on events are quantized to this.
         selectedFadeConfig = self._fadeField.GetValue()
         self._selectedEditor = self.EditSelection.Fade
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateFadeGui(selectedFadeConfig)
+        self._mainConfig.updateFadeGui(selectedFadeConfig, None, self._fadeField)
 
     def _onCloseButton(self, event):
         self.hideNoteGui()
@@ -1121,17 +1121,17 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._syncSizer)
         self.refreshLayout()
 
-    def _updateEffecChoices(self, widget, value, defaultValue):
+    def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
-            self._updateChoices(widget, None, value, defaultValue)
+            self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue)
+            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
 
-    def _updateFadeChoices(self, widget, value, defaultValue):
+    def updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
-            self._updateChoices(widget, None, value, defaultValue)
+            self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue)
+            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
     def _updateMixModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._mixModes.getChoices, value, defaultValue)
@@ -1145,7 +1145,7 @@ All notes on events are quantized to this.
     def _updateTypeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
 
-    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
             choiceList = [value]
         else:
@@ -1160,6 +1160,8 @@ All notes on events are quantized to this.
             widget.SetStringSelection(value)
         else:
             widget.SetStringSelection(defaultValue)
+        if(updateSaveButton == True):
+            self._showOrHideSaveButton()
 
     def updateMixmodeThumb(self, widget, mixMode, noteMixMode, showDefault = False):
         if(mixMode == "Default"):
@@ -1384,7 +1386,7 @@ All notes on events are quantized to this.
                                             self._config.setValue("FadeConfig", newFadeConfigName)
                                     else:
                                         oldConfig.update(fadeMode, None, None)
-                                    self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                                    self.updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                                     self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                                     self._showOrHideSaveButton()
 
@@ -1416,7 +1418,7 @@ All notes on events are quantized to this.
                             fadeConfig = self._mainConfig.getFadeTemplate(dupTemplateName)
                             fadeConfig.setName(newFadeConfigName)
                             self._config.setValue("FadeConfig", newFadeConfigName)
-                            self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                            self.updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                             self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                             self._mainConfig.updateFadeList(newFadeConfigName)
                             self._showOrHideSaveButton()
@@ -1439,7 +1441,7 @@ All notes on events are quantized to this.
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
-                self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
+                self.updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
                 self.updateEffectThumb(self._overviewFx1Button, fxName)
                 self._showOrHideSaveButton()
         self.clearDragCursor()
@@ -1448,7 +1450,7 @@ All notes on events are quantized to this.
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
-                self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
+                self.updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
                 self.updateEffectThumb(self._overviewFx2Button, fxName)
                 self._showOrHideSaveButton()
         self.clearDragCursor()
@@ -1483,7 +1485,7 @@ All notes on events are quantized to this.
                     midiNote = self._activeTrackClipNoteId
                     self._selectedEditor = self.EditSelection.Unselected
         if(effectConfigName != None):
-            self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId)
+            self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId, None)
             self._mainConfig.showSliderGuiEditButton()
             self.showSlidersGui()
         self._highlightButton(self._selectedEditor)
@@ -1654,13 +1656,13 @@ All notes on events are quantized to this.
         self._updateMixModeChoices(self._mixField, mixMode, "Add")
         self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)
         effect1Config = self._config.getValue("Effect1Config")
-        self._updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
+        self.updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
         self.updateEffectThumb(self._overviewFx1Button, effect1Config)
         effect2Config = self._config.getValue("Effect2Config")
-        self._updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
+        self.updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
         self.updateEffectThumb(self._overviewFx2Button, effect2Config)
         fadeConfigName = self._config.getValue("FadeConfig")
-        self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
+        self.updateFadeChoices(self._fadeField, fadeConfigName, "Default")
         self._mainConfig.updateFadeGuiButtons(fadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
@@ -1688,9 +1690,9 @@ All notes on events are quantized to this.
         self._syncField.SetValue("4.0")
         self._quantizeField.SetValue("1.0")
         self._updateMixModeChoices(self._mixField, "Add", "Add")
-        self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
-        self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
-        self._updateFadeChoices(self._fadeField, "Default", "Default")
+        self.updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
+        self.updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
+        self.updateFadeChoices(self._fadeField, "Default", "Default")
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.Effect1):

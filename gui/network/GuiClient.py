@@ -100,6 +100,11 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "ser
                     else:
                         serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory in response: %s" % pathDir)
                         return serverMessageXml.getXmlString()
+                    if(os.path.exists("guiThumbs") == False):
+                        os.makedirs("guiThumbs")
+                    if(os.path.isdir("guiThumbs") == False):
+                        serverMessageXml = MiniXml(xmlErrorResponseName, "Error! Cannot save thumbnail. \"guiThumbs\" directory is not in: %s" % os.getcwd())
+                        return serverMessageXml.getXmlString()
                     fileHandle=open(filePath, 'wb')
                     fileHandle.write(serverResponse.read())
                     fileHandle.close()
@@ -118,20 +123,25 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "ser
             return clientMessageXml.getXmlString()
         httpConnection.close()
     except socket.timeout:
-        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got timeout exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
         clientMessageXml.addAttribute("exception", "timeout")
         return clientMessageXml.getXmlString()
     except socket.error as (errno, strerror):
-        clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        exception = ""
+        description = ""
         if(errno == 10060):
-            clientMessageXml.addAttribute("exception", "timeout")
+            exception =  "timeout"
         elif(errno == 10061):
-            clientMessageXml.addAttribute("exception", "connectionRefused")
+            exception = "connectionRefused"
         elif(errno == 11004):
-            clientMessageXml.addAttribute("exception", "resolvError")
+            exception = "resolvError"
         else:
-            clientMessageXml.addAttribute("exception", str(errno))
-            clientMessageXml.addAttribute("description", str(strerror))
+            exception = str(errno)
+            description = str(strerror)
+        clientMessageXml = MiniXml(xmlErrorResponseName, "Got " + exception + " exception while requesting URL: " + urlArgs.split("&sigTime=")[0])
+        clientMessageXml.addAttribute("exception", exception)
+        if(description != ""):
+            clientMessageXml.addAttribute("description", description)
         return clientMessageXml.getXmlString()
     except Exception, e:
         clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while requesting URL: " + urlArgs.split("&sigTime=")[0])

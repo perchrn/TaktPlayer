@@ -121,7 +121,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
         menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuPannel.SetSizer(self._menuSizer) #@UndefinedVariable
-        menuSeperatorPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
+        menuSeperatorPannel = wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
         menuSeperatorPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
 
@@ -994,6 +994,10 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     dirOk = True
     scriptDir = os.path.dirname(sys.argv[0])
+    debugMode = False
+    for i in range(len(sys.argv) - 1):
+        if(sys.argv[i+1] == "--debug"):
+            debugMode = True
     if((scriptDir != "") and (scriptDir != os.getcwd())):
         os.chdir(scriptDir)
         if(scriptDir != os.getcwd()):
@@ -1002,7 +1006,11 @@ if __name__ == '__main__':
 #    print "CWD: %s" % os.getcwd()
     if(dirOk):
 #        print "Starting wx"
-        app = wx.App(redirect = 1, filename = APP_NAME + ".log") #@UndefinedVariable
+        if(debugMode == True):
+            redirectValue = 0
+        else:
+            redirectValue = 1
+        app = wx.App(redirect = redirectValue, filename = APP_NAME + ".log") #@UndefinedVariable
         MusicalVideoPlayerGui(None, title="Takt Player GUI")
         app.MainLoop()
 #        print "wx Done"

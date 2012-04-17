@@ -99,6 +99,9 @@ class PcnVideo(Image):
         self.texture = None
         self.texture = self._pcnVideo._texture
 
+#    def on_tex(self, *l):
+#        self.canvas.ask_update()
+
     def _on_index(self, *largs):
         self._pcnVideo = None
         if self.index < 0:

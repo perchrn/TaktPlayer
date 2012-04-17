@@ -389,16 +389,22 @@ class MediaFile(object):
             image = self._captureImage
 
         filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()
-        thumbnailName = "thumbs/%s.jpg" % (filenameHash)
-        osFileName = os.path.normpath(thumbnailName)
-        if((forceUpdate == True) or (os.path.isfile(osFileName) == False)):
-            print "Thumb file does not exist. Generating... " + thumbnailName
-            destWidth, destHeight = (40, 30)
-            resizeMat = createMat(destWidth, destHeight)
-            scaleAndSave(image, osFileName, resizeMat)
+        if(os.path.exists("thumbs") == False):
+            os.makedirs("thumbs")
+        if(os.path.isdir("thumbs") == False):
+            print "Error!!! thumbs directory is not in: " + os.getcwd()
+            return None
         else:
-            print "Thumb file already exist. " + thumbnailName
-        return thumbnailName
+            thumbnailName = "thumbs/%s.jpg" % (filenameHash)
+            osFileName = os.path.normpath(thumbnailName)
+            if((forceUpdate == True) or (os.path.isfile(osFileName) == False)):
+                print "Thumb file does not exist. Generating... " + thumbnailName
+                destWidth, destHeight = (40, 30)
+                resizeMat = createMat(destWidth, destHeight)
+                scaleAndSave(image, osFileName, resizeMat)
+            else:
+                print "Thumb file already exist. " + thumbnailName
+            return thumbnailName
 
     def openFile(self, midiLength):
         pass

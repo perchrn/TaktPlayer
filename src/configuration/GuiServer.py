@@ -382,7 +382,7 @@ class GuiServer(object):
                     resposeXml = MiniXml("thumbRequest")
                     resposeXml.addAttribute("note", str(noteId))
                     resposeXml.addAttribute("time", "%.2F" % imageTime)
-                    resposeXml.addAttribute("fileName", thumbnailFileName)
+                    resposeXml.addAttribute("fileName", str(thumbnailFileName))
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "noteListRequest"):
 #                    print "GuiServer client request for note list."

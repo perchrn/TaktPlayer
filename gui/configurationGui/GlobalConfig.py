@@ -4,7 +4,8 @@ Created on 6. feb. 2012
 @author: pcn
 '''
 from midi.MidiTiming import MidiTiming
-from configuration.EffectSettings import EffectTemplates, FadeTemplates
+from configuration.EffectSettings import EffectTemplates, FadeTemplates,\
+    EffectImageList
 import wx
 from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 from midi.MidiModulation import MidiModulation
@@ -15,6 +16,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
+from configurationGui.EffectImagesListGui import EffectImagesListGui
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -29,9 +31,12 @@ class GlobalConfig(object):
         self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
         self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui)
+        self._effectImagesConfiguration = EffectImageList(self._configurationTree, self._midiTiming)
+        self._effectImagesGui = EffectImagesListGui(self._mainConfig, self._effectImagesConfiguration)
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
+        self._effectImagesConfiguration._getConfiguration()
         self._fadeConfiguration._getConfiguration()
 
     def checkAndUpdateFromConfiguration(self):
@@ -51,6 +56,9 @@ class GlobalConfig(object):
 
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
+
+    def setupEffectImageListGui(self, plane, sizer, parentSizer, parentClass):
+        self._effectImagesGui.setupEffectImageListGui(plane, sizer, parentSizer, parentClass)
 
     def getFadeModeLists(self):
         return self._fadeGui.getFadeModeLists()
@@ -74,6 +82,9 @@ class GlobalConfig(object):
 
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
+
+    def updateEffectImageList(self):
+        self._effectImagesGui.updateEffectImageList()
 
     def showSliderGuiEditButton(self, show = True):
         self._effectsGui.showSliderGuiEditButton(show)
@@ -110,6 +121,18 @@ class GlobalConfig(object):
     def checkIfNameIsDefaultEffectName(self, configName):
         return self._effectsConfiguration.checkIfNameIsDefaultName(configName)
 
+    def getEffectImage(self, fileName):
+        return self._effectImagesConfiguration.getTemplate(fileName)
+
+    def getEffectImageByIndex(self, index):
+        return self._effectImagesConfiguration.getTemplateByIndex(index)
+
+    def deleteEffectImage(self, fileName):
+        return self._effectImagesConfiguration.deleteTemplate(fileName)
+
+    def makeNewEffectImage(self, fileName):
+        return self._effectImagesConfiguration.createTemplate(fileName)
+        
     def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback):
         self._modulationGui.updateGui(modulationString, widget, closeCallback, saveCallback)
 
@@ -174,6 +197,7 @@ class EffectsGui(object):
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
         self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
+        self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
@@ -201,6 +225,7 @@ class EffectsGui(object):
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._showEffectListCallback = parentClass.showEffectList
+        self._showEffectImageListCallback = parentClass.showEffectImageListGui
         self._setDragCursor = parentClass.setDragCursor
         self._effectNameFieldUpdateCallback = parentClass.updateEffecChoices
 
@@ -322,6 +347,10 @@ class EffectsGui(object):
         listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(listButton, 1, wx.ALL, 5) #@UndefinedVariable
+        imagesButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Images') #@UndefinedVariable
+        imagesButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onImagesButton, id=imagesButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(imagesButton, 1, wx.ALL, 5) #@UndefinedVariable
         slidersButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Sliders') #@UndefinedVariable
         slidersButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
@@ -378,6 +407,8 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapInverse)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapThreshold)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapImageAdd)
         self._fxIdImageIndex.append(index)
 
         self._modIdImageIndex = []
@@ -601,6 +632,10 @@ A list of start values for the effect modulation.
         effectConfigName = self._templateNameField.GetValue()
         self._mainConfig.updateEffectList(effectConfigName)
         self._showEffectListCallback()
+
+    def _onImagesButton(self, event):
+        self._mainConfig.updateEffectImageList()
+        self._showEffectImageListCallback()
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
@@ -1019,6 +1054,9 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Threshold):
             self._setLabels("Threshold:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.ImageAdd):
+            self._setLabels("MaskId:", "ImageId", "Mode", None, None)
+            self._setupValueLabels(None, None, None, None, None)
         else:
             self._setLabels("Amount:", "Argument 1:", "Argument 2:", "Argument 3:", "Argument 4:")
             self._setupValueLabels(None, None, None, None, None)
@@ -1285,8 +1323,8 @@ class FadeGui(object):
             index = self._fadeImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
 
-        self._oldListHeight = 376
-        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(220,self._oldListHeight), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+#        self._oldListHeight = 376
+        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(220,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._fadeListWidget.SetImageList(self._fadeImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._fadeListWidget.SetBackgroundColour((170,170,170))
 

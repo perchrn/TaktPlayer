@@ -11,9 +11,11 @@ from midi import MidiUtilities
 from video.Effects import getEmptyImage
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, fadeConfiguration, configurationTree, multiprocessLogger, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, multiprocessLogger, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
+        print "DEBUG pcn... self._effectsConfigurationTemplates = " + str(effectsConfiguration)
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._effectImagesConfigurationTemplates = effectImagesConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -131,19 +133,19 @@ class MediaPool(object):
                 try:
                     if(mediaType == "Image"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = ImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = ImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "ImageSequence"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                 except MediaError, mediaError:
                     print "Error opening media file: %s Message: %s" % (fileName.encode("utf-8"), str(mediaError))

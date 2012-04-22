@@ -71,9 +71,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._effectImagesConfigurationTemplates = effectImagesConfig
         self._guiCtrlStateHolder = guiCtrlStateHolder
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         self._videoDirectory = videoDir
@@ -141,7 +142,7 @@ class MediaFile(object):
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
-        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
             self._effect1StartValues = self._effect1Settings.getStartValues()
             self._effect1OldValues = self._effect1StartValues
@@ -155,7 +156,7 @@ class MediaFile(object):
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
-        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
             self._effect2StartValues = self._effect2Settings.getStartValues()
             self._effect2OldValues = self._effect2StartValues
@@ -425,8 +426,8 @@ class MediaFile(object):
             return mixedImage
     
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._getConfiguration()
 
     def getType(self):
@@ -463,8 +464,8 @@ class ImageFile(MediaFile):
         self._fileOk = True
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
 
@@ -505,8 +506,8 @@ class CameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
@@ -594,8 +595,8 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()

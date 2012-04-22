@@ -6,7 +6,7 @@ Created on 28. nov. 2011
 
 #Kivy imports
 import os
-from configuration.EffectSettings import EffectTemplates, FadeTemplates
+from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList
 from configuration.GuiServer import GuiServer
 import multiprocessing
 from configuration.PlayerConfiguration import PlayerConfiguration
@@ -68,11 +68,12 @@ class MyKivyApp(App):
 
         self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)
+        self._effectImagesConfiguration = EffectImageList(self._globalConfig, self._midiTiming, self._playerConfiguration.getVideoDir())
 
         confChild = self._configurationTree.addChildUnique("MediaMixer")
-        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._internalResolutionX, self._internalResolutionY)
+        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._effectImagesConfiguration, self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
@@ -105,6 +106,7 @@ class MyKivyApp(App):
                 print "config is updated..."
                 self._getConfiguration()
                 self._effectsConfiguration.checkAndUpdateFromConfiguration()
+                self._effectImagesConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
                 self._mediaMixer.checkAndUpdateFromConfiguration()

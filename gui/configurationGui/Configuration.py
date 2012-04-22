@@ -106,6 +106,9 @@ class Configuration(object):
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
         self._globalConf.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
 
+    def setupEffectImageListGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupEffectImageListGui(plane, sizer, parentSizer, parentClass)
+
     def getFadeModeLists(self):
         return self._globalConf.getFadeModeLists()
 
@@ -130,6 +133,9 @@ class Configuration(object):
     def updateEffectList(self, selectedName):
         self._globalConf.updateEffectList(selectedName)
 
+    def updateEffectImageList(self):
+        self._globalConf.updateEffectImageList()
+
     def updateEffectListHeight(self, height):
         self._globalConf.updateEffectListHeight(height)
 
@@ -148,6 +154,12 @@ class Configuration(object):
     def getFadeTemplateByIndex(self, index):
         return self._globalConf.getFadeTemplateByIndex(index)
 
+    def getEffectImage(self, fileName):
+        return self._globalConf.getEffectImage(fileName)
+
+    def getEffectImageByIndex(self, index):
+        return self._globalConf.getEffectImageByIndex(index)
+
     def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
 
@@ -160,12 +172,18 @@ class Configuration(object):
     def deleteFadeTemplate(self, configName):
         return self._globalConf.deleteFadeTemplate(configName)
 
+    def deleteEffectImage(self, fileName):
+        return self._globalConf.deleteEffectImage(fileName)
+
     def duplicateEffectTemplate(self, configName):
         return self._globalConf.duplicateEffectTemplate(configName)
 
     def duplicateFadeTemplate(self, configName):
         return self._globalConf.duplicateFadeTemplate(configName)
 
+    def makeNewEffectImage(self, fileName):
+        return self._globalConf.makeNewEffectImage(fileName)
+        
     def verifyEffectTemplateUsed(self):
         effectsConfigNames =  self._globalConf.getEffectTemplateNamesList()
         self._mediaPoolConf.verifyEffectTemplateUsed(effectsConfigNames)

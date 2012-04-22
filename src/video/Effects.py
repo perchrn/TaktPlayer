@@ -9,7 +9,11 @@ from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
     ScrollModes, ContrastModes, HueSatModes
 import math
-        
+import os
+
+effectImageList = []
+effectImageFileNameList = []
+
 def getEmptyImage(x, y):
     resizeMat = createMat(x,y)
     return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
@@ -27,7 +31,7 @@ def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
 
-def getEffectById(effectType, configurationTree, internalResX, internalResY):
+def getEffectById(effectType, configurationTree, effectImagesConfiguration, internalResX, internalResY):
     if(effectType == EffectTypes.Zoom):
         return ZoomEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Flip):
@@ -58,12 +62,14 @@ def getEffectById(effectType, configurationTree, internalResX, internalResY):
         return InvertEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Threshold):
         return ThresholdEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.ImageAdd):
+        return ImageAddEffect(configurationTree, effectImagesConfiguration, internalResX, internalResY)
     else:
         return None
 
-def getEffectByName(name, configurationTree, internalResX, internalResY):
+def getEffectByName(name, configurationTree, effectImagesConfiguration, internalResX, internalResY):
     fxid = getEffectId(name)
-    return getEffectById(fxid, configurationTree, internalResX, internalResY)
+    return getEffectById(fxid, configurationTree, effectImagesConfiguration, internalResX, internalResY)
 
 
 class ZoomEffect(object):
@@ -1029,6 +1035,99 @@ class ThresholdEffect(object):
         cv.CmpS(self._thersholdMask, threshold, self._thersholdMask, cv.CV_CMP_GT)
         cv.Merge(self._thersholdMask, self._thersholdMask, self._thersholdMask, None, self._thersholdMat)
         return self._thersholdMat
+
+class ImageAddEffect(object):
+    def __init__(self, configurationTree, effectImagesConfiguration, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._imageConfiguration = effectImagesConfiguration
+        self._videoDirectory = self._imageConfiguration.getVideoDir()
+        if(self._videoDirectory == None):
+            self._videoDirectory = ""
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._maskId = 0
+        self._maskImage = None
+        self._addId = 0
+        self._addImage = None
+        self._maskMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._addMask = createMat(self._internalResolutionX, self._internalResolutionY)
+
+#TODO: This can become useful ;-)    def pilToCvImage(self, pilImage):
+#        cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
+#        cv.SetData(cvImage, pilImage.tostring())
+#        resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+#        cv.Resize(cvImage, resizeMat)
+#        return resizeMat
+
+    def loadImage(self, fileName):
+        image = None
+        imageFileName = os.path.normpath(fileName)
+        fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), imageFileName)
+        try:
+            image = cv.LoadImage(fullFilePath)
+        except:
+            print "Exception while reading effect image: " + fileName
+        return image
+
+    def getImage(self, imageId):
+        imageList  = self._imageConfiguration.getChoices()
+        numImages = len(imageList)
+        if(numImages < 1):
+            return None
+        if(imageId >= numImages):
+            imageId = numImages -1
+        if(len(effectImageList) < numImages):
+            for i in range(len(effectImageList), numImages):
+                fileName = imageList[i]
+                image = self.loadImage(fileName)
+                effectImageList.append(image)
+                effectImageFileNameList.append(fileName)
+        imageFileName = imageList[imageId]
+        oldImageName = effectImageFileNameList[imageId]
+        if(imageFileName != oldImageName):
+            newImage = self.loadImage(imageFileName)
+            effectImageList [imageId] = newImage
+            effectImageFileNameList[imageId] = imageFileName
+        return effectImageList[imageId]
+
+    def _updateMask(self, maskId):
+        if(self._maskId != maskId):
+            self._maskId = maskId
+            if(maskId < 1):
+                self._maskImage = None
+            else:
+                self._maskImage = self.getImage(maskId - 1)
+            
+    def _updateAddImage(self, addId):
+        if(self._addId != addId):
+            self._addId = addId
+            if(addId < 1):
+                self._addImage = None
+            else:
+                self._addImage = self.getImage(addId - 1)
+            
+    def getName(self):
+        return "ImageAdd"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, maskId, imageId, mode, dummy3, dummy4):
+        return self.mask(image, maskId, imageId, mode)
+
+    def mask(self, image, maskId, imageId, mode):
+        maskId = int(maskId * 63.0)
+        self._updateMask(maskId)
+        returnImage = image
+        if(self._maskImage != None):
+            cv.Mul(image, self._maskImage, self._maskMat, 0.003)
+            returnImage = self._maskMat
+        imageId = int(imageId * 63.0)
+        self._updateAddImage(imageId)
+        if(self._addImage != None):
+            cv.Add(returnImage, self._addImage, self._addMask)
+            returnImage = self._addMask
+        return returnImage
 
 #TODO: add effects
 #class MirrorEffect(object):

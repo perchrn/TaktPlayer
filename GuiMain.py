@@ -520,6 +520,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             self._selectTrackKey(self._selectedMidiChannel)
                             self._configuration.updateEffectList(None)
                             self._configuration.updateFadeList(None)
+                            self._configuration.updateEffectImageList()
                             print "#" * 150
                             self._configuration.printConfiguration()
                             print "#" * 150

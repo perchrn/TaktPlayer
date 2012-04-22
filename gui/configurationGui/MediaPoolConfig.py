@@ -330,6 +330,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
         self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
+        self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
@@ -345,6 +346,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._effectImageListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(280,-1)) #@UndefinedVariable
         self._fadeListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._fadeConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._moulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -358,6 +360,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._effectImageListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._fadeListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._fadeConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -368,16 +371,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._effectListPanel)
         self._configSizer.Add(self._effectConfigPanel)
+        self._configSizer.Add(self._effectImageListPanel)
         self._configSizer.Add(self._fadeListPanel)
         self._configSizer.Add(self._fadeConfigPanel)
         self._configSizer.Add(self._moulationConfigPanel)
         self._configSizer.Add(self._slidersPanel)
 
-#        self._configSizer.Hide(self._clipOverviewGuiPlane)
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
+#        self._configSizer.Hide(self._effectImageListPanel)
         self._configSizer.Hide(self._fadeListPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
@@ -410,6 +414,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
         self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
+
+        self._effectImageListPanel.SetBackgroundColour((180,180,180))
+        self._effectImageListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._effectImageListPanel.SetSizer(self._effectImageListSizer)
+        self._mainConfig.setupEffectImageListGui(self._effectImageListPanel, self._effectImageListSizer, self._configSizer, self)
 
         self._fadeListPanel.SetBackgroundColour((160,160,160))
         self._fadeListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -704,6 +713,14 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def hideEffectsListGui(self):
         self._configSizer.Hide(self._effectListPanel)
+        self.refreshLayout()
+
+    def showEffectImageListGui(self):
+        self._configSizer.Show(self._effectImageListPanel)
+        self.refreshLayout()
+
+    def hideEffectImageListGui(self):
+        self._configSizer.Hide(self._effectImageListPanel)
         self.refreshLayout()
 
     def showFadeListGui(self):
@@ -1217,6 +1234,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapFlip, self._fxBitmapFlip)
         elif(effectId == EffectTypes.HueSaturation):
             widget.setBitmaps(self._fxBitmapHueSat, self._fxBitmapHueSat)
+        elif(effectId == EffectTypes.ImageAdd):
+            widget.setBitmaps(self._fxBitmapImageAdd, self._fxBitmapImageAdd)
         elif(effectId == EffectTypes.Invert):
             widget.setBitmaps(self._fxBitmapInverse, self._fxBitmapInverse)
         elif(effectId == EffectTypes.Scroll):

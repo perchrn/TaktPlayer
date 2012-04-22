@@ -12,10 +12,11 @@ import shutil
 
 
 class MediaMixer(object):
-    def __init__(self, configurationTree, midiStateHolder, effectsConfiguration, internalResolutionX, internalResolutionY):
+    def __init__(self, configurationTree, midiStateHolder, effectsConfiguration, effectImagesConfig, internalResolutionX, internalResolutionY):
         self._configurationTree = configurationTree
         self._midiStateHolder = midiStateHolder
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._effectImagesConfigurationTemplates = effectImagesConfig
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
@@ -100,14 +101,14 @@ class MediaMixer(object):
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(preEffectModulationTemplate)
         if(preEffectSettings == None):
             preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
-        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
 
         postEffectModulationTemplate = xmlConfig.get("posteffectconfig")
         trackConfig.setValue("PostEffectConfig", postEffectModulationTemplate)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(postEffectModulationTemplate)
         if(postEffectSettings == None):
             postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
-        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
 #        print "DEBUG trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 
         preEffectStartControllerValues = (None, None, None, None, None)
@@ -125,11 +126,11 @@ class MediaMixer(object):
 
         trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPreEffectSettingsName)
-        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
 
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
-        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._internalResolutionX, self._internalResolutionY)
+        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
         preEffectStartControllerValues = (None, None, None, None, None)
         postEffectStartControllerValues = (None, None, None, None, None)
         preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)

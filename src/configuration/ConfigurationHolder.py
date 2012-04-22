@@ -148,6 +148,9 @@ class ConfigurationHolder(object):
         return self._loadedFileName
 
     def setFromXml(self, xmlConfig):
+        print "iIiIiI" * 50
+        self._printXml(xmlConfig)
+        print "iIiIiI" * 50
         self._loadedXML = xmlConfig
         self._updateFromXml(self._loadedXML)
 

@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold = range(15)
+    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold, ImageAdd = range(16)
 
     def getChoices(self):
         return ["None",
@@ -22,7 +22,8 @@ class EffectTypes():
                 "HueSaturation",
                 "Colorize",
                 "Invert",
-                "Threshold"]
+                "Threshold",
+                "ImageAdd"]
     def getDescriptions(self):
         return ["None",
                 "Zoom inn/out and even crop video.",
@@ -39,7 +40,8 @@ class EffectTypes():
                 "Rotate colors and adjust saturation.",
                 "Add/subtract/multiply with color.",
                 "Invert video.",
-                "Threshold video to black and white."]
+                "Threshold video to black and white.",
+                "Can mask and add image to video."]
 
 def getEffectId(name):
     lowername = name.lower()
@@ -73,6 +75,8 @@ def getEffectId(name):
         return EffectTypes.Invert
     elif(lowername == "threshold"):
         return EffectTypes.Threshold
+    elif(lowername == "imageadd"):
+        return EffectTypes.ImageAdd
     else:
         return None
 
@@ -107,6 +111,8 @@ def getEffectName(effectId):
         return "Invert"
     elif(effectId == EffectTypes.Threshold):
         return "Threshold"
+    elif(effectId == EffectTypes.ImageAdd):
+        return "ImageAdd"
     else:
         return None
 

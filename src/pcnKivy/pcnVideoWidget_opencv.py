@@ -8,7 +8,7 @@ OpenCV Camera: Implement CameraBase with OpenCV
 
 __all__ = ('PcnVideo')
 
-from kivy.graphics.texture import Texture
+from kivy.graphics.texture import Texture #@UnresolvedImport
 from kivy.core.camera import CameraBase
 from kivy.clock import Clock
 

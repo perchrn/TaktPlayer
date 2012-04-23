@@ -26,6 +26,9 @@ class Configuration(object):
         self._mediaPoolConf = MediaPoolConfig(self._playerConfigurationTree)
         self._noteGui = None
 
+        self._setNoteNewThumbCallback = None
+        self._clearNoteNewThumbCallback = None
+
         self._selectedMidiChannel = -1
         self.setupMidiSender()
         self._latestMidiControllerRequestCallback = None
@@ -96,6 +99,20 @@ class Configuration(object):
     def updateMixerGui(self):
         if(self._mixerGui != None):
             self._mixerGui.updateGui(None, None, None, None)
+
+    def setNoteNewThumbCallback(self, setCallback):
+        self._setNoteNewThumbCallback = setCallback
+
+    def clearNoteNewThumbCallback(self, clearCallback):
+        self._clearNoteNewThumbCallback = clearCallback
+
+    def setNewNoteThumb(self, noteId):
+        if(self._setNoteNewThumbCallback != None):
+            self._setNoteNewThumbCallback(noteId)
+
+    def clearNoteThumb(self, noteId):
+        if(self._clearNoteNewThumbCallback != None):
+            self._clearNoteNewThumbCallback(noteId)
 
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
@@ -249,6 +266,9 @@ class Configuration(object):
 
     def makeNoteConfig(self, fileName, noteLetter, midiNote):
         return self._mediaPoolConf.makeNoteConfig(fileName, noteLetter, midiNote)
+
+    def deleteNoteConfig(self, midiNote, noteLetter):
+        self._mediaPoolConf.deleteNoteConfig(midiNote, noteLetter)
 
     def getXmlString(self):
         return self._playerConfigurationTree.getConfigurationXMLString()

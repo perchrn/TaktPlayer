@@ -200,6 +200,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             keyboardButton.SetDropTarget(dropTarget)
 
         self._activeNoteId = 24
+        self._configuration.setNoteNewThumbCallback(self.setNewImageOnNote)
+        self._configuration.clearNoteNewThumbCallback(self.clearImageOnNote)
         self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
         self._noteGui.clearGui(self._activeNoteId)
         self._selectKeyboardKey(self._activeNoteId)
@@ -417,6 +419,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     for i in range(128):
                         found = False
                         for listEntryTxt in noteList:
+                            if(listEntryTxt == ""):
+                                listEntryTxt = -1
                             if(int(listEntryTxt) == i):
 #                                print "requesting i= " + str(i)
                                 self._requestNote(i, 0.0)
@@ -757,9 +761,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onDragDone(self, event):
         self._noteGui.clearDragCursor()
-        if(self._dragSource == None):
-            print "DEBUG drag done..."
-        else:
+        if(self._dragSource != None):
             sourceNoteId = None
             for i in range(128):
                 if(self._noteWidgetIds[i] == self._dragSource):
@@ -810,6 +812,20 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     outputString += out
             outputString += process.communicate()[0]
         return outputString
+
+    def setNewImageOnNote(self, noteId):
+        if((noteId >= 0) and (noteId < 128)):
+            self._noteWidgets[noteId].setBitmap(self._newNoteBitmap)
+            self._noteGui.updateOverviewClipBitmap(self._newNoteBitmap)
+            if(noteId == self._activeTrackId):
+                self._noteGui.updateTrackOverviewClipBitmap(self._newNoteBitmap)
+
+    def clearImageOnNote(self, noteId):
+        if((noteId >= 0) and (noteId < 128)):
+            self._noteWidgets[noteId].setBitmap(self._emptyBitMap)
+            self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
+            if(noteId == self._activeTrackId):
+                self._noteGui.updateTrackOverviewClipBitmap(self._emptyBitMap)
 
     def fileDropped(self, widgetId, fileName):
         destNoteId = None
@@ -865,7 +881,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     convertBeforeImport = False
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
-                        text = "Convert file: " + fileName
                         self._convertionWentOk = False
                         dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
                                                    ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, 

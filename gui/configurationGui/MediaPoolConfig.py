@@ -78,11 +78,20 @@ class MediaPoolConfig(object):
 
     def makeNoteConfig(self, fileName, noteLetter, midiNote):
         if((midiNote >= 0) and (midiNote < 128)):
-            print "Making note: %s !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" % midiNote
+            print "Making note: %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" % midiNote
             newMediaFile = MediaFile(self._configurationTree, fileName, noteLetter, midiNote, None)
             self._mediaPool[midiNote] = newMediaFile
             return newMediaFile
         return None
+
+    def deleteNoteConfig(self, midiNote, noteLetter):
+        if((midiNote >= 0) and (midiNote < 128)):
+            print "Deleting note: %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" % midiNote
+            if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
+                print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
+            else:
+                print "Config child removed OK"
+                self._mediaPool[midiNote] = None
 
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0
@@ -381,7 +390,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
-#        self._configSizer.Hide(self._effectImageListPanel)
+        self._configSizer.Hide(self._effectImageListPanel)
         self._configSizer.Hide(self._fadeListPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
@@ -597,11 +606,15 @@ class MediaFileGui(object): #@UndefinedVariable
         thumbButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'New thumb') #@UndefinedVariable
         thumbButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onThumbButton, id=thumbButton.GetId()) #@UndefinedVariable
+        deleteButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Remove') #@UndefinedVariable
+        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
         self._saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
         self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(thumbButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -759,7 +772,14 @@ class MediaFileGui(object): #@UndefinedVariable
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
                 self._fileName = os.path.relpath(dlg.GetPath(), self._videoDirectory)
-                self._fileNameField.SetValue(os.path.basename(self._fileName))
+                basename = os.path.basename(self._fileName)
+                self._fileNameField.SetValue(basename)
+                lowerName = basename.lower()
+                if(lowerName.endswith(".jpg") or lowerName.endswith(".jpeg") or lowerName.endswith(".gif") or lowerName.endswith(".png")):
+                    self._type = "Image"
+                    self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
+                    self._setupSubConfig(self._config)
+                    self._showOrHideSaveButton()
             dlg.Destroy()
 
     def _onTypeChosen(self, event):
@@ -1042,6 +1062,14 @@ All notes on events are quantized to this.
         if((self._midiNote > 0) and (self._midiNote < 128)):
             self._requestThumbCallback(self._midiNote, -1.0, True)
 
+    def _onDeleteButton(self, event):
+        if(self._config == None):
+            return
+        noteLetter = noteToNoteString(self._midiNote)
+        self._mainConfig.deleteNoteConfig(self._midiNote, noteLetter)
+        self.clearGui(self._midiNote)
+        self._mainConfig.clearNoteThumb(self._midiNote)
+
     def _onSaveButton(self, event):
         if(self._type == "Camera"):
             noteFileName = str(self._cameraId)
@@ -1054,9 +1082,13 @@ All notes on events are quantized to this.
         noteLetter = noteToNoteString(self._midiNote)
         if(self._config == None):
             newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
+            if(noteFileName != ""):
+                self._mainConfig.setNewNoteThumb(self._midiNote)
             if(newConfig != None):
                 self._config = newConfig.getConfig()
         else:
+            if(self._config.getValue("filename") != noteFileName):
+                self._mainConfig.setNewNoteThumb(self._midiNote)
             self._config.setValue("FileName", noteFileName)
         if(self._config != None):
             self._config.setValue("Type", self._type)

@@ -127,8 +127,8 @@ class GlobalConfig(object):
     def getEffectImageByIndex(self, index):
         return self._effectImagesConfiguration.getTemplateByIndex(index)
 
-    def deleteEffectImage(self, fileName):
-        return self._effectImagesConfiguration.deleteTemplate(fileName)
+    def deleteEffectImage(self, midiNote, noteLetter):
+        return self._effectImagesConfiguration.deleteTemplate(midiNote, noteLetter)
 
     def makeNewEffectImage(self, fileName):
         return self._effectImagesConfiguration.createTemplate(fileName)

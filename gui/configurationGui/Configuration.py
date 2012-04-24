@@ -44,6 +44,10 @@ class Configuration(object):
         self._guiVideoConfig.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
         self._guiVideoConfig.addIntParameter("ScaleVideoX", -1)
         self._guiVideoConfig.addIntParameter("ScaleVideoY", -1)
+        self._guiConfig = self._guiConfigurationTree.addChildUnique("GUI")
+        self._guiConfig.addBoolParameter("MidiBroadcast", True)
+        self._guiConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
+        self._guiConfig.addIntParameter("MidiPort", 2022)
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()
@@ -58,6 +62,12 @@ class Configuration(object):
         host = self._guiPlayerConfig.getValue("PlayerHost")
         port = self._guiPlayerConfig.getValue("MidiPort")
         return (host, port)
+
+    def getMidiListenConfig(self):
+        bcast = self._guiConfig.getValue("MidiBroadcast")
+        host = self._guiConfig.getValue("MidiBindAddress")
+        port = self._guiConfig.getValue("MidiPort")
+        return (bcast, host, port)
 
     def getGuiVideoDir(self):
         return self._guiVideoConfig.getValue("VideoDir")

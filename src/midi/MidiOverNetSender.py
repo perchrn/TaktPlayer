@@ -40,7 +40,7 @@ class MidiOverNetSender(object):
 
 #        self._host = "10.242.10.145"
 #        self._port = 2020
-    def startMidiOverNetProcess(self, inputId, host, port, useBroadcast, filterClock):
+    def startMidiOverNetProcess(self, inputId, host, port, guiHost, guiPort, useBroadcast, filterClock):
         if((inputId < len(self._midiInputList)) and (inputId >= 0)):
             midiName, midiOpen, pygameMidiId = self._midiInputList[inputId] #@UnusedVariable
             if(useBroadcast == True):
@@ -52,7 +52,7 @@ class MidiOverNetSender(object):
             self._midiOverNetQueue = Queue(32)
             self._statusQueue = Queue(1024)
             self._debugPrintQueue = Queue(1024)
-            self._midiOverNetProcess = Process(target=midiOverNetProcess, args=(host, port, useBroadcast, filterClock, pygameMidiId, self._midiOverNetQueue, self._statusQueue, self._debugPrintQueue))
+            self._midiOverNetProcess = Process(target=midiOverNetProcess, args=(host, port, guiHost, guiPort, useBroadcast, filterClock, pygameMidiId, self._midiOverNetQueue, self._statusQueue, self._debugPrintQueue))
             self._midiOverNetProcess.name = "midiUdpSender"
             self._midiOverNetProcess.start()
 
@@ -96,15 +96,21 @@ class MidiOverNetSender(object):
                 pass
         return (daemon, clocks, midis)
 
-def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, commandQueue, statusQueue, debugPrintQueue):
+def midiOverNetProcess(host, port, guiHost, guiPort, useBroadcast, filterClock, pygameMidiId, commandQueue, statusQueue, debugPrintQueue):
     pygame.midi.init()
     midiDevice = pygame.midi.Input(pygameMidiId)
     if(midiDevice == None):
         return
     udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    guiUdpClientSocket = None
+    if(guiHost != None):
+        guiUdpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     if(useBroadcast == True):
         udpClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         host = '<broadcast>'
+        if(guiUdpClientSocket != None):
+            guiUdpClientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            guiHost = '<broadcast>'
     buffer = ctypes.create_string_buffer(4) #@ReservedAssignment
     midiClicksSentSinceLastSPP = 9999
     sppValue = 0
@@ -126,6 +132,8 @@ def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, comm
                     buffer[2] = chr(data2)
                     buffer[3] = chr(data3)
                     udpClientSocket.sendto(buffer, (host, port))
+                    if(guiUdpClientSocket != None):
+                        guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
             elif(command == 0xf8):
                 if(filterClock == False):
                     if(lastTimeEventWasSPP == True):
@@ -145,6 +153,8 @@ def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, comm
                         buffer[2] = chr(sppMsb)
                         buffer[3] = chr(sppExtraBits)
                         udpClientSocket.sendto(buffer, (host, port))
+                        if(guiUdpClientSocket != None):
+                            guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
                     else:
                         midiClicksSentSinceLastSPP += 1
                     buffer[0] = chr(command)
@@ -152,6 +162,8 @@ def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, comm
                     buffer[2] = chr(data2)
                     buffer[3] = chr(data3)
                     udpClientSocket.sendto(buffer, (host, port))
+                    if(guiUdpClientSocket != None):
+                        guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
                     statusQueue.put_nowait(1)#MIDI Time.
             else:
                 buffer[0] = chr(command)
@@ -159,6 +171,8 @@ def midiOverNetProcess(host, port, useBroadcast, filterClock, pygameMidiId, comm
                 buffer[2] = chr(data2)
                 buffer[3] = chr(data3)
                 udpClientSocket.sendto(buffer, (host, port))
+                if(guiUdpClientSocket != None):
+                    guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
                 if(command != 0xf8):
 #                    debugPrintQueue.put_nowait("%02x %02x %02x %02x - %f - %f" % (command, data1, data2, data3, time.time(), timestamp / 1000.0))
                     statusQueue.put_nowait(2)#Other MIDI

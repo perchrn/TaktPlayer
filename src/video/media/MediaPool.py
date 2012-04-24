@@ -11,7 +11,7 @@ from midi import MidiUtilities
 from video.Effects import getEmptyImage
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, multiprocessLogger, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         print "DEBUG pcn... self._effectsConfigurationTemplates = " + str(effectsConfiguration)
         self._effectsConfigurationTemplates = effectsConfiguration
@@ -19,7 +19,6 @@ class MediaPool(object):
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self._multiprocessLogger = multiprocessLogger
 
         self._internalResolutionX =  internalResolutionX
         self._internalResolutionY =  internalResolutionY

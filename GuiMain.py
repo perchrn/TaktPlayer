@@ -5,6 +5,7 @@ Created on 26. jan. 2012
 '''
 import os
 import sys
+import logging
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT
@@ -17,9 +18,13 @@ from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString
 import subprocess
 import multiprocessing
+from utilities.MultiprocessLogger import MultiprocessLogger
 from utilities.UrlSignature import UrlSignature
 from configurationGui.MediaMixerConfig import MediaTrackGui
 from media.VideoConvert import VideoConverterDialog
+from midi.TcpMidiListner import TcpMidiListner
+from midi.MidiTiming import MidiTiming
+from midi.MidiStateHolder import DummyMidiStateHolder
 
 APP_NAME = "TaktPlayerGui"
 
@@ -166,12 +171,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._loadButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._saveButton = wx.Button(menuPannel, wx.ID_ANY, 'Save') #@UndefinedVariable
         self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._timingField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(70, -1)) #@UndefinedVariable
+        self._bpmField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(50, -1)) #@UndefinedVariable
         self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._configNameField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onSendButton, id=self._sendButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
@@ -248,8 +257,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._selectTrackKey(self._selectedMidiChannel)
         self._trackSelected(self._selectedMidiChannel)
 
+        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        logging.basicConfig()
+        self._multiprocessLogger = MultiprocessLogger(self._log)
+        self._midiTiming = MidiTiming()
+        self._midiStateHolder = DummyMidiStateHolder()
+        self._midiListner = None
+        self.setupMidiListner()
+
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
-        self._updateTimer.Start(50)#20 times a second
+        self._updateTimer.Start(1000 / 30)#30 times a second
         self.Bind(wx.EVT_TIMER, self._timedUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
@@ -328,6 +345,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         host, port = self._configuration.getWebConfig()
         self._guiClient.startGuiClientProcess(host, port, None)
 
+    def setupMidiListner(self):        
+        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
+        bcast, host, port = self._configuration.getMidiListenConfig()
+        self._midiListner.startDaemon(host, port, bcast)
+
     def updateKeyboardImages(self):
         activeNotesTask = TaskHolder("Active notes request", TaskHolder.RequestTypes.ActiveNotes, None)
         self._taskQueue.append(activeNotesTask)
@@ -353,6 +375,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._requestPreview()
         self._requestConfigList()
         self._requestLatestControllers()
+        self._midiListner.getData(False)
+        self._updateTimingDisplay()
+        self._multiprocessLogger.handleQueuedLoggs()
 
     def _checkServerResponse(self):
         result = self._guiClient.getServerResponse()
@@ -672,6 +697,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             self._skippedLatestControllersRequests += 1
 
+    def _updateTimingDisplay(self):
+        timeStamp = self._midiTiming.getTime()
+        midiSync, bar, beat, subbeat, subBeatFraction = self._midiTiming.getMidiPosition(timeStamp)
+        if(midiSync != True):
+            bar = ((bar - 1) % 8) + 1
+        positionText = "%5d:%d.%02d" %(bar, beat, subbeat)
+        self._timingField.SetValue(positionText)
+        bpm = int(self._midiTiming.getBpm() + 0.5)
+        self._bpmField.SetValue(str(bpm))#TODO: tsting 1 2
+
     def getLatestControllers(self):
         return self._latestControllersRequestResult
 
@@ -704,9 +739,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         selectedConfig = self._configNameField.GetValue()
         print "SAVE: " + str(selectedConfig)
         self._guiClient.requestConfigSave(selectedConfig)
-
-    def _onNewButton(self):
-        pass
 
     def _selectKeyboardKey(self, keyId):
         if((keyId >= 0) and (keyId < 128)):
@@ -986,6 +1018,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onClose(self, event):
         self._guiClient.requestGuiClientProcessToStop()
+        self._midiListner.requestTcpMidiListnerProcessToStop()
         self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._shutdownTimer.Start(100)#10 times a second
         self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
@@ -995,25 +1028,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._mainSizer.Hide(self._scrollingKeyboardPannel)
 
     def _onShutdownTimer(self, event):
-        if(self._guiClient.hasGuiClientProcessToShutdownNicely()):
+        if(self._guiClient.hasGuiClientProcessToShutdownNicely() and self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
             print "All done."
             self.Destroy()
             wx.Exit()
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):
-                self._guiClient.forceGuiClientProcessToStop()
+                if(self._guiClient.hasGuiClientProcessToShutdownNicely() != False):
+                    self._guiClient.forceGuiClientProcessToStop()
+                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
+                    self._midiListner.forceTcpMidiListnerProcessToStop()
                 self.Destroy()
                 wx.Exit()
       
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    dirOk = True
-    scriptDir = os.path.dirname(sys.argv[0])
     debugMode = False
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1] == "--debug"):
             debugMode = True
+    dirOk = True
+    scriptDir = os.path.dirname(sys.argv[0])
     if((scriptDir != "") and (scriptDir != os.getcwd())):
         os.chdir(scriptDir)
         if(scriptDir != os.getcwd()):
@@ -1021,7 +1057,6 @@ if __name__ == '__main__':
             dirOk = False
 #    print "CWD: %s" % os.getcwd()
     if(dirOk):
-#        print "Starting wx"
         if(debugMode == True):
             redirectValue = 0
         else:
@@ -1029,6 +1064,5 @@ if __name__ == '__main__':
         app = wx.App(redirect = redirectValue, filename = APP_NAME + ".log") #@UndefinedVariable
         MusicalVideoPlayerGui(None, title="Takt Player GUI")
         app.MainLoop()
-#        print "wx Done"
     else:
         print "Exiting..."

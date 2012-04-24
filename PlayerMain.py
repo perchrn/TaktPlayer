@@ -17,6 +17,7 @@ import kivy
 kivy.require('1.0.9') # replace with your current kivy version !
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.config import Config
 
 #pcn stuff
 from pcnKivy.pcnVideoWidget import PcnVideo
@@ -73,11 +74,12 @@ class MyKivyApp(App):
         confChild = self._configurationTree.addChildUnique("MediaMixer")
         self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._effectImagesConfiguration, self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._multiprocessLogger, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
         self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
+
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
 
@@ -88,9 +90,16 @@ class MyKivyApp(App):
         self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
         startNote = self._playerConfiguration.getStartNoteNumber()
         if((startNote > -1) and (startNote < 128)):
-            self._midiStateHolder.noteOn(0, self._playerConfiguration.getStartNoteNumber(), 0x40, (True, 0.0))
-            self._midiStateHolder.noteOff(0, self._playerConfiguration.getStartNoteNumber(), 0x40, (True, 0.000000001))
+            self._midiStateHolder.noteOn(0, startNote, 0x40, (True, 0.0))
+            self._midiStateHolder.noteOff(0, startNote, 0x40, (True, 0.000000001))
 
+        self._playerOnlyMode = False
+        if(Config.getint("DEFAULT", "playerOnly") == 1):
+            self._playerOnlyMode = True
+        if(self._playerOnlyMode == False):
+            print "*-*-*" * 30
+            print "Start GUI process!"
+            print "*-*-*" * 30
 
         print self._configurationTree.getConfigurationXMLString()
 

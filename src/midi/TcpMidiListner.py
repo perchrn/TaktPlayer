@@ -107,6 +107,27 @@ class TcpMidiListner(object):
                 self._midiListnerProcess.terminate()
             self._midiListnerProcess = None
 
+    def requestTcpMidiListnerProcessToStop(self):
+        if(self._midiListnerProcess != None):
+            print "Stopping TcpMidiListner daemon"
+            self._midiListnerCommandQueue.put(("QUIT", None))
+
+    def hasTcpMidiListnerProcessToShutdownNicely(self):
+        if(self._midiListnerProcess == None):
+            return True
+        else:
+            if(self._midiListnerProcess.is_alive() == False):
+                self._midiListnerProcess = None
+                return True
+            return False
+
+    def forceTcpMidiListnerProcessToStop(self):
+        if(self._midiListnerProcess != None):
+            if(self._midiListnerProcess.is_alive()):
+                print "TcpMidiListner daemon did not respond to quit command. Terminating."
+                self._midiListnerProcess.terminate()
+        self._midiListnerProcess = None
+
     def _decodeMidiEvent(self, dataTimeStamp, command, data1, data2, data3 = 0x00):
         sysexEvent = False
         if(self._midiInsideSysExMessage):
@@ -192,7 +213,7 @@ class TcpMidiListner(object):
             if((command > 0xbf) and (command < 0xd0)):
                 midiChannel = int(command & 0x0f)
                 decodeOk = True
-                self._midiStateHolder.programChange(midiChannel, data1, data2, self._midiTiming.getSongPosition(dataTimeStamp))
+                self._midiStateHolder.programChange(midiChannel, data1, data2, data3, self._midiTiming.getSongPosition(dataTimeStamp))
                 #print "Program change: " + str(data1) + " value: " + str(data2) + " channel: " + str(midiChannel)
             if((command > 0xcf) and (command < 0xe0)):
                 midiChannel = int(command & 0x0f)

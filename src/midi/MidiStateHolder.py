@@ -541,7 +541,7 @@ class MidiStateHolder(object):
         if((data3 & 0xf0) == 0x80):
             self._midiChannelStateHolder[midiChannel].removeAllNotes()
 
-    def programChange(self, midiChannel, data1, data2, songPosition):
+    def programChange(self, midiChannel, data1, data2, data3, songPosition):
         print "programChange............ " + str(data1) + " : " + str(data2)
         pass
 
@@ -581,4 +581,35 @@ class MidiStateHolder(object):
     def getMidiChannelControllerStateHolder(self, midiChannel):
         channel = min(max(0, midiChannel), 15)
         return self._guiControllerChannelValues[channel]
+
+class DummyMidiStateHolder(object):
+    def __init__(self):
+        pass
+
+    def noteOn(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def noteOff(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def polyPreasure(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def controller(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def guiController(self, midiChannel, data1, data2, data3):
+        pass
+
+    def programChange(self, midiChannel, data1, data2, data3, songPosition):
+        pass
+
+    def aftertouch(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def pitchBend(self, midiChannel, data1, data2, songPosition):
+        pass
+
+    def cleanupFutureNotes(self, songPosition, oldSongPosition, timeLimit):
+        pass
 

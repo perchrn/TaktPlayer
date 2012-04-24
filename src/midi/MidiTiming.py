@@ -23,7 +23,7 @@ class MidiTiming(object):
         self._midiTicksTimestampsPos = -1
         self._midiInitTime = self.getTime()
         self._midiBpm = 120.0
-        self._midiMaxSyncBarsMissed = 16 * self._midiTicksPerQuarteNote
+        self._midiMaxSyncBarsMissed = 4
 
     def getTicksPerQuarteNote(self):
         return self._midiTicksPerQuarteNote
@@ -66,15 +66,15 @@ class MidiTiming(object):
         midiSync, ourSongPosition = self.getSongPosition(timeStamp)
         return self.convertToMidiPosition(midiSync, ourSongPosition)
         
-    def printMidiPosition(self):
-        currentTimestamp = self.getTime()
+    def printMidiPosition(self, currentTimestamp = None):
+        if(currentTimestamp == None):
+            currentTimestamp = self.getTime()
         midiSync, bar, beat, subbeat, subsubpos = self.getMidiPosition(currentTimestamp)
         if(midiSync):
             syncIndicator = "S "
         else:
             syncIndicator = ""
         print "%s%3d:%d:%02d.%04d BPM: %d" % (syncIndicator, bar, beat, subbeat, int(subsubpos * 10000), int(self._midiBpm))
-#        print syncIndicator + str(bar) + ":" + str(beat) + ":" + str(subbeat) + ":" + str(subsubpos) + " BPM: " + str(int(self._midiBpm)) + " SPP: " + str(self._midiOurSongPosition)
         
     def _resetTimingTable(self):
         self._log.warning("Resetting timing table!")
@@ -110,8 +110,11 @@ class MidiTiming(object):
                 self._midiBpm = 60 * self._midiTicksTimestampsLength / (self._midiTicksPerQuarteNote * (dataTimeStamp - startPosTimeStamp))
         else:
             sppValue = (int(data1)+(int(data2 << 7))+int(data3 << 14)) * 6
+            midiSync, oldSongPosition = self.getSongPosition(dataTimeStamp)
             oldSpp = self._midiOurSongPosition
             self._midiOurSongPosition = sppValue
+            if(midiSync == False or (abs(self._midiOurSongPosition - oldSongPosition) > self._midiTicksPerBar)):
+                self._resetTimingTable()
             self._midiLastTimeEventWasSPP = True
             self._log.info("Got Song Position Pointer from host. SPP %d" %(self._midiOurSongPosition))
             if(abs(oldSpp - sppValue) > self._midiTicksPerQuarteNote):

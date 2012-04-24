@@ -124,7 +124,7 @@ def midiOverNetProcess(host, port, guiHost, guiPort, useBroadcast, filterClock, 
             #bufferStruct.pack_into(buffer, 0, midiData)
             if(command == 0xf2):
                 if(filterClock == False):
-                    sppValue = int(data1)+(int(data2 << 7)) * 6
+                    sppValue = (int(data1)+int(data2 << 7)) * 6
                     lastTimeEventWasSPP = True
                     statusQueue.put_nowait(1)#MIDI Time.
                     buffer[0] = chr(command)
@@ -139,24 +139,25 @@ def midiOverNetProcess(host, port, guiHost, guiPort, useBroadcast, filterClock, 
                     if(lastTimeEventWasSPP == True):
                         #Don't increase or calculate new position when we just got a SPP from MIDI host
                         lastTimeEventWasSPP = False
+                        midiClicksSentSinceLastSPP = 0
                     else:
                         sppValue += 1
-                    if(midiClicksSentSinceLastSPP > 95):
-                        calcSpp = sppValue / 6
-                        sppLsb = calcSpp & 0x7f
-                        sppMsb = (calcSpp >> 7) & 0x7f
-                        sppExtraBits = (calcSpp >> 14) & 0x7f
-#                        debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
-                        midiClicksSentSinceLastSPP = 0
-                        buffer[0] = chr(0xf2)
-                        buffer[1] = chr(sppLsb)
-                        buffer[2] = chr(sppMsb)
-                        buffer[3] = chr(sppExtraBits)
-                        udpClientSocket.sendto(buffer, (host, port))
-                        if(guiUdpClientSocket != None):
-                            guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
-                    else:
-                        midiClicksSentSinceLastSPP += 1
+                        if((midiClicksSentSinceLastSPP > 95) and ((sppValue % 6) == 0)):
+                            calcSpp = sppValue / 6
+                            sppLsb = calcSpp & 0x7f
+                            sppMsb = (calcSpp >> 7) & 0x7f
+                            sppExtraBits = (calcSpp >> 14) & 0x7f
+    #                        debugPrintQueue.put_nowait("Sending extra SPP: " + str(sppValue) + " calcSPP " + str(calcSpp) + " MSB: " + str(sppExtraBits) + " msb: " + str(sppMsb) + " lsb: " + str(sppLsb))
+                            midiClicksSentSinceLastSPP = 0
+                            buffer[0] = chr(0xf2)
+                            buffer[1] = chr(sppLsb)
+                            buffer[2] = chr(sppMsb)
+                            buffer[3] = chr(sppExtraBits)
+                            udpClientSocket.sendto(buffer, (host, port))
+                            if(guiUdpClientSocket != None):
+                                guiUdpClientSocket.sendto(buffer, (guiHost, guiPort))
+                        else:
+                            midiClicksSentSinceLastSPP += 1
                     buffer[0] = chr(command)
                     buffer[1] = chr(data1)
                     buffer[2] = chr(data2)

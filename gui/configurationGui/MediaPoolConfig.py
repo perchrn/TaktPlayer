@@ -1085,9 +1085,6 @@ All notes on events are quantized to this.
                     else:
                         if(noteFileName.startswith("..") == True):
                             noteFileName = self._fileName
-                    print "*-" * 120
-                    print "DEBUG setting file name: " + noteFileName
-                    print "*-" * 120
                     self._fileName = noteFileName
         noteLetter = noteToNoteString(self._midiNote)
         if(self._config == None):

@@ -3,3 +3,5 @@
 config/GuiConfig.cfg
 config/PlayerConfig.cfg
 config/ImageMaskTest.cfg
+TaktPlayerGui.log.old
+TaktPlayerGui.log

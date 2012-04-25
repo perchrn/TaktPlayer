@@ -11,6 +11,7 @@ from multiprocessing import Process, Queue
 from Queue import Empty
 import sys
 import time
+import shutil
 
 class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
     
@@ -30,6 +31,9 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
 
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
+
+        infoText = wx.StaticText(self, wx.ID_ANY, "This file needs to be converted. Please select yout options here:") #@UndefinedVariable
+        dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         dirSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         dirNameLabel = wx.StaticText(self, wx.ID_ANY, "Dir name:") #@UndefinedVariable
@@ -187,6 +191,91 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         self._convertionWentOk = True
 
     def _onCancel(self, event):
+        self.Destroy()
+
+class VideoCopyDialog(wx.Dialog): #@UndefinedVariable
+    
+    def __init__(self, parent, title, valuesSaveCallback, lastDirName, configVideoDir, inputFile):
+        super(VideoCopyDialog, self).__init__(parent=parent, title=title, size=(400, 180))
+
+        self._valuesSaveCallback = valuesSaveCallback
+        self._videoDirectory = configVideoDir
+        self._dirName = lastDirName
+        self._inputFile = inputFile
+
+        dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
+        self.SetBackgroundColour((180,180,180))
+
+        infoText = wx.StaticText(self, wx.ID_ANY, "This file should be copied since it is not in your video directory: \"%s\" is not within \"%s\"" % (inputFile, configVideoDir)) #@UndefinedVariable
+        dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        dirSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        dirNameLabel = wx.StaticText(self, wx.ID_ANY, "Dir name:") #@UndefinedVariable
+        self._dirNameField = wx.TextCtrl(self, wx.ID_ANY, self._dirName, size=(200, -1)) #@UndefinedVariable
+        self._dirNameField.SetEditable(False)
+        self._dirNameField.SetBackgroundColour((222,222,222))
+        dirOpenButton = wx.Button(self, wx.ID_ANY, 'Select', size=(60,-1)) #@UndefinedVariable
+        dirOpenButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self.Bind(wx.EVT_BUTTON, self._onOpenDir, id=dirOpenButton.GetId()) #@UndefinedVariable
+        dirSizer.Add(dirNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        dirSizer.Add(self._dirNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        dirSizer.Add(dirOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(dirSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+
+        buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        copyButton = wx.Button(self, wx.ID_ANY, 'Copy', size=(60,-1)) #@UndefinedVariable
+        copyButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        keepButton = wx.Button(self, wx.ID_ANY, 'Keep path', size=(60,-1)) #@UndefinedVariable
+        keepButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        cancelButton = wx.Button(self, wx.ID_ANY, 'Cancel', size=(60,-1)) #@UndefinedVariable
+        cancelButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        buttonsSizer.Add(copyButton, 1, wx.ALL, 5) #@UndefinedVariable
+        buttonsSizer.Add(keepButton, 1, wx.ALL, 5) #@UndefinedVariable
+        buttonsSizer.Add(cancelButton, 1, wx.ALL, 5) #@UndefinedVariable
+        copyButton.Bind(wx.EVT_BUTTON, self._onCopy) #@UndefinedVariable
+        keepButton.Bind(wx.EVT_BUTTON, self._onKeep) #@UndefinedVariable
+        cancelButton.Bind(wx.EVT_BUTTON, self._onCancel) #@UndefinedVariable
+        dialogSizer.Add(buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self.SetSizer(dialogSizer)
+
+
+    def _onOpenDir(self, event):
+        dlg = wx.DirDialog (self, "Choose a directory", os.path.join(self._videoDirectory, self._dirName), style=wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON) #@UndefinedVariable
+        if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
+            self._dirName = os.path.relpath(dlg.GetPath(), self._videoDirectory)
+            self._dirNameField.SetValue(self._dirName)
+        dlg.Destroy()
+
+    def _onCopy(self, event):
+        baseName = os.path.basename(self._inputFile)
+        outputFileName = os.path.join(self._videoDirectory, self._dirName, baseName)
+        copyFile = True
+        if(os.path.isfile(outputFileName)):
+            copyFile = False
+            dlg = wx.MessageDialog(self, "File \"" + outputFileName + "\" already exists.\n\nDo you want to overwrite?", 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+            dlg.Destroy()
+            if(result == True):
+                copyFile = True
+        if(os.path.isdir(outputFileName)):
+            copyFile = False
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, "Cannot copy file: \"" + outputFileName + "\" because this is a directory!", 'Output error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
+
+        if(copyFile == True):
+            shutil.copy(self._inputFile, outputFileName)
+            self._valuesSaveCallback(True, outputFileName, self._dirName)
+            self.Destroy()
+
+    def _onKeep(self, event):
+        self._valuesSaveCallback(True, self._inputFile)
+        self.Destroy()
+
+    def _onCancel(self, event):
+        self._valuesSaveCallback(False)
         self.Destroy()
 
 class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable

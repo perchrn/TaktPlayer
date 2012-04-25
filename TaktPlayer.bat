@@ -38,7 +38,13 @@ ECHO ##################################
 :runkivy
 
 ECHO done bootstraping kivy...\n
+
+::Adding local ffmpeg to path
+set PATH=%taktRoot%ffmpeg\bin;%PATH%
+
 set PATH=%taktRoot%OpenCV\bin;%PATH%
-set PYTHONPATH=%taktRoot%src;%PYTHONPATH%
+
+set PYTHONPATH=%taktRoot%src;%taktRoot%gui;%PYTHONPATH%
+
 python.exe  %taktRoot%PlayerMain.py
 IF %errorlevel% NEQ 0 (PAUSE)

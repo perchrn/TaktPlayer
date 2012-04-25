@@ -19,10 +19,11 @@ import subprocess
 from utilities.MultiprocessLogger import MultiprocessLogger
 from utilities.UrlSignature import UrlSignature
 from configurationGui.MediaMixerConfig import MediaTrackGui
-from media.VideoConvert import VideoConverterDialog
+from media.VideoConvert import VideoConverterDialog, VideoCopyDialog
 from midi.TcpMidiListner import TcpMidiListner
 from midi.MidiTiming import MidiTiming
 from midi.MidiStateHolder import DummyMidiStateHolder
+import shutil
 
 APP_NAME = "TaktPlayerGui"
 
@@ -938,10 +939,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         if(self._convertionWentOk == True):
                             fileName = self._convertionOutputFileName
                             inputOk = True
-                #TODO: Check and ask if we should "move" file...
                 if(inputOk == True):
-                    relativeFileName = os.path.relpath(fileName, self._videoDirectory)
+                    needsCopy = False
+                    try:
+                        relativeFileName = os.path.relpath(fileName, self._videoDirectory)
+                    except:
+                        needsCopy = True
+                    else:
+                        if(relativeFileName.startswith("..") == True):
+                            needsCopy = True
+                    if(needsCopy == True):
+                        self._copyWentOk = False
+                        dlg = VideoCopyDialog(self, 'Copy file...', self._updateValuesFromCopyDialogCallback,
+                                                   self._videoSaveSubDir, self._videoDirectory, fileName)
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        if(self._copyWentOk == True):
+                            relativeFileName = self._copyOutputFileName
+                        else:
+                            return
+                    print "*-" * 120
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
+                    print "*-" * 120
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
                     if(destinationConfig == None):
                         destinationConfig = self._configuration.makeNoteConfig(relativeFileName, noteToNoteString(destNoteId), destNoteId)
@@ -969,6 +988,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._videoScaleY = scaleY
         self._convertionWentOk = convertionWentOk
         self._convertionOutputFileName = convertionOutputFileName
+
+    def _updateValuesFromCopyDialogCallback(self, fileOk, copyOutputFileName = None, videoSaveSubDir = None):
+        self._copyWentOk = fileOk
+        if(copyOutputFileName != None):
+            self._copyOutputFileName = copyOutputFileName
+        if(videoSaveSubDir != None):
+            self._videoSaveSubDir = videoSaveSubDir
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -1063,11 +1089,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
 
 def startGui(debugMode, commandQueue = None, statusQueue = None):
+    logFileName = APP_NAME + ".log"
     if(debugMode == True):
         redirectValue = 0
+        oldLogFileName = logFileName + ".old"
+        if(os.path.isfile(logFileName)):
+            try:
+                shutil.move(logFileName, oldLogFileName)
+            except:
+                pass
     else:
         redirectValue = 1
-    app = wx.App(redirect = redirectValue, filename = APP_NAME + ".log") #@UndefinedVariable
+    app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
     gui = MusicalVideoPlayerGui(None, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)

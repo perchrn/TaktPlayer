@@ -133,6 +133,7 @@ class MyKivyApp(App):
 
     def _startGUIProcess(self):
         self._log.debug("Starting GUI Process")
+        print "DEBUG PATH?: os.environ[\"PATH\"] " + str(os.environ["PATH"])
         from configurationGui.GuiMainWindow import startGui
         self._commandQueue = Queue(10)
         self._statusQueue = Queue(-1)

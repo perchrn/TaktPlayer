@@ -771,7 +771,7 @@ class MediaFileGui(object): #@UndefinedVariable
         else:
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-                self._fileName = os.path.relpath(dlg.GetPath(), self._videoDirectory)
+                self._fileName = dlg.GetPath()
                 basename = os.path.basename(self._fileName)
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
@@ -1078,7 +1078,17 @@ All notes on events are quantized to this.
             noteFileName = self._fileName
             if((guiVideoDir != "") and (self._fileName != "")):
                 if(os.path.isabs(self._fileName)):
-                    noteFileName = os.path.relpath(self._fileName, guiVideoDir)
+                    try:
+                        noteFileName = os.path.relpath(self._fileName, self._videoDirectory)
+                    except:
+                        noteFileName = self._fileName
+                    else:
+                        if(noteFileName.startswith("..") == True):
+                            noteFileName = self._fileName
+                    print "*-" * 120
+                    print "DEBUG setting file name: " + noteFileName
+                    print "*-" * 120
+                    self._fileName = noteFileName
         noteLetter = noteToNoteString(self._midiNote)
         if(self._config == None):
             newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)

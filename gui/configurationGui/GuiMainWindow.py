@@ -958,9 +958,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             relativeFileName = self._copyOutputFileName
                         else:
                             return
-                    print "*-" * 120
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
-                    print "*-" * 120
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
                     if(destinationConfig == None):
                         destinationConfig = self._configuration.makeNoteConfig(relativeFileName, noteToNoteString(destNoteId), destNoteId)

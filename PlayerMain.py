@@ -9,6 +9,7 @@ import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList
 from configuration.GuiServer import GuiServer
 import multiprocessing
+from multiprocessing import Process, Queue
 from configuration.PlayerConfiguration import PlayerConfiguration
 from kivy.config import Config
 import sys
@@ -93,12 +94,14 @@ class MyKivyApp(App):
             self._midiStateHolder.noteOn(0, startNote, 0x40, (True, 0.0))
             self._midiStateHolder.noteOff(0, startNote, 0x40, (True, 0.000000001))
 
+        self._guiProcess = None
         self._playerOnlyMode = False
         if(Config.getint("DEFAULT", "playerOnly") == 1):
             self._playerOnlyMode = True
         if(self._playerOnlyMode == False):
             print "*-*-*" * 30
             print "Start GUI process!"
+            self._startGUIProcess()
             print "*-*-*" * 30
 
         print self._configurationTree.getConfigurationXMLString()
@@ -128,14 +131,51 @@ class MyKivyApp(App):
         else:
             self._configCheckCounter += 1
 
+    def _startGUIProcess(self):
+        self._log.debug("Starting GUI Process")
+        from configurationGui.GuiMainWindow import startGui
+        self._commandQueue = Queue(10)
+        self._statusQueue = Queue(-1)
+        self._guiProcess = Process(target=startGui, args=(False, self._commandQueue, self._statusQueue))
+        self._guiProcess.name = "guiProcess"
+        self._guiProcess.start()
+
+    def _checkStatusQueue(self):
+        if(self._guiProcess != None):
+            try:
+                status = self._statusQueue.get_nowait()
+                if(status == "QUIT"):
+                    self.stopProcess()
+                else:
+                    self._log.warning("From GUI: %s" % status)
+            except:
+                pass
+            
+    def _requestGuiProcessToStop(self):
+        if(self._guiProcess != None):
+            self._log.debug("Stopping GUI Process")
+            self._commandQueue.put("QUIT")
+
+    def _stopGUIProcess(self):
+        if(self._guiProcess != None):
+            self._guiProcess.join(20.0)
+            if(self._guiProcess.is_alive()):
+                print "GUI Process did not respond to quit command. Terminating."
+                self._guiProcess.terminate()
+            self._guiProcess = None
+
     def stopProcess(self):
         self._log.info("Caught signal INT")
         self.stop()
 
     def on_stop(self):
         self._log.info("Close applicaton")
+        self._midiListner.requestTcpMidiListnerProcessToStop()
+        self._guiServer.requestGuiServerProcessToStop()
+        self._requestGuiProcessToStop()
         self._midiListner.stopDaemon()
         self._guiServer.stopGuiServerProcess()
+        self._stopGUIProcess()
 
     def frameReady(self, dt):
         pass
@@ -145,6 +185,7 @@ class MyKivyApp(App):
 #            if (dt > self._timingThreshold):
 #                self._log.info("Too slow main schedule " + str(dt))
             timeStamp = time.time()
+            self._checkStatusQueue()
             self._midiListner.getData(False)
             self._mediaPool.updateVideo(timeStamp)
             self._multiprocessLogger.handleQueuedLoggs()

@@ -332,10 +332,13 @@ class GuiServer(object):
         self._guiServerProcess.name = "guiNetworkServer"
         self._guiServerProcess.start()
 
-    def stopGuiServerProcess(self):
+    def requestGuiServerProcessToStop(self):
         if(self._guiServerProcess != None):
             print "Stopping guiNetworkServer"
             self._serverCommandQueue.put("QUIT")
+
+    def stopGuiServerProcess(self):
+        if(self._guiServerProcess != None):
             roundsLeft = 20
             while(roundsLeft >= 0):
                 if(self._guiServerProcess.is_alive()):

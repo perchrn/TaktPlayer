@@ -5,6 +5,7 @@ Created on 26. jan. 2012
 '''
 import wx #@UnusedImport
 import  wx.lib.newevent #@UnresolvedImport
+from PIL import Image
 
 DragStartEvent, EVT_DRAG_START_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
 DragDoneEvent, EVT_DRAG_DONE_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
@@ -122,10 +123,16 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
 
     def setBitmapFile(self, fileName):
         try:
-            newBitmap = wx.Bitmap(fileName) #@UndefinedVariable
-            self.setBitmap(newBitmap)
+            pilImage = Image.open(fileName)
         except:
-            print "Bitmap setting failed... %s" % fileName
+            print "Warning: Error reading %s image!" % (fileName)
+            return False
+        else:
+            myWxImage  = wx.EmptyImage(pilImage.size[0],pilImage.size[1]) #@UndefinedVariable
+            myWxImage .SetData(pilImage.convert("RGB").tostring())
+            bitmap = wx.BitmapFromImage(myWxImage ) #@UndefinedVariable
+            self.setBitmap(bitmap)
+            return True
 
     def getBitmapSize(self):
         return self._bitmap.GetSize()

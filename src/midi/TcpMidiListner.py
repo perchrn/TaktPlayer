@@ -87,9 +87,6 @@ class TcpMidiListner(object):
         self._midiTiming = midiTimingClass
         self._midiStateHolder = midiStateHolderClass
 
-#    def __del__(self):
-#        if(self._connection != None):
-#            self._connection.close()
     def startDaemon(self, host, port, useBroadcast):
         self._log.debug("Starting TcpMidiListner daemon")
         self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, useBroadcast, self._midiQueue, self._midiListnerCommandQueue, self._multiprocessLogger.getLogQueue()))
@@ -99,8 +96,6 @@ class TcpMidiListner(object):
 
     def stopDaemon(self):
         if(self._midiListnerProcess != None):
-            self._log.debug("Stopping TcpMidiListner daemon")
-            self._midiListnerCommandQueue.put(("QUIT", None))
             self._midiListnerProcess.join(20.0)
             if(self._midiListnerProcess.is_alive()):
                 print "TcpMidiListner did not respond to quit command. Terminating."

@@ -1094,7 +1094,7 @@ All notes on events are quantized to this.
             if(newConfig != None):
                 self._config = newConfig.getConfig()
         else:
-            if(self._config.getValue("filename") != noteFileName):
+            if(self._config.getValue("FileName") != noteFileName):
                 self._mainConfig.setNewNoteThumb(self._midiNote)
             self._config.setValue("FileName", noteFileName)
         if(self._config != None):

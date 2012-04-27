@@ -46,5 +46,5 @@ set PATH=%taktRoot%OpenCV\bin;%PATH%
 
 set PYTHONPATH=%taktRoot%src;%taktRoot%gui;%PYTHONPATH%
 
-python.exe  %taktRoot%PlayerMain.py
+python.exe  %taktRoot%PlayerMain.py  --config DEFAULT:playerOnly:0
 IF %errorlevel% NEQ 0 (PAUSE)

@@ -203,7 +203,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._parentSizer = parentSizer
         self._showTrackGuiCallback = parentClass.showTrackGui
         self._hideTrackGuiCallback = parentClass.hideTrackGui
-        self._showEffectsCallback = parentClass.showEffectsGui
+        self._showSlidersCallback = parentClass.showSlidersGui
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
@@ -340,23 +340,25 @@ Replace:\tNo mixing. Just use this image.
             self._showOrHideSaveButton()
 
     def _onPreEffectEdit(self, event):
-        self._showEffectsCallback()
         if(self._selectedEditor != self.EditSelection.PreEffect):
             self._hideModulationCallback()
         selectedEffectConfig = self._preEffectField.GetValue()
         self._selectedEditor = self.EditSelection.PreEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+        self._mainConfig.showSliderGuiEditButton()
+        self._showSlidersCallback()
         self._showOrHideSaveButton()
 
     def _onPostEffectEdit(self, event):
-        self._showEffectsCallback()
         if(self._selectedEditor != self.EditSelection.PostEffect):
             self._hideModulationCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
         self._selectedEditor = self.EditSelection.PostEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+        self._mainConfig.showSliderGuiEditButton()
+        self._showSlidersCallback()
         self._showOrHideSaveButton()
 
     def _onPreFxButtonDouble(self, event):

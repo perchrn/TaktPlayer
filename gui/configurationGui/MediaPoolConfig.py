@@ -139,7 +139,7 @@ class MediaFile(object):
         self._configurationTree.setValue("FileName", fileName)
         self._configurationTree.addTextParameter("Type", mediaType)
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
-        self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
+        self._configurationTree.addFloatParameter("QuantizeLength", 1.0)#Default one beat
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
         self._defaultEffect1SettingsName = "MediaDefault1"
         self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1

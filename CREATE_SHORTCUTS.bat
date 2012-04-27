@@ -60,7 +60,7 @@ FOR /F "tokens=1* delims=;" %%B IN ("   '	oLink.Arguments = """) do echo %%B>>%l
 FOR /F "tokens=1* delims=;" %%B IN ("   	oLink.Description = "%linkName%"") do echo %%B>>%linkDirectory%\myshortcut.vbs
 FOR /F "tokens=1* delims=;" %%B IN ("   '	oLink.HotKey = """) do echo %%B>>%linkDirectory%\myshortcut.vbs
 FOR /F "tokens=1* delims=;" %%B IN ("   	oLink.IconLocation = "%linkDirectory%graphics\%linkName%.ico"") do echo %%B>>%linkDirectory%\myshortcut.vbs
-FOR /F "tokens=1* delims=;" %%B IN ("   '	oLink.WindowStyle = "0"") do echo %%B>>%linkDirectory%\myshortcut.vbs
+FOR /F "tokens=1* delims=;" %%B IN ("   '	oLink.WindowStyle = "2"") do echo %%B>>%linkDirectory%\myshortcut.vbs
 FOR /F "tokens=1* delims=;" %%B IN ("   	oLink.WorkingDirectory = "%linkDirectory%"") do echo %%B>>%linkDirectory%\myshortcut.vbs
 FOR /F "tokens=1* delims=;" %%B IN ("   oLink.Save") do echo %%B>>%linkDirectory%\myshortcut.vbs
 

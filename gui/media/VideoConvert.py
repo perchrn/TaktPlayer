@@ -167,9 +167,9 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         cropMode = self._cropModeField.GetValue()
         cropOptions = ""
         if(cropMode == "16:9->4:3"):
-            cropOptions = " -vf crop=3/4*in_w:in_h"
+            cropOptions = " -vf crop=3/4*in_w:in_h -aspect 4:3"
         elif(cropMode == "4.3->16:9"):
-            cropOptions = " -vf crop=in_w:3/4*in_h"
+            cropOptions = " -vf crop=in_w:3/4*in_h -aspect 16:9"
         scaleMode = self._scaleModeField.GetValue()
         scaleOptions = ""
         if(scaleMode != "No scale"):

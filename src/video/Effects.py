@@ -1065,6 +1065,11 @@ class ImageAddEffect(object):
         fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), imageFileName)
         try:
             image = cv.LoadImage(fullFilePath)
+            imageSize = cv.GetSize(image)
+            if((imageSize[0] != self._internalResolutionX) or (imageSize[1] != self._internalResolutionY)):
+                scaleMat = createMat(self._internalResolutionX, self._internalResolutionY)
+                cv.Resize(image, scaleMat)
+                image =  scaleMat
         except:
             print "Exception while reading effect image: " + fileName
         return image

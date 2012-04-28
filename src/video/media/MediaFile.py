@@ -8,7 +8,7 @@ import logging
 from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat, getEffectByName
+from video.Effects import createMat, getEffectByName, getEmptyImage
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
@@ -463,11 +463,60 @@ class ImageFile(MediaFile):
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 
+class VideoCaptureCameras(object):
+    def __init__(self):
+        self._cameraList = []
+        self._cameraTimeStamps = []
+        self._bufferdImages = []
+        self._internalResolutionX = 800
+        self._internalResolutionY = 600
+
+    def openCamera(self, cameraId, internalResolutionX, internalResolutionY):
+        self._internalResolutionX = internalResolutionX
+        self._internalResolutionY = internalResolutionY
+        minNumCamearas = cameraId + 1
+        while(minNumCamearas > len(self._cameraList)):
+            self._cameraList.append(None)
+            self._cameraTimeStamps.append(-1.0)
+            blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+            self._bufferdImages.append(blankImage)
+        if(self._cameraList[cameraId] == None):
+            import VideoCapture
+            self._cameraList[cameraId] = VideoCapture.Device(cameraId)
+
+    def getFirstImage(self, cameraId):
+        return self.getCameraImage(cameraId, None)
+
+    def getCameraImage(self, cameraId, timeStamp):
+        minNumCamearas = cameraId + 1
+        if(minNumCamearas > len(self._cameraList)):
+            print "ERROR: Camera with id %d is not initialized! We only got %d number of cameras." %(minNumCamearas, len(self._cameraList))
+            return None
+        if((timeStamp != None) and (self._cameraTimeStamps[cameraId] != timeStamp)):
+            pilImage = self._cameraList[cameraId].getImage()
+            if(pilImage != None):
+                cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
+                cv.SetData(cvImage, pilImage.tostring())
+                rotatedImage = createMat(pilImage.size[0], pilImage.size[1])
+                cv.CvtColor(cvImage, rotatedImage, cv.CV_BGR2RGB)
+#                rezizedImage = createMat(self._internalResolutionX, self._internalResolutionY)
+                self._bufferdImages[cameraId] = rotatedImage#resizeImage(rotatedImage, rezizedImage)
+                self._cameraTimeStamps[cameraId] = timeStamp
+#        else:
+#            print "DEBUG: using buffered image!!!"
+        return self._bufferdImages[cameraId]
+
+videoCaptureCameras = VideoCaptureCameras()
+    
 class CameraInput(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
+        self._cameraMode = self.CameraModes.OpenCV
+
+    class CameraModes():
+        OpenCV, VideoCapture = range(2)
 
     def getType(self):
         return "Camera"
@@ -477,31 +526,40 @@ class CameraInput(MediaFile):
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black, fadeValue < 0.00001)):
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-        self._captureImage = cv.QueryFrame(self._videoFile)
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            self._captureImage = cv.QueryFrame(self._videoFile)
+        else:
+            self._captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
     def openFile(self, midiLength):
-        self._videoFile = cv.CaptureFromCAM(self._cameraId)
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            self._videoFile = cv.CaptureFromCAM(self._cameraId)
+        else:
+            videoCaptureCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY)
         try:
-            self._captureImage = cv.QueryFrame(self._videoFile)
-            self._firstImage = copyImage(self._captureImage)
+            if(self._cameraMode == self.CameraModes.OpenCV):
+                self._captureImage = cv.QueryFrame(self._videoFile)
+            else:
+                self._captureImage = videoCaptureCameras.getFirstImage(self._cameraId)
         except:
-            self._log.warning("Exception while reading: %d", self._cameraId)
-            print "Exception while reading: " + str(self._cameraId)
+            self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
+            print "Exception while opening camera with ID: %s" % (self._cameraId)
             raise MediaError("File caused exception!")
         if (self._captureImage == None):
-            self._log.warning("Could not read frames from: %d", self._cameraId)
-            print "Could not read frames from: " + str(self._cameraId)
-            raise MediaError("File could not be read!")
-        try:
-            self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
-        except:
-            self._log.warning("Exception while getting number of frames per second from: %d", self._cameraId)
-            raise MediaError("File caused exception!")
+            self._log.warning("Could not read frames from camera with ID: %d" % (self._cameraId))
+            print "Could not read frames from camera with ID: %d" % (self._cameraId)
+            raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            try:
+                self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
+            except:
+                self._log.warning("Exception while getting number of frames per second from: %d" % (self._cameraId))
+                raise MediaError("Camera with ID: %d caused exception!" %(self._cameraId))
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 

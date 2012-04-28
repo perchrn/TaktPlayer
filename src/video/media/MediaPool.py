@@ -13,7 +13,6 @@ from video.Effects import getEmptyImage
 class MediaPool(object):
     def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
-        print "DEBUG pcn... self._effectsConfigurationTemplates = " + str(effectsConfiguration)
         self._effectsConfigurationTemplates = effectsConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
@@ -215,7 +214,6 @@ class MediaPool(object):
             if(activeMedia != None):
                 noteIsDone = activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)
                 if(noteIsDone == True):
-                    print "DEBUG remove done note!"
                     midiChannelState.removeDoneActiveNote()
                 self._mediaMixer.gueueImage(activeMedia, midiChannel)
             else:

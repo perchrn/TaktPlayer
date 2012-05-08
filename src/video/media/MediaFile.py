@@ -481,7 +481,7 @@ class VideoCaptureCameras(object):
             blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
             self._bufferdImages.append(blankImage)
         if(self._cameraList[cameraId] == None):
-            import VideoCapture
+            import VideoCapture #@UnresolvedImport
             self._cameraList[cameraId] = VideoCapture.Device(cameraId)
 
     def getFirstImage(self, cameraId):

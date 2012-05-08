@@ -25,7 +25,7 @@ class MediaPool(object):
 
         self._emptyImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
 
-        self._defaultQuantize = midiTiming.getTicksPerQuarteNote() * 4
+        self._defaultQuantize = midiTiming.getTicksPerQuarteNote() * 1
 
         self._midiTiming = midiTiming
         self._midiStateHolder = midiStateHolder

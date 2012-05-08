@@ -232,28 +232,42 @@ class TcpMidiListner(object):
                 return
             if data:
                 dataLen = len(data)
-                if(dataLen > 8): # Midi over Ethernet header
-                    headerOk = False
-                    if(ord(data[0:1]) == 0x00):
-                        if(ord(data[1:2]) == 0x00):
-                            if(ord(data[2:3]) == 0x00):
-                                if(ord(data[3:4]) == 0x00):
-                                    if(ord(data[4:5]) == 0x03):
-                                        if(ord(data[5:6]) == 0x00):
-                                            if(ord(data[6:7]) == 0x00):
-                                                if(ord(data[7:8]) == 0x00):
-                                                    headerOk = True
-                                    else:
-                                        if(ord(data[4:5]) == 0x00):
-                                            if(ord(data[5:6]) == 0x00):
-                                                if(ord(data[6:7]) == 0x00):
-                                                    if(ord(data[7:8]) == 0x00):
-                                                        self._decodeMidiEvent(0xf8, 0x00, 0x00)
-                    if(headerOk == True):
-                        command = ord(data[8:9])
-                        data1 = ord(data[9:10])
-                        data2 = ord(data[10:11])
-                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
+#                if(dataLen > 8): # Midi over Ethernet header
+#                    headerOk = False
+#                    if(ord(data[0:1]) == 0x00):
+#                        if(ord(data[1:2]) == 0x00):
+#                            if(ord(data[2:3]) == 0x00):
+#                                if(ord(data[3:4]) == 0x00):
+#                                    if(ord(data[4:5]) == 0x03):
+#                                        if(ord(data[5:6]) == 0x00):
+#                                            if(ord(data[6:7]) == 0x00):
+#                                                if(ord(data[7:8]) == 0x00):
+#                                                    headerOk = True
+#                                    else:
+#                                        if(ord(data[4:5]) == 0x00):
+#                                            if(ord(data[5:6]) == 0x00):
+#                                                if(ord(data[6:7]) == 0x00):
+#                                                    if(ord(data[7:8]) == 0x00):
+#                                                        self._decodeMidiEvent(0xf8, 0x00, 0x00)
+#                    if(headerOk == True):
+#                        command = ord(data[8:9])
+#                        data1 = ord(data[9:10])
+#                        data2 = ord(data[10:11])
+#                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
+                if(dataLen > 8): # VST timing over net!
+                    if(str(data).startswith("vstTime|")):
+                        vstTimeSplit = str(data).split("|")
+                        if(len(vstTimeSplit) == 3):
+                            posVal = float(vstTimeSplit[1])
+                            tempoVal = float(vstTimeSplit[2])
+                            returnValue = self._midiTiming._updateFromVstTiming(dataTimeStamp, posVal, tempoVal);
+                            if(returnValue != None):
+                                stopedState, oldSpp, newSpp = returnValue
+                                if(stopedState == True): # Clear all on restart
+                                    self._midiStateHolder.cleanupFutureNotes(0.0, oldSpp, self._midiTiming.getTicksPerQuarteNote())
+                                else:
+                                    if(newSpp < oldSpp): # Looping back (else it is just a jump and we do nothing.)
+                                        self._midiStateHolder.fixLoopingNotes(oldSpp, newSpp, self._midiTiming.getTicksPerQuarteNote())
                 else:
                     if(dataLen > 3): # MVP MIDI over net
                         command = ord(data[0:1])

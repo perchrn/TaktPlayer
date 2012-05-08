@@ -8,6 +8,19 @@ import logging
 from midi.MidiController import MidiControllers
 import time
 
+def quantizePosition(spp, quantizeValue):
+    if(quantizeValue < 0.125):
+        return spp
+    else:
+        intSPP = int(spp)
+        rest = intSPP % quantizeValue
+        quantizedSPP = int(intSPP / quantizeValue) * quantizeValue
+        factor = float(rest) / quantizeValue
+        if(factor > 0.15):
+            quantizedSPP += quantizeValue
+#            print "Quantizing Note: " + str(self._note) + " SPP: " + str(spp) + " (" + str(int(spp/24)) + ") quantizedSPP: " + str(quantizedSPP) + " (" + str(int(spp/24)) + ") diff: " + str(spp - quantizedSPP) + " quantizeStep: " + str(quantizeValue) + " (" + str(int(quantizeValue/24)) + ")"
+        return quantizedSPP
+
 class NoteModulationSources():
     Velocity, ReleaseVelocity, NotePreasure = range(3)
 
@@ -182,7 +195,7 @@ class NoteState(object):
         self._noteOn = False
         self._noteOffSPP = spp
         self._noteOffInSync = midiSync
-        self._noteOffQuantizedSPP = self._quantize(spp, self._quantizeValue)
+        self._noteOffQuantizedSPP = quantizePosition(spp, self._quantizeValue)
         self._noteLegth = self._noteOffQuantizedSPP - self._noteOnQuantizedSPP
         if(self._noteLegth == 0.0):
             self._noteLegth = self._quantizeValue / 4.0
@@ -194,26 +207,31 @@ class NoteState(object):
         self._noteLetter = noteLetter
         self._releaseVelocity = velocity
 
-    def _quantize(self, spp, quantizeValue):
-        if(quantizeValue < 1):
-            return spp
-        else:
-            intSPP = int(spp)
-            rest = intSPP % quantizeValue
-            quantizedSPP = int(intSPP / quantizeValue) * quantizeValue
-            factor = float(rest) / quantizeValue
-            if(factor > 0.15):
-                quantizedSPP += quantizeValue
-#            print "Quantizing Note: " + str(self._note) + " SPP: " + str(spp) + " (" + str(int(spp/24)) + ") quantizedSPP: " + str(quantizedSPP) + " (" + str(int(spp/24)) + ") diff: " + str(spp - quantizedSPP) + " quantizeStep: " + str(quantizeValue) + " (" + str(int(quantizeValue/24)) + ")"
-            return quantizedSPP
-
     def quantize(self, quantizeValue):
         self._quantizeValue = quantizeValue
         if((self._noteOnSPP >= 0.0) and (self._noteOnQuantizedSPP < 0)):
-            self._noteOnQuantizedSPP = self._quantize(self._noteOnSPP, quantizeValue)
+            self._noteOnQuantizedSPP = quantizePosition(self._noteOnSPP, quantizeValue)
         if((self._noteOffSPP >= 0.0) and (self._noteOffQuantizedSPP < 0)):
-            self._noteOffQuantizedSPP = self._quantize(self._noteOffSPP, quantizeValue)
+            self._noteOffQuantizedSPP = quantizePosition(self._noteOffSPP, quantizeValue)
 
+    def moveStartPos(self, moveValue):
+        self._noteOnSPP += moveValue
+        if(self._noteOnSPP < 0.0):
+            self._noteOnSPP = 0.0
+        if(self._noteOnQuantizedSPP > -1.0):
+            self._noteOnQuantizedSPP += moveValue
+            if(self._noteOnQuantizedSPP < 0.0):
+                self._noteOnQuantizedSPP = 0.0
+        if(self._noteOffSPP > -1.0):
+            self._noteOffSPP += moveValue
+            if(self._noteOffSPP < 0.0):
+                self._noteOffSPP = 0.0
+        if(self._noteOffQuantizedSPP > -1.0):
+            self._noteOffQuantizedSPP += moveValue
+            if(self._noteOffQuantizedSPP < 0.0):
+                self._noteOffQuantizedSPP = 0.0
+
+        
 class MidiControllerLatestModified(object):
     def __init__(self):
         self._numberToSave = 10
@@ -460,6 +478,19 @@ class MidiChannelStateHolder(object):
         if(noteId != -1):
             self._activeNote = self._activeNotes[noteId]
 
+    def fixLoopingNotes(self, oldSongPosition, newSongPosition, ticksPerQuarteNote):
+        if(newSongPosition > oldSongPosition):
+            return
+        newPosQuantized = quantizePosition(newSongPosition, ticksPerQuarteNote)
+        jumpLength = oldSongPosition - newSongPosition
+        jumpLengthQuantized = quantizePosition(jumpLength, ticksPerQuarteNote)
+        for note in range(128):
+            testNote = self._activeNotes[note]
+            noteStart = testNote.getUnquantizedStartPosition()
+            if(noteStart > newPosQuantized):
+#                print "DEBUG fixLoopingNotes() for note: " + str(testNote.getNote()) + " with start: " + str(noteStart)
+                testNote.moveStartPos(-jumpLengthQuantized)
+
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)
 
@@ -515,6 +546,7 @@ class MidiStateHolder(object):
             self._guiControllerChannelValues.append(GuiControllerValues(i))
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
+#        print "DEBUG pcn: Note on: " + str(data1) + " spp: " + str(songPosition)
         self._midiChannelStateHolder[midiChannel].noteEvent(True, data1, data2, songPosition)
 
     def noteOff(self, midiChannel, data1, data2, songPosition):
@@ -563,7 +595,11 @@ class MidiStateHolder(object):
     def cleanupFutureNotes(self, songPosition, oldSongPosition, timeLimit):
         for i in range(16):
             self._midiChannelStateHolder[i].cleanupFutureNotes(songPosition, oldSongPosition, timeLimit)
-        
+
+    def fixLoopingNotes(self, oldSongPosition, newSongPosition, ticksPerQuarteNote):
+        for i in range(16):
+            self._midiChannelStateHolder[i].fixLoopingNotes(oldSongPosition, newSongPosition, ticksPerQuarteNote)
+
     def printState(self):
         for i in range(16):
             self._midiChannelStateHolder[i].printState()

@@ -13,6 +13,7 @@ class MidiTiming(object):
         #MIDI timing variables:
         self._midiOurSongPosition = 0;
         self._midiLastTimeEventWasSPP = False
+        self._vstStopDetectionCount = 0
 #        self._midiTimeing = (4,4);
         self._midiTicksPerQuarteNote = 24
         self._midiTicksPerBar = self._midiTicksPerQuarteNote * 4
@@ -83,6 +84,20 @@ class MidiTiming(object):
         self._midiTicksTimestampsPos = -1
         self._midiInitTime = self.getTime()
 
+    def _updateFromVstTiming(self, dataTimeStamp, vstPpqPos, vstTempo):
+        self._midiTicksTimestampsPos = (self._midiTicksTimestampsPos + 1) % self._midiTicksTimestampsLength
+        self._midiTicksTimestamps[self._midiTicksTimestampsPos] = dataTimeStamp
+        oldPosition = self._midiOurSongPosition
+        self._midiOurSongPosition = vstPpqPos * 24
+        self._midiBpm = vstTempo
+        if(oldPosition == self._midiOurSongPosition):
+            self._vstStopDetectionCount += 1
+        else:
+            self._vstStopDetectionCount = 0
+        if(abs(oldPosition - self._midiOurSongPosition) > self._midiTicksPerQuarteNote):
+            return ((self._vstStopDetectionCount > 2), oldPosition, self._midiOurSongPosition)
+        return None
+        
     def _updateSongPostiton(self, dataTimeStamp, data1 = None, data2 = None, data3 = 0):
         if(data1 == None):
             midiSync, subsubPos = self._calculateSubSubPos(dataTimeStamp)
@@ -93,7 +108,7 @@ class MidiTiming(object):
                 #Don't increase or calculate new position when we just got a SPP from MIDI host
                 self._midiLastTimeEventWasSPP = False
             else:
-                if(subsubPos > 10.0):
+                if(subsubPos > 12.0):
                     #We have skipped MIDI ticks and add calculated ticks.
                     self._log.info("Adding internal time to Song Position Pointer due to lost MIDI sync. " + str(subsubPos))
                     self._midiOurSongPosition += int(subsubPos)

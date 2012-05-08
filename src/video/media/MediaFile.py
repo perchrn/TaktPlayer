@@ -482,12 +482,18 @@ class VideoCaptureCameras(object):
             self._bufferdImages.append(blankImage)
         if(self._cameraList[cameraId] == None):
             import VideoCapture #@UnresolvedImport
-            self._cameraList[cameraId] = VideoCapture.Device(cameraId)
+            try:
+                self._cameraList[cameraId] = VideoCapture.Device(cameraId)
+            except:
+                return False # Failed to open camera id.
+        return True
 
     def getFirstImage(self, cameraId):
         return self.getCameraImage(cameraId, None)
 
     def getCameraImage(self, cameraId, timeStamp):
+        if(self._cameraList[cameraId] == None):
+            return self._bufferdImages[cameraId]
         minNumCamearas = cameraId + 1
         if(minNumCamearas > len(self._cameraList)):
             print "ERROR: Camera with id %d is not initialized! We only got %d number of cameras." %(minNumCamearas, len(self._cameraList))
@@ -540,7 +546,8 @@ class CameraInput(MediaFile):
         if(self._cameraMode == self.CameraModes.OpenCV):
             self._videoFile = cv.CaptureFromCAM(self._cameraId)
         else:
-            videoCaptureCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY)
+            if(videoCaptureCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY) == False):
+                raise MediaError("Could not open VideoCapture camera with ID: %d!" %(self._cameraId))
         try:
             if(self._cameraMode == self.CameraModes.OpenCV):
                 self._captureImage = cv.QueryFrame(self._videoFile)

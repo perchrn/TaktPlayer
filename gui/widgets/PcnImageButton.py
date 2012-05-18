@@ -121,6 +121,12 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
             self._pressed = self.addButtonFrame(bitmap, True)
             self.Refresh()
 
+    def clearBitmap(self):
+        self._bitmap = None
+        self._normal = self._baseBitmap
+        self._pressed = self._baseBitmap
+        self.Refresh()
+
     def setBitmapFile(self, fileName):
         try:
             pilImage = Image.open(fileName)

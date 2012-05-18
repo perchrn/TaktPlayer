@@ -338,7 +338,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             return None
         keyboardButton = PcnKeyboardButton(self._keyboardPanel, bitmap, buttonPos, wx.ID_ANY, size=(44, 35), isBlack=(buttonPos[1]==1)) #@UndefinedVariable
-        keyboardButton.setBitmap(self._emptyBitMap)
         return keyboardButton
 
     def setupProcessQueues(self, commandQueue, statusQueue):
@@ -469,7 +468,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                 found = True
                         if(found == False):
                             widget = self._noteWidgets[i]
-                            widget.setBitmap(self._emptyBitMap)
+                            widget.clearBitmap()
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
@@ -490,7 +489,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         note = int(noteList[i])
                         widget = self._trackWidgets[i]
                         if((note < 0) or (note > 127)):
-                            widget.setBitmap(self._emptyBitMap)
+                            widget.clearBitmap()
                             if((i == self._activeTrackId) and (self._activeTrackNotes[i] != -1)):
                                 self._noteGui.clearTrackOverviewGui()
                                 self._trackGui.updateMixModeOverviewThumb("None")
@@ -871,7 +870,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def clearImageOnNote(self, noteId):
         if((noteId >= 0) and (noteId < 128)):
-            self._noteWidgets[noteId].setBitmap(self._emptyBitMap)
+            self._noteWidgets[noteId].clearBitmap()
             self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
             if(noteId == self._activeTrackId):
                 self._noteGui.updateTrackOverviewClipBitmap(self._emptyBitMap)

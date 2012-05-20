@@ -6,7 +6,7 @@ Created on 21. des. 2011
 import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
-    CameraInput, MediaError
+    CameraInput, MediaError, KinectCameraInput
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 
@@ -140,6 +140,10 @@ class MediaPool(object):
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "KinectCamera"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = KinectCameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)

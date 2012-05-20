@@ -762,7 +762,7 @@ class MediaFileGui(object): #@UndefinedVariable
         Unselected, Effect1, Effect2, Fade, ImageSeqModulation = range(5)
 
     def _onOpenFile(self, event):
-        if(self._type == "Camera"):
+        if(self._type == "Camera" or self._type == "KinectCamera"):
             dlg = wx.NumberEntryDialog(self._mediaFileGuiPanel, "Choose camera input ID:", "ID:", "Camera input", self._cameraId, 0, 32) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
                 self._cameraId = dlg.GetValue()
@@ -785,7 +785,7 @@ class MediaFileGui(object): #@UndefinedVariable
     def _onTypeChosen(self, event):
         selectedTypeId = self._typeField.GetSelection()
         self._type = self._typeModes.getNames(selectedTypeId)
-        if(self._type == "Camera"):
+        if(self._type == "Camera" or self._type == "KinectCamera"):
             self._fileNameField.SetValue(str(self._cameraId))
         else:
             self._fileNameField.SetValue(os.path.basename(self._fileName))
@@ -1071,7 +1071,7 @@ All notes on events are quantized to this.
         self._mainConfig.clearNoteThumb(self._midiNote)
 
     def _onSaveButton(self, event):
-        if(self._type == "Camera"):
+        if(self._type == "Camera" or self._type == "KinectCamera"):
             noteFileName = str(self._cameraId)
         else:
             guiVideoDir = self._mainConfig.getGuiVideoDir()
@@ -1289,7 +1289,7 @@ All notes on events are quantized to this.
             mediaType = configHolder.getValue("Type")
         else:
             mediaType = self._type
-        if(mediaType == "Camera"):
+        if(mediaType == "Camera" or self._type == "KinectCamera"):
             widget.setBitmaps(self._modeBitmapCamera, self._modeBitmapCamera)
         elif(mediaType == "Image"):
             widget.setBitmaps(self._modeBitmapImage, self._modeBitmapImage)
@@ -1389,6 +1389,8 @@ All notes on events are quantized to this.
                 self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
             elif(modeText == "Camera"):
                 self._type = "Camera"
+            elif(modeText == "KinectCamera"):
+                self._type = "KinectCamera"
             elif(modeText == "Image"):
                 self._type = "Image"
     #        elif(modeText == "ScrollingImage"):
@@ -1686,7 +1688,7 @@ All notes on events are quantized to this.
         if(self._config == None):
             return
         self._type = self._config.getValue("Type")
-        if(self._type == "Camera"):
+        if(self._type == "Camera" or self._type == "KinectCamera"):
             fileNameFieldValue = self._config.getValue("FileName")
             try:
                 self._cameraId = int(fileNameFieldValue)

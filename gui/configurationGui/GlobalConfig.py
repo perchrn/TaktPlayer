@@ -1013,7 +1013,7 @@ A list of start values for the effect modulation.
         if(self._chosenEffectId == EffectTypes.Zoom):
             self._setLabels("Amount:", "XY ratio", "X position", "Y position", "Zoom mode")
             self._setupValueLabels(None, None, None, None, self._zoomModes.getChoices())
-        if(self._chosenEffectId == EffectTypes.Scroll):
+        elif(self._chosenEffectId == EffectTypes.Scroll):
             self._setLabels("X amount:", "Y amount", "Scroll mode", None, None)
             self._setupValueLabels(None, None, self._scrollModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Flip):

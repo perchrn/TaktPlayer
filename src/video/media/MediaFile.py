@@ -8,13 +8,19 @@ import logging
 from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat, getEffectByName, getEmptyImage
+from video.Effects import createMat, getEffectByName, getEmptyImage, createMask
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName
+    getModulationValueModeFromName, KinectMode
+try:
+    import freenect
+except:
+    freenect = None
 
 def copyImage(image):
+    if(type(image) is cv.cvmat):
+        return cv.CloneMat(image)
     return cv.CloneImage(image)
 
 def resizeImage(image, resizeMat):
@@ -47,7 +53,7 @@ def mixImagesAdd(image1, image2, mixMat):
     return mixMat
 
 def mixImagesMultiply(image1, image2, mixMat):
-    cv.Mul(image1, image2, mixMat, 0.003)
+    cv.Mul(image1, image2, mixMat, 0.004)
     return mixMat
 
 def mixImages(mode, image1, image2, mixMat1, mixMask):
@@ -520,6 +526,7 @@ class CameraInput(MediaFile):
         self._cameraId = int(fileName)
         self._getConfiguration()
         self._cameraMode = self.CameraModes.OpenCV
+        self._firstTrigger = True
 
     class CameraModes():
         OpenCV, VideoCapture = range(2)
@@ -567,6 +574,93 @@ class CameraInput(MediaFile):
             except:
                 self._log.warning("Exception while getting number of frames per second from: %d" % (self._cameraId))
                 raise MediaError("Camera with ID: %d caused exception!" %(self._cameraId))
+        self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
+        self._fileOk = True
+
+class KinectCameraInput(MediaFile):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._cameraId = int(fileName)
+        self._getConfiguration()
+        self._firstTrigger = True
+        self._kinectMode = KinectMode.DepthMask
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        kinectMode = self._configurationTree.getValue("KinectMode")
+        if(kinectMode == "DepthMask"):
+            self._kinectMode = KinectMode.DepthMask
+        elif(kinectMode == "DepthImage"):
+            self._kinectMode = KinectMode.DepthImage
+
+    def getType(self):
+        return "KinectCamera"
+
+    def close(self):
+        pass
+
+    def restartSequence(self):
+        self._firstTrigger = True
+
+    def setStartPosition(self, startSpp):
+        if(self._firstTrigger == True):
+            self._firstTrigger = False
+            if(freenect != None):
+                pass
+            #TODO: Recalibrate on trigger?
+#            depthArray, _ = freenect.sync_get_depth()
+#            depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+#            resizeImage(depthCapture, self._tmpMat1)
+#            self._startDepthMat = cv.CloneMat(self._tmpMat1)
+#            cv.CmpS(self._tmpMat1, 20, self._tmpMat2, cv.CV_CMP_LE)
+#            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
+#            cv.Smooth(self._tmpMat1, self._startDepthMat, cv.CV_BLUR, 3, 3)
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        if(freenect == None):
+            self._image = None
+            return True
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+        depthArray, _ = freenect.sync_get_depth()
+        depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+        resizeImage(depthCapture, self._tmpMat1)
+        if(self._kinectMode == KinectMode.DepthMask):
+            cv.AddS(self._tmpMat1, 20, self._tmpMat2)
+            cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
+            cv.Smooth(self._tmpMat1, self._tmpMat2, cv.CV_BLUR, 3, 3)
+            cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
+        elif(self._kinectMode == KinectMode.DepthImage): #TODO: kincetmodes + split to own class and fix import ;-)
+            cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
+
+    def openFile(self, midiLength):
+        if(freenect == None):
+            self._log.warning("Error while importing kinect!")
+            print "Error while importing kinect!"
+            raise MediaError("Kinect not installed correctly!")
+        try:
+            depthArray, _ = freenect.sync_get_depth()
+            depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+            self._tmpMat1 = createMask(self._internalResolutionX, self._internalResolutionY)
+            self._tmpMat2 = createMask(self._internalResolutionX, self._internalResolutionY)
+            resizeImage(depthCapture, self._tmpMat1)
+            self._startDepthMat = cv.CloneMat(self._tmpMat1)
+            cv.CmpS(self._tmpMat1, 20, self._tmpMat2, cv.CV_CMP_LE)
+            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
+            cv.Smooth(self._tmpMat1, self._startDepthMat, cv.CV_BLUR, 3, 3)
+            self._captureImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        except:
+            self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
+            print "Exception while opening camera with ID: %s" % (self._cameraId)
+            raise MediaError("File caused exception!")
+        if (self._captureImage == None):
+            self._log.warning("Could not read frames from camera with ID: %d" % (self._cameraId))
+            print "Could not read frames from camera with ID: %d" % (self._cameraId)
+            raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 

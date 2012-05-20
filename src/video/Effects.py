@@ -512,7 +512,7 @@ class BluredContrastEffect(object):
         xSize = 2 + int(value * 8)
         ySize = 2 + int(value * 6)
         cv.Smooth(image, self._blurMat1, cv.CV_BLUR, xSize, ySize)
-        cv.Mul(image, self._blurMat1, self._blurMat2, 0.006)
+        cv.Mul(image, self._blurMat1, self._blurMat2, 0.004)
         return self._blurMat2
 
 class FeedbackEffect(object):
@@ -819,7 +819,7 @@ class DesaturateEffect(object):
         if(satMode != DesaturateModes.Mask):
             cv.Split(self._colorMat, self._hueMat, self._sat1Mat, self._valMat, None)
             if(satMode == DesaturateModes.Plus):
-                cv.Mul(self._sat1Mat, self._maskMat, self._sat2Mat, 0.005)
+                cv.Mul(self._sat1Mat, self._maskMat, self._sat2Mat, 0.004)
             else: # Minus
                 cv.Sub(self._sat1Mat, self._maskMat, self._sat2Mat)
             cv.Smooth(self._sat2Mat, self._sat1Mat, cv.CV_BLUR, 8, 6)
@@ -1125,7 +1125,7 @@ class ImageAddEffect(object):
         self._updateMask(maskId)
         returnImage = image
         if(self._maskImage != None):
-            cv.Mul(image, self._maskImage, self._maskMat, 0.003)
+            cv.Mul(image, self._maskImage, self._maskMat, 0.004)
             returnImage = self._maskMat
         imageId = int(imageId * 63.0)
         self._updateAddImage(imageId)

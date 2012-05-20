@@ -76,11 +76,23 @@ class ImageSequenceMode:
                 return self.getChoices()[i]
         return self.getChoices()[0]
 
-class MediaTypes:
-    VideoLoop, Image, ImageSequence, Camera = range(4)
+class KinectMode:
+    DepthMask, DepthImage = range(2)
 
     def getChoices(self):
-        return ["VideoLoop", "Image", "ImageSequence", "Camera"]
+        return ["DepthMask", "DepthImage"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+class MediaTypes:
+    VideoLoop, Image, ImageSequence, Camera, KinectCamera = range(5)
+
+    def getChoices(self):
+        return ["VideoLoop", "Image", "ImageSequence", "Camera", "KinectCamera"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

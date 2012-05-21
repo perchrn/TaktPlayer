@@ -18,6 +18,12 @@ try:
 except:
     freenect = None
 
+def createCvWindow():
+    cv.NamedWindow("DEBUG window", cv.CV_WINDOW_NORMAL) 
+
+def showCvImage(image):
+    cv.ShowImage("DEBUG window", image)
+
 def copyImage(image):
     if(type(image) is cv.cvmat):
         return cv.CloneMat(image)

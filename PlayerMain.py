@@ -11,22 +11,16 @@ from configuration.GuiServer import GuiServer
 import multiprocessing
 from multiprocessing import Process, Queue
 from configuration.PlayerConfiguration import PlayerConfiguration
-from kivy.config import Config
 import sys
-os.environ['KIVY_CAMERA'] = 'opencv'
-import kivy
-kivy.require('1.0.9') # replace with your current kivy version !
-from kivy.app import App
-from kivy.clock import Clock
-from kivy.config import Config
+import pygame
 
 #pcn stuff
-from pcnKivy.pcnVideoWidget import PcnVideo
-
 from configuration.ConfigurationHolder import ConfigurationHolder
 
 from video.media.MediaMixer import MediaMixer
 from video.media.MediaPool import MediaPool
+
+from video.media.MediaFile import createCvWindow, showCvImage
 
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
@@ -44,11 +38,10 @@ logging.root.setLevel(logging.ERROR)
 internalResolutionX = 800
 internalResolutionY = 600
 
-class MyKivyApp(App):
-    icon = os.path.normpath('graphics/TaktPlayer.png')
-    title = 'Takt Player'
+class PlayerMain(object):
+    def __init__(self):
+        pygame.init()
 
-    def build(self):
         #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 #        self._log.setLevel(logging.WARNING)
@@ -62,7 +55,14 @@ class MyKivyApp(App):
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
-        self._pcnVideoWidget = PcnVideo(internalResolution=(self._internalResolutionX, self._internalResolutionY))
+        createCvWindow()
+        extraSize = 100
+        self._pygameDisplaySize = self._internalResolutionX + extraSize, self._internalResolutionY +  extraSize
+        self._pygameDisplay = pygame.display.set_mode(self._pygameDisplaySize)#, pygame.DOUBLEBUF | pygame.OPENGL)
+        self._pygameDisplay.fill((0,0,0))
+        self._pygameVideoSurface = pygame.Surface((self._internalResolutionX, self._internalResolutionY))
+        self._pygameVideoRectangle = pygame.Rect(extraSize/2, extraSize/2, self._internalResolutionX, self._internalResolutionY)
+        self._pygameClock = pygame.time.Clock()
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
@@ -77,7 +77,6 @@ class MyKivyApp(App):
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
-        self._pcnVideoWidget.setFrameProviderClass(self._mediaMixer)
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
 
@@ -96,17 +95,15 @@ class MyKivyApp(App):
 
         self._guiProcess = None
         self._playerOnlyMode = False
-        if(Config.getint("DEFAULT", "playerOnly") == 1):
-            self._playerOnlyMode = True
-        if(self._playerOnlyMode == False):
-            print "*-*-*" * 30
-            print "Start GUI process!"
-            self._startGUIProcess()
-            print "*-*-*" * 30
+#        if(Config.getint("DEFAULT", "playerOnly") == 1):
+#            self._playerOnlyMode = True
+#        if(self._playerOnlyMode == False):
+        print "*-*-*" * 30
+        print "Start GUI process!"
+        self._startGUIProcess()
+        print "*-*-*" * 30
 
         print self._configurationTree.getConfigurationXMLString()
-
-        return self._pcnVideoWidget
 
     def _getConfiguration(self):
         pass
@@ -145,10 +142,7 @@ class MyKivyApp(App):
         if(self._guiProcess != None):
             try:
                 status = self._statusQueue.get_nowait()
-                if(status == "QUIT"):
-                    self.stopProcess()
-                else:
-                    self._log.warning("From GUI: %s" % status)
+                return status
             except:
                 pass
             
@@ -165,11 +159,7 @@ class MyKivyApp(App):
                 self._guiProcess.terminate()
             self._guiProcess = None
 
-    def stopProcess(self):
-        self._log.info("Caught signal INT")
-        self.stop()
-
-    def on_stop(self):
+    def stop(self):
         self._log.info("Close applicaton")
         self._midiListner.requestTcpMidiListnerProcessToStop()
         self._guiServer.requestGuiServerProcessToStop()
@@ -178,29 +168,53 @@ class MyKivyApp(App):
         self._guiServer.stopGuiServerProcess()
         self._stopGUIProcess()
 
-    def frameReady(self, dt):
-        pass
-
-    def getNextFrame(self, dt):
-        try:
+    def processFrame(self):
 #            if (dt > self._timingThreshold):
 #                self._log.info("Too slow main schedule " + str(dt))
-            timeStamp = time.time()
-            self._checkStatusQueue()
-            self._midiListner.getData(False)
-            self._mediaPool.updateVideo(timeStamp)
-            self._multiprocessLogger.handleQueuedLoggs()
-            self.checkAndUpdateFromConfiguration()
-            updateConfig = self._guiServer.processGuiRequests()
-            if(updateConfig == True):
-                self._configCheckCounter = self._configCheckEveryNRound + 1
+        #Prepare frame
+        timeStamp = time.time()
+        self._midiListner.getData(False)
+        self._mediaPool.updateVideo(timeStamp)
+        self._multiprocessLogger.handleQueuedLoggs()
+        self.checkAndUpdateFromConfiguration()
+        updateConfig = self._guiServer.processGuiRequests()
+        if(updateConfig == True):
+            self._configCheckCounter = self._configCheckEveryNRound + 1
+
+        #Render frame to pygame.
+        mixedImage = self._mediaMixer.getImage()
+        showCvImage(mixedImage)
+#        print "DEBUG imageArray: " + str(type(imageArray)) + " array: " + str(imageArray)
+#        imageArray.transpose(1,0,2)
+#        pygame.surfarray.blit_array(self._pygameVideoSurface, imageArray)
+#        self._pygameDisplay.blit(self._pygameVideoSurface, self._pygameVideoRectangle)
+
+        #Check for quit conditions...
+        guiStatus = self._checkStatusQueue()
+        if(guiStatus == "QUIT"):
+            raise QuitRequestException("User has closed GUI window.")
+        for event in pygame.event.get():
+            if event.type is pygame.QUIT:
+                raise QuitRequestException("User has closed window.")
+            if event.type is pygame.KEYDOWN:
+                if event.key is pygame.K_ESCAPE:
+                    raise QuitRequestException("User pressed escape.")
+
+        #Sleep until next frame is needed...
+        self._pygameClock.tick(60)
+        pygame.display.flip()
+
 #            timeUsed = time.time() - timeStamp
 #            if((timeUsed / self._lastDelta) > 0.9):
 #                print "PCN time: " + str(timeUsed) + " last delta: " + str(self._lastDelta)
-            self._lastDelta = dt
-        except:
-            self.stopProcess()
-            raise
+#            self._lastDelta = dt
+
+class QuitRequestException(Exception):
+    def __init__(self, value):
+        self.value = value.encode("utf-8")
+
+    def __str__(self):
+        return repr(self.value)
 
 if __name__ in ('__android__', '__main__'):
     multiprocessing.freeze_support()
@@ -223,39 +237,50 @@ if __name__ in ('__android__', '__main__'):
     if(fullscreenMode == "auto"):
         internalResolutionX = currentWidth
         internalResolutionY = currentHeight
-        Config.set('graphics', 'fullscreen', "auto")
-        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
-    elif(fullscreenMode == "on"):
-        Config.set('graphics', 'width', str(internalResolutionX))
-        Config.set('graphics', 'height', str(internalResolutionY))
-        Config.set('graphics', 'fullscreen', "auto")
-        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
-    else:
-        windowWidth = min(currentWidth, (internalResolutionX + 100))
-        windowHeight = min(currentHeight, (internalResolutionY + 100))
-        Config.set('graphics', 'width', str(windowWidth))
-        Config.set('graphics', 'height', str(windowHeight))
-        Config.set('graphics', 'fullscreen', "0")
-        autoMode = playerConfiguration.isAutoPositionEnabled()
-        if(autoMode == True):
-            Config.set('graphics', 'position', "auto")
-        else:
-            positionX, postionY = playerConfiguration.getPosition()
-            Config.set('graphics', 'position', "custom")
-            Config.set('graphics', 'left', str(positionX))
-            Config.set('graphics', 'top', str(postionY))
-            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
-        print "Startup windowed: Width: " + str(windowWidth) + " Height: " + str(windowHeight)
-    Config.write()
+#        Config.set('graphics', 'fullscreen', "auto")
+#        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
+#    elif(fullscreenMode == "on"):
+#        Config.set('graphics', 'width', str(internalResolutionX))
+#        Config.set('graphics', 'height', str(internalResolutionY))
+#        Config.set('graphics', 'fullscreen', "auto")
+#        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
+#    else:
+#        windowWidth = min(currentWidth, (internalResolutionX + 100))
+#        windowHeight = min(currentHeight, (internalResolutionY + 100))
+#        Config.set('graphics', 'width', str(windowWidth))
+#        Config.set('graphics', 'height', str(windowHeight))
+#        Config.set('graphics', 'fullscreen', "0")
+#        autoMode = playerConfiguration.isAutoPositionEnabled()
+#        if(autoMode == True):
+#            Config.set('graphics', 'position', "auto")
+#        else:
+#            positionX, postionY = playerConfiguration.getPosition()
+#            Config.set('graphics', 'position', "custom")
+#            Config.set('graphics', 'left', str(positionX))
+#            Config.set('graphics', 'top', str(postionY))
+#            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
+#        print "Startup windowed: Width: " + str(windowWidth) + " Height: " + str(windowHeight)
+#    Config.write()
 
+    mainApp = PlayerMain()
     try:
-        mainApp = MyKivyApp()
-        Clock.schedule_interval(mainApp.getNextFrame, 0)
-#        Clock.schedule_interval(mainApp.frameReady, -1)
-        signal.signal(signal.SIGINT, mainApp.stopProcess)
-        mainApp.run()
+        while(True):
+            mainApp.processFrame()
+    except QuitRequestException, quitRequest:
+        print "Stopping player... (" + str(quitRequest) + ")"
+        mainApp.stop()
+        print "Player stopped! (" + str(quitRequest) + ")"
     except:
-        mainApp.stopProcess()
+        mainApp.stop()
         raise
-    print "Exiting MAIN XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
-    mainApp.stopProcess()
+#    try:
+#        mainApp = PlayerMain()
+#        Clock.schedule_interval(mainApp.getNextFrame, 0)
+##        Clock.schedule_interval(mainApp.frameReady, -1)
+#        signal.signal(signal.SIGINT, mainApp.stopProcess)
+#        mainApp.run()
+#    except:
+#        mainApp.stopProcess()
+#        raise
+#    print "Exiting MAIN XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
+#    mainApp.stopProcess()

@@ -9,6 +9,7 @@ from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
+from video.media.MediaFileModes import forceUnixPath
 
 class MediaPool(object):
     def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -79,7 +80,8 @@ class MediaPool(object):
                 self.addMedia("", noteLetter)
 
     def addXmlMedia(self, xmlConfig):
-        fileName = xmlConfig.get("filename")
+        fileName = forceUnixPath(xmlConfig.get("filename"))
+        xmlConfig.set("filename", fileName)
         noteLetter = xmlConfig.get("note")
         mediaType = xmlConfig.get("type")
         return self.addMedia(fileName, noteLetter, None, mediaType)

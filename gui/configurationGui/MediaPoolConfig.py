@@ -10,7 +10,7 @@ from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
     PcnPopupMenu
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
-    MediaTypes, MixMode, getMixModeFromName
+    MediaTypes, MixMode, getMixModeFromName, forceUnixPath
 from video.EffectModes import getEffectId, EffectTypes
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
@@ -50,7 +50,7 @@ class MediaPoolConfig(object):
                 self.addMedia("", noteLetter)
 
     def addXmlMedia(self, xmlConfig):
-        fileName = xmlConfig.get("filename")
+        fileName = forceUnixPath(xmlConfig.get("filename"))
         noteLetter = xmlConfig.get("note")
         print "Adding " + fileName.encode("utf-8") + " - " + str(noteLetter)
         return self.addMedia(fileName, noteLetter, xmlConfig)

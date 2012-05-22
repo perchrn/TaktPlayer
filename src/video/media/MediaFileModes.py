@@ -3,6 +3,15 @@ Created on 7. feb. 2012
 
 @author: pcn
 '''
+import os
+import posixpath
+#Media file utility to force unix paths in configurations.
+def forceUnixPath(pathPart):
+    firstPart, lastPart = os.path.split(pathPart)
+    if(firstPart != ""):
+        unixPathPart = forceUnixPath(firstPart)
+        return posixpath.join(unixPathPart, lastPart)
+    return lastPart
 
 class MixMode:
     Default, Add, Multiply, LumaKey, WhiteLumaKey, Replace = range(6)

@@ -202,14 +202,14 @@ class MediaFile(object):
         return "Unknown"
 
     def equalFileName(self, fileName):
-        return self._cfgFileName.encode("utf-8") == os.path.normpath(fileName).encode("utf-8")
+        return self._cfgFileName.encode("utf-8") == fileName.encode("utf-8")
 
     def getFileName(self):
         return self._cfgFileName
 
     def setFileName(self, fileName):
-        self._cfgFileName = os.path.normpath(fileName)
-        self._fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), self._cfgFileName)
+        self._cfgFileName = fileName
+        self._fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), os.path.normpath(self._cfgFileName))
 
     def isFileOk(self):
         return self._fileOk

@@ -4,7 +4,7 @@ Created on 25. jan. 2012
 @author: pcn
 '''
 from midi.MidiModulation import MidiModulation
-from video.media.MediaFileModes import FadeMode
+from video.media.MediaFileModes import FadeMode, forceUnixPath
 import copy
 
 class ConfigurationTemplates(object):
@@ -90,6 +90,9 @@ class ConfigurationTemplates(object):
             keepTemplate = False
             for keepName in effectTemplatesToKeep:
                 if(templateLowerName == keepName.lower()):
+                    keepTemplate = True
+                    break
+                elif(templateName == forceUnixPath(keepName)):
                     keepTemplate = True
                     break
             if(keepTemplate == False):
@@ -383,6 +386,9 @@ class EffectImageList(ConfigurationTemplates):
         return self._videoDir
 
     def createTemplateFromXml(self, fileName, xmlConfig):
+        fileName = forceUnixPath(fileName)
+        xmlConfig.set("filename", fileName)
+        print "DEBUG createTemplateFromXml creating new with fileName: " + str(fileName) 
         effectImageConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, fileName, fileName)
         newTemplate = ImageSettings(fileName, self, effectImageConfigTree)
         newTemplate.updateFromXml(xmlConfig)

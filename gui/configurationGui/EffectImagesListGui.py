@@ -8,6 +8,7 @@ import wx
 from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 import sys
 import os
+from video.media.MediaFileModes import forceUnixPath
 
 class EffectImagesListGui(object):
     def __init__(self, mainConfig, effectImagesConfig):
@@ -72,7 +73,7 @@ class EffectImagesListGui(object):
     def _onListNewButton(self, event):
         dlg = wx.FileDialog(self._mainEffectImagesListPlane, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
         if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-            fileName = os.path.relpath(dlg.GetPath(), self._videoDirectory)
+            fileName = forceUnixPath(os.path.relpath(dlg.GetPath(), self._videoDirectory))
             oldImage = self._mainConfig.getEffectImage(fileName)
             if(oldImage == None):
                 self._mainConfig.makeNewEffectImage(fileName)

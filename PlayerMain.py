@@ -19,7 +19,7 @@ from configuration.ConfigurationHolder import ConfigurationHolder
 from video.media.MediaMixer import MediaMixer
 from video.media.MediaPool import MediaPool
 
-from video.media.MediaFile import createCvWindow, showCvImage
+from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped
 
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
@@ -185,6 +185,8 @@ class PlayerMain(object):
         guiStatus = self._checkStatusQueue()
         if(guiStatus == "QUIT"):
             raise QuitRequestException("User has closed GUI window.")
+        if(hasCvWindowStoped() == True):
+            raise QuitRequestException("User has pressed escape.")
 #        for event in pygame.event.get():
 #            if event.type is pygame.QUIT:
 #                raise QuitRequestException("User has closed window.")
@@ -208,11 +210,11 @@ class QuitRequestException(Exception):
         return repr(self.value)
 
 if __name__ in ('__android__', '__main__'):
-    global internalResolutionX
-    global internalResolutionY
-    global fullscreenMode
-    global positionX
-    global positionY
+#    global internalResolutionX
+#    global internalResolutionY
+#    global fullscreenMode
+#    global positionX
+#    global positionY
     multiprocessing.freeze_support()
 
     playerConfiguration = PlayerConfiguration()

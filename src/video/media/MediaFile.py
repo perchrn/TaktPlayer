@@ -18,14 +18,24 @@ try:
 except:
     freenect = None
 
-def createCvWindow(sizeX, sizeY, posX=-1, posY=-1):
-    cv.NamedWindow("DEBUG window", cv.CV_WINDOW_NORMAL)
-    cv.ResizeWindow("DEBUG window", sizeX, sizeY)
-    if(posX >= 0 and posY >=0):
-        cv.MoveWindow("DEBUG window", posX, posY)
+windowName = "TAKT Player"
+def createCvWindow(fullScreenMode, sizeX, sizeY, posX=-1, posY=-1):
+    if(fullScreenMode == "off"):
+        cv.NamedWindow(windowName, cv.CV_WINDOW_NORMAL)
+        cv.ResizeWindow(windowName, sizeX, sizeY)
+        if(posX >= 0 and posY >=0):
+            cv.MoveWindow(windowName, posX, posY)
+    else:
+        cv.NamedWindow(windowName, cv.CV_WINDOW_FULLSCREEN)
 
 def showCvImage(image):
-    cv.ShowImage("DEBUG window", image)
+    cv.ShowImage(windowName, image)
+
+def hasCvWindowStoped():
+    k = cv.WaitKey(1);
+    if k == 27: #Escape
+        return True
+    return False
 
 def copyImage(image):
     if(type(image) is cv.cvmat):

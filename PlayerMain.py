@@ -262,6 +262,10 @@ if __name__ in ('__android__', '__main__'):
         print "Stopping player... (" + str(quitRequest) + ")"
         mainApp.stop()
         print "Player stopped! (" + str(quitRequest) + ")"
+    except KeyboardInterrupt, keyboardInterrupt:
+        print "Stopping player... (Keyboard Interrupt.)"
+        mainApp.stop()
+        print "Player stopped! (Keyboard Interrupt.)"
     except:
         mainApp.stop()
         raise

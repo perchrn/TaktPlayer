@@ -6,3 +6,4 @@ config/ImageMaskTest.cfg
 TaktPlayerGui.log.old
 TaktPlayerGui.log
 *.pyc
+pythonExtra

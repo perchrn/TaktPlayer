@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHONPATH=src:gui:$PYTHONPATH
+PYTHONPATH=src:gui:pythonExtra:$PYTHONPATH
 export PYTHONPATH
 
-kivy PlayerMain.py --config DEFAULT:playerOnly:0
+/opt/local/bin/python PlayerMain.py --config DEFAULT:playerOnly:0

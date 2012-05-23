@@ -18,8 +18,11 @@ try:
 except:
     freenect = None
 
-def createCvWindow():
-    cv.NamedWindow("DEBUG window", cv.CV_WINDOW_NORMAL) 
+def createCvWindow(sizeX, sizeY, posX=-1, posY=-1):
+    cv.NamedWindow("DEBUG window", cv.CV_WINDOW_NORMAL)
+    cv.ResizeWindow("DEBUG window", sizeX, sizeY)
+    if(posX >= 0 and posY >=0):
+        cv.MoveWindow("DEBUG window", posX, posY)
 
 def showCvImage(image):
     cv.ShowImage("DEBUG window", image)

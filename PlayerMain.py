@@ -4,7 +4,7 @@ Created on 28. nov. 2011
 @author: pcn
 '''
 
-#Kivy imports
+#Imports
 import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList
 from configuration.GuiServer import GuiServer
@@ -12,7 +12,6 @@ import multiprocessing
 from multiprocessing import Process, Queue
 from configuration.PlayerConfiguration import PlayerConfiguration
 import sys
-import pygame
 
 #pcn stuff
 from configuration.ConfigurationHolder import ConfigurationHolder
@@ -37,10 +36,14 @@ logging.root.setLevel(logging.ERROR)
 
 internalResolutionX = 800
 internalResolutionY = 600
+fullscreenMode = "off"
+positionX = -1
+positionY = -1
+launchGUI = True
 
 class PlayerMain(object):
     def __init__(self):
-        pygame.init()
+#        pygame.init()
 
         #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -55,14 +58,7 @@ class PlayerMain(object):
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
-        createCvWindow()
-        extraSize = 100
-        self._pygameDisplaySize = self._internalResolutionX + extraSize, self._internalResolutionY +  extraSize
-        self._pygameDisplay = pygame.display.set_mode(self._pygameDisplaySize)#, pygame.DOUBLEBUF | pygame.OPENGL)
-        self._pygameDisplay.fill((0,0,0))
-        self._pygameVideoSurface = pygame.Surface((self._internalResolutionX, self._internalResolutionY))
-        self._pygameVideoRectangle = pygame.Rect(extraSize/2, extraSize/2, self._internalResolutionX, self._internalResolutionY)
-        self._pygameClock = pygame.time.Clock()
+        createCvWindow(fullscreenMode, self._internalResolutionX, self._internalResolutionY, positionX, positionY)
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
@@ -94,14 +90,11 @@ class PlayerMain(object):
             self._midiStateHolder.noteOff(0, startNote, 0x40, (True, 0.000000001))
 
         self._guiProcess = None
-        self._playerOnlyMode = False
-#        if(Config.getint("DEFAULT", "playerOnly") == 1):
-#            self._playerOnlyMode = True
-#        if(self._playerOnlyMode == False):
-        print "*-*-*" * 30
-        print "Start GUI process!"
-        self._startGUIProcess()
-        print "*-*-*" * 30
+        if(launchGUI == True):
+            print "*-*-*-" * 30
+            print "Start GUI process!"
+            self._startGUIProcess()
+            print "*-*-*-" * 30
 
         print self._configurationTree.getConfigurationXMLString()
 
@@ -130,7 +123,6 @@ class PlayerMain(object):
 
     def _startGUIProcess(self):
         self._log.debug("Starting GUI Process")
-        print "DEBUG PATH?: os.environ[\"PATH\"] " + str(os.environ["PATH"])
         from configurationGui.GuiMainWindow import startGui
         self._commandQueue = Queue(10)
         self._statusQueue = Queue(-1)
@@ -181,7 +173,7 @@ class PlayerMain(object):
         if(updateConfig == True):
             self._configCheckCounter = self._configCheckEveryNRound + 1
 
-        #Render frame to pygame.
+        #Show frame:
         mixedImage = self._mediaMixer.getImage()
         showCvImage(mixedImage)
 #        print "DEBUG imageArray: " + str(type(imageArray)) + " array: " + str(imageArray)
@@ -193,16 +185,15 @@ class PlayerMain(object):
         guiStatus = self._checkStatusQueue()
         if(guiStatus == "QUIT"):
             raise QuitRequestException("User has closed GUI window.")
-        for event in pygame.event.get():
-            if event.type is pygame.QUIT:
-                raise QuitRequestException("User has closed window.")
-            if event.type is pygame.KEYDOWN:
-                if event.key is pygame.K_ESCAPE:
-                    raise QuitRequestException("User pressed escape.")
+#        for event in pygame.event.get():
+#            if event.type is pygame.QUIT:
+#                raise QuitRequestException("User has closed window.")
+#            if event.type is pygame.KEYDOWN:
+#                if event.key is pygame.K_ESCAPE:
+#                    raise QuitRequestException("User pressed escape.")
 
         #Sleep until next frame is needed...
-        self._pygameClock.tick(60)
-        pygame.display.flip()
+#        self._pygameClock.tick(60)
 
 #            timeUsed = time.time() - timeStamp
 #            if((timeUsed / self._lastDelta) > 0.9):
@@ -217,50 +208,49 @@ class QuitRequestException(Exception):
         return repr(self.value)
 
 if __name__ in ('__android__', '__main__'):
+    global internalResolutionX
+    global internalResolutionY
+    global fullscreenMode
+    global positionX
+    global positionY
     multiprocessing.freeze_support()
 
     playerConfiguration = PlayerConfiguration()
     internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
     fullscreenMode = playerConfiguration.getFullscreenMode()
 
+    launchGUI = True
+    for i in range(len(sys.argv) - 1):
+        if(sys.argv[i+1].lower() == "--nogui"):
+            launchGUI = False
     if(sys.platform == "win32"):
         from win32api import GetSystemMetrics #@UnresolvedImport
         currentWidth = GetSystemMetrics (0)
         currentHeight = GetSystemMetrics (1)
     elif(sys.platform == "darwin"):
-        import AppKit #@UnresolvedImport
-        screen = AppKit.NSScreen.screens()[0]
-        currentWidth = screen.frame().size.width
-        currentHeight = screen.frame().size.height
+        launchGUI = False
+        if(fullscreenMode == "auto"):
+            fullscreenMode = "on"
+#        import AppKit #@UnresolvedImport
+#        screen = Appkit.NSScreen.screens()[0]
+#        currentWidth = screen.frame().size.width
+#        currentHeight = screen.frame().size.height
     else:
         print "do xrandr | grep '*' and parse to get resolution on linux etc..."
     if(fullscreenMode == "auto"):
         internalResolutionX = currentWidth
         internalResolutionY = currentHeight
-#        Config.set('graphics', 'fullscreen', "auto")
-#        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
-#    elif(fullscreenMode == "on"):
-#        Config.set('graphics', 'width', str(internalResolutionX))
-#        Config.set('graphics', 'height', str(internalResolutionY))
-#        Config.set('graphics', 'fullscreen', "auto")
-#        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
-#    else:
-#        windowWidth = min(currentWidth, (internalResolutionX + 100))
-#        windowHeight = min(currentHeight, (internalResolutionY + 100))
-#        Config.set('graphics', 'width', str(windowWidth))
-#        Config.set('graphics', 'height', str(windowHeight))
-#        Config.set('graphics', 'fullscreen', "0")
-#        autoMode = playerConfiguration.isAutoPositionEnabled()
-#        if(autoMode == True):
-#            Config.set('graphics', 'position', "auto")
-#        else:
-#            positionX, postionY = playerConfiguration.getPosition()
-#            Config.set('graphics', 'position', "custom")
-#            Config.set('graphics', 'left', str(positionX))
-#            Config.set('graphics', 'top', str(postionY))
-#            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
-#        print "Startup windowed: Width: " + str(windowWidth) + " Height: " + str(windowHeight)
-#    Config.write()
+        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
+    elif(fullscreenMode == "on"):
+        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
+    else:
+        autoMode = playerConfiguration.isAutoPositionEnabled()
+        if(autoMode == False):
+            positionX, postionY = (-1, -1)
+        else:
+            positionX, postionY = playerConfiguration.getPosition()
+            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
+        print "Startup windowed: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionX)
 
     mainApp = PlayerMain()
     try:
@@ -273,14 +263,3 @@ if __name__ in ('__android__', '__main__'):
     except:
         mainApp.stop()
         raise
-#    try:
-#        mainApp = PlayerMain()
-#        Clock.schedule_interval(mainApp.getNextFrame, 0)
-##        Clock.schedule_interval(mainApp.frameReady, -1)
-#        signal.signal(signal.SIGINT, mainApp.stopProcess)
-#        mainApp.run()
-#    except:
-#        mainApp.stopProcess()
-#        raise
-#    print "Exiting MAIN XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
-#    mainApp.stopProcess()

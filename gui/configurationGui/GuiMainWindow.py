@@ -24,6 +24,7 @@ from midi.TcpMidiListner import TcpMidiListner
 from midi.MidiTiming import MidiTiming
 from midi.MidiStateHolder import DummyMidiStateHolder
 import shutil
+import sys
 
 APP_NAME = "TaktPlayerGui"
 
@@ -1072,8 +1073,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _onShutdownTimer(self, event):
         if(self._guiClient.hasGuiClientProcessToShutdownNicely() and self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
             print "All done."
-            self.Destroy()
+            if(sys.platform != "darwin"):
+                self.Destroy()
+            print "DEBUG destroyd :-P"
             wx.Exit() #@UndefinedVariable
+            print "DEBUG WX exited :-P"
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):
@@ -1081,7 +1085,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     self._guiClient.forceGuiClientProcessToStop()
                 if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
                     self._midiListner.forceTcpMidiListnerProcessToStop()
-                self.Destroy()
+                if(sys.platform != "darwin"):
+                    self.Destroy()
                 wx.Exit() #@UndefinedVariable
 
 

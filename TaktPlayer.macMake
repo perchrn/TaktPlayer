@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -rf build dist setup.py
+
 PYTHONPATH=src:gui:pythonExtra:$PYTHONPATH
 export PYTHONPATH
 
@@ -8,7 +10,15 @@ export PATH
 
 which python
 
-arch -i386 py2applet-2.7 --arch=i386 --make-setup PlayerMain.py
+ln -s PlayerMain.py TaktPlayer.py
+arch -i386 py2applet-2.7 --arch=i386 --iconfile=graphics/TaktPlayer.icns --make-setup TaktPlayer.py
 
-arch -i386 /opt/local/bin/python setup.py py2app --includes ntpath --resources config,graphics,guiThumbs,testFiles
+if [ -d thumbs ] ; then
+    :
+else
+    mkdir thumbs
+fi
+rm thumbs/*
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config,thumbs,testFiles
 
+rm TaktPlayer.py

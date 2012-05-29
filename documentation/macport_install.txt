@@ -10,3 +10,4 @@ install ports:
 sudo port install opencv +pyton27
 sudo port install py27-wxpython
 sudo port install py27-py2app
+sudo port install py27-pil

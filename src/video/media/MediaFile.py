@@ -427,6 +427,9 @@ class MediaFile(object):
                 print "Thumb file does not exist. Generating... " + thumbnailName
                 destWidth, destHeight = (40, 30)
                 resizeMat = createMat(destWidth, destHeight)
+                print "DEBUG type " + self.getType() + " img type: " + str(type(image)) + " mat type: " + str(type(resizeMat))
+                if(image == None):
+                    print "DEBUG IMAGE == NONE for faen!"
                 scaleAndSave(image, osFileName, resizeMat)
             else:
                 print "Thumb file already exist. " + thumbnailName
@@ -593,6 +596,7 @@ class CameraInput(MediaFile):
             except:
                 self._log.warning("Exception while getting number of frames per second from: %d" % (self._cameraId))
                 raise MediaError("Camera with ID: %d caused exception!" %(self._cameraId))
+        self._firstImage = self._captureImage
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
@@ -714,6 +718,7 @@ class KinectCameraInput(MediaFile):
             self._log.warning("Could not read frames from camera with ID: %d" % (self._cameraId))
             print "Could not read frames from camera with ID: %d" % (self._cameraId)
             raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
+        self._firstImage = self._captureImage
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 

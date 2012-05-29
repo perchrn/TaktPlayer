@@ -3,5 +3,5 @@
 PYTHONPATH=src:gui:pythonExtra:$PYTHONPATH
 export PYTHONPATH
 
-/opt/local/bin/python GuiMain.py --debug
+arch -i386 /opt/local/bin/python GuiMain.py --debug
 

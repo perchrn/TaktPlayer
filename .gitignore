@@ -5,5 +5,8 @@ config/PlayerConfig.cfg
 config/ImageMaskTest.cfg
 TaktPlayerGui.log.old
 TaktPlayerGui.log
+/pythonExtra
+/build
+/dist
+.DS_Store
 *.pyc
-pythonExtra

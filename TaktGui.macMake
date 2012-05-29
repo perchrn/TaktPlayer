@@ -1,0 +1,14 @@
+#!/bin/bash
+
+PYTHONPATH=src:gui:pythonExtra:$PYTHONPATH
+export PYTHONPATH
+
+PATH=/opt/local/bin:$PATH
+export PATH
+
+which python
+
+arch -i386 py2applet-2.7 --arch=i386 --make-setup GuiMain.py
+
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config,graphics,guiThumbs,testFiles
+

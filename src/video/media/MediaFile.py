@@ -600,17 +600,24 @@ class KinectCameraInput(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
-        self._getConfiguration()
+        self._blackFilterModulationId = -1
+        self._diffFilterModulationId = -1
+        self._erodeFilterModulationId = -1
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
+        self._midiModulation.setModulationReceiver("BlackFilterModulation", "None")
+        self._midiModulation.setModulationReceiver("DiffFilterModulation", "None")
+        self._midiModulation.setModulationReceiver("ErodeFilterModulation", "None")
         self._firstTrigger = True
-        self._kinectMode = KinectMode.DepthMask
+        self._kinectModesHolder = KinectMode()
+        self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        kinectMode = self._configurationTree.getValue("KinectMode")
-        if(kinectMode == "DepthMask"):
-            self._kinectMode = KinectMode.DepthMask
-        elif(kinectMode == "DepthImage"):
-            self._kinectMode = KinectMode.DepthImage
+        self._modeModulationId = self._midiModulation.connectModulation("DisplayModeModulation")
+        self._blackFilterModulationId = self._midiModulation.connectModulation("BlackFilterModulation")
+        self._diffFilterModulationId = self._midiModulation.connectModulation("DiffFilterModulation")
+        self._erodeFilterModulationId = self._midiModulation.connectModulation("ErodeFilterModulation")
 
     def getType(self):
         return "KinectCamera"
@@ -621,19 +628,26 @@ class KinectCameraInput(MediaFile):
     def restartSequence(self):
         self._firstTrigger = True
 
+    def findKinectMode(self, currentSongPosition, midiNoteState, midiChannelState):
+        value = self._midiModulation.getModlulationValue(self._modeModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        maxValue = len(self._kinectModesHolder.getChoices()) * 0.99999999
+        modeSelected = int(value*maxValue)
+        return modeSelected
+
     def setStartPosition(self, startSpp):
         if(self._firstTrigger == True):
             self._firstTrigger = False
             if(freenect != None):
                 pass
-            #TODO: Recalibrate on trigger?
-#            depthArray, _ = freenect.sync_get_depth()
-#            depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
-#            resizeImage(depthCapture, self._tmpMat1)
-#            self._startDepthMat = cv.CloneMat(self._tmpMat1)
-#            cv.CmpS(self._tmpMat1, 20, self._tmpMat2, cv.CV_CMP_LE)
-#            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
-#            cv.Smooth(self._tmpMat1, self._startDepthMat, cv.CV_BLUR, 3, 3)
+
+    def getBlackFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
+        return self._midiModulation.getModlulationValue(self._blackFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+
+    def getDifferenceFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
+        return self._midiModulation.getModlulationValue(self._diffFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+
+    def getErodeFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
+        return self._midiModulation.getModlulationValue(self._erodeFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         if(freenect == None):
@@ -643,16 +657,36 @@ class KinectCameraInput(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-        depthArray, _ = freenect.sync_get_depth()
+#        depthArray, _ = freenect.sync_get_depth()
+        depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+#        rgbImage, _ = freenect.sync_get_video()
+#        rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
+#        resizeImage(rgbCapture, self._tmpRgb)
+#        self._captureImage = self._tmpRgb
+#        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+#        return False
         depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
         resizeImage(depthCapture, self._tmpMat1)
-        if(self._kinectMode == KinectMode.DepthMask):
-            cv.AddS(self._tmpMat1, 20, self._tmpMat2)
-            cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
-            cv.Smooth(self._tmpMat1, self._tmpMat2, cv.CV_BLUR, 3, 3)
-            cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
-        elif(self._kinectMode == KinectMode.DepthImage): #TODO: kincetmodes + split to own class and fix import ;-)
+        kinectMode = self.findKinectMode(currentSongPosition, midiNoteState, midiChannelState)
+        if(kinectMode == KinectMode.DepthImage):
             cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
+        elif(kinectMode == KinectMode.DepthMask):
+            cv.CmpS(self._tmpMat1, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
+            cv.AddS(self._tmpMat1, 5 + (35 * self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2)
+            cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
+            erodeIttrations = int(10 * self.getErodeFilterModulation(currentSongPosition, midiNoteState, midiChannelState))
+            if(erodeIttrations > 0):
+                cv.Erode(self._tmpMat1, self._tmpMat2, None, erodeIttrations)
+                cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
+            else:
+                cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
+        elif(kinectMode == KinectMode.Reset):
+            self._startDepthMat = cv.CloneMat(self._tmpMat1)
+            cv.CmpS(self._tmpMat1, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.Add(self._tmpMat1, self._tmpMat2, self._startDepthMat)
+            cv.Merge(self._startDepthMat, self._tmpMat1, self._tmpMat2, None, self._captureImage)
+
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
@@ -666,11 +700,11 @@ class KinectCameraInput(MediaFile):
             depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
             self._tmpMat1 = createMask(self._internalResolutionX, self._internalResolutionY)
             self._tmpMat2 = createMask(self._internalResolutionX, self._internalResolutionY)
+            self._tmpRgb = createMat(self._internalResolutionX, self._internalResolutionY)
             resizeImage(depthCapture, self._tmpMat1)
             self._startDepthMat = cv.CloneMat(self._tmpMat1)
             cv.CmpS(self._tmpMat1, 20, self._tmpMat2, cv.CV_CMP_LE)
-            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
-            cv.Smooth(self._tmpMat1, self._startDepthMat, cv.CV_BLUR, 3, 3)
+            cv.Add(self._tmpMat1, self._tmpMat2, self._startDepthMat)
             self._captureImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         except:
             self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))

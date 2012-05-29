@@ -746,14 +746,16 @@ class EdgeEffect(object):
                 return image
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
-            if(edgeMode == EdgeModes.CannyOnTop):
-                storage = cv.CreateMemStorage(0)
-                contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
-                cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 3)
-                return image
-            else: # Canny
-                cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
-                return self._colorMat
+#            if(edgeMode == EdgeModes.CannyOnTop):
+            storage = cv.CreateMemStorage(0)
+            if(edgeMode == EdgeModes.Canny):
+                cv.SetZero(image)
+            contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
+            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, 6)
+            return image
+#            else: # Canny
+#                cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
+#                return self._colorMat
         else:
             if(edgeMode == EdgeModes.Sobel):
                 mode = int(value * 3.99)

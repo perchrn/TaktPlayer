@@ -86,10 +86,10 @@ class ImageSequenceMode:
         return self.getChoices()[0]
 
 class KinectMode:
-    DepthMask, DepthImage = range(2)
+    DepthImage, DepthMask, DepthThreshold, Reset = range(4)
 
     def getChoices(self):
-        return ["DepthMask", "DepthImage"]
+        return ["DepthImage", "DepthMask", "DepthThreshold", "Reset"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

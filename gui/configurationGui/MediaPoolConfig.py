@@ -153,6 +153,11 @@ class MediaFile(object):
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlayBackModulation", "None")
+        elif(mediaType == "KinectCamera"):
+            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
+            self._configurationTree.addTextParameter("BlackFilterModulation", "None")
+            self._configurationTree.addTextParameter("DiffFilterModulation", "None")
+            self._configurationTree.addTextParameter("ErodeFilterModulation", "None")
         if(xmlConfig != None):
             self._configurationTree._updateFromXml(xmlConfig)
 
@@ -168,13 +173,17 @@ class MediaFile(object):
             self._configurationTree.removeParameter("PlayBackModulation")
         else:
             oldType = self._configurationTree.getValue("Type")
-            if((oldType == "Image") or (oldType == "Camera")):
+            if((oldType == "Image") or (oldType == "Camera") or (oldType == "KinectCamera")):
                 self._configurationTree.setValue("Type", "VideoLoop")
                 oldloopMode = self._configurationTree.getValue("LoopMode")
                 if(oldloopMode == None):
                     self._configurationTree.setValue("LoopMode", "Normal")
                 self._configurationTree.removeParameter("SequenceMode")
                 self._configurationTree.removeParameter("PlayBackModulation")
+                self._configurationTree.removeParameter("DisplayModeModulation")
+                self._configurationTree.removeParameter("BlackFilterModulation")
+                self._configurationTree.removeParameter("DiffFilterModulation")
+                self._configurationTree.removeParameter("ErodeFilterModulation")
 
     def getMixMode(self):
         return self._configurationTree.getValue("MixMode")
@@ -212,6 +221,25 @@ class MediaFile(object):
         else:
             self._configurationTree.removeParameter("SequenceMode")
             self._configurationTree.removeParameter("PlayBackModulation")
+
+        if(mediaType == "KinectCamera"):
+            tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("DisplayModeModulation", tmpModulation)
+            tmpModulation = sourceConfigTree.getValue("BlackFilterModulation")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("BlackFilterModulation", tmpModulation)
+            tmpModulation = sourceConfigTree.getValue("DiffFilterModulation")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("DiffFilterModulation", tmpModulation)
+            tmpModulation = sourceConfigTree.getValue("ErodeFilterModulation")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("ErodeFilterModulation", tmpModulation)
+        else:
+            self._configurationTree.removeParameter("DisplayModeModulation")
+            self._configurationTree.removeParameter("BlackFilterModulation")
+            self._configurationTree.removeParameter("DiffFilterModulation")
+            self._configurationTree.removeParameter("ErodeFilterModulation")
         
     def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):
         returnNumber = 0
@@ -506,6 +534,45 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._filter1ModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._filter1ModulationLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Black filter modulation:") #@UndefinedVariable
+        self._filter1ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._filter1ModulationField.SetInsertionPoint(0)
+        self._filter1ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._filter1ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter1Edit, id=self._filter1ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter1ModulationSizer.Add(self._filter1ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._filter1ModulationSizer.Add(self._filter1ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._filter1ModulationSizer.Add(self._filter1ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._filter1ModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._filter2ModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._filter2ModulationLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Diff filter modulation:") #@UndefinedVariable
+        self._filter2ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._filter2ModulationField.SetInsertionPoint(0)
+        self._filter2ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._filter2ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter2Edit, id=self._filter2ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter2ModulationSizer.Add(self._filter2ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._filter2ModulationSizer.Add(self._filter2ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._filter2ModulationSizer.Add(self._filter2ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._filter2ModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._filter3ModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._filter3ModulationLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Erode filter modulation:") #@UndefinedVariable
+        self._filter3ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._filter3ModulationField.SetInsertionPoint(0)
+        self._filter3ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._filter3ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
+        self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter3Edit, id=self._filter3ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter3ModulationSizer.Add(self._filter3ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._filter3ModulationSizer.Add(self._filter3ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._filter3ModulationSizer.Add(self._filter3ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._filter3ModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         self._midiNote = 24
         noteSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText3 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Note:") #@UndefinedVariable
@@ -759,7 +826,7 @@ class MediaFileGui(object): #@UndefinedVariable
         #TODO: Track selection clear callback
 
     class EditSelection():
-        Unselected, Effect1, Effect2, Fade, ImageSeqModulation = range(5)
+        Unselected, Effect1, Effect2, Fade, ImageSeqModulation, Filter1Modulation, Filter2Modulation, Filter3Modulation = range(8)
 
     def _onOpenFile(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -850,7 +917,35 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
 
-        print "Sub modulation Edit..."
+    def _onFilter1Edit(self, event):
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._selectedEditor = self.EditSelection.Filter1Modulation
+        self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+        self._mainConfig.updateModulationGui(self._filter1ModulationField.GetValue(), self._filter1ModulationField, None, None)
+
+    def _onFilter2Edit(self, event):
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._selectedEditor = self.EditSelection.Filter2Modulation
+        self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+        self._mainConfig.updateModulationGui(self._filter2ModulationField.GetValue(), self._filter2ModulationField, None, None)
+
+    def _onFilter3Edit(self, event):
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Show(self._moulationConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._selectedEditor = self.EditSelection.Filter3Modulation
+        self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+        self._mainConfig.updateModulationGui(self._filter3ModulationField.GetValue(), self._filter3ModulationField, None, None)
 
     def _onMixHelp(self, event):
         text = """
@@ -945,6 +1040,18 @@ All notes on events are quantized to this.
             self._subModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
         else:
             self._subModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        if(selected == self.EditSelection.Filter1Modulation):
+            self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+        else:
+            self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        if(selected == self.EditSelection.Filter2Modulation):
+            self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+        else:
+            self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        if(selected == self.EditSelection.Filter3Modulation):
+            self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+        else:
+            self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         if(selected == self.EditSelection.Effect1):
             self._effect1Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
         else:
@@ -1118,6 +1225,28 @@ All notes on events are quantized to this.
                 self._config.removeParameter("LoopMode")
                 self._config.removeParameter("SequenceMode")
                 self._config.removeParameter("PlayBackModulation")
+            if(self._type == "KinectCamera"):
+                modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                self._subModulationField.SetValue(modeModulation)
+                self._config.addTextParameter("DisplayModeModulation", "None")
+                self._config.setValue("DisplayModeModulation", modeModulation)
+                filterModulation = self._midiModulation.validateModulationString(self._filter1ModulationField.GetValue())
+                self._filter1ModulationField.SetValue(filterModulation)
+                self._config.addTextParameter("BlackFilterModulation", "None")
+                self._config.setValue("BlackFilterModulation", filterModulation)
+                filterModulation = self._midiModulation.validateModulationString(self._filter2ModulationField.GetValue())
+                self._filter2ModulationField.SetValue(filterModulation)
+                self._config.addTextParameter("DiffFilterModulation", "None")
+                self._config.setValue("DiffFilterModulation", filterModulation)
+                filterModulation = self._midiModulation.validateModulationString(self._filter3ModulationField.GetValue())
+                self._filter3ModulationField.SetValue(filterModulation)
+                self._config.addTextParameter("ErodeFilterModulation", "None")
+                self._config.setValue("ErodeFilterModulation", filterModulation)
+            else:
+                self._config.removeParameter("DisplayModeModulation")
+                self._config.removeParameter("BlackFilterModulation")
+                self._config.removeParameter("DiffFilterModulation")
+                self._config.removeParameter("ErodeFilterModulation")
             self._onSyncValidate(event)
             syncLength = self._syncField.GetValue()
             self._config.setValue("SyncLength", syncLength)
@@ -1166,12 +1295,25 @@ All notes on events are quantized to this.
         elif(self._type == "ImageSequence"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._showOrHideSubModeModulation()
+        elif(self._type == "KinectCamera"):
+            self._noteConfigSizer.Hide(self._subModeSizer)
+            self._noteConfigSizer.Show(self._subModulationSizer)
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+        if(self._type == "KinectCamera"):
+            self._noteConfigSizer.Show(self._filter1ModulationSizer)
+            self._noteConfigSizer.Show(self._filter2ModulationSizer)
+            self._noteConfigSizer.Show(self._filter3ModulationSizer)
+        else:
+            self._noteConfigSizer.Hide(self._filter1ModulationSizer)
+            self._noteConfigSizer.Hide(self._filter2ModulationSizer)
+            self._noteConfigSizer.Hide(self._filter3ModulationSizer)
         if(self._type == "Image"):
             self._noteConfigSizer.Hide(self._syncSizer)
         elif(self._type == "Camera"):
+            self._noteConfigSizer.Hide(self._syncSizer)
+        elif(self._type == "KinectCamera"):
             self._noteConfigSizer.Hide(self._syncSizer)
         else:
             self._noteConfigSizer.Show(self._syncSizer)
@@ -1633,6 +1775,23 @@ All notes on events are quantized to this.
                 return True
             guiSubMode = self._subModulationField.GetValue()
             configSubMode = self._config.getValue("PlayBackModulation")
+            if(guiSubMode != configSubMode):
+                return True
+        if(self._type == "KinectCamera"):
+            guiSubMode = self._subModulationField.GetValue()
+            configSubMode = self._config.getValue("DisplayModeModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._filter1ModulationField.GetValue()
+            configSubMode = self._config.getValue("BlackFilterModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._filter2ModulationField.GetValue()
+            configSubMode = self._config.getValue("DiffFilterModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._filter3ModulationField.GetValue()
+            configSubMode = self._config.getValue("ErodeFilterModulation")
             if(guiSubMode != configSubMode):
                 return True
         guiSyncLength = float(self._syncField.GetValue())

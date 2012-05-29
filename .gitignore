@@ -9,4 +9,5 @@ TaktPlayerGui.log
 /build
 /dist
 .DS_Store
+setup.py
 *.pyc

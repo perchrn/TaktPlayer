@@ -1,0 +1,12 @@
+install macports
+
+set build_arch i386 in /opt/local/etc/macports/macports.cfg
+library header size trick (mach-o problem) ? Nessesary ?
+
+uninstall all ports:
+sudo port -f uninstall installed
+
+install ports:
+sudo port install opencv +pyton27
+sudo port install py27-wxpython
+sudo port install py27-py2app

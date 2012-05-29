@@ -5,7 +5,6 @@ Created on 28. nov. 2011
 '''
 
 #Imports
-import os
 from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList
 from configuration.GuiServer import GuiServer
 import multiprocessing

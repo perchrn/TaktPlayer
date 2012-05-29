@@ -427,9 +427,8 @@ class MediaFile(object):
                 print "Thumb file does not exist. Generating... " + thumbnailName
                 destWidth, destHeight = (40, 30)
                 resizeMat = createMat(destWidth, destHeight)
-                print "DEBUG type " + self.getType() + " img type: " + str(type(image)) + " mat type: " + str(type(resizeMat))
                 if(image == None):
-                    print "DEBUG IMAGE == NONE for faen!"
+                    print "Error! thumbnail image == None for " + self.getType() + "!"
                 scaleAndSave(image, osFileName, resizeMat)
             else:
                 print "Thumb file already exist. " + thumbnailName

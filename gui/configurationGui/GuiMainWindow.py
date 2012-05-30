@@ -361,13 +361,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.requestActiveNoteList()
         activeNotesTask.setState(TaskHolder.States.Sendt)
 
-    def _findQueuedTask(self, taskType, uniqueId = None):
+    def _findQueuedTask(self, taskType, uniqueId = None, deleteDuplicates = True):
         foundTask = None
         for task in self._taskQueue:
             if(task.getType() == taskType):
                 if((uniqueId == None) or (task.getUniqueId() == uniqueId)):
                     if(foundTask != None):
-                        self._taskQueue.remove(task)
+                        if(deleteDuplicates == True):
+                            self._taskQueue.remove(task)
                     else:
                         foundTask = task
         return foundTask
@@ -410,7 +411,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             foundTask.taskDone()
                             self._taskQueue.remove(foundTask)
                     else:
-                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, playerFileName)
+                        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, playerFileName, False)
                         if(foundTask == None):
                             print "Could not find task that belongs to this answer: " + playerFileName
                         else:
@@ -441,11 +442,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             needFile = True
                             if(os.path.isfile(osFileName)):
                                 if(self._noteWidgets[noteId].setBitmapFile(osFileName) == True):
-                                    if((self._activeNoteId >= 0) and (self._activeNoteId < 128)):
+                                    needFile = False
+                                    if((self._activeNoteId >= 0) and (self._activeNoteId < 128) and(noteId == self._activeNoteId)):
                                         noteWidget = self._noteWidgets[self._activeNoteId]
                                         noteBitmap = noteWidget.getBitmap()
                                         self._noteGui.updateOverviewClipBitmap(noteBitmap)
-                                        needFile = False
                             if(needFile == True):
                                 fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
                                 self._taskQueue.append(fileRequestTask)
@@ -722,7 +723,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         positionText = "%5d:%d.%02d" %(bar, beat, subbeat)
         self._timingField.SetValue(positionText)
         bpm = int(self._midiTiming.getBpm() + 0.5)
-        self._bpmField.SetValue(str(bpm))#TODO: tsting 1 2
+        self._bpmField.SetValue(str(bpm))
 
     def getLatestControllers(self):
         return self._latestControllersRequestResult
@@ -1075,9 +1076,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             print "All done."
             if(sys.platform != "darwin"):
                 self.Destroy()
-            print "DEBUG destroyd :-P"
             wx.Exit() #@UndefinedVariable
-            print "DEBUG WX exited :-P"
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):

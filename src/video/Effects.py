@@ -512,7 +512,7 @@ class BluredContrastEffect(object):
         xSize = 2 + int(value * 8)
         ySize = 2 + int(value * 6)
         cv.Smooth(image, self._blurMat1, cv.CV_BLUR, xSize, ySize)
-        cv.Mul(image, self._blurMat1, self._blurMat2, 0.004)
+        cv.Mul(image, self._blurMat1, self._blurMat2, 0.005)
         return self._blurMat2
 
 class FeedbackEffect(object):

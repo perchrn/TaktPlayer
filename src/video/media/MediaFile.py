@@ -599,6 +599,77 @@ class CameraInput(MediaFile):
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
+class KinectCameras(object):
+    def __init__(self):
+        self._depthTimeStamp = -1.0
+        self._videoTimeStamp = -1.0
+        self._depthMask = None
+        self._videoImage = None
+        self._irMask = None
+        self._internalResolutionX = 800
+        self._internalResolutionY = 600
+
+    def openCamera(self, internalResolutionX, internalResolutionY):
+        if(freenect == None):
+            self._log.warning("Error while importing kinect!")
+            print "Error while importing kinect!"
+            return False # Failed to open kinect camera.
+        self._internalResolutionX = internalResolutionX
+        self._internalResolutionY = internalResolutionY
+        if((self._depthMask == None) and (self._videoImage == None)):
+            self._depthMask = createMask(self._internalResolutionX, self._internalResolutionY)
+            self._videoImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+            try:
+                depthArray, _ = freenect.sync_get_depth()
+                depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+                resizeImage(depthCapture, self._depthMask)
+    #            depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+                rgbImage, _ = freenect.sync_get_video()
+                rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
+                resizeImage(rgbCapture, self._videoImage)
+            except:
+                self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
+                print "Exception while opening camera with ID: %s" % (self._cameraId)
+                self._depthMask = None
+                self._videoImage = None
+                self._irMask = None
+                return False
+        return True
+
+    class KinectImageTypes():
+        Depth, RGB, IR = range(3)
+
+    def getFirstImage(self):
+        return self.getCameraImage(self.KinectImageTypes.Depth, None)
+
+    def getCameraImage(self, typeId, timeStamp):
+        if((self._depthMask == None) or (self._videoImage == None)):
+            return None
+        if((typeId == self.KinectImageTypes.RGB) or (typeId == self.KinectImageTypes.IR)):
+            if((timeStamp != None) and (self._videoTimeStamp != timeStamp)):
+                if(typeId == self.KinectImageTypes.IR):
+                    if(self._irMask == None):
+                        self._irMask = createMask(self._internalResolutionX, self._internalResolutionY)
+                    irArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+                    irCapture = cv.fromarray(irArray.astype(numpy.uint8))
+                    resizeImage(irCapture, self._irMask)
+                    cv.Merge(self._irMask, self._irMask, self._irMask, None, self._videoImage)
+                else: #RGB!
+                    rgbImage, _ = freenect.sync_get_video()
+                    rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
+                    resizeImage(rgbCapture, self._videoImage)
+                self._videoTimeStamp = timeStamp
+            return self._videoImage
+        else:
+            if((timeStamp != None) and (self._depthTimeStamp != timeStamp)):
+                depthArray, _ = freenect.sync_get_depth()
+                depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+                resizeImage(depthCapture, self._depthMask)
+                self._depthTimeStamp = timeStamp
+            return self._depthMask
+
+kinectCameras = KinectCameras()
+    
 class KinectCameraInput(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
@@ -660,22 +731,29 @@ class KinectCameraInput(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-#        depthArray, _ = freenect.sync_get_depth()
-        depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
-#        rgbImage, _ = freenect.sync_get_video()
-#        rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
-#        resizeImage(rgbCapture, self._tmpRgb)
-#        self._captureImage = self._tmpRgb
-#        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-#        return False
-        depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
-        resizeImage(depthCapture, self._tmpMat1)
+##        depthArray, _ = freenect.sync_get_depth()
+#        depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+##        rgbImage, _ = freenect.sync_get_video()
+##        rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
+##        resizeImage(rgbCapture, self._tmpRgb)
+##        self._captureImage = self._tmpRgb
+##        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+##        return False
+#        depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
+#        resizeImage(depthCapture, self._tmpMat1)
+
         kinectMode = self.findKinectMode(currentSongPosition, midiNoteState, midiChannelState)
-        if(kinectMode == KinectMode.DepthImage):
-            cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
+        if(kinectMode == KinectMode.RGBImage):
+            self._captureImage = copyImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.RGB, currentSongPosition))
+        elif(kinectMode == KinectMode.IRImage):
+            self._captureImage = copyImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.IR, currentSongPosition))
+        elif(kinectMode == KinectMode.DepthImage):
+            depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
+            cv.Merge(depthImage, depthImage, depthImage, None, self._captureImage)
         elif(kinectMode == KinectMode.DepthMask):
-            cv.CmpS(self._tmpMat1, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
-            cv.Add(self._tmpMat1, self._tmpMat2, self._tmpMat1)
+            depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
+            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.Add(depthImage, self._tmpMat2, self._tmpMat1)
             cv.AddS(self._tmpMat1, 5 + (35 * self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2)
             cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
             erodeIttrations = int(10 * self.getErodeFilterModulation(currentSongPosition, midiNoteState, midiChannelState))
@@ -684,41 +762,43 @@ class KinectCameraInput(MediaFile):
                 cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
             else:
                 cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
-        elif(kinectMode == KinectMode.Reset):
-            self._startDepthMat = cv.CloneMat(self._tmpMat1)
-            cv.CmpS(self._tmpMat1, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
-            cv.Add(self._tmpMat1, self._tmpMat2, self._startDepthMat)
+        elif(kinectMode == KinectMode.DepthThreshold):
+            depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
+            darkFilterValue = 256 - int(self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
+            lightFilterValue = int(self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
+            cv.CmpS(depthImage, darkFilterValue, self._tmpMat1, cv.CV_CMP_LE)
+            cv.CmpS(depthImage, lightFilterValue, self._tmpMat2, cv.CV_CMP_GE)
+            cv.Mul(self._tmpMat1, self._tmpMat2, self._tmpMat1)
+            cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
+        else: # (kinectMode == KinectMode.Reset):
+            depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
+            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.Add(depthImage, self._tmpMat2, self._startDepthMat)
             cv.Merge(self._startDepthMat, self._tmpMat1, self._tmpMat2, None, self._captureImage)
 
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
     def openFile(self, midiLength):
-        if(freenect == None):
-            self._log.warning("Error while importing kinect!")
-            print "Error while importing kinect!"
-            raise MediaError("Kinect not installed correctly!")
-        try:
-            depthArray, _ = freenect.sync_get_depth()
-            depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
-            self._tmpMat1 = createMask(self._internalResolutionX, self._internalResolutionY)
-            self._tmpMat2 = createMask(self._internalResolutionX, self._internalResolutionY)
-            self._tmpRgb = createMat(self._internalResolutionX, self._internalResolutionY)
-            resizeImage(depthCapture, self._tmpMat1)
-            self._startDepthMat = cv.CloneMat(self._tmpMat1)
-            cv.CmpS(self._tmpMat1, 20, self._tmpMat2, cv.CV_CMP_LE)
-            cv.Add(self._tmpMat1, self._tmpMat2, self._startDepthMat)
-            self._captureImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
-        except:
-            self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
-            print "Exception while opening camera with ID: %s" % (self._cameraId)
+        openOk = kinectCameras.openCamera(self._internalResolutionX, self._internalResolutionY)
+        if(openOk == False):
+            self._log.warning("Error while opening kinect camera!")
+            print "Error while opening kinect camera!"
+            raise MediaError("Kinect not installed correctly?")
+        depthMat = kinectCameras.getFirstImage()
+        if(depthMat == None):
+            self._log.warning("Exception while getting first image from kinnect.")
+            print "Exception while getting first image from kinnect."
             raise MediaError("File caused exception!")
-        if (self._captureImage == None):
-            self._log.warning("Could not read frames from camera with ID: %d" % (self._cameraId))
-            print "Could not read frames from camera with ID: %d" % (self._cameraId)
-            raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
+        self._tmpMat1 = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMat2 = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._tmpRgb = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._startDepthMat = cv.CloneMat(depthMat)
+        cv.CmpS(depthMat, 20, self._tmpMat2, cv.CV_CMP_LE)
+        cv.Add(depthMat, self._tmpMat2, self._startDepthMat)
+        self._captureImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._firstImage = self._captureImage
-        self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
+        self._log.warning("Opened kinect camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):

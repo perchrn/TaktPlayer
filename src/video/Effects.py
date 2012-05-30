@@ -1149,7 +1149,9 @@ class ImageAddEffect(object):
 #class CurveEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
-#class MaskEffect(object): #Two list of masks and add images to select from ;-)
+#class BwToRainbowEffect(object): #Or value to hue effect.
+
+#class EnergyEffect(object): #Or difference from last (x?) frame(s) + feedback?
 
 #class SpriteImage(MediaFile):
 #class ScrollingImage(MediaFile):

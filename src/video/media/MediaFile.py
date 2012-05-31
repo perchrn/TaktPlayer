@@ -385,7 +385,6 @@ class MediaFile(object):
                 self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
                 print "Exception while reading: " + os.path.basename(self._cfgFileName)
                 raise MediaError("File caused exception!")
-        self._captureImage = self._firstImage
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength <= 0.0):
@@ -539,8 +538,57 @@ class VideoCaptureCameras(object):
 #            print "DEBUG: using buffered image!!!"
         return self._bufferdImages[cameraId]
 
+class OpenCvCameras(object):
+    def __init__(self):
+        self._cameraList = []
+        self._cameraTimeStamps = []
+        self._cameraFrameRates = []
+        self._bufferdImages = []
+        self._internalResolutionX = 800
+        self._internalResolutionY = 600
+
+    def openCamera(self, cameraId, internalResolutionX, internalResolutionY):
+        self._internalResolutionX = internalResolutionX
+        self._internalResolutionY = internalResolutionY
+        minNumCamearas = cameraId + 1
+        while(minNumCamearas > len(self._cameraList)):
+            self._cameraList.append(None)
+            self._cameraTimeStamps.append(-1.0)
+            self._cameraFrameRates.append(0.0)
+            blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+            self._bufferdImages.append(blankImage)
+        if(self._cameraList[cameraId] == None):
+            try:
+                self._cameraList[cameraId] = cv.CaptureFromCAM(cameraId)
+                self._bufferdImages[cameraId] = cv.QueryFrame(self._cameraList[cameraId])
+                self._cameraFrameRates[cameraId] = int(cv.GetCaptureProperty(self._cameraList[cameraId], cv.CV_CAP_PROP_FPS))
+            except:
+                return False # Failed to open camera id.
+        return True
+
+    def getFirstImage(self, cameraId):
+        return self.getCameraImage(cameraId, None)
+
+    def getFrameRate(self, cameraId):
+        return self._cameraFrameRates[cameraId]
+
+    def getCameraImage(self, cameraId, timeStamp):
+        if(self._cameraList[cameraId] == None):
+            return self._bufferdImages[cameraId]
+        minNumCamearas = cameraId + 1
+        if(minNumCamearas > len(self._cameraList)):
+            print "ERROR: Camera with id %d is not initialized! We only got %d number of cameras." %(minNumCamearas, len(self._cameraList))
+            return None
+        if((timeStamp != None) and (self._cameraTimeStamps[cameraId] != timeStamp)):
+            self._bufferdImages[cameraId] = cv.QueryFrame(self._cameraList[cameraId])
+            self._cameraTimeStamps[cameraId] = timeStamp
+#        else:
+#            print "DEBUG: using buffered image!!!"
+        return self._bufferdImages[cameraId]
+
 videoCaptureCameras = VideoCaptureCameras()
-    
+openCvCameras = OpenCvCameras()
+
 class CameraInput(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
@@ -564,7 +612,7 @@ class CameraInput(MediaFile):
             self._image = None
             return noteDone
         if(self._cameraMode == self.CameraModes.OpenCV):
-            self._captureImage = cv.QueryFrame(self._videoFile)
+            self._captureImage = openCvCameras.getCameraImage(self._cameraId, currentSongPosition)
         else:
             self._captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
@@ -572,13 +620,14 @@ class CameraInput(MediaFile):
 
     def openFile(self, midiLength):
         if(self._cameraMode == self.CameraModes.OpenCV):
-            self._videoFile = cv.CaptureFromCAM(self._cameraId)
+            if(openCvCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY) == False):
+                raise MediaError("Could not open OpenCV camera with ID: %d!" %(self._cameraId))
         else:
             if(videoCaptureCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY) == False):
                 raise MediaError("Could not open VideoCapture camera with ID: %d!" %(self._cameraId))
         try:
             if(self._cameraMode == self.CameraModes.OpenCV):
-                self._captureImage = cv.QueryFrame(self._videoFile)
+                self._captureImage = openCvCameras.getFirstImage(self._cameraId)
             else:
                 self._captureImage = videoCaptureCameras.getFirstImage(self._cameraId)
         except:
@@ -590,11 +639,7 @@ class CameraInput(MediaFile):
             print "Could not read frames from camera with ID: %d" % (self._cameraId)
             raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
         if(self._cameraMode == self.CameraModes.OpenCV):
-            try:
-                self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
-            except:
-                self._log.warning("Exception while getting number of frames per second from: %d" % (self._cameraId))
-                raise MediaError("Camera with ID: %d caused exception!" %(self._cameraId))
+            self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
         self._firstImage = self._captureImage
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
@@ -731,16 +776,6 @@ class KinectCameraInput(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-##        depthArray, _ = freenect.sync_get_depth()
-#        depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
-##        rgbImage, _ = freenect.sync_get_video()
-##        rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
-##        resizeImage(rgbCapture, self._tmpRgb)
-##        self._captureImage = self._tmpRgb
-##        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-##        return False
-#        depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
-#        resizeImage(depthCapture, self._tmpMat1)
 
         kinectMode = self.findKinectMode(currentSongPosition, midiNoteState, midiChannelState)
         if(kinectMode == KinectMode.RGBImage):

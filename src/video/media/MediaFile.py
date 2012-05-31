@@ -381,6 +381,7 @@ class MediaFile(object):
                 for i in range(self._numberOfFrames - 2): #@UnusedVariable
                     self._captureImage = cv.QueryFrame(self._videoFile)
                     self._bufferedImageList.append(copyImage(self._captureImage))
+                self._captureImage = self._firstImage
             except:
                 self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
                 print "Exception while reading: " + os.path.basename(self._cfgFileName)

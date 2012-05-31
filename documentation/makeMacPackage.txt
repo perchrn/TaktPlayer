@@ -1,0 +1,9 @@
+./TaktPlayer.macMake
+mv dist/TaktPlayer.app .
+./TaktGui.macMake
+mv TaktPlayer.app dist/
+
+#Cleanup?
+
+mv TaktPlayer.dmg TaktPlayer.dmg.old
+hdiutil create TaktPlayer.dmg -volname "Takt Player" -fs HFS+ -srcfolder "dist"

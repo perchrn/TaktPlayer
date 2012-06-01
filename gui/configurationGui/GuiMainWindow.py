@@ -499,7 +499,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         else:
                             noteWidget = self._noteWidgets[note]
                             noteBitmap = noteWidget.getBitmap()
-                            widget.setBitmap(noteBitmap)
+                            if(noteBitmap != None):
+                                widget.setBitmap(noteBitmap)
+                            else:
+                                widget.clearBitmap()
                             if(i == self._activeTrackId):
                                 self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
                                 activeNoteConfig = self._configuration.getNoteConfiguration(note)

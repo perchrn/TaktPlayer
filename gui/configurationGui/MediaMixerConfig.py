@@ -165,7 +165,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Pre FX:", pos=(4, 164)) #@UndefinedVariable
         self._overviewPreFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewPreFxButton.enableDoubleClick()
-        self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
+        self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectClick) #@UndefinedVariable
         self._overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
         self._overviewPreFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPreFxDone)
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
@@ -175,7 +175,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
         self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewPostFxButton.enableDoubleClick()
-        self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
+        self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectClick) #@UndefinedVariable
         self._overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
         self._overviewPostFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPostFxDone)
         outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
@@ -183,13 +183,16 @@ class MediaTrackGui(object): #@UndefinedVariable
 
         self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
         self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
         self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
         self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
         self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
         self._overviewTrackSaveButtonDissabled = True
-        self._overviewTrackEditButton = PcnImageButton(self._mainTrackOverviewPlane, self._editBitmap, self._editPressedBitmap, (25, 260), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewTrackEditButton = PcnImageButton(self._mainTrackOverviewPlane, self._editBitmap, self._editPressedBitmap, (25, 260), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewTrackEditButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackEditButton) #@UndefinedVariable
-        self._overviewTrackSaveButton = PcnImageButton(self._mainTrackOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (45, 260), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewTrackSaveButton = PcnImageButton(self._mainTrackOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (45, 260), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewTrackSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackSaveButton) #@UndefinedVariable
 
         wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 290)) #@UndefinedVariable
@@ -204,10 +207,11 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._showTrackGuiCallback = parentClass.showTrackGui
         self._hideTrackGuiCallback = parentClass.hideTrackGui
         self._showSlidersCallback = parentClass.showSlidersGui
+        self._hideSlidersCallback = parentClass.hideSlidersGui
+        self._showEffectsCallback = parentClass.showEffectsGui
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
-        self._hideSlidersCallback = parentClass.hideSlidersGui
 
         self._trackId = 0
         trackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -216,9 +220,8 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._trackField.SetEditable(False)
         self._trackField.SetBackgroundColour((232,232,232))
         self._trackField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        trackHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        trackHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onTrackHelp, id=trackHelpButton.GetId()) #@UndefinedVariable
+        trackHelpButton = PcnImageButton(self._mainTrackPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        trackHelpButton.Bind(wx.EVT_BUTTON, self._onTrackHelp) #@UndefinedVariable
         trackSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         trackSizer.Add(self._trackField, 2, wx.ALL, 5) #@UndefinedVariable
         trackSizer.Add(trackHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -229,9 +232,8 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mixField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self._mixField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._updateChoices(self._mixField, self._mixModes.getChoices, "Default", "Default")
-        mixHelpButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
+        mixHelpButton = PcnImageButton(self._mainTrackPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        mixHelpButton.Bind(wx.EVT_BUTTON, self._onMixHelp) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -242,9 +244,8 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
         self._preEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        self._preEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._preEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPreEffectEdit, id=self._preEffectButton.GetId()) #@UndefinedVariable
+        self._preEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._preEffectButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
         preEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         preEffectSizer.Add(self._preEffectField, 2, wx.ALL, 5) #@UndefinedVariable
         preEffectSizer.Add(self._preEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -255,9 +256,8 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
         self._postEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        self._postEffectButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onPostEffectEdit, id=self._postEffectButton.GetId()) #@UndefinedVariable
+        self._postEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._postEffectButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
         postEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectField, 2, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -267,9 +267,8 @@ class MediaTrackGui(object): #@UndefinedVariable
         closeButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        self._saveButton = wx.Button(self._mainTrackPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainTrackPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._mainTrackPlane, self._saveGreyBitmap, self._saveGreyBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -300,7 +299,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         text = """
 This is the track number and MIDI channel.
 """
-        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Track help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainTrackPlane, text, 'Track help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -315,19 +314,19 @@ Multiply:\tMultiplies the images together. Very handy for masking.
 Lumakey:\tReplaces source everywhere the image is not black.
 Replace:\tNo mixing. Just use this image.
 """
-        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainTrackPlane, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _highlightButton(self, selected):
         if(selected == self.EditSelection.PreEffect):
-            self._preEffectButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._preEffectButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._preEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._preEffectButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.PostEffect):
-            self._postEffectButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._postEffectButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._postEffectButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._postEffectButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onTrackMixButton(self, event):
         self._mainTrackOverviewPlane.PopupMenu(self._overviewTrackMixModeButtonPopup, (77,183))
@@ -346,11 +345,31 @@ Replace:\tNo mixing. Just use this image.
         self._selectedEditor = self.EditSelection.PreEffect
         self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+        self._showEffectsCallback()
+        self._showOrHideSaveButton()
+
+    def _onPostEffectEdit(self, event):
+        if(self._selectedEditor != self.EditSelection.PostEffect):
+            self._hideModulationCallback()
+        selectedEffectConfig = self._postEffectField.GetValue()
+        self._selectedEditor = self.EditSelection.PostEffect
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+        self._showEffectsCallback()
+        self._showOrHideSaveButton()
+
+    def _onPreEffectClick(self, event):
+        if(self._selectedEditor != self.EditSelection.PreEffect):
+            self._hideModulationCallback()
+        selectedEffectConfig = self._preEffectField.GetValue()
+        self._selectedEditor = self.EditSelection.PreEffect
+        self._highlightButton(self._selectedEditor)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
         self._mainConfig.showSliderGuiEditButton()
         self._showSlidersCallback()
         self._showOrHideSaveButton()
 
-    def _onPostEffectEdit(self, event):
+    def _onPostEffectClick(self, event):
         if(self._selectedEditor != self.EditSelection.PostEffect):
             self._hideModulationCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
@@ -441,11 +460,11 @@ Replace:\tNo mixing. Just use this image.
         updated = self._checkIfUpdated()
         if(updated == False):
             self._overviewTrackSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-            self._saveButton.SetBackgroundColour((210,210,210))
+            self._saveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
             self._overviewTrackSaveButtonDissabled = True
         if(updated == True):
             self._overviewTrackSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
-            self._saveButton.SetBackgroundColour((255,180,180))
+            self._saveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
             self._overviewTrackSaveButtonDissabled = False
 
     def updateMixModeOverviewThumb(self, noteMixMode):

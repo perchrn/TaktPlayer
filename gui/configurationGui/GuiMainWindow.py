@@ -1112,7 +1112,8 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
     else:
         redirectValue = 1
     if(sys.platform == "darwin"):
-        sys.path.append(".") #To find ffmpeg in mac packages
+        os.environ["PATH"] += ":."
+    print os.environ["PATH"]
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
     gui = MusicalVideoPlayerGui(None, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):

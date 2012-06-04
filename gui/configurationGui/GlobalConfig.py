@@ -17,6 +17,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
+from widgets.PcnImageButton import PcnImageButton
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -205,6 +206,15 @@ class EffectsGui(object):
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+
         self._effectListDraggedIndex = -1
         self._midiNote = -1
         self._activeEffectId = None
@@ -234,9 +244,8 @@ class EffectsGui(object):
         self._templateNameField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "MediaDefault1", size=(200, -1)) #@UndefinedVariable
         self._templateNameField.SetInsertionPoint(0)
         self._templateNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        templateNameButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        templateNameButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onTemplateNameHelp, id=templateNameButton.GetId()) #@UndefinedVariable
+        templateNameButton = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        templateNameButton.Bind(wx.EVT_BUTTON, self._onTemplateNameHelp) #@UndefinedVariable
         templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
         templateNameSizer.Add(templateNameButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -247,9 +256,8 @@ class EffectsGui(object):
         self._effectChoices = EffectTypes()
         self._effectNameField = wx.ComboBox(self._mainEffectsPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._effectNameField, self._effectChoices.getChoices, "None", "None")
-        effectNameButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        effectNameButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onEffectHelp, id=effectNameButton.GetId()) #@UndefinedVariable
+        effectNameButton = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        effectNameButton.Bind(wx.EVT_BUTTON, self._onEffectHelp) #@UndefinedVariable
         effectNameSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         effectNameSizer.Add(self._effectNameField, 2, wx.ALL, 5) #@UndefinedVariable
         effectNameSizer.Add(effectNameButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -261,9 +269,8 @@ class EffectsGui(object):
         self._ammountField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._ammountField.SetInsertionPoint(0)
         self._ammountField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._ammountButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._ammountButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onAmmountEdit, id=self._ammountButton.GetId()) #@UndefinedVariable
+        self._ammountButton = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._ammountButton.Bind(wx.EVT_BUTTON, self._onAmmountEdit) #@UndefinedVariable
         self._ammountSizer.Add(self._amountLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(self._ammountField, 2, wx.ALL, 5) #@UndefinedVariable
         self._ammountSizer.Add(self._ammountButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -274,9 +281,8 @@ class EffectsGui(object):
         self._arg1Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg1Field.SetInsertionPoint(0)
         self._arg1Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._arg1Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._arg1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg1Edit, id=self._arg1Button.GetId()) #@UndefinedVariable
+        self._arg1Button = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._arg1Button.Bind(wx.EVT_BUTTON, self._onArg1Edit) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg1Sizer.Add(self._arg1Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -287,9 +293,8 @@ class EffectsGui(object):
         self._arg2Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg2Field.SetInsertionPoint(0)
         self._arg2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._arg2Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._arg2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg2Edit, id=self._arg2Button.GetId()) #@UndefinedVariable
+        self._arg2Button = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._arg2Button.Bind(wx.EVT_BUTTON, self._onArg2Edit) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg2Sizer.Add(self._arg2Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -300,9 +305,8 @@ class EffectsGui(object):
         self._arg3Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg3Field.SetInsertionPoint(0)
         self._arg3Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._arg3Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._arg3Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg3Edit, id=self._arg3Button.GetId()) #@UndefinedVariable
+        self._arg3Button = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._arg3Button.Bind(wx.EVT_BUTTON, self._onArg3Edit) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg3Sizer.Add(self._arg3Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -313,9 +317,8 @@ class EffectsGui(object):
         self._arg4Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._arg4Field.SetInsertionPoint(0)
         self._arg4Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._arg4Button = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._arg4Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onArg4Edit, id=self._arg4Button.GetId()) #@UndefinedVariable
+        self._arg4Button = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._arg4Button.Bind(wx.EVT_BUTTON, self._onArg4Edit) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._arg4Sizer.Add(self._arg4Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -326,9 +329,8 @@ class EffectsGui(object):
         self._startValuesField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "0.0|0.0|0.0|0.0|0.0", size=(200, -1)) #@UndefinedVariable
         self._startValuesField.SetInsertionPoint(0)
         self._startValuesField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        startValuesButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        startValuesButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onStartValuesHelp, id=startValuesButton.GetId()) #@UndefinedVariable
+        startValuesButton = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        startValuesButton.Bind(wx.EVT_BUTTON, self._onStartValuesHelp) #@UndefinedVariable
         startValuesSizer.Add(startValuesLabel, 1, wx.ALL, 5) #@UndefinedVariable
         startValuesSizer.Add(self._startValuesField, 2, wx.ALL, 5) #@UndefinedVariable
         startValuesSizer.Add(startValuesButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -339,10 +341,6 @@ class EffectsGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._saveButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         listButton = wx.Button(self._mainEffectsPlane, wx.ID_ANY, 'List') #@UndefinedVariable
         listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
@@ -356,6 +354,9 @@ class EffectsGui(object):
         self._mainEffectsPlane.Bind(wx.EVT_BUTTON, self._onSlidersButton, id=slidersButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(slidersButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._mainEffectsPlane, self._saveGreyBitmap, self._saveGreyBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
 
         self._flipModes = FlipModes()
         self._zoomModes = ZoomModes()
@@ -488,25 +489,25 @@ Selects the effect.
 
     def _highlightButton(self, selected):
         if(selected == self.EditSelection.Ammount):
-            self._ammountButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._ammountButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._ammountButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._ammountButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Arg1):
-            self._arg1Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._arg1Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._arg1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._arg1Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Arg2):
-            self._arg2Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._arg2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._arg2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._arg2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Arg3):
-            self._arg3Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._arg3Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._arg3Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._arg3Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Arg4):
-            self._arg4Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._arg4Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._arg4Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._arg4Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def unselectButton(self):
         self._selectedEditor = self.EditSelection.Unselected
@@ -1105,9 +1106,9 @@ A list of start values for the effect modulation.
     def _showOrHideSaveButton(self):
         updated = self._checkIfUpdated()
         if(updated == False):
-            self._saveButton.SetBackgroundColour((210,210,210))
+            self._saveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
         if(updated == True):
-            self._saveButton.SetBackgroundColour((255,180,180))
+            self._saveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
 
     def _setEffect(self, value):
         if(value == None):
@@ -1215,6 +1216,15 @@ class FadeGui(object):
         self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
         self._fadeWhiteBitmap = wx.Bitmap("graphics/fadeToWhite.png") #@UndefinedVariable
 
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+
         self._fadeModeImages = [self._fadeBlackBitmap, self._fadeWhiteBitmap]
         self._fadeModeLabels = self._fadeModes.getChoices()
         self._config = None
@@ -1252,9 +1262,8 @@ class FadeGui(object):
         self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
         self._fadeModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        fadeModeButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        fadeModeButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModeHelp, id=fadeModeButton.GetId()) #@UndefinedVariable
+        fadeModeButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        fadeModeButton.Bind(wx.EVT_BUTTON, self._onFadeModeHelp) #@UndefinedVariable
         fadeModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModeSizer.Add(self._fadeModesField, 2, wx.ALL, 5) #@UndefinedVariable
         fadeModeSizer.Add(fadeModeButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -1266,9 +1275,8 @@ class FadeGui(object):
         self._fadeModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._fadeModulationField.SetInsertionPoint(0)
         self._fadeModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._fadeModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._fadeModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit, id=self._fadeModulationButton.GetId()) #@UndefinedVariable
+        self._fadeModulationButton = PcnImageButton(self._mainFadeGuiPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._fadeModulationButton.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit) #@UndefinedVariable
         fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         fadeModulationSizer.Add(self._fadeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -1279,9 +1287,8 @@ class FadeGui(object):
         self._levelModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._levelModulationField.SetInsertionPoint(0)
         self._levelModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._levelModulationButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._levelModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit, id=self._levelModulationButton.GetId()) #@UndefinedVariable
+        self._levelModulationButton = PcnImageButton(self._mainFadeGuiPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._levelModulationButton.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit) #@UndefinedVariable
         levelModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(self._levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -1293,15 +1300,15 @@ class FadeGui(object):
         closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._saveButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
-        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         listButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'List') #@UndefinedVariable
         listButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onListButton, id=listButton.GetId()) #@UndefinedVariable
         self._buttonsSizer.Add(listButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._saveButton = wx.Button(self._mainFadeGuiPlane, wx.ID_ANY, 'Save') #@UndefinedVariable
+        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
 
     def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
         self._mainFadeListPlane = plane
@@ -1368,13 +1375,13 @@ Decides if this image fades to black or white.
 
     def _highlightButton(self, selected):
         if(selected == self.EditSelected.Fade):
-            self._fadeModulationButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._fadeModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._fadeModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._fadeModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelected.Level):
-            self._levelModulationButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._levelModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._levelModulationButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._levelModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def unselectButton(self):
         self._selectedEditor = self.EditSelected.Unselected

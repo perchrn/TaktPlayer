@@ -375,6 +375,15 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._overviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(168,-1)) #@UndefinedVariable
         self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(0,0)) #@UndefinedVariable
@@ -487,9 +496,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fileNameField.SetEditable(False)
         self._fileNameField.SetBackgroundColour((232,232,232))
         self._fileNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        fileOpenButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Select', size=(60,-1)) #@UndefinedVariable
-        fileOpenButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onOpenFile, id=fileOpenButton.GetId()) #@UndefinedVariable
+        fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        fileOpenButton.Bind(wx.EVT_BUTTON, self._onOpenFile) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -499,9 +507,8 @@ class MediaFileGui(object): #@UndefinedVariable
         tmpText2 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Type:") #@UndefinedVariable
         self._typeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["VideoLoop"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateTypeChoices(self._typeField, "VideoLoop", "VideoLoop")
-        typeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        typeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onTypeHelp, id=typeHelpButton.GetId()) #@UndefinedVariable
+        typeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        typeHelpButton.Bind(wx.EVT_BUTTON, self._onTypeHelp) #@UndefinedVariable
         typeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(self._typeField, 2, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(typeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -512,9 +519,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModeLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Loop mode:") #@UndefinedVariable
         self._subModeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Normal"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateLoopModeChoices(self._subModeField, "Normal", "Normal")
-        subModeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        subModeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSubModeHelp, id=subModeHelpButton.GetId()) #@UndefinedVariable
+        subModeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        subModeHelpButton.Bind(wx.EVT_BUTTON, self._onSubModeHelp) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(subModeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -526,9 +532,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._subModulationField.SetInsertionPoint(0)
         self._subModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._subModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._subModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit, id=self._subModulationEditButton.GetId()) #@UndefinedVariable
+        self._subModulationEditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._subModulationEditButton.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -539,9 +544,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._filter1ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._filter1ModulationField.SetInsertionPoint(0)
         self._filter1ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._filter1ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter1Edit, id=self._filter1ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter1ModulationEditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._filter1ModulationEditButton.Bind(wx.EVT_BUTTON, self._onFilter1Edit) #@UndefinedVariable
         self._filter1ModulationSizer.Add(self._filter1ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._filter1ModulationSizer.Add(self._filter1ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._filter1ModulationSizer.Add(self._filter1ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -552,9 +556,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._filter2ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._filter2ModulationField.SetInsertionPoint(0)
         self._filter2ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._filter2ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter2Edit, id=self._filter2ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter2ModulationEditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._filter2ModulationEditButton.Bind(wx.EVT_BUTTON, self._onFilter2Edit) #@UndefinedVariable
         self._filter2ModulationSizer.Add(self._filter2ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._filter2ModulationSizer.Add(self._filter2ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._filter2ModulationSizer.Add(self._filter2ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -565,9 +568,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._filter3ModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._filter3ModulationField.SetInsertionPoint(0)
         self._filter3ModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._filter3ModulationEditButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFilter3Edit, id=self._filter3ModulationEditButton.GetId()) #@UndefinedVariable
+        self._filter3ModulationEditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._filter3ModulationEditButton.Bind(wx.EVT_BUTTON, self._onFilter3Edit) #@UndefinedVariable
         self._filter3ModulationSizer.Add(self._filter3ModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._filter3ModulationSizer.Add(self._filter3ModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._filter3ModulationSizer.Add(self._filter3ModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -580,9 +582,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteField.SetEditable(False)
         self._noteField.SetBackgroundColour((232,232,232))
         self._noteField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        noteHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        noteHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onNoteHelp, id=noteHelpButton.GetId()) #@UndefinedVariable
+        noteHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        noteHelpButton.Bind(wx.EVT_BUTTON, self._onNoteHelp) #@UndefinedVariable
         noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(self._noteField, 2, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(noteHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -593,9 +594,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._syncField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
         self._syncField.SetInsertionPoint(0)
         self._syncField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        syncHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        syncHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSyncHelp, id=syncHelpButton.GetId()) #@UndefinedVariable
+        syncHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        syncHelpButton.Bind(wx.EVT_BUTTON, self._onSyncHelp) #@UndefinedVariable
         self._syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -606,9 +606,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._quantizeField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "1.0", size=(200, -1)) #@UndefinedVariable
         self._quantizeField.SetInsertionPoint(0)
         self._quantizeField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        quantizeHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        quantizeHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onQuantizeHelp, id=quantizeHelpButton.GetId()) #@UndefinedVariable
+        quantizeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        quantizeHelpButton.Bind(wx.EVT_BUTTON, self._onQuantizeHelp) #@UndefinedVariable
         quantizeSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(self._quantizeField, 2, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(quantizeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -619,9 +618,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mixField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateMixModeChoices(self._mixField, "Add", "Add")
         self._mixField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        mixHelpButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        mixHelpButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onMixHelp, id=mixHelpButton.GetId()) #@UndefinedVariable
+        mixHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        mixHelpButton.Bind(wx.EVT_BUTTON, self._onMixHelp) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -632,9 +630,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self.updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
         self._effect1Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        self._effect1Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._effect1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onEffect1Edit, id=self._effect1Button.GetId()) #@UndefinedVariable
+        self._effect1Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._effect1Button.Bind(wx.EVT_BUTTON, self._onEffect1Edit) #@UndefinedVariable
         effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Field, 2, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -645,9 +642,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self.updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._effect2Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        self._effect2Button = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._effect2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onEffect2Edit, id=self._effect2Button.GetId()) #@UndefinedVariable
+        self._effect2Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._effect2Button.Bind(wx.EVT_BUTTON, self._onEffect2Edit) #@UndefinedVariable
         effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Field, 2, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -658,9 +654,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fadeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self.updateFadeChoices(self._fadeField, "Default", "Default")
         self._fadeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        self._fadeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Edit', size=(60,-1)) #@UndefinedVariable
-        self._fadeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onFadeEdit, id=self._fadeButton.GetId()) #@UndefinedVariable
+        self._fadeButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._fadeButton.Bind(wx.EVT_BUTTON, self._onFadeEdit) #@UndefinedVariable
         fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeField, 2, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -676,9 +671,8 @@ class MediaFileGui(object): #@UndefinedVariable
         deleteButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Remove') #@UndefinedVariable
         deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
-        self._saveButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Save') #@UndefinedVariable
-        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._noteConfigPanel, self._saveGreyBitmap, self._saveGreyBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(thumbButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
@@ -759,15 +753,10 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
 
-        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
-        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
-        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
-        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
-        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
         self._overviewClipSaveButtonDissabled = True
-        self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
-        self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
+        self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
 
     def getPlane(self):
@@ -1037,33 +1026,33 @@ All notes on events are quantized to this.
 
     def _highlightButton(self, selected):
         if(selected == self.EditSelection.ImageSeqModulation):
-            self._subModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._subModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._subModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._subModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Filter1Modulation):
-            self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._filter1ModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._filter1ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._filter1ModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Filter2Modulation):
-            self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._filter2ModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._filter2ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._filter2ModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Filter3Modulation):
-            self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._filter3ModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._filter3ModulationEditButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._filter3ModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Effect1):
-            self._effect1Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._effect1Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._effect1Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._effect1Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Effect2):
-            self._effect2Button.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._effect2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._effect2Button.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._effect2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Fade):
-            self._fadeButton.SetBackgroundColour(wx.Colour(180,180,255)) #@UndefinedVariable
+            self._fadeButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._fadeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            self._fadeButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onEffect1Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
@@ -1087,7 +1076,7 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect2Field.GetValue()
         self._selectedEditor = self.EditSelection.Effect2
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect1Field)
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
@@ -1832,11 +1821,11 @@ All notes on events are quantized to this.
                 updated = True
             else:
                 self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-                self._saveButton.SetBackgroundColour((210,210,210))
+                self._saveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
                 self._overviewClipSaveButtonDissabled = True
         if(updated == True):
             self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
-            self._saveButton.SetBackgroundColour((255,180,180))
+            self._saveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
             self._overviewClipSaveButtonDissabled = False
         
     def updateGui(self, noteConfig, midiNote):

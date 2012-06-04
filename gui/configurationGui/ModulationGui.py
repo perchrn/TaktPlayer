@@ -14,6 +14,7 @@ from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
 from midi.MidiStateHolder import MidiChannelModulationSources,\
     NoteModulationSources
 from midi.MidiController import MidiControllers
+from widgets.PcnImageButton import PcnImageButton
 
 class ModulationGui(object):
     def __init__(self, mainConfing, midiTiming):
@@ -37,6 +38,9 @@ class ModulationGui(object):
         self._modBitmatAdsrBig = wx.Bitmap("graphics/modulationAdsrBig.png") #@UndefinedVariable
         self._modBitmatValueBig = wx.Bitmap("graphics/modulationValueBig.png") #@UndefinedVariable
 
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
+
         self._modulationSorces = ModulationSources()
 
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
@@ -50,9 +54,8 @@ class ModulationGui(object):
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
-        modulationSorcesButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        modulationSorcesButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onModulationModeHelp, id=modulationSorcesButton.GetId()) #@UndefinedVariable
+        modulationSorcesButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        modulationSorcesButton.Bind(wx.EVT_BUTTON, self._onModulationModeHelp) #@UndefinedVariable
         modulationSorcesSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
         modulationSorcesSizer.Add(self._modulationSorcesField, 2, wx.ALL, 5) #@UndefinedVariable
         modulationSorcesSizer.Add(modulationSorcesButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -66,9 +69,8 @@ class ModulationGui(object):
         self._midiChannelSource = MidiChannelModulationSources()
         self._midiChannelSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Controller"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiChannelSourceField, self._midiChannelSource.getChoices, "Controller", "Controller")
-        midiChannelSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        midiChannelSourceButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelSourceHelp, id=midiChannelSourceButton.GetId()) #@UndefinedVariable
+        midiChannelSourceButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        midiChannelSourceButton.Bind(wx.EVT_BUTTON, self._onMidiChannelSourceHelp) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(self._midiChannelSourceField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(midiChannelSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -80,9 +82,8 @@ class ModulationGui(object):
         self._midiControllers = MidiControllers()
         self._midiControllerField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ModWheel"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
-        midiControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        midiControllerButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp, id=midiControllerButton.GetId()) #@UndefinedVariable
+        midiControllerButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        midiControllerButton.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp) #@UndefinedVariable
         self._midiControllerSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiControllerSizer.Add(self._midiControllerField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiControllerSizer.Add(midiControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -92,9 +93,8 @@ class ModulationGui(object):
         self._midiActiveControllerSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText4 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Active controllers:") #@UndefinedVariable
         self._midiActiveControllerField = wx.ListBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(120, 100), choices=["None"], style=wx.LB_SINGLE) #@UndefinedVariable
-        midiActiveControllerButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        midiActiveControllerButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiChannelActiveControllerHelp, id=midiActiveControllerButton.GetId()) #@UndefinedVariable
+        midiActiveControllerButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        midiActiveControllerButton.Bind(wx.EVT_BUTTON, self._onMidiChannelActiveControllerHelp) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(self._midiActiveControllerField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiActiveControllerSizer.Add(midiActiveControllerButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -108,9 +108,8 @@ class ModulationGui(object):
         self._midiNoteSource = NoteModulationSources()
         self._midiNoteSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Velocity"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
-        midiNoteSourceButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        midiNoteSourceButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp, id=midiNoteSourceButton.GetId()) #@UndefinedVariable
+        midiNoteSourceButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        midiNoteSourceButton.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(self._midiNoteSourceField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(midiNoteSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -124,9 +123,8 @@ class ModulationGui(object):
         self._lfoType = LfoShapes()
         self._lfoTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Triangle"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
-        lfoTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoTypeButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp, id=lfoTypeButton.GetId()) #@UndefinedVariable
+        lfoTypeButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoTypeButton.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp) #@UndefinedVariable
         self._lfoTypeSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoTypeSizer.Add(self._lfoTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoTypeSizer.Add(lfoTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -137,9 +135,8 @@ class ModulationGui(object):
         tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO length:") #@UndefinedVariable
         self._lfoLengthSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
         self._lfoLengthLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        lfoLengthButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoLengthButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoLengthHelp, id=lfoLengthButton.GetId()) #@UndefinedVariable
+        lfoLengthButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoLengthButton.Bind(wx.EVT_BUTTON, self._onLfoLengthHelp) #@UndefinedVariable
         self._lfoLengthSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoLengthSizer.Add(self._lfoLengthSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoLengthSizer.Add(self._lfoLengthLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -151,9 +148,8 @@ class ModulationGui(object):
         tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO offset:") #@UndefinedVariable
         self._lfoPhaseSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
         self._lfoPhaseLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        lfoPhaseButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoPhaseButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoPhaseHelp, id=lfoPhaseButton.GetId()) #@UndefinedVariable
+        lfoPhaseButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoPhaseButton.Bind(wx.EVT_BUTTON, self._onLfoPhaseHelp) #@UndefinedVariable
         self._lfoPhaseSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoPhaseSizer.Add(self._lfoPhaseSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoPhaseSizer.Add(self._lfoPhaseLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -165,9 +161,8 @@ class ModulationGui(object):
         self._lfoMinValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Min value:") #@UndefinedVariable
         self._lfoMinValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
         self._lfoMinValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        lfoMinValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoMinValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoMinValueHelp, id=lfoMinValueButton.GetId()) #@UndefinedVariable
+        lfoMinValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoMinValueButton.Bind(wx.EVT_BUTTON, self._onLfoMinValueHelp) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoMinValueSliderSizer.Add(self._lfoMinValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -180,9 +175,8 @@ class ModulationGui(object):
         self._lfoMaxValueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Max value:") #@UndefinedVariable
         self._lfoMaxValueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
         self._lfoMaxValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        lfoMaxValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoMaxValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoMaxValueHelp, id=lfoMaxValueButton.GetId()) #@UndefinedVariable
+        lfoMaxValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoMaxValueButton.Bind(wx.EVT_BUTTON, self._onLfoMaxValueHelp) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoMaxValueSliderSizer.Add(self._lfoMaxValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -195,9 +189,8 @@ class ModulationGui(object):
         self._lfoGraphicsLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO graph:") #@UndefinedVariable
         emptyLfoBitMap = wx.EmptyBitmap (200, 80, depth=3) #@UndefinedVariable
         self._lfoGraphicsDisplay = PcnLfoDisplayWidget(self._mainModulationGuiPlane, emptyLfoBitMap)
-        lfoGraphicsValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        lfoGraphicsValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onLfoGraphicsHelp, id=lfoGraphicsValueButton.GetId()) #@UndefinedVariable
+        lfoGraphicsValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        lfoGraphicsValueButton.Bind(wx.EVT_BUTTON, self._onLfoGraphicsHelp) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(self._lfoGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(self._lfoGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
         self._lfoGraphicsSizer.Add(lfoGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -210,9 +203,8 @@ class ModulationGui(object):
         self._adsrType = AdsrShapes()
         self._adsrTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ADSR"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._adsrTypeField, self._adsrType.getChoices, "ADSR", "ADSR")
-        adsrTypeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrTypeButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrTypeHelp, id=adsrTypeButton.GetId()) #@UndefinedVariable
+        adsrTypeButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrTypeButton.Bind(wx.EVT_BUTTON, self._onAdsrTypeHelp) #@UndefinedVariable
         self._adsrTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrTypeSizer.Add(self._adsrTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrTypeSizer.Add(adsrTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -223,9 +215,8 @@ class ModulationGui(object):
         tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR attack:") #@UndefinedVariable
         self._adsrAttackSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
         self._adsrAttackLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        adsrAttackhButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrAttackhButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrAttackHelp, id=adsrAttackhButton.GetId()) #@UndefinedVariable
+        adsrAttackhButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrAttackhButton.Bind(wx.EVT_BUTTON, self._onAdsrAttackHelp) #@UndefinedVariable
         self._adsrAttackhSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrAttackhSizer.Add(self._adsrAttackSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrAttackhSizer.Add(self._adsrAttackLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -237,9 +228,8 @@ class ModulationGui(object):
         tmpText8 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR decay:") #@UndefinedVariable
         self._adsrDecaySlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
         self._adsrDecayLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        adsrDecayButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrDecayButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrDecayHelp, id=adsrDecayButton.GetId()) #@UndefinedVariable
+        adsrDecayButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrDecayButton.Bind(wx.EVT_BUTTON, self._onAdsrDecayHelp) #@UndefinedVariable
         self._adsrDecaySizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrDecaySizer.Add(self._adsrDecaySlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrDecaySizer.Add(self._adsrDecayLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -251,9 +241,8 @@ class ModulationGui(object):
         self._adsrSustainLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR sustain:") #@UndefinedVariable
         self._adsrSustainSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
         self._adsrSustainValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        adsrSustainValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrSustainValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrSustainHelp, id=adsrSustainValueButton.GetId()) #@UndefinedVariable
+        adsrSustainValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrSustainValueButton.Bind(wx.EVT_BUTTON, self._onAdsrSustainHelp) #@UndefinedVariable
         self._adsrSustainSizer.Add(self._adsrSustainLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrSustainSizer.Add(self._adsrSustainSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrSustainSizer.Add(self._adsrSustainValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -266,9 +255,8 @@ class ModulationGui(object):
         self._adsrReleaseLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR release:") #@UndefinedVariable
         self._adsrReleaseSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
         self._adsrReleaseValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        adsrReleaseValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrReleaseValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrReleaseHelp, id=adsrReleaseValueButton.GetId()) #@UndefinedVariable
+        adsrReleaseValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrReleaseValueButton.Bind(wx.EVT_BUTTON, self._onAdsrReleaseHelp) #@UndefinedVariable
         self._adsrReleaseSizer.Add(self._adsrReleaseLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrReleaseSizer.Add(self._adsrReleaseSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrReleaseSizer.Add(self._adsrReleaseValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -281,9 +269,8 @@ class ModulationGui(object):
         self._adsrGraphicsLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR graph:") #@UndefinedVariable
         emptyAdsrBitMap = wx.EmptyBitmap (200, 80, depth=3) #@UndefinedVariable
         self._adsrGraphicsDisplay = PcnAdsrDisplayWidget(self._mainModulationGuiPlane, emptyAdsrBitMap)
-        adsrGraphicsValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        adsrGraphicsValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onAdsrGraphicsHelp, id=adsrGraphicsValueButton.GetId()) #@UndefinedVariable
+        adsrGraphicsValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        adsrGraphicsValueButton.Bind(wx.EVT_BUTTON, self._onAdsrGraphicsHelp) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(self._adsrGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(self._adsrGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
         self._adsrGraphicsSizer.Add(adsrGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -296,9 +283,8 @@ class ModulationGui(object):
         self._valueSliderLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
         self._valueSlider = wx.Slider(self._mainModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=101, size=(200, -1)) #@UndefinedVariable
         self._valueValueLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
-        valueValueButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Help', size=(60,-1)) #@UndefinedVariable
-        valueValueButton.SetBackgroundColour(wx.Colour(210,240,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onValueHelp, id=valueValueButton.GetId()) #@UndefinedVariable
+        valueValueButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        valueValueButton.Bind(wx.EVT_BUTTON, self._onValueHelp) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSliderLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueSlider, 2, wx.ALL, 5) #@UndefinedVariable
         self._valueSliderSizer.Add(self._valueValueLabel, 0, wx.ALL, 5) #@UndefinedVariable

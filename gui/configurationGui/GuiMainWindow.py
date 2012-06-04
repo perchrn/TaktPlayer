@@ -92,9 +92,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
-        if(sys.platform == "darwin"):
-            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
-            font.SetPointSize(9)
 
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)

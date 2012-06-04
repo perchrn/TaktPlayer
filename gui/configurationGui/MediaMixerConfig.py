@@ -9,6 +9,7 @@ from video.media.MediaFileModes import MixMode
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
     addTrackButtonFrame, EVT_DOUBLE_CLICK_EVENT, EVT_DRAG_DONE_EVENT,\
     PcnPopupMenu
+import sys
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -159,20 +160,28 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mixImages = parentClass._mixImages
         self._mixLabels = parentClass._mixLabels
 
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
+        font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+        if(sys.platform == "darwin"):
+            font.SetPointSize(10)
+
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
+        txt.SetFont(font)
         inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
         PcnImageButton(self._mainTrackOverviewPlane, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Pre FX:", pos=(4, 164)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Pre FX:", pos=(4, 164)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewPreFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewPreFxButton.enableDoubleClick()
         self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectClick) #@UndefinedVariable
         self._overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
         self._overviewPreFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPreFxDone)
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (51, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackMixModeButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onTrackMixModeChosen)
         self._overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewPostFxButton.enableDoubleClick()
         self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectClick) #@UndefinedVariable

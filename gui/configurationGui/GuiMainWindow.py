@@ -92,9 +92,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
-        if(sys.platform == "darwin"):
-            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
-            font.SetPointSize(9)
 
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
@@ -151,6 +148,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
         scrollingEditAreaPanel.SetupScrolling(True, True)
         scrollingEditAreaPanel.SetSizer(editAreaSizer)
+        scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
         self._trackGui = MediaTrackGui(self._configuration)
         self._configuration.setMixerGui(self._trackGui)

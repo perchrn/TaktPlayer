@@ -14,6 +14,7 @@ from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
 from video.EffectModes import getEffectId, EffectTypes
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
+import sys
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -688,7 +689,12 @@ class MediaFileGui(object): #@UndefinedVariable
     def setupTrackClipOverviewGui(self, overviewPanel):
         self._mainTrackOverviewPlane = overviewPanel
 
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
+        font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+        if(sys.platform == "darwin"):
+            font.SetPointSize(10)
+
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewTrackClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewTrackClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewTrackClipButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackClipButton) #@UndefinedVariable
@@ -696,9 +702,13 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewTrackClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        self._overviewTrackClipLengthLabel.SetFont(font)
         self._overviewTrackClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        self._overviewTrackClipQuantizeLabel.SetFont(font)
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        txt.SetFont(font)
+        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx1Button.enableDoubleClick()
@@ -711,7 +721,12 @@ class MediaFileGui(object): #@UndefinedVariable
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
 
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
+        font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+        if(sys.platform == "darwin"):
+            font.SetPointSize(10)
+
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
@@ -721,9 +736,13 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
         self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+        self._overviewClipLengthLabel.SetFont(font)
         self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        self._overviewClipQuantizeLabel.SetFont(font)
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        txt.SetFont(font)
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx1Button.enableDoubleClick()
@@ -737,9 +756,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
         self._overviewFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
 
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
-        wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
+        txt.SetFont(font)
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
+        txt.SetFont(font)
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
+        txt.SetFont(font)
         self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
         self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
@@ -755,6 +777,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipFadeLevelButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
 
         self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
+        self._overviewClipNoteLabel.SetFont(font)
 
         self._overviewClipSaveButtonDissabled = True
         self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable

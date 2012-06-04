@@ -80,9 +80,10 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
         self._callbackFunction = callbackFunction
 
     def OnDropFiles(self, x, y, filenames):
+        nameId = 0
         for name in filenames:
-            self._callbackFunction(self._widgetId, name)
-            break
+            self._callbackFunction(self._widgetId, name, nameId)
+            nameId += 1
 
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
@@ -864,7 +865,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if out != '':
                     outputString += out
             outputString += process.communicate()[0]
-        return outputString
+            return outputString
+        return None
 
     def setNewImageOnNote(self, noteId):
         if((noteId >= 0) and (noteId < 128)):
@@ -880,15 +882,20 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             if(noteId == self._activeTrackId):
                 self._noteGui.updateTrackOverviewClipBitmap(self._emptyBitMap)
 
-    def fileDropped(self, widgetId, fileName):
+    def fileDropped(self, widgetId, fileName, fileNameIndex):
         destNoteId = None
         for i in range(128):
             if(self._noteWidgetIds[i] == widgetId):
                 destNoteId = i
                 break
+        destNoteId += fileNameIndex
         ffmpegPath = os.path.normpath(self._configuration.getFfmpegBinary())
         if(destNoteId != None):
+            if(destNoteId >= 128):
+                return
             ffmpegString = self._call_command(ffmpegPath + " -i " + fileName)
+            if(ffmpegString == None):
+                return
             inputCount = 0
             streamcount = 0
             inputIsVideo = True

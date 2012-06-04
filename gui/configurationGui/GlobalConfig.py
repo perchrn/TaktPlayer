@@ -477,10 +477,20 @@ Selects the effect.
             if(sys.platform == "darwin"):
                 if(i == 2):
                     extraTab = "\t\t"
-                elif(i == 6):
+                elif(i == 4):
+                    extraTab = "\t\t"
+                elif(i == 5):
                     extraTab = ""
-                else:
-                    extraTab = "\tmac\t"
+                elif(i == 8):
+                    extraTab = ""
+                elif(i == 10):
+                    extraTab = ""
+                elif(i == 12):
+                    extraTab = ""
+                elif(i == 15):
+                    extraTab = ""
+                elif(i == 16):
+                    extraTab = ""
             else:
                 if(i == 5):
                     extraTab = ""

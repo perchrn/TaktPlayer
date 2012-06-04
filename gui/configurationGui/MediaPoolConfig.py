@@ -340,6 +340,7 @@ class MediaFileGui(object): #@UndefinedVariable
                            "ImageSeqModulation"]
 
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
+        self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
         self._mixBitmapAdd = wx.Bitmap("graphics/mixAdd.png") #@UndefinedVariable
         self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
         self._mixBitmapLumaKey = wx.Bitmap("graphics/mixLumaKey.png") #@UndefinedVariable
@@ -691,6 +692,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewTrackClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewTrackClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewTrackClipButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackClipButton) #@UndefinedVariable
+        self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
         self._overviewTrackClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
@@ -713,6 +715,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
+        self._overviewClipButton.setBitmap(self._emptyBitMap)
         self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
@@ -873,11 +876,12 @@ Camera:\t\tCamera or capture input.
             text = """
 Decides how we loop this video file.
 
-Default:\tUses Add if no other mode has been selected by track.
-Add:\tSums the images together.
-Multiply:\tMultiplies the images together. Very handy for masking.
-Lumakey:\tReplaces source everywhere the image is not black.
-Replace:\tNo mixing. Just use this image.
+Normal:\tLoops forward.
+Reverse:\tLoops in reverse.
+PingPong:\tLoops alternating between forward and reverse.
+PingPongReverse:\tLoops alternating between reverse and forward.
+DontLoop:\tPlay video once.
+DontLoopReverse:\tPlay video onve in reverse.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Loop mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "ImageSequence"):
@@ -1709,13 +1713,19 @@ All notes on events are quantized to this.
     def _onOverviewTrackClipButton(self, event):
         noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId)
         self.updateGui(noteConfig, self._activeTrackClipNoteId)
-        self._overviewClipButton.setBitmap(self._overviewTrackClipButton.getBitmap())
+        self.updateOverviewClipBitmap(self._overviewTrackClipButton.getBitmap())
 
     def updateTrackOverviewClipBitmap(self, clipBitmap):
-        self._overviewTrackClipButton.setBitmap(clipBitmap)
+        if(clipBitmap != None):
+            self._overviewTrackClipButton.setBitmap(clipBitmap)
+        else:
+            self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
 
     def updateOverviewClipBitmap(self, clipBitmap):
-        self._overviewClipButton.setBitmap(clipBitmap)
+        if(clipBitmap != None):
+            self._overviewClipButton.setBitmap(clipBitmap)
+        else:
+            self._overviewClipButton.setBitmap(self._emptyBitMap)
 
     def updateTrackOverviewGui(self, noteConfig, noteId):
         config = noteConfig.getConfig()
@@ -1733,7 +1743,7 @@ All notes on events are quantized to this.
         self.updateEffectThumb(self._overviewTrackFx2Button, effect2Config)
 
     def clearTrackOverviewGui(self):
-        self._overviewTrackClipButton.setBitmap(self._trackThumbnailBitmap)
+        self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
         self._overviewTrackClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
         self._overviewTrackClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
         self._overviewTrackClipLengthLabel.SetLabel("L: N/A")
@@ -1910,7 +1920,7 @@ All notes on events are quantized to this.
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None, False)
 
-        self._overviewClipButton.setBitmap(self._trackThumbnailBitmap)
+        self._overviewClipButton.setBitmap(self._emptyBitMap)
         self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
         self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
         self._overviewClipLengthLabel.SetLabel("L: N/A")

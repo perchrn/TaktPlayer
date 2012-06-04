@@ -92,6 +92,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
+        if(sys.platform == "darwin"):
+            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+            font.SetPointSize(9)
 
         self._configuration = Configuration()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
@@ -496,6 +499,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             if((i == self._activeTrackId) and (self._activeTrackNotes[i] != -1)):
                                 self._noteGui.clearTrackOverviewGui()
                                 self._trackGui.updateMixModeOverviewThumb("None")
+                                self._noteGui.updateTrackOverviewClipBitmap(None)
                             self._activeTrackNotes[i] = -1
                         else:
                             noteWidget = self._noteWidgets[note]
@@ -839,7 +843,11 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             if(destinationConfig != None):
                                 destinationConfig.updateFrom(sourceConfig, True)
                                 self._noteGui.updateGui(destinationConfig, destNoteId)
-                                self._noteWidgets[destNoteId].setBitmap(self._noteWidgets[sourceNoteId].getBitmap())
+                                noteBitmap = self._noteWidgets[sourceNoteId].getBitmap()
+                                self._noteWidgets[destNoteId].setBitmap(noteBitmap)
+                                self._activeNoteId = destNoteId
+                                self._selectKeyboardKey(self._activeNoteId)
+                                self._noteGui.updateOverviewClipBitmap(noteBitmap)
         self._dragSource = None
 
     def _onMouseClick(self, event):
@@ -975,8 +983,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         destinationConfig = self._configuration.makeNoteConfig(relativeFileName, noteToNoteString(destNoteId), destNoteId)
                     if(destinationConfig != None):
                         destinationConfig.updateFileName(relativeFileName, inputIsVideo)
-                        self._noteWidgets[destNoteId].setBitmap(self._newNoteBitmap)
-                        self._noteGui.updateGui(destinationConfig, destNoteId)
+                        if(fileNameIndex == 0):
+                            self._noteWidgets[destNoteId].setBitmap(self._newNoteBitmap)
+                            self._noteGui.updateGui(destinationConfig, destNoteId)
+                            self._activeNoteId = destNoteId
+                            self._selectKeyboardKey(self._activeNoteId)
+                            self._noteGui.updateOverviewClipBitmap(self._newNoteBitmap)
                     return
             text = "Unknown file type: \"" + fileName + "\"\n"
             text += "\n"
@@ -1113,7 +1125,6 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
         redirectValue = 1
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
-    print os.environ["PATH"]
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
     gui = MusicalVideoPlayerGui(None, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):

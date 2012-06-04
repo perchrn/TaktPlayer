@@ -474,16 +474,24 @@ Selects the effect.
             effectName = effectChoices[i]
             effectDescription = effectDescriptions[i]
             extraTab = "\t"
-            if(i == 2):
-                extraTab = "\t\t"
-            elif(i == 6):
-                extraTab = ""
-            elif(i == 7):
-                extraTab = ""
-            elif(i == 9):
-                extraTab = ""
-            elif(i == 12):
-                extraTab = ""
+            if(sys.platform == "darwin"):
+                if(i == 2):
+                    extraTab = "\t\t"
+                elif(i == 6):
+                    extraTab = ""
+                else:
+                    extraTab = "\tmac\t"
+            else:
+                if(i == 5):
+                    extraTab = ""
+                elif(i == 10):
+                    extraTab = ""
+                elif(i == 12):
+                    extraTab = ""
+                elif(i == 15):
+                    extraTab = ""
+                elif(i == 16):
+                    extraTab = ""
             text += effectName + ":\t" + extraTab + effectDescription + "\n"
         dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Effect help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()

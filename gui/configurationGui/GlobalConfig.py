@@ -474,7 +474,9 @@ Selects the effect.
             effectName = effectChoices[i]
             effectDescription = effectDescriptions[i]
             extraTab = "\t"
-            if(i == 4):
+            if(i == 2):
+                extraTab = "\t\t"
+            elif(i == 6):
                 extraTab = ""
             elif(i == 7):
                 extraTab = ""

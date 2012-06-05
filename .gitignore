@@ -10,4 +10,6 @@ TaktPlayerGui.log
 /dist
 .DS_Store
 setup.py
+TaktPlayer.dmg
+TaktPlayer.dmg.old
 *.pyc

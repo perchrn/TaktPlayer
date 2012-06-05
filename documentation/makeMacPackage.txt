@@ -3,6 +3,7 @@ mv dist/TaktPlayer.app .
 ./TaktGui.macMake
 mv TaktPlayer.app dist/
 
+chmod +x dist/TaktGui.app/Contents/Resources/ffmpeg
 #Cleanup?
 
 mv TaktPlayer.dmg TaktPlayer.dmg.old

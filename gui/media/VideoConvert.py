@@ -167,23 +167,26 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         cropMode = self._cropModeField.GetValue()
         cropOptions = ""
         if(cropMode == "16:9->4:3"):
-            cropOptions = " -vf crop=3/4*in_w:in_h -aspect 4:3"
+            cropOptions = "|-vf|crop=3/4*in_w:in_h|-aspect|4:3"
         elif(cropMode == "4.3->16:9"):
-            cropOptions = " -vf crop=in_w:3/4*in_h -aspect 16:9"
+            cropOptions = "|-vf|crop=in_w:3/4*in_h|-aspect|16:9"
         scaleMode = self._scaleModeField.GetValue()
         scaleOptions = ""
         if(scaleMode != "No scale"):
             xscale = int(self._scaleXField.GetValue())
             yscale = int(self._scaleYField.GetValue())
-            scaleOptions = " -vf scale=%d:%d" % (xscale, yscale)
+            scaleOptions = "|-vf|scale=%d:%d" % (xscale, yscale)
 
         if(convertFile == True):
             print "Open converter dialog..."
             print "Show ffmpeg output realtime etc."
-            ffmpegCommand = "%s -i %s%s%s -vcodec mjpeg -qscale 1 -an -y %s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
+            ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
             dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback)
             dlg.ShowModal()
-            dlg.Destroy()
+            try:
+                dlg.Destroy()
+            except wx._core.PyDeadObjectError: #@UndefinedVariable
+                pass
             self._valuesSaveCallback(self._dirName, cropMode, scaleMode, int(self._scaleXField.GetValue()), int(self._scaleYField.GetValue()), self._convertionWentOk, outputFileName)
             self.Destroy()
 
@@ -395,7 +398,7 @@ class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
         self.Destroy()
 
 def callCommandProcess(command, commandQueue, printQueue, returnValueQueue):
-    process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(command.split('|'), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     printQueue.put("Running: " + command + "\n")
     while True:
         out = process.stdout.read(1)

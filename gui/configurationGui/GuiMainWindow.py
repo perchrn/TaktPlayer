@@ -852,10 +852,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._dragSource = None
         self._noteGui.clearDragCursor()
 
-    def _call_command(self, command):
+    def _call_command(self, command, option, fileName):
         outputString = ""
         try:
-            process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process = subprocess.Popen((command, option, fileName), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except:
             text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
             text += " from directory: \"" + os.getcwd() + "\"\n"
@@ -899,7 +899,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         if(destNoteId != None):
             if(destNoteId >= 128):
                 return
-            ffmpegString = self._call_command(ffmpegPath + " -i " + fileName)
+            ffmpegString = self._call_command(ffmpegPath, "-i", fileName)
             if(ffmpegString == None):
                 return
             inputCount = 0
@@ -923,10 +923,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         if("Stream " in ffmpegLine):
                             streamcount += 1
                             if(inputIsVideo == True):
-                                if(("MJPG" in ffmpegLine) and ("0x47504A4D" in ffmpegLine)):
-                                    print "MJPG " * 20
-                                    if(inputIsAvi == True):
-                                        inputOk = True
+                                if("MJPG" in ffmpegLine):
+                                    if("0x47504A4D" in ffmpegLine):
+                                        print "MJPG " * 20
+                                        if(inputIsAvi == True):
+                                            inputOk = True
+                                elif(" mjpeg," in ffmpegLine):
+                                    if(" yuvj420p," in ffmpegLine):
+                                        print "MJPG " * 20
+                                        if(inputIsAvi == True):
+                                            inputOk = True
                                 else:
                                     tryConvert = True
                             else:
@@ -952,7 +958,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                                    ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, 
                                                    self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY)
                         dlg.ShowModal()
-                        dlg.Destroy()
+                        try:
+                            dlg.Destroy()
+                        except wx._core.PyDeadObjectError: #@UndefinedVariable
+                            pass
                         if(self._convertionWentOk == True):
                             fileName = self._convertionOutputFileName
                             inputOk = True

@@ -390,6 +390,7 @@ class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
             self.Layout()
 
     def _onBackground(self, event):
+        self._okConvertionCallback() # We assume it will be OK.
         self._stopConvertion(False)
         self.Destroy()
 

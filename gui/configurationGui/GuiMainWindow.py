@@ -174,10 +174,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._sendConfigNoContactRedBitmap = wx.Bitmap("graphics/sendConfigButtonNoContactRed.png") #@UndefinedVariable
         self._sendConfigNoNewConfigBitmap = wx.Bitmap("graphics/sendConfigButtonNoNewConfig.png") #@UndefinedVariable
         self._sendConfigSendingBitmap = wx.Bitmap("graphics/sendConfigButtonSending.png") #@UndefinedVariable
+
+        self._midiOnBitmap = wx.Bitmap("graphics/midiOnButton.png") #@UndefinedVariable
+        self._midiOnPressedBitmap = wx.Bitmap("graphics/midiOnButtonPressed.png") #@UndefinedVariable
+        self._midiOffBitmap = wx.Bitmap("graphics/midiOnButtonOff.png") #@UndefinedVariable
+        self._midiOffPressedBitmap = wx.Bitmap("graphics/midiOnButtonOffPressed.png") #@UndefinedVariable
+        self._midiNoContactBitmap = wx.Bitmap("graphics/midiOnButtonNoContact.png") #@UndefinedVariable
+
         self._sendButton = PcnImageButton(menuPannel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
         self._sendButton.Bind(wx.EVT_BUTTON, self._onSendButton) #@UndefinedVariable
-        self._midiButton = wx.Button(menuPannel, wx.ID_ANY, 'MIDI on') #@UndefinedVariable
-        self._updateMidiButtonColor(self._configuration.isMidiEnabled())
+        self._midiButton = PcnImageButton(menuPannel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
+        self._midiButton.Bind(wx.EVT_BUTTON, self._midiToggle) #@UndefinedVariable
         self._configNameField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
         self._configFileSelector = wx.ComboBox(menuPannel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
         self._configFileSelector.SetStringSelection("N/A")
@@ -195,7 +202,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
 
@@ -750,6 +756,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _checkConfigState(self):
         if(self._skippedCheckConfigState > 3):
             self._skippedCheckConfigState = 0
+            self._updateMidiButtonColor(self._configuration.isMidiEnabled())
             currentGuiConfigString = self._configuration.getXmlString()
             if(self._oldServerConfigurationString != currentGuiConfigString):
                 if(self._stoppingWebRequests == True):
@@ -758,7 +765,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(self._sendingConfig == True):
                         self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                     else:
-                        self._sendButton.setBitmaps(self._sendConfigBitmap, self._sendConfigPressedBitmap)
+                        print "DEBUG pcn need to send! **********************"
+                        if(self._configuration.isAutoSendEnabled() == True):
+                            print "DEBUG pcn auto send! **********************"
+                            self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
+                            self._onSendButton(None)
+                        else:
+                            print "DEBUG pcn manual send! **********************"
+                            self._sendButton.setBitmaps(self._sendConfigBitmap, self._sendConfigPressedBitmap)
             else:
                 self._sendingConfig = False
                 if(self._stoppingWebRequests == True):
@@ -778,17 +792,22 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._sendingConfig = True
 
     def _updateMidiButtonColor(self, midiOn):
-        if(midiOn == True):
-            self._midiButton.SetBackgroundColour(wx.Colour(200,255,200)) #@UndefinedVariable
+        if(self._stoppingWebRequests):
+            self._midiButton.setBitmaps(self._midiNoContactBitmap, self._midiNoContactBitmap)
         else:
-            self._midiButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+            if(midiOn == True):
+                self._midiButton.setBitmaps(self._midiOnBitmap, self._midiOnPressedBitmap)
+            else:
+                self._midiButton.setBitmaps(self._midiOffBitmap, self._midiOffPressedBitmap)
 
     def _midiToggle(self, event):
         midiOn = self._configuration.isMidiEnabled()
         if(midiOn == True):
-            self._configuration.setMidiEnable(False)
+            midiOn = False
+            self._configuration.setMidiEnable(midiOn)
         else:
-            self._configuration.setMidiEnable(True)
+            midiOn = True
+            self._configuration.setMidiEnable(midiOn)
         self._updateMidiButtonColor(midiOn)
 
     def _onLoadButton(self, event):

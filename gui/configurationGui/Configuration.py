@@ -13,7 +13,7 @@ import os
 class Configuration(object):
     def __init__(self):
         self._guiConfigurationTree = ConfigurationHolder("MusicalVideoPlayerGUI")
-        self._guiConfigurationTree.setSelfclosingTags(['video', 'player'])
+        self._guiConfigurationTree.setSelfclosingTags(['video', 'player', 'gui'])
         self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
         self.setupGuiConfiguration()
         self._guiConfigurationTree.saveConfigFile("GuiConfig.cfg")
@@ -45,6 +45,7 @@ class Configuration(object):
         self._guiVideoConfig.addIntParameter("ScaleVideoX", -1)
         self._guiVideoConfig.addIntParameter("ScaleVideoY", -1)
         self._guiConfig = self._guiConfigurationTree.addChildUnique("GUI")
+        self._guiConfig.addBoolParameter("AutoSend", True)
         self._guiConfig.addBoolParameter("MidiBroadcast", True)
         self._guiConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._guiConfig.addIntParameter("MidiPort", 2022)
@@ -85,10 +86,16 @@ class Configuration(object):
         self._latestMidiControllerRequestCallback = callback
 
     def isMidiEnabled(self):
-        return self._guiPlayerConfig.getValue("MidiEnabled")
+        return self._guiConfig.getValue("MidiEnabled")
 
     def setMidiEnable(self, newValue):
-        self._guiPlayerConfig.setValue("MidiEnabled", newValue)
+        self._guiConfig.setValue("MidiEnabled", newValue)
+
+    def isAutoSendEnabled(self):
+        return self._guiConfig.getValue("AutoSend")
+
+    def setAutoSendEnable(self, newValue):
+        self._guiConfig.setValue("AutoSend", newValue)
 
     def setFromXml(self, config):
         self._playerConfigurationTree.setFromXml(config)

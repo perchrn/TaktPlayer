@@ -318,7 +318,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, LatestControllers, ConfigFileList = range(10)
+        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, ConfigFileTransfer, LatestControllers, ConfigFileList = range(11)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -388,6 +388,9 @@ class GuiClient(object):
                     returnValue = (self.ResponseTypes.ConfigState, int(configId))
                 elif(serverXml.tag == "configuration"):
                     returnValue = (self.ResponseTypes.Configuration, serverXml)
+#                    print "Got configurationRequest response."
+                elif(serverXml.tag == "configFileTransfer"):
+                    returnValue = (self.ResponseTypes.ConfigFileTransfer, serverXml)
 #                    print "Got configurationRequest response."
                 elif(serverXml.tag == "latestMidiControllersRequest"):
                     listTxt = serverXml.get("controllers")

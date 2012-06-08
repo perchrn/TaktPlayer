@@ -41,6 +41,11 @@ class ModulationGui(object):
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
         self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
 
+        self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
+        self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
+        self._updateButtonBitmap = wx.Bitmap("graphics/updateButton.png") #@UndefinedVariable
+        self._updateButtonPressedBitmap = wx.Bitmap("graphics/updateButtonPressed.png") #@UndefinedVariable
+
         self._modulationSorces = ModulationSources()
 
     def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
@@ -296,14 +301,12 @@ class ModulationGui(object):
         """Buttons"""
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        closeButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
-        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        saveButton = wx.Button(self._mainModulationGuiPlane, wx.ID_ANY, 'Update') #@UndefinedVariable
-        saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainModulationGuiPlane.Bind(wx.EVT_BUTTON, self._onSaveButton, id=saveButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        closeButton = PcnImageButton(self._mainModulationGuiPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onCloseButton) #@UndefinedVariable
+        saveButton = PcnImageButton(self._mainModulationGuiPlane, self._updateButtonBitmap, self._updateButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
+        saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._buttonsSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._activeControllersUpdate = wx.Timer(self._mainModulationGuiPlane, -1) #@UndefinedVariable

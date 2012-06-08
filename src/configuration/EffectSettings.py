@@ -5,7 +5,7 @@ Created on 25. jan. 2012
 '''
 from midi.MidiModulation import MidiModulation
 from video.media.MediaFileModes import FadeMode, forceUnixPath
-import copy
+import os
 
 class ConfigurationTemplates(object):
     def __init__(self, configurationTree, midiTiming, name, templateName = "Template", templateId = "Name"):
@@ -120,9 +120,13 @@ class ConfigurationTemplates(object):
             newTemplateName = configName + "_dup"
             testTemplate = self.getTemplate(newTemplateName)
             if(testTemplate == None):
-                newTemplate = copy.deepcopy(oldTemplate)
-                newTemplate.setName(newTemplateName)
-                self._configurationTemplates.append(newTemplate)
+                newTemplate = oldTemplate.getCopy(newTemplateName)
+                if(newTemplate != None):
+                    self._configurationTemplates.append(newTemplate)
+                else:
+                    print "Ii" * 100
+                    print "Error! getCopy not implemented for template. Cannot duplicate!!!"
+                    print "Ii" * 100
                 return newTemplateName
         return None
 
@@ -151,18 +155,18 @@ class EffectTemplates(ConfigurationTemplates):
             foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
             if(foundConfig == None):
                 effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-                self._defaultModulationConfig = EffectSettings(name, self, effectConfigTree)
+                self._defaultModulationConfig = EffectSettings(name, self, effectConfigTree, self._templateConfig, self._templateId)
                 self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = EffectSettings(name, self, effectConfigTree)
+        newTemplate = EffectSettings(name, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = EffectSettings(saveName, self, effectConfigTree)
+        newTemplate = EffectSettings(saveName, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -174,15 +178,31 @@ class EffectTemplates(ConfigurationTemplates):
         return False
         
 class EffectSettings(object):
-    def __init__(self, templateName, effectTemplates, effectConfigTree):
+    def __init__(self, templateName, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
         self._effectTemplates = effectTemplates
         self._templateName = templateName
         self._midiTiming = self._effectTemplates.getMidiTiming()
         self._configurationTree = effectConfigTree
+        self._parentConfigurationTree = parentConfigurationTree
+        self._templateId = templateId
         self._internalResolutionX, self._internalResolutionY = self._effectTemplates.getInternalResolution()
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._setupConfiguration()
         self._getConfiguration()
+
+    def getCopy(self, newName):
+        effectConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
+        copyTemplate = EffectSettings(newName, self._effectTemplates, effectConfigTree, self._parentConfigurationTree, self._templateId)
+        effectName = self._configurationTree.getValue("Effect")
+        ammountMod = self._configurationTree.getValue("Amount")
+        arg1Mod = self._configurationTree.getValue("Arg1")
+        arg2Mod = self._configurationTree.getValue("Arg2")
+        arg3Mod = self._configurationTree.getValue("Arg3")
+        arg4Mod = self._configurationTree.getValue("Arg4")
+        startValuesString = self.getStartValuesString()
+        copyTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+        return copyTemplate
+
 
     def getName(self):
         return self._templateName
@@ -290,18 +310,18 @@ class FadeTemplates(ConfigurationTemplates):
         foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
         if(foundConfig == None):
             fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-            self._defaultModulationConfig = FadeSettings(name, self, fadeConfigTree)
+            self._defaultModulationConfig = FadeSettings(name, self, fadeConfigTree, self._templateConfig, self._templateId)
             self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = FadeSettings(name, self, fadeConfigTree)
+        newTemplate = FadeSettings(name, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, fadeMode, fadeMod, levelMod):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = FadeSettings(saveName, self, fadeConfigTree)
+        newTemplate = FadeSettings(saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(fadeMode, fadeMod, levelMod)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -313,14 +333,25 @@ class FadeTemplates(ConfigurationTemplates):
         return False
         
 class FadeSettings(object):
-    def __init__(self, templateName, fadeTemplates, fadeConfigTree):
+    def __init__(self, templateName, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
         self._templateName = templateName
         self._midiTiming = self._fadeTemplates.getMidiTiming()
         self._configurationTree = fadeConfigTree
+        self._parentConfigurationTree = parentConfigurationTree
+        self._templateId = templateId
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._setupConfiguration()
         self._getConfiguration()
+
+    def getCopy(self, newName):
+        fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
+        copyTemplate = FadeSettings(newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
+        fadeModeString = self._configurationTree.getValue("Mode")
+        fadeModulationString = self._configurationTree.getValue("Modulation")
+        levelModulationString = self._configurationTree.getValue("Level")
+        copyTemplate.update(fadeModeString, fadeModulationString, levelModulationString)
+        return copyTemplate
 
     def getName(self):
         return self._templateName
@@ -363,7 +394,7 @@ class FadeSettings(object):
         
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
-            print "EffectSettings config is updated..."
+            print "FadeSettings config is updated..."
             self._getConfiguration()
             self._midiModulation.checkAndUpdateFromConfiguration()
             self._configurationTree.resetConfigurationUpdated()
@@ -385,10 +416,19 @@ class EffectImageList(ConfigurationTemplates):
     def getVideoDir(self):
         return self._videoDir
 
+    def getFileListString(self):
+        returnList = ""
+        for template in self._configurationTemplates:
+            if(returnList == ""):
+                returnList += os.path.basename(template.getFileName())
+            else:
+                returnList += "," + os.path.basename(template.getFileName())
+        return returnList
+
     def createTemplateFromXml(self, fileName, xmlConfig):
         fileName = forceUnixPath(fileName)
         xmlConfig.set("filename", fileName)
-        print "DEBUG createTemplateFromXml creating new with fileName: " + str(fileName) 
+        #print "DEBUG createTemplateFromXml creating new with fileName: " + str(fileName) 
         effectImageConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, fileName, fileName)
         newTemplate = ImageSettings(fileName, self, effectImageConfigTree)
         newTemplate.updateFromXml(xmlConfig)

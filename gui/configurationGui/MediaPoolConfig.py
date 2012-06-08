@@ -386,6 +386,16 @@ class MediaFileGui(object): #@UndefinedVariable
         self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
         self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
 
+        self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
+        self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
+        self._newThumbButtonBitmap = wx.Bitmap("graphics/newThumbButton.png") #@UndefinedVariable
+        self._newThumbButtonPressedBitmap = wx.Bitmap("graphics/newThumbButtonPressed.png") #@UndefinedVariable
+        self._removeButtonBitmap = wx.Bitmap("graphics/removeButton.png") #@UndefinedVariable
+        self._removeButtonPressedBitmap = wx.Bitmap("graphics/removeButtonPressed.png") #@UndefinedVariable
+        self._saveBigBitmap = wx.Bitmap("graphics/saveButtonBig.png") #@UndefinedVariable
+        self._saveBigPressedBitmap = wx.Bitmap("graphics/saveButtonBigPressed.png") #@UndefinedVariable
+        self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
+
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._overviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(168,-1)) #@UndefinedVariable
         self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(0,0)) #@UndefinedVariable
@@ -664,23 +674,21 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer.Add(fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        closeButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Close') #@UndefinedVariable
-        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        thumbButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'New thumb') #@UndefinedVariable
-        thumbButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onThumbButton, id=thumbButton.GetId()) #@UndefinedVariable
-        deleteButton = wx.Button(self._noteConfigPanel, wx.ID_ANY, 'Remove') #@UndefinedVariable
-        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_BUTTON, self._onDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
-        self._saveButton = PcnImageButton(self._noteConfigPanel, self._saveGreyBitmap, self._saveGreyBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        closeButton = PcnImageButton(self._noteConfigPanel, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onCloseButton) #@UndefinedVariable
+        thumbButton = PcnImageButton(self._noteConfigPanel, self._newThumbButtonBitmap, self._newThumbButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(90, 17)) #@UndefinedVariable
+        thumbButton.Bind(wx.EVT_BUTTON, self._onThumbButton) #@UndefinedVariable
+        deleteButton = PcnImageButton(self._noteConfigPanel, self._removeButtonBitmap, self._removeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
+        deleteButton.Bind(wx.EVT_BUTTON, self._onDeleteButton) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._noteConfigPanel, self._saveBigGreyBitmap, self._saveBigGreyBitmap, (-1, -1), wx.ID_ANY, size=(52, 17)) #@UndefinedVariable
         self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
-        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(thumbButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(thumbButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._mainSelection = self.MainSelection.Unselected
         self._selectedEditor = self.EditSelection.Unselected
         self._activeTrackClipNoteId = -1
         self._type = "VideoLoop"
@@ -689,12 +697,15 @@ class MediaFileGui(object): #@UndefinedVariable
     def setupTrackClipOverviewGui(self, overviewPanel):
         self._mainTrackOverviewPlane = overviewPanel
 
-        font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+        isMac = False
         if(sys.platform == "darwin"):
+            isMac = True
+            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
             font.SetPointSize(10)
 
         txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         self._overviewTrackClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewTrackClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewTrackClipButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackClipButton) #@UndefinedVariable
@@ -702,13 +713,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewTrackClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewTrackClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
-        self._overviewTrackClipLengthLabel.SetFont(font)
+        if(isMac == True):
+            self._overviewTrackClipLengthLabel.SetFont(font)
         self._overviewTrackClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        self._overviewTrackClipQuantizeLabel.SetFont(font)
+        if(isMac == True):
+            self._overviewTrackClipQuantizeLabel.SetFont(font)
         txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewTrackFx1Button.enableDoubleClick()
@@ -721,12 +736,15 @@ class MediaFileGui(object): #@UndefinedVariable
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
 
-        font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+        isMac = False
         if(sys.platform == "darwin"):
+            isMac = True
+            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
             font.SetPointSize(10)
 
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
@@ -736,13 +754,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
         self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
-        self._overviewClipLengthLabel.SetFont(font)
+        if(isMac == True):
+            self._overviewClipLengthLabel.SetFont(font)
         self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        self._overviewClipQuantizeLabel.SetFont(font)
+        if(isMac == True):
+            self._overviewClipQuantizeLabel.SetFont(font)
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         self._overviewFx1Button.enableDoubleClick()
@@ -757,11 +779,14 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
 
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
-        txt.SetFont(font)
+        if(isMac == True):
+            txt.SetFont(font)
         self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
         self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
@@ -777,7 +802,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipFadeLevelButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
 
         self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
-        self._overviewClipNoteLabel.SetFont(font)
+        if(isMac == True):
+            self._overviewClipNoteLabel.SetFont(font)
 
         self._overviewClipSaveButtonDissabled = True
         self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
@@ -800,6 +826,9 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def showNoteGui(self):
         self._configSizer.Show(self._noteConfigPanel)
+        if(self._mainSelection == self.MainSelection.Track):
+            self._trackGui.closeTackGui()
+        self._mainSelection = self.MainSelection.Note
         self.refreshLayout()
 
     def showEffectList(self):
@@ -828,17 +857,25 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def hideNoteGui(self):
         self._configSizer.Hide(self._noteConfigPanel)
+        self._mainSelection = self.MainSelection.Unselected
         self.refreshLayout()
         #TODO: Note selection clear callback
 
     def showTrackGui(self):
         self._configSizer.Show(self._trackGuiPlane)
+        if(self._mainSelection == self.MainSelection.Note):
+            self._onCloseButton(None)
+        self._mainSelection = self.MainSelection.Track
         self.refreshLayout()
 
     def hideTrackGui(self):
         self._configSizer.Hide(self._trackGuiPlane)
+        self._mainSelection = self.MainSelection.Unselected
         self.refreshLayout()
         #TODO: Track selection clear callback
+
+    class MainSelection():
+        Unselected, Track, Note = range(3)
 
     class EditSelection():
         Unselected, Effect1, Effect2, Fade, ImageSeqModulation, Filter1Modulation, Filter2Modulation, Filter3Modulation = range(8)
@@ -924,44 +961,60 @@ ReTrigger Will be restarted when another note is activated on the same track.
         dlg.Destroy()
 
     def _onSubmodulationEdit(self, event):
+        if(self._selectedEditor != self.EditSelection.ImageSeqModulation):
+            self._configSizer.Show(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.ImageSeqModulation
+        else:
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Show(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
-        self._selectedEditor = self.EditSelection.ImageSeqModulation
-        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
+        self._highlightButton(self._selectedEditor)
 
     def _onFilter1Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.Filter1Modulation):
+            self._configSizer.Show(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Filter1Modulation
+        else:
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Show(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
-        self._selectedEditor = self.EditSelection.Filter1Modulation
-        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._filter1ModulationField.GetValue(), self._filter1ModulationField, None, None)
+        self._highlightButton(self._selectedEditor)
 
     def _onFilter2Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.Filter2Modulation):
+            self._configSizer.Show(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Filter2Modulation
+        else:
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Show(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
-        self._selectedEditor = self.EditSelection.Filter2Modulation
-        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._filter2ModulationField.GetValue(), self._filter2ModulationField, None, None)
+        self._highlightButton(self._selectedEditor)
 
     def _onFilter3Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.Filter3Modulation):
+            self._configSizer.Show(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Filter3Modulation
+        else:
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Show(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
-        self._selectedEditor = self.EditSelection.Filter3Modulation
-        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._filter3ModulationField.GetValue(), self._filter3ModulationField, None, None)
+        self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
         text = """
@@ -1083,27 +1136,33 @@ All notes on events are quantized to this.
 
     def _onEffect1Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
-            self._configSizer.Show(self._effectConfigPanel)
-            self._configSizer.Hide(self._fadeConfigPanel)
             if(self._selectedEditor != self.EditSelection.Effect1):
-                self._configSizer.Hide(self._moulationConfigPanel)
+                self._selectedEditor = self.EditSelection.Effect1
+                self._configSizer.Show(self._effectConfigPanel)
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
-        self._selectedEditor = self.EditSelection.Effect1
-        self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
+        self._highlightButton(self._selectedEditor)
 
     def _onEffect2Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
-            self._configSizer.Show(self._effectConfigPanel)
-            self._configSizer.Hide(self._fadeConfigPanel)
             if(self._selectedEditor != self.EditSelection.Effect2):
-                self._configSizer.Hide(self._moulationConfigPanel)
+                self._configSizer.Show(self._effectConfigPanel)
+                self._selectedEditor = self.EditSelection.Effect2
+            else:
+                self._configSizer.Hide(self._effectConfigPanel)
+                self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
-        self._selectedEditor = self.EditSelection.Effect2
-        self._highlightButton(self._selectedEditor)
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
+        self._highlightButton(self._selectedEditor)
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
@@ -1160,16 +1219,19 @@ All notes on events are quantized to this.
 
     def _onFadeEdit(self, event, showFadeGui=True):
         if(showFadeGui == True):
+            if(self._selectedEditor != self.EditSelection.Fade):
+                self._configSizer.Show(self._fadeConfigPanel)
+                self._selectedEditor = self.EditSelection.Fade
+            else:
+                self._configSizer.Hide(self._fadeConfigPanel)
+                self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._effectConfigPanel)
             self._configSizer.Hide(self._slidersPanel)
-            if(self._selectedEditor != self.EditSelection.Fade):
-                self._configSizer.Hide(self._moulationConfigPanel)
-            self._configSizer.Show(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
-        self._selectedEditor = self.EditSelection.Fade
-        self._highlightButton(self._selectedEditor)
         self._mainConfig.updateFadeGui(selectedFadeConfig, None, self._fadeField)
+        self._highlightButton(self._selectedEditor)
 
     def _onCloseButton(self, event):
         self.hideNoteGui()
@@ -1209,75 +1271,78 @@ All notes on events are quantized to this.
                         if(noteFileName.startswith("..") == True):
                             noteFileName = self._fileName
                     self._fileName = noteFileName
-        noteLetter = noteToNoteString(self._midiNote)
-        if(self._config == None):
-            newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
-            if(noteFileName != ""):
-                self._mainConfig.setNewNoteThumb(self._midiNote)
-            if(newConfig != None):
-                self._config = newConfig.getConfig()
+        if(noteFileName == ""):
+            self._onDeleteButton(None)
         else:
-            if(self._config.getValue("FileName") != noteFileName):
-                self._mainConfig.setNewNoteThumb(self._midiNote)
-            self._config.setValue("FileName", noteFileName)
-        if(self._config != None):
-            self._config.setValue("Type", self._type)
-            if(self._type == "VideoLoop"):
-                loopMode = self._subModeField.GetValue()
-                self._config.addTextParameter("LoopMode", "Normal")
-                self._config.setValue("LoopMode", loopMode)
-                self._config.removeParameter("SequenceMode")
-                self._config.removeParameter("PlayBackModulation")
-            elif(self._type == "ImageSequence"):
-                self._config.removeParameter("LoopMode")
-                sequenceMode = self._subModeField.GetValue()
-                self._config.addTextParameter("SequenceMode", "Time")
-                self._config.setValue("SequenceMode", sequenceMode)
-                sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
-                self._subModulationField.SetValue(sequenceModulation)
-                self._config.addTextParameter("PlayBackModulation", "None")
-                self._config.setValue("PlayBackModulation", sequenceModulation)
+            noteLetter = noteToNoteString(self._midiNote)
+            if(self._config == None):
+                newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
+                if(noteFileName != ""):
+                    self._mainConfig.setNewNoteThumb(self._midiNote)
+                if(newConfig != None):
+                    self._config = newConfig.getConfig()
             else:
-                self._config.removeParameter("LoopMode")
-                self._config.removeParameter("SequenceMode")
-                self._config.removeParameter("PlayBackModulation")
-            if(self._type == "KinectCamera"):
-                modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
-                self._subModulationField.SetValue(modeModulation)
-                self._config.addTextParameter("DisplayModeModulation", "None")
-                self._config.setValue("DisplayModeModulation", modeModulation)
-                filterModulation = self._midiModulation.validateModulationString(self._filter1ModulationField.GetValue())
-                self._filter1ModulationField.SetValue(filterModulation)
-                self._config.addTextParameter("BlackFilterModulation", "None")
-                self._config.setValue("BlackFilterModulation", filterModulation)
-                filterModulation = self._midiModulation.validateModulationString(self._filter2ModulationField.GetValue())
-                self._filter2ModulationField.SetValue(filterModulation)
-                self._config.addTextParameter("DiffFilterModulation", "None")
-                self._config.setValue("DiffFilterModulation", filterModulation)
-                filterModulation = self._midiModulation.validateModulationString(self._filter3ModulationField.GetValue())
-                self._filter3ModulationField.SetValue(filterModulation)
-                self._config.addTextParameter("ErodeFilterModulation", "None")
-                self._config.setValue("ErodeFilterModulation", filterModulation)
-            else:
-                self._config.removeParameter("DisplayModeModulation")
-                self._config.removeParameter("BlackFilterModulation")
-                self._config.removeParameter("DiffFilterModulation")
-                self._config.removeParameter("ErodeFilterModulation")
-            self._onSyncValidate(event)
-            syncLength = self._syncField.GetValue()
-            self._config.setValue("SyncLength", syncLength)
-            self._onQuantizeValidate(event)
-            quantizeLength = self._quantizeField.GetValue()
-            self._config.setValue("QuantizeLength", quantizeLength)
-            mixMode = self._mixField.GetValue()
-            self._config.setValue("MixMode", mixMode)
-            effect1Config = self._effect1Field.GetValue()
-            self._config.setValue("Effect1Config", effect1Config)
-            effect2Config = self._effect2Field.GetValue()
-            self._config.setValue("Effect2Config", effect2Config)
-            fadeConfig = self._fadeField.GetValue()
-            self._config.setValue("FadeConfig", fadeConfig)
-            self.updateGui(None, None)
+                if(self._config.getValue("FileName") != noteFileName):
+                    self._mainConfig.setNewNoteThumb(self._midiNote)
+                self._config.setValue("FileName", noteFileName)
+            if(self._config != None):
+                self._config.setValue("Type", self._type)
+                if(self._type == "VideoLoop"):
+                    loopMode = self._subModeField.GetValue()
+                    self._config.addTextParameter("LoopMode", "Normal")
+                    self._config.setValue("LoopMode", loopMode)
+                    self._config.removeParameter("SequenceMode")
+                    self._config.removeParameter("PlayBackModulation")
+                elif(self._type == "ImageSequence"):
+                    self._config.removeParameter("LoopMode")
+                    sequenceMode = self._subModeField.GetValue()
+                    self._config.addTextParameter("SequenceMode", "Time")
+                    self._config.setValue("SequenceMode", sequenceMode)
+                    sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                    self._subModulationField.SetValue(sequenceModulation)
+                    self._config.addTextParameter("PlayBackModulation", "None")
+                    self._config.setValue("PlayBackModulation", sequenceModulation)
+                else:
+                    self._config.removeParameter("LoopMode")
+                    self._config.removeParameter("SequenceMode")
+                    self._config.removeParameter("PlayBackModulation")
+                if(self._type == "KinectCamera"):
+                    modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                    self._subModulationField.SetValue(modeModulation)
+                    self._config.addTextParameter("DisplayModeModulation", "None")
+                    self._config.setValue("DisplayModeModulation", modeModulation)
+                    filterModulation = self._midiModulation.validateModulationString(self._filter1ModulationField.GetValue())
+                    self._filter1ModulationField.SetValue(filterModulation)
+                    self._config.addTextParameter("BlackFilterModulation", "None")
+                    self._config.setValue("BlackFilterModulation", filterModulation)
+                    filterModulation = self._midiModulation.validateModulationString(self._filter2ModulationField.GetValue())
+                    self._filter2ModulationField.SetValue(filterModulation)
+                    self._config.addTextParameter("DiffFilterModulation", "None")
+                    self._config.setValue("DiffFilterModulation", filterModulation)
+                    filterModulation = self._midiModulation.validateModulationString(self._filter3ModulationField.GetValue())
+                    self._filter3ModulationField.SetValue(filterModulation)
+                    self._config.addTextParameter("ErodeFilterModulation", "None")
+                    self._config.setValue("ErodeFilterModulation", filterModulation)
+                else:
+                    self._config.removeParameter("DisplayModeModulation")
+                    self._config.removeParameter("BlackFilterModulation")
+                    self._config.removeParameter("DiffFilterModulation")
+                    self._config.removeParameter("ErodeFilterModulation")
+                self._onSyncValidate(event)
+                syncLength = self._syncField.GetValue()
+                self._config.setValue("SyncLength", syncLength)
+                self._onQuantizeValidate(event)
+                quantizeLength = self._quantizeField.GetValue()
+                self._config.setValue("QuantizeLength", quantizeLength)
+                mixMode = self._mixField.GetValue()
+                self._config.setValue("MixMode", mixMode)
+                effect1Config = self._effect1Field.GetValue()
+                self._config.setValue("Effect1Config", effect1Config)
+                effect2Config = self._effect2Field.GetValue()
+                self._config.setValue("Effect2Config", effect2Config)
+                fadeConfig = self._fadeField.GetValue()
+                self._config.setValue("FadeConfig", fadeConfig)
+                self.updateGui(None, None)
 
     def _showOrHideSubModeModulation(self):
         if(self._selectedSubMode == "Modulation"):
@@ -1775,15 +1840,20 @@ All notes on events are quantized to this.
         self._overviewTrackFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
 
     def _checkIfUpdated(self):
+        guiFileName = self._fileNameField.GetValue()
         if(self._config == None):
+            if(guiFileName != ""):
+                return True
+            else:
+                return False
+        configFileName = os.path.basename(self._config.getValue("FileName"))
+        if((guiFileName == "") and (configFileName == "")):
             return False
+        if(guiFileName != configFileName):
+            return True
         guiType = self._typeField.GetValue()
         configType = self._config.getValue("Type")
         if(guiType != configType):
-            return True
-        guiFileName = self._fileNameField.GetValue()
-        configFileName = os.path.basename(self._config.getValue("FileName"))
-        if(guiFileName != configFileName):
             return True
         if(configType == "VideoLoop"):
             guiMode = self._subModeField.GetValue()
@@ -1850,15 +1920,12 @@ All notes on events are quantized to this.
     def _showOrHideSaveButton(self):
         updated = self._checkIfUpdated()
         if(updated == False):
-            if((self._config == None) and (self._midiNote != None)):
-                updated = True
-            else:
-                self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-                self._saveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
-                self._overviewClipSaveButtonDissabled = True
+            self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+            self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
+            self._overviewClipSaveButtonDissabled = True
         if(updated == True):
             self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
-            self._saveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
             self._overviewClipSaveButtonDissabled = False
         
     def updateGui(self, noteConfig, midiNote):

@@ -17,7 +17,6 @@ from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString
 import subprocess
 from utilities.MultiprocessLogger import MultiprocessLogger
-from utilities.UrlSignature import UrlSignature
 from configurationGui.MediaMixerConfig import MediaTrackGui
 from media.VideoConvert import VideoConverterDialog, VideoCopyDialog
 from midi.TcpMidiListner import TcpMidiListner
@@ -40,6 +39,7 @@ class TaskHolder(object):
         self._type = taskType
         self._widget = widget
         self._uniqueueId = uniqueId
+        self._extraData = None
         self._state = self.States.Init
         self._stateTime = time.time()
         self._startTime = self._stateTime
@@ -58,6 +58,12 @@ class TaskHolder(object):
 
     def getWidget(self):
         return self._widget
+
+    def setExtraData(self, data):
+        self._extraData = data
+
+    def getExtraData(self):
+        return self._extraData
 
     def isStale(self, currentTime):
         if((currentTime - self._stateTime) > self._timeout):
@@ -162,8 +168,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._mainSizer.Add(self._trackAndEditAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(self._scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._sendButton = wx.Button(menuPannel, wx.ID_ANY, 'Send') #@UndefinedVariable
-        self._sendButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
+        self._sendConfigBitmap = wx.Bitmap("graphics/sendConfigButton.png") #@UndefinedVariable
+        self._sendConfigPressedBitmap = wx.Bitmap("graphics/sendConfigButtonPressed.png") #@UndefinedVariable
+        self._sendConfigNoContactBitmap = wx.Bitmap("graphics/sendConfigButtonNoContact.png") #@UndefinedVariable
+        self._sendConfigNoContactRedBitmap = wx.Bitmap("graphics/sendConfigButtonNoContactRed.png") #@UndefinedVariable
+        self._sendConfigNoNewConfigBitmap = wx.Bitmap("graphics/sendConfigButtonNoNewConfig.png") #@UndefinedVariable
+        self._sendConfigSendingBitmap = wx.Bitmap("graphics/sendConfigButtonSending.png") #@UndefinedVariable
+        self._sendButton = PcnImageButton(menuPannel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
+        self._sendButton.Bind(wx.EVT_BUTTON, self._onSendButton) #@UndefinedVariable
         self._midiButton = wx.Button(menuPannel, wx.ID_ANY, 'MIDI on') #@UndefinedVariable
         self._updateMidiButtonColor(self._configuration.isMidiEnabled())
         self._configNameField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
@@ -183,7 +195,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuPannel.Bind(wx.EVT_BUTTON, self._onSendButton, id=self._sendButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._midiToggle, id=self._midiButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
         menuPannel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
@@ -283,7 +294,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._skippedConfigStateRequests = 99
         self._skippedConfigListRequests = 99
         self._skippedLatestControllersRequests = 0
+        self._skippedCheckConfigState = 0
         self._stoppingWebRequests = True
+        self._sendingConfig = False
         self._lastConfigState = -1
         self._latestControllersRequestResult = None
         self._dragSource = None
@@ -386,6 +399,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._requestLatestControllers()
         self._midiListner.getData(False)
         self._updateTimingDisplay()
+        self._checkConfigState()
         self._multiprocessLogger.handleQueuedLoggs()
 
     def _checkForProcessCommands(self):
@@ -434,6 +448,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     noteTxt, noteTime, fileName = result[1] #@UnusedVariable
                     noteId = max(min(int(noteTxt), 127), 0)
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Note, noteId)
+                    forceUpdate = foundTask.getExtraData()
                     if(foundTask == None):
                         print "Could not find task that belongs to this answer: " + noteTxt + ":" + noteTime + " -> " + fileName
                     else:
@@ -449,7 +464,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                                         noteWidget = self._noteWidgets[self._activeNoteId]
                                         noteBitmap = noteWidget.getBitmap()
                                         self._noteGui.updateOverviewClipBitmap(noteBitmap)
-                            if(needFile == True):
+                            if((needFile == True) or (forceUpdate == True)):
                                 fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
                                 self._taskQueue.append(fileRequestTask)
                                 self._guiClient.requestImageFile(fileName)
@@ -665,6 +680,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _requestNote(self, noteId, noteTime, forceUpdate = False):
         imageRequestTask = TaskHolder("Note request for note %d:%.2f" %(noteId, noteTime), TaskHolder.RequestTypes.Note, self._noteWidgets[noteId], noteId)
+        imageRequestTask.setExtraData(forceUpdate)
         self._taskQueue.append(imageRequestTask)
         self._guiClient.requestImage(noteId, noteTime, forceUpdate)
         imageRequestTask.setState(TaskHolder.States.Sendt)
@@ -731,14 +747,35 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         bpm = int(self._midiTiming.getBpm() + 0.5)
         self._bpmField.SetValue(str(bpm))
 
+    def _checkConfigState(self):
+        if(self._skippedCheckConfigState > 3):
+            self._skippedCheckConfigState = 0
+            currentGuiConfigString = self._configuration.getXmlString()
+            if(self._oldServerConfigurationString != currentGuiConfigString):
+                if(self._stoppingWebRequests == True):
+                    self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
+                else:
+                    if(self._sendingConfig == True):
+                        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
+                    else:
+                        self._sendButton.setBitmaps(self._sendConfigBitmap, self._sendConfigPressedBitmap)
+            else:
+                self._sendingConfig = False
+                if(self._stoppingWebRequests == True):
+                    self._sendButton.setBitmaps(self._sendConfigNoContactBitmap, self._sendConfigNoContactBitmap)
+                else:
+                    self._sendButton.setBitmaps(self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap)
+        else:
+            self._skippedCheckConfigState += 1
+
     def getLatestControllers(self):
         return self._latestControllersRequestResult
 
     def _onSendButton(self, event):
         xmlString = self._configuration.getXmlString()
-        urlTest = UrlSignature()
-        urlTest.getSigantureFieldsForFile("configuration", "temp.cfg", xmlString)
         self._guiClient.sendConfiguration(xmlString)
+        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
+        self._sendingConfig = True
 
     def _updateMidiButtonColor(self, midiOn):
         if(midiOn == True):

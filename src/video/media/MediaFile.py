@@ -412,6 +412,7 @@ class MediaFile(object):
                 image = cv.QueryFrame(self._videoFile)
         else:
             #Get current image...
+            #print "DEBUG Using current image for thumb (pos < 0)"
             image = self._captureImage
 
         filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()

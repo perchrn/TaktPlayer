@@ -210,7 +210,10 @@ class Configuration(object):
 
     def makeNewEffectImage(self, fileName):
         return self._globalConf.makeNewEffectImage(fileName)
-        
+
+    def getEffectImageFileListString(self):
+        return self._globalConf.getEffectImageFileListString()
+
     def verifyEffectTemplateUsed(self):
         effectsConfigNames =  self._globalConf.getEffectTemplateNamesList()
         self._mediaPoolConf.verifyEffectTemplateUsed(effectsConfigNames)

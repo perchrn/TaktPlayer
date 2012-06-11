@@ -620,32 +620,34 @@ class MidiStateHolder(object):
 
 class DummyMidiStateHolder(object):
     def __init__(self):
-        pass
+        self._lastMidiEventTime = -1
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def noteOff(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def polyPreasure(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def controller(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def guiController(self, midiChannel, data1, data2, data3):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def programChange(self, midiChannel, data1, data2, data3, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def aftertouch(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def pitchBend(self, midiChannel, data1, data2, songPosition):
-        pass
+        self._lastMidiEventTime = time.time()
 
     def cleanupFutureNotes(self, songPosition, oldSongPosition, timeLimit):
-        pass
+        self._lastMidiEventTime = time.time()
 
+    def getLastMidiEventTime(self):
+        return self._lastMidiEventTime

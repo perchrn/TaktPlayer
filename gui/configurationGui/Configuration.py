@@ -86,10 +86,10 @@ class Configuration(object):
         self._latestMidiControllerRequestCallback = callback
 
     def isMidiEnabled(self):
-        return self._guiConfig.getValue("MidiEnabled")
+        return self._guiConfig.getValue("MidiBroadcast")
 
     def setMidiEnable(self, newValue):
-        self._guiConfig.setValue("MidiEnabled", newValue)
+        self._guiConfig.setValue("MidiBroadcast", newValue)
 
     def isAutoSendEnabled(self):
         return self._guiConfig.getValue("AutoSend")

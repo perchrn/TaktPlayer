@@ -7,7 +7,8 @@ import os
 import logging
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
-from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT
+from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT,\
+    PcnPopupMenu
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
@@ -95,6 +96,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
         super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
             size=(800, 600))
+        self._baseTitle = title
+        self._activeConfig = ""
+        self._updateTitle(self._activeConfig)
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
@@ -130,9 +134,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
-        menuPannel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
-        menuPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
-        menuPannel.SetSizer(self._menuSizer) #@UndefinedVariable
+        self._menuPanel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
+        self._menuPanel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
+        self._menuPanel.SetSizer(self._menuSizer) #@UndefinedVariable
         menuSeperatorPannel = wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
         menuSeperatorPannel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
@@ -168,6 +172,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._mainSizer.Add(self._trackAndEditAreaSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(self._scrollingKeyboardPannel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._fileMenuBitmap = wx.Bitmap("graphics/fileButton.png") #@UndefinedVariable
+        self._fileMenuPressedBitmap = wx.Bitmap("graphics/fileButtonPressed.png") #@UndefinedVariable
+
+        self._fileMenuOpen = wx.Bitmap("graphics/menuButtonFile.png") #@UndefinedVariable
+        self._fileMenuNew = wx.Bitmap("graphics/menuButtonFilePluss.png") #@UndefinedVariable
+        self._fileMenuSave = wx.Bitmap("graphics/menuButtonDisk.png") #@UndefinedVariable
+        self._fileMenuConfig = wx.Bitmap("graphics/menuButtonConfig.png") #@UndefinedVariable
+
+        self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig]
+        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config"]
+
         self._sendConfigBitmap = wx.Bitmap("graphics/sendConfigButton.png") #@UndefinedVariable
         self._sendConfigPressedBitmap = wx.Bitmap("graphics/sendConfigButtonPressed.png") #@UndefinedVariable
         self._sendConfigNoContactBitmap = wx.Bitmap("graphics/sendConfigButtonNoContact.png") #@UndefinedVariable
@@ -181,29 +196,28 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._midiOffPressedBitmap = wx.Bitmap("graphics/midiOnButtonOffPressed.png") #@UndefinedVariable
         self._midiNoContactBitmap = wx.Bitmap("graphics/midiOnButtonNoContact.png") #@UndefinedVariable
 
-        self._sendButton = PcnImageButton(menuPannel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
+        self._inputGreenBitmap = wx.Bitmap("graphics/inputIndicatorGreen.png") #@UndefinedVariable
+        self._inputGrayBitmap = wx.Bitmap("graphics/inputIndicatorGray.png") #@UndefinedVariable
+
+        self._fileButton = PcnImageButton(self._menuPanel, self._fileMenuBitmap, self._fileMenuPressedBitmap, (-1, -1), wx.ID_ANY, size=(46, 17)) #@UndefinedVariable
+        self._fileButtonPopup = PcnPopupMenu(self, self._fileImages, self._fileLabels, self._onFileMenuItemChosen)
+        self._fileButton.Bind(wx.EVT_BUTTON, self._onFileButton) #@UndefinedVariable
+        self._sendButton = PcnImageButton(self._menuPanel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(93, 17)) #@UndefinedVariable
         self._sendButton.Bind(wx.EVT_BUTTON, self._onSendButton) #@UndefinedVariable
-        self._midiButton = PcnImageButton(menuPannel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
+        self._midiButton = PcnImageButton(self._menuPanel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
         self._midiButton.Bind(wx.EVT_BUTTON, self._midiToggle) #@UndefinedVariable
-        self._configNameField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(120, -1)) #@UndefinedVariable
-        self._configFileSelector = wx.ComboBox(menuPannel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._configFileSelector = wx.ComboBox(self._menuPanel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
         self._configFileSelector.SetStringSelection("N/A")
-        self._loadButton = wx.Button(menuPannel, wx.ID_ANY, 'Load') #@UndefinedVariable
-        self._loadButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._saveButton = wx.Button(menuPannel, wx.ID_ANY, 'Save') #@UndefinedVariable
-        self._saveButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._timingField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(70, -1)) #@UndefinedVariable
-        self._bpmField = wx.TextCtrl(menuPannel, wx.ID_ANY, "N/A", size=(50, -1)) #@UndefinedVariable
+        self._timingField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(70, -1)) #@UndefinedVariable
+        self._bpmField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(50, -1)) #@UndefinedVariable
+        self._inputButton = PcnImageButton(self._menuPanel, self._inputGrayBitmap, self._inputGrayBitmap, (-1, -1), wx.ID_ANY, size=(34, 17)) #@UndefinedVariable
+        self._menuSizer.Add(self._fileButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(self._configNameField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(self._loadButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(self._saveButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        menuPannel.Bind(wx.EVT_BUTTON, self._onLoadButton, id=self._loadButton.GetId()) #@UndefinedVariable
-        menuPannel.Bind(wx.EVT_BUTTON, self._onSaveButton, id=self._saveButton.GetId()) #@UndefinedVariable
+        self._menuSizer.Add(self._inputButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
@@ -508,6 +522,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.TrackState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
                 if(result[1] != None):
+                    if(self._stoppingWebRequests == True):
+                        self._updateTitle("Connecting to server...")
                     self._stoppingWebRequests = False
                     noteList = result[1]
                     for i in range(16):
@@ -634,11 +650,20 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             self._configFileSelector.SetStringSelection(selectedValue)
                         else:
                             self._configFileSelector.SetStringSelection("active configuration")
-                        self._configNameField.SetValue(activeConfig)
+                        self._updateTitle(activeConfig)
                     self._oldServerConfigList = configurationFileListString
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+
+    def _updateTitle(self, activeConfig):
+        if(activeConfig == ""):
+            self.SetTitle(self._baseTitle + "   *** No contact with player! ***")
+        elif(activeConfig == "Connecting to server..."):
+            self.SetTitle(self._baseTitle + "   * Connecting to server... *")
+        else:
+            self.SetTitle(self._baseTitle + "   [" + activeConfig + "]")
+        self._activeConfig = activeConfig
 
     def _checkForStaleTasks(self):
         checkTime = time.time()
@@ -656,6 +681,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     self._guiClient.requestTrackState()
                     task.setState(TaskHolder.States.Sendt)
                     self._stoppingWebRequests = True
+                    self._updateTitle("")
                 elif(task.getType() == TaskHolder.RequestTypes.Preview):
                     self._guiClient.requestPreview()
                     task.setState(TaskHolder.States.Sendt)
@@ -748,10 +774,21 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         midiSync, bar, beat, subbeat, subBeatFraction = self._midiTiming.getMidiPosition(timeStamp) #@UnusedVariable
         if(midiSync != True):
             bar = ((bar - 1) % 8) + 1
+            self._timingField.SetBackgroundColour((220, 220, 220))
+        else:
+            self._timingField.SetBackgroundColour((220, 255, 220))
         positionText = "%5d:%d.%02d" %(bar, beat, subbeat)
         self._timingField.SetValue(positionText)
         bpm = int(self._midiTiming.getBpm() + 0.5)
         self._bpmField.SetValue(str(bpm))
+
+        currentTime = time.time()
+        lastEventAge = currentTime - self._midiStateHolder.getLastMidiEventTime()
+        if(lastEventAge < 1000):
+            self._inputButton.setBitmaps(self._inputGreenBitmap, self._inputGreenBitmap)
+        else:
+            self._inputButton.setBitmaps(self._inputGrayBitmap, self._inputGrayBitmap)
+            
 
     def _checkConfigState(self):
         if(self._skippedCheckConfigState > 3):
@@ -785,6 +822,27 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def getLatestControllers(self):
         return self._latestControllersRequestResult
 
+    def _onFileButton(self, event):
+        self._menuPanel.PopupMenu(self._fileButtonPopup, (3,19))
+
+    def _onFileMenuItemChosen(self, index):
+        print " index: " + str(index)
+        if(index == 0):
+            selectedConfig = self._configFileSelector.GetValue()
+            print "LOAD: " + str(selectedConfig)
+            self._guiClient.requestConfigChange(selectedConfig)
+        elif(index == 1):
+            print "NEW: " * 20
+        elif(index == 2):
+            selectedConfig = self._activeConfig
+            print "SAVE: " + str(selectedConfig)
+            self._guiClient.requestConfigSave(selectedConfig)
+        elif(index == 3):
+            print "Player: " * 20
+        elif(index == 4):
+            print "GUI: " * 20
+            
+
     def _onSendButton(self, event):
         xmlString = self._configuration.getXmlString()
         self._guiClient.sendConfiguration(xmlString)
@@ -809,16 +867,6 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             midiOn = True
             self._configuration.setMidiEnable(midiOn)
         self._updateMidiButtonColor(midiOn)
-
-    def _onLoadButton(self, event):
-        selectedConfig = self._configFileSelector.GetValue()
-        print "LOAD: " + str(selectedConfig)
-        self._guiClient.requestConfigChange(selectedConfig)
-
-    def _onSaveButton(self, event):
-        selectedConfig = self._configNameField.GetValue()
-        print "SAVE: " + str(selectedConfig)
-        self._guiClient.requestConfigSave(selectedConfig)
 
     def _selectKeyboardKey(self, keyId):
         if((keyId >= 0) and (keyId < 128)):

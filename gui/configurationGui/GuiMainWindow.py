@@ -183,9 +183,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._fileMenuNew = wx.Bitmap("graphics/menuButtonFilePluss.png") #@UndefinedVariable
         self._fileMenuSave = wx.Bitmap("graphics/menuButtonDisk.png") #@UndefinedVariable
         self._fileMenuConfig = wx.Bitmap("graphics/menuButtonConfig.png") #@UndefinedVariable
+        self._fileMenuExit = wx.Bitmap("graphics/menuButtonExit.png") #@UndefinedVariable
 
-        self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig]
-        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config"]
+        self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig, self._fileMenuExit]
+        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config", "Exit"]
 
         self._sendConfigBitmap = wx.Bitmap("graphics/sendConfigButton.png") #@UndefinedVariable
         self._sendConfigPressedBitmap = wx.Bitmap("graphics/sendConfigButtonPressed.png") #@UndefinedVariable
@@ -825,15 +826,19 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._menuPanel.PopupMenu(self._fileButtonPopup, (3,19))
 
     def _onFileMenuItemChosen(self, index):
-        print " index: " + str(index)
-        if(index == 0):
+        if(index < 0):
+            return
+        if(index > len(self._fileLabels)):
+            return
+        menuString = self._fileLabels[index]
+        if(menuString == "Open"):
             dlg = ConfigOpenDialog(self, 'Load config.', self._guiClient.requestConfigChange, self._configurationFilesList, self._activeConfig)
             dlg.ShowModal()
             try:
                 dlg.Destroy()
             except wx._core.PyDeadObjectError: #@UndefinedVariable
                 pass
-        elif(index == 1):
+        elif(menuString == "New"):
             dlg = ConfigNewDialog(self, 'New config.', self._updateConfigName, self._activeConfig)
             dlg.ShowModal()
             try:
@@ -841,11 +846,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             except wx._core.PyDeadObjectError: #@UndefinedVariable
                 pass
             self._updateTitle(self._activeConfig)
-        elif(index == 2):
-            selectedConfig = self._activeConfig
-            print "SAVE: " + str(selectedConfig)
-            self._guiClient.requestConfigSave(selectedConfig)
-        elif(index == 3):
+        elif(menuString == "Save"):
+            if(self._stoppingWebRequests == True):
+                wx.MessageBox('Cannot save program when we have connection troubles!', 'Warning', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
+            else:
+                selectedConfig = self._activeConfig
+                print "SAVE: " + str(selectedConfig)
+                self._guiClient.requestConfigSave(selectedConfig)
+        elif(menuString == "Player Config"):
             if(self._playerConfigString != None):
                 dlg = ConfigPlayerDialog(self, 'Player config.', self._updatePlayerConfiguration, self._playerConfigString)
                 dlg.ShowModal()
@@ -854,14 +862,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 except wx._core.PyDeadObjectError: #@UndefinedVariable
                     pass
             else:
-                wx.MessageBox('Cannot edit Player config without network contact!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
-        elif(index == 4):
+                wx.MessageBox('Cannot edit Player config without network contact!', 'Warning', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
+        elif(menuString == "GUI Config"):
             dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration)
             dlg.ShowModal()
             try:
                 dlg.Destroy()
             except wx._core.PyDeadObjectError: #@UndefinedVariable
                 pass
+        elif(menuString == "Exit"):
+            self._onClose(None)
 
     def _updateConfigName(self, newConfigName):
         self._activeConfig = newConfigName

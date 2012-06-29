@@ -262,6 +262,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         self._configurationClass.setGuiConfig(autoSend, midiBcast, midiBindAddress, midiPort2)
 
         self._configurationClass.saveConfig()
+        wx.MessageBox('You must restart GUI to make sure all changes to take effect!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         self.Destroy()
 
     def _onCancel(self, event):
@@ -450,6 +451,7 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         self._configurationClass.setServerConfig(midiBcast, midiAddress, midiPort, webAddress, webPort)
         xmlString = self._configurationClass.getXmlString()
         self._sendConfigCallback(xmlString)
+        wx.MessageBox('You must restart Player to make sure all changes to take effect!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         self.Destroy()
 
     def _onCancel(self, event):

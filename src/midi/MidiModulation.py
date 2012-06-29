@@ -19,6 +19,8 @@ class LowFrequencyOscilator(object):
         self._startSongPosition = startBeat * self._midiTiming.getTicksPerQuarteNote()
         self._midiLength = midiLength
         self._syncLength = midiLength * self._midiTiming.getTicksPerQuarteNote()
+        if(self._syncLength < 0.001):
+            self._syncLength = 0.001
         self._shape = mode
         self._minVal = minVal
         self._maxVal = maxVal

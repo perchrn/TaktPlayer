@@ -854,7 +854,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 except wx._core.PyDeadObjectError: #@UndefinedVariable
                     pass
             else:
-                print "No contact with player!?! " * 3
+                wx.MessageBox('Cannot edit Player config without network contact!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         elif(index == 4):
             dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration)
             dlg.ShowModal()

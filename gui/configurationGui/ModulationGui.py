@@ -24,6 +24,8 @@ class ModulationGui(object):
         self._updateWidget = None
         self._closeCallback = None
 
+        self._lastSavedModulationString = ""
+
         self._blankModBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
         self._modBitmatController = wx.Bitmap("graphics/modulationController.png") #@UndefinedVariable
         self._modBitmatNote = wx.Bitmap("graphics/modulationNote.png") #@UndefinedVariable
@@ -45,6 +47,8 @@ class ModulationGui(object):
         self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
         self._updateButtonBitmap = wx.Bitmap("graphics/updateButton.png") #@UndefinedVariable
         self._updateButtonPressedBitmap = wx.Bitmap("graphics/updateButtonPressed.png") #@UndefinedVariable
+        self._updateRedButtonBitmap = wx.Bitmap("graphics/updateButtonRed.png") #@UndefinedVariable
+        self._updateRedButtonPressedBitmap = wx.Bitmap("graphics/updateButtonRedPressed.png") #@UndefinedVariable
 
         self._modulationSorces = ModulationSources()
 
@@ -119,7 +123,7 @@ class ModulationGui(object):
         self._midiNoteSourceSizer.Add(self._midiNoteSourceField, 2, wx.ALL, 5) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(midiNoteSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._midiNoteSourceSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-#        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onMidiNoteSourceChosen, id=self._midiNoteSourceField.GetId()) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._checkForUpdates, id=self._midiNoteSourceField.GetId()) #@UndefinedVariable
 
         """LFO"""
 
@@ -303,10 +307,10 @@ class ModulationGui(object):
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = PcnImageButton(self._mainModulationGuiPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
         closeButton.Bind(wx.EVT_BUTTON, self._onCloseButton) #@UndefinedVariable
-        saveButton = PcnImageButton(self._mainModulationGuiPlane, self._updateButtonBitmap, self._updateButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
-        saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._mainModulationGuiPlane, self._updateButtonBitmap, self._updateButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
+        self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._buttonsSizer.Add(saveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._buttonsSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._activeControllersUpdate = wx.Timer(self._mainModulationGuiPlane, -1) #@UndefinedVariable
@@ -357,6 +361,7 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Hide(self._valueSliderSizer)
 
         self._fixModulationGuiLayout()
+        self._checkForUpdates()
 
     def _onModulationModeHelp(self, event):
         text = """
@@ -403,6 +408,7 @@ Value:\t\tStatic value.
                 self._activeControllersUpdate.Stop()
             self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
+        self._checkForUpdates()
 
     def stopModulationUpdate(self):
         if(self._activeControllersUpdate.IsRunning() == True):
@@ -421,11 +427,12 @@ Aftertouch:\tPreasure applied while note is pressed down.
         dlg.Destroy()
 
     def _onMidiControllerChosen(self, event):
-        pass
+        self._checkForUpdates()
 
     def _onMidiActiveControllerChosen(self, event):
         choice = self._midiActiveControllerField.GetStringSelection()
         self._midiControllerField.SetValue(choice)
+        self._checkForUpdates()
 
     def _onMidiChannelControllerHelp(self, event):
         text = """
@@ -496,6 +503,7 @@ Random:\t\tNo phase just random numbers.
         lfoMinValue = float(self._lfoMinValueSlider.GetValue()) / 101.0
         lfoMaxValue = float(self._lfoMaxValueSlider.GetValue()) / 101.0
         self._updateLfoGraph(self._lfoTypeField.GetValue(), lfoLengthValue, lfoPhaseValue, lfoMinValue, lfoMaxValue)
+        self._checkForUpdates()
 
     def _onLfoLengthHelp(self, event):
         text = """
@@ -569,7 +577,8 @@ Selects full ADSR or just Attack/Release mode
         sustainValue = float(self._adsrSustainSlider.GetValue()) / 101.0
         releaseValue = float(self._adsrReleaseSlider.GetValue()) / 160.0 * 32.0
         self._updateAdsrGraph(self._adsrTypeField.GetValue(), attackValue, decayValue, sustainValue, releaseValue)
-            
+        self._checkForUpdates()
+     
     def _onAdsrAttackHelp(self, event):
         text = """
 Sets attack time.
@@ -670,6 +679,7 @@ This graph auto adjusts to the length of the ADSR.
             sustainValue = float(self._adsrSustainSlider.GetValue()) / 101.0
             releaseValue = float(self._adsrReleaseSlider.GetValue()) / 160.0 * 32.0
             self._updateAdsrGraph(self._adsrTypeField.GetValue(), attackValue, decayValue, sustainValue, releaseValue)
+        self._checkForUpdates()
 
     def _onValueHelp(self, event):
         text = """
@@ -684,7 +694,7 @@ Constant static value.
             self._closeCallback()
         self._hideModulationCallback()
 
-    def _onSaveButton(self, event):
+    def _getModeString(self):
         modType = self._modulationSorcesField.GetValue()
         modeString = modType
         if(modType == "MidiChannel"):
@@ -722,10 +732,23 @@ Constant static value.
         if(modType == "Value"):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             modeString += "." + valueString
+        return modeString
+
+    def _onSaveButton(self, event):
+        modeString = self._getModeString()
         if(self._updateWidget != None):
             self._updateWidget.SetValue(modeString)
         if(self._saveCallback):
             self._saveCallback(None)
+        self._lastSavedModulationString = modeString
+        self._checkForUpdates()
+
+    def _checkForUpdates(self, event = None):
+        newModeString = self._getModeString()
+        if(self._lastSavedModulationString != newModeString):
+            self._saveButton.setBitmaps(self._updateRedButtonBitmap, self._updateRedButtonPressedBitmap)
+        else:
+            self._saveButton.setBitmaps(self._updateButtonBitmap, self._updateButtonPressedBitmap)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -799,6 +822,7 @@ Constant static value.
         self._updateWidget = widget
         self._closeCallback = closeCallback
         self._saveCallback = saveCallback
+        self._lastSavedModulationString = modulationString
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
         updatedId = None
         if(modulationIdTuplet == None):
@@ -914,4 +938,5 @@ Constant static value.
             self._valueValueLabel.SetLabel("0.00")
 
         self._onModulationSourceChosen(None)
+        self._checkForUpdates()
 

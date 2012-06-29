@@ -1692,7 +1692,8 @@ All notes on events are quantized to this.
                     newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
                     fadeConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
                     if(fadeConfig == None):
-                        text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
+                        text = "We need an unique configuration to update the \"Fade " + str(name) + "\"\n"
+                        text += "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
                         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Make new config?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                         result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                         dlg.Destroy()

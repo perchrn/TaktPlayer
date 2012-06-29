@@ -57,6 +57,7 @@ class PlayerMain(object):
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
+#        print "createCvWindow: " + str(fullscreenMode) + " | " + str(self._internalResolutionX) + " | " + str(self._internalResolutionY) + " | " + str(positionX) + " | " + str(positionY)
         createCvWindow(fullscreenMode, self._internalResolutionX, self._internalResolutionY, positionX, positionY)
 
         self._midiTiming = MidiTiming()
@@ -81,7 +82,7 @@ class PlayerMain(object):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
-        self._guiServer = GuiServer(self._configurationTree, self._mediaPool, self._midiStateHolder)
+        self._guiServer = GuiServer(self._configurationTree, self._playerConfiguration, self._mediaPool, self._midiStateHolder)
         self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
         startNote = self._playerConfiguration.getStartNoteNumber()
         if((startNote > -1) and (startNote < 128)):
@@ -246,11 +247,11 @@ if __name__ in ('__android__', '__main__'):
         print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
     else:
         autoMode = playerConfiguration.isAutoPositionEnabled()
-        if(autoMode == False):
-            positionX, postionY = (-1, -1)
+        if(autoMode == True):
+            positionX, positionY = (-1, -1)
         else:
-            positionX, postionY = playerConfiguration.getPosition()
-            print "Custom position: Left: " + str(postionY) + " Top: " + str(positionX)
+            positionX, positionY = playerConfiguration.getPosition()
+            print "Custom position: Left: " + str(positionX) + " Top: " + str(positionY)
         print "Startup windowed: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionX)
 
     mainApp = PlayerMain()

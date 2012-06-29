@@ -92,6 +92,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 configStateString = self._getKeyValueFromList(queryDict, 'configState', None)
                 latestMidiControllersString = self._getKeyValueFromList(queryDict, 'latestMidiContollers', None)
                 configFileRequestType = self._getKeyValueFromList(queryDict, 'configFileRequest', None)
+                playerConfigurationRequestType = self._getKeyValueFromList(queryDict, 'playerConfigurationRequest', None)
     
                 if(imageThumbNote != None):
                     thumbTime = float(self._getKeyValueFromList(queryDict, 'time', 0.0))
@@ -136,7 +137,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         trackStateXmlString = webOutputQueue.get(True, 5.0)
                         self._returnXmlRespose(trackStateXmlString)
                     except:
-                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for note list XML: %s" % configRequestPath)
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for track state XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
                 elif(configStateString != None):
@@ -169,7 +170,17 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         latestControllersXmlString = webOutputQueue.get(True, 5.0)
                         self._returnXmlRespose(latestControllersXmlString)
                     except:
-                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for config list XML: %s" % configRequestPath)
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for config file XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(playerConfigurationRequestType != None):
+                    configFileRequestXML = MiniXml("playerConfigurationRequest")
+                    webInputQueue.put(configFileRequestXML.getXmlString())
+                    try:
+                        latestControllersXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(latestControllersXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for player config file XML: %s" % configRequestPath)
                         self.send_error(500)
                         webInputQueue.put(serverMessageXml.getXmlString())
                 else:
@@ -227,6 +238,13 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                         configTransferRequestXML.addAttribute("type", fileType)
                         configTransferRequestXML.addAttribute("fileName", fileName)
                         self._returnXmlRespose(configTransferRequestXML.getXmlString())
+                elif(fileType == "playerConfiguration"):
+                    if(fileName == "player configuration"):
+                        configTransferRequestXML = MiniXml("playerConfigFileTransfer", "File transfered OK!")
+                        self._returnXmlRespose(configTransferRequestXML.getXmlString())
+                        playerConfigWrapperXml = MiniXml("playerConfigFileTransfer", "Player configuration.")
+                        playerConfigWrapperXml.addAttribute("xmlString", fileData)
+                        webInputQueue.put(playerConfigWrapperXml.getXmlString())
                 else:
                     serverMessageXml = MiniXml("servermessage", "Unknown file type transfered: %s for %s" % (fileType, fileName))
                     self.send_error(404)
@@ -312,8 +330,9 @@ def guiWebServerProcess(host, port, passwd, serverMessageQueue, serverCommandQue
 
 
 class GuiServer(object):
-    def __init__(self, configurationTree, mediaPool, midiStateHolder):
+    def __init__(self, configurationTree, playerConfiguration, mediaPool, midiStateHolder):
         self._configurationTree = configurationTree
+        self._playerConfiguration = playerConfiguration
         self._mediaPool = mediaPool
         self._midiStateHolder = midiStateHolder
 
@@ -426,6 +445,16 @@ class GuiServer(object):
                     print "Updating configuration..."
                     self._configurationTree.setFromXml(webCommandXml)
                     return True
+                elif(webCommandXml.tag == "playerConfigFileTransfer"):
+#                    print "Updating player configuration..."
+                    xmlString = getFromXml(webCommandXml, "xmlString", "")
+                    if(xmlString != ""):
+                        innerXml = stringToXml(xmlString)
+                        innerXmlString = getFromXml(innerXml, "string", "")
+                        if(innerXmlString != ""):
+                            self._playerConfiguration.setFromXmlString(innerXmlString)
+                            self._playerConfiguration.saveConfig()
+                    return True
                 elif(webCommandXml.tag == "configFileRequest"):
                     reqType = getFromXml(webCommandXml, "type", "list")
                     fileName = getFromXml(webCommandXml, "fileName", "None")
@@ -438,6 +467,12 @@ class GuiServer(object):
                     resposeXml = MiniXml("configFileRequest")
                     resposeXml.addAttribute("configFiles", configFileList)
                     resposeXml.addAttribute("activeConfig", currentConfigFile)
+#                    print "GuiServer client request for configuration file names. List: " + configFileList
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "playerConfigurationRequest"):
+                    resposeXml = MiniXml("playerConfiguration")
+                    xmlString = self._playerConfiguration.getXmlString()
+                    resposeXml.addAttribute("xmlString", xmlString)
 #                    print "GuiServer client request for configuration file names. List: " + configFileList
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "unauthorizedAccess"):

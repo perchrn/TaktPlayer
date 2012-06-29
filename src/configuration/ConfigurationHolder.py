@@ -52,9 +52,21 @@ class Parameter(object):
             else:
                 self._value = False
         elif(self._type == ParameterTypes.Float):
-            self._value = float(string)
+            try:
+                self._value = float(string)
+            except:
+                if(self._default != None):
+                    self._value = self._default
+                else:
+                    self._value = -1.0
         elif(self._type == ParameterTypes.Int):
-            self._value = int(string)
+            try:
+                self._value = int(string)
+            except:
+                if(self._default != None):
+                    self._value = self._default
+                else:
+                    self._value = -1
         elif(self._type == ParameterTypes.Text):
             self._value = string
         else:
@@ -147,10 +159,18 @@ class ConfigurationHolder(object):
     def getCurrentFileName(self):
         return self._loadedFileName
 
+    def setFromXmlString(self, xmlString):
+        if(self._selfClosingList != None):
+            soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
+        else:
+            soup = BeautifulStoneSoup(xmlString)
+        self._loadedXML = ElementTree.XML(soup.prettify())
+        self._updateFromXml(self._loadedXML)
+
     def setFromXml(self, xmlConfig):
-        print "iIiIiI" * 50
-        self._printXml(xmlConfig)
-        print "iIiIiI" * 50
+#        print "iIiIiI" * 50
+#        self._printXml(xmlConfig)
+#        print "iIiIiI" * 50
         self._loadedXML = xmlConfig
         self._updateFromXml(self._loadedXML)
 

@@ -12,11 +12,11 @@ import os
 
 class Configuration(object):
     def __init__(self):
-        self._guiConfigurationTree = ConfigurationHolder("MusicalVideoPlayerGUI")
+        self._guiConfigurationTree = ConfigurationHolder("TaktGUI")
         self._guiConfigurationTree.setSelfclosingTags(['video', 'player', 'gui'])
         self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
         self.setupGuiConfiguration()
-        self._guiConfigurationTree.saveConfigFile("GuiConfig.cfg")
+        self.saveConfig()
 
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._globalConf = GlobalConfig(self._playerConfigurationTree, self)
@@ -49,6 +49,27 @@ class Configuration(object):
         self._guiConfig.addBoolParameter("MidiBroadcast", True)
         self._guiConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._guiConfig.addIntParameter("MidiPort", 2022)
+
+    def setPlayerConfig(self, playerHost, midiPort, webPort, midiOn):
+        self._guiPlayerConfig.setValue("PlayerHost", playerHost)
+        self._guiPlayerConfig.setValue("MidiPort", midiPort)
+        self._guiPlayerConfig.setValue("WebPort", webPort)
+        self._guiPlayerConfig.setValue("MidiEnabled", midiOn)
+
+    def setVideoConfig(self, videoDir, ffmpegBinary, scaleX, scaleY):
+        self._guiVideoConfig.setValue("VideoDir", videoDir)
+        self._guiVideoConfig.setValue("FfmpegBinary", ffmpegBinary)
+        self._guiVideoConfig.setValue("ScaleVideoX", scaleX)
+        self._guiVideoConfig.setValue("ScaleVideoY", scaleY)
+
+    def setGuiConfig(self, autoSend, midiBcast, midiBindAddress, midiPort):
+        self._guiConfig.setValue("AutoSend", autoSend)
+        self._guiConfig.setValue("MidiBroadcast", midiBcast)
+        self._guiConfig.setValue("MidiBindAddress", midiBindAddress)
+        self._guiConfig.setValue("MidiPort", midiPort)
+
+    def saveConfig(self):
+        self._guiConfigurationTree.saveConfigFile("GuiConfig.cfg")
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()

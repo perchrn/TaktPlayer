@@ -32,7 +32,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
 
-        infoText = wx.StaticText(self, wx.ID_ANY, "This file needs to be converted. Please select yout options here:") #@UndefinedVariable
+        infoText = wx.StaticText(self, wx.ID_ANY, "This file needs to be converted. Please select your options here:") #@UndefinedVariable
         dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         dirSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable

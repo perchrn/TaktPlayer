@@ -25,6 +25,8 @@ from midi.MidiTiming import MidiTiming
 from midi.MidiStateHolder import DummyMidiStateHolder
 import shutil
 import sys
+from configurationGui.FileMenu import ConfigOpenDialog, ConfigNewDialog,\
+    ConfigGuiDialog, ConfigPlayerDialog
 
 APP_NAME = "TaktPlayerGui"
 
@@ -33,7 +35,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration, LatestControllers, ConfigFileList, Preview = range(9)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration, PlayerConfiguration, LatestControllers, ConfigFileList, Preview = range(10)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -120,8 +122,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._videoCropMode = "No crop"
         self._convertionWentOk = False
         self._convertionOutputFileName = ""
+        self._playerConfigString = None
         self._oldServerConfigurationString = ""
         self._oldServerConfigList = ""
+        self._configurationFilesList = ["N/A"]
         self._oldServerActiveConfig = ""
 
         self.SetBackgroundColour((120,120,120))
@@ -206,15 +210,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._sendButton.Bind(wx.EVT_BUTTON, self._onSendButton) #@UndefinedVariable
         self._midiButton = PcnImageButton(self._menuPanel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(108, 17)) #@UndefinedVariable
         self._midiButton.Bind(wx.EVT_BUTTON, self._midiToggle) #@UndefinedVariable
-        self._configFileSelector = wx.ComboBox(self._menuPanel, wx.ID_ANY, size=(160, -1), choices=["N/A"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._configFileSelector.SetStringSelection("N/A")
         self._timingField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(70, -1)) #@UndefinedVariable
         self._bpmField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(50, -1)) #@UndefinedVariable
         self._inputButton = PcnImageButton(self._menuPanel, self._inputGrayBitmap, self._inputGrayBitmap, (-1, -1), wx.ID_ANY, size=(34, 17)) #@UndefinedVariable
         self._menuSizer.Add(self._fileButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
-        self._menuSizer.Add(self._configFileSelector, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._inputButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
@@ -567,6 +568,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                         self._taskQueue.append(configRequestTask)
                         self._guiClient.requestConfiguration()
                         configRequestTask.setState(TaskHolder.States.Sendt)
+                        playerConfigRequestTask = TaskHolder("Player configuration request", TaskHolder.RequestTypes.PlayerConfiguration, None, None)
+                        self._taskQueue.append(playerConfigRequestTask)
+                        self._guiClient.requestPlayerConfiguration()
+                        playerConfigRequestTask.setState(TaskHolder.States.Sendt)
                     self._lastConfigState = configId
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -619,6 +624,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.PlayerConfiguration):
+                print "GuiClient.ResponseTypes.PlayerConfiguration"
+                print "DEBUG: " + str(result[1])
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.PlayerConfiguration, None)
+                if(result[1] != None):
+                    print "DEBUG here!"
+                    newConfigXmlString = result[1]
+                    self._playerConfigString = newConfigXmlString
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.LatestControllers):
 #                print "GuiClient.ResponseTypes.LatestControllers"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
@@ -633,23 +649,8 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(result[1] != None):
                     configurationFileListString, activeConfig = result[1]
                     if((self._oldServerConfigList != configurationFileListString) or (self._oldServerActiveConfig != activeConfig)):
-                        configurationFileLists = configurationFileListString.split(';', 128)
-                        if(self._oldServerActiveConfig != activeConfig):
-                            selectedValue = activeConfig
-                            self._oldServerActiveConfig = activeConfig
-                        else:
-                            selectedValue = self._configFileSelector.GetValue()
-                        self._configFileSelector.Clear()
-                        valueOk = False
-                        self._configFileSelector.Append("active configuration")
-                        for choice in configurationFileLists:
-                            self._configFileSelector.Append(choice)
-                            if(choice == selectedValue):
-                                valueOk = True
-                        if(valueOk == True):
-                            self._configFileSelector.SetStringSelection(selectedValue)
-                        else:
-                            self._configFileSelector.SetStringSelection("active configuration")
+                        self._configurationFilesList = configurationFileListString.split(';', 128)
+                        self._oldServerActiveConfig = activeConfig
                         self._updateTitle(activeConfig)
                     self._oldServerConfigList = configurationFileListString
                     if(foundTask != None):
@@ -783,8 +784,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._bpmField.SetValue(str(bpm))
 
         currentTime = time.time()
-        lastEventAge = currentTime - self._midiStateHolder.getLastMidiEventTime()
-        if(lastEventAge < 1000):
+        midiSateTime = self._midiStateHolder.getLastMidiEventTime()
+        lastEventAge = currentTime - midiSateTime
+        if(lastEventAge < 1):
             self._inputButton.setBitmaps(self._inputGreenBitmap, self._inputGreenBitmap)
         else:
             self._inputButton.setBitmaps(self._inputGrayBitmap, self._inputGrayBitmap)
@@ -802,13 +804,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(self._sendingConfig == True):
                         self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                     else:
-                        print "DEBUG pcn need to send! **********************"
                         if(self._configuration.isAutoSendEnabled() == True):
-                            print "DEBUG pcn auto send! **********************"
                             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                             self._onSendButton(None)
                         else:
-                            print "DEBUG pcn manual send! **********************"
                             self._sendButton.setBitmaps(self._sendConfigBitmap, self._sendConfigPressedBitmap)
             else:
                 self._sendingConfig = False
@@ -828,20 +827,48 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def _onFileMenuItemChosen(self, index):
         print " index: " + str(index)
         if(index == 0):
-            selectedConfig = self._configFileSelector.GetValue()
-            print "LOAD: " + str(selectedConfig)
-            self._guiClient.requestConfigChange(selectedConfig)
+            dlg = ConfigOpenDialog(self, 'Load config.', self._guiClient.requestConfigChange, self._configurationFilesList, self._activeConfig)
+            dlg.ShowModal()
+            try:
+                dlg.Destroy()
+            except wx._core.PyDeadObjectError: #@UndefinedVariable
+                pass
         elif(index == 1):
-            print "NEW: " * 20
+            dlg = ConfigNewDialog(self, 'New config.', self._updateConfigName, self._activeConfig)
+            dlg.ShowModal()
+            try:
+                dlg.Destroy()
+            except wx._core.PyDeadObjectError: #@UndefinedVariable
+                pass
+            self._updateTitle(self._activeConfig)
         elif(index == 2):
             selectedConfig = self._activeConfig
             print "SAVE: " + str(selectedConfig)
             self._guiClient.requestConfigSave(selectedConfig)
         elif(index == 3):
-            print "Player: " * 20
+            if(self._playerConfigString != None):
+                dlg = ConfigPlayerDialog(self, 'Player config.', self._updatePlayerConfiguration, self._playerConfigString)
+                dlg.ShowModal()
+                try:
+                    dlg.Destroy()
+                except wx._core.PyDeadObjectError: #@UndefinedVariable
+                    pass
+            else:
+                print "No contact with player!?! " * 3
         elif(index == 4):
-            print "GUI: " * 20
-            
+            dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration)
+            dlg.ShowModal()
+            try:
+                dlg.Destroy()
+            except wx._core.PyDeadObjectError: #@UndefinedVariable
+                pass
+
+    def _updateConfigName(self, newConfigName):
+        self._activeConfig = newConfigName
+
+    def _updatePlayerConfiguration(self, xmlString):
+        self._playerConfigString = xmlString
+        self._guiClient.sendPlayerConfiguration(xmlString)
 
     def _onSendButton(self, event):
         xmlString = self._configuration.getXmlString()

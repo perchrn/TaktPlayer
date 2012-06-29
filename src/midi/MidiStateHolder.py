@@ -624,30 +624,39 @@ class DummyMidiStateHolder(object):
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got note! " + str(self._lastMidiEventTime)
 
     def noteOff(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got note off! " + str(self._lastMidiEventTime)
 
     def polyPreasure(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got PP! " + str(self._lastMidiEventTime)
 
     def controller(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got ctrl! " + str(self._lastMidiEventTime)
 
     def guiController(self, midiChannel, data1, data2, data3):
         self._lastMidiEventTime = time.time()
+#        print "Got gui?!?! " + str(self._lastMidiEventTime)
 
     def programChange(self, midiChannel, data1, data2, data3, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got prg! " + str(self._lastMidiEventTime)()
 
     def aftertouch(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got aft! " + str(self._lastMidiEventTime)
 
     def pitchBend(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
+#        print "Got bnd! " + str(self._lastMidiEventTime)
 
     def cleanupFutureNotes(self, songPosition, oldSongPosition, timeLimit):
         self._lastMidiEventTime = time.time()
+#        print "Got clr! " + str(self._lastMidiEventTime)
 
     def getLastMidiEventTime(self):
         return self._lastMidiEventTime

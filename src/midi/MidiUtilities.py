@@ -70,13 +70,19 @@ def letterToNote(letter):
             return 9
     if(letter.startswith("H")):
         return 11
+    return None
 
 def noteStringToNoteNumber(string):
     split = 1
     if(string[0:1] == "-"):
         split = 2
-    octav = int(string[0:split])
+    try:
+        octav = int(string[0:split])
+    except:
+        return -1
     note = letterToNote(string[split:])
+    if(note == -1):
+        return -1
     noteValue = (((octav + 2) * 12) + note) % 128
     return noteValue
 

@@ -69,6 +69,14 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 elif(commandXml.tag == "configuration"):
                     resposeXmlString = postXMLFile(urlSignaturer, hostPort, "configuration", "active configuration", command)
                     resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "playerConfigurationSend"):
+                    xmlString = getFromXml(commandXml, "string", "")
+                    if(xmlString != ""):
+                        resposeXmlString = postXMLFile(urlSignaturer, hostPort, "playerConfiguration", "player configuration", command)
+                        resultQueue.put(resposeXmlString)
+                    else:
+                        resposeXmlString = MiniXml("playerConfigFileTransfer", "File error! XML string is empty!")
+                        resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "configFileRequest"):
                     requestType = getFromXml(commandXml, "type", "list")
                     requestName = getFromXml(commandXml, "name", "None")
@@ -76,8 +84,14 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                     resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
                     resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "playerConfigurationRequest"):
+                    urlArgs = "?playerConfigurationRequest=true"
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml")
+                    resultQueue.put(resposeXmlString)
                 else:
-                    print "Unknown command xml: " + command
+                    resposeXmlString = MiniXml("servermessage", "Unknown command xml: %s" %(command))
+                    resultQueue.put(resposeXmlString)
         except Empty:
             pass
 
@@ -293,12 +307,24 @@ class GuiClient(object):
         commandXml.addAttribute("path", path)
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestPlayerConfiguration(self):
+        commandXml = MiniXml("playerConfigurationRequest")
+        self._commandQueue.put(commandXml.getXmlString())
+
     def requestLatestControllers(self):
         commandXml = MiniXml("latestMidiContollersRequest")
         self._commandQueue.put(commandXml.getXmlString())
 
     def sendConfiguration(self, xmlString):
         self._commandQueue.put(xmlString)
+
+    def sendPlayerConfiguration(self, xmlString):
+        print "DEBUG " * 20
+        print xmlString
+        print "DEBUG " * 20
+        commandXml = MiniXml("playerConfigurationSend")
+        commandXml.addAttribute("string", xmlString)
+        self._commandQueue.put(commandXml.getXmlString())
 
     def requestConfigList(self):
         commandXml = MiniXml("configFileRequest")
@@ -318,7 +344,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, ConfigFileTransfer, LatestControllers, ConfigFileList = range(11)
+        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, PlayerConfiguration, ConfigFileTransfer, PlayerConfigFileTransfer, LatestControllers, ConfigFileList = range(13)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -389,9 +415,16 @@ class GuiClient(object):
                 elif(serverXml.tag == "configuration"):
                     returnValue = (self.ResponseTypes.Configuration, serverXml)
 #                    print "Got configurationRequest response."
+                elif(serverXml.tag == "playerConfiguration"):
+                    xmlString = serverXml.get("xmlString")
+                    returnValue = (self.ResponseTypes.PlayerConfiguration, xmlString)
+                    print "Got playerConfigurationRequest response. " + str(serverResponse)
                 elif(serverXml.tag == "configFileTransfer"):
                     returnValue = (self.ResponseTypes.ConfigFileTransfer, serverXml)
-#                    print "Got configurationRequest response."
+#                    print "Got configuration transfer response."
+                elif(serverXml.tag == "playerConfigFileTransfer"):
+                    returnValue = (self.ResponseTypes.PlayerConfigFileTransfer, serverXml)
+#                    print "Got player configuration transfer response."
                 elif(serverXml.tag == "latestMidiControllersRequest"):
                     listTxt = serverXml.get("controllers")
                     returnValue = (self.ResponseTypes.LatestControllers, listTxt.split(',', 128))

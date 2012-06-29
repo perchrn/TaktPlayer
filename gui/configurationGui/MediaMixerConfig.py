@@ -141,6 +141,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._latestOverviewMixMode = MixMode.Add
         self._midiNote = -1
         self._selectedEditor = self.EditSelection.Unselected
+        self._trackEditorOpen = False
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
@@ -436,7 +437,19 @@ Replace:\tNo mixing. Just use this image.
         self._clearDragCursorCallback()
 
     def _onOverviewTrackEditButton(self, event):
-        self._showTrackGuiCallback()
+        if(self._trackEditorOpen == False):
+            self._showTrackGuiCallback()
+            self._updateEditButton(True)
+        else:
+            self._hideTrackGuiCallback()
+            self._updateEditButton(False)
+
+    def _updateEditButton(self, isOpen):
+        self._trackEditorOpen = isOpen
+        if(isOpen == True):
+            self._overviewTrackEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._overviewTrackEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onOverviewTrackSaveButton(self, event):
         if(self._overviewTrackSaveButtonDissabled == False):
@@ -447,6 +460,7 @@ Replace:\tNo mixing. Just use this image.
 
     def _onCloseButton(self, event):
         self._hideTrackGuiCallback()
+        self._updateEditButton(False)
         self._hideEffectsCallback()
         self._hideModulationCallback()
         self._hideSlidersCallback()

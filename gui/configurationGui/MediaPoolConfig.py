@@ -690,6 +690,8 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._mainSelection = self.MainSelection.Unselected
         self._selectedEditor = self.EditSelection.Unselected
+        self._noteGuiOpen = False
+        self._isEffectImageListOpen = False
         self._activeTrackClipNoteId = -1
         self._type = "VideoLoop"
         self._setupSubConfig(self._config)
@@ -825,6 +827,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._parentPlane.SendSizeEvent()
 
     def showNoteGui(self):
+        self._updateEditButton(True)
         self._configSizer.Show(self._noteConfigPanel)
         if(self._mainSelection == self.MainSelection.Track):
             self._trackGui.closeTackGui()
@@ -840,10 +843,15 @@ class MediaFileGui(object): #@UndefinedVariable
         self.refreshLayout()
 
     def showEffectImageListGui(self):
-        self._configSizer.Show(self._effectImageListPanel)
-        self.refreshLayout()
+        if(self._isEffectImageListOpen == False):
+            self._isEffectImageListOpen = True
+            self._configSizer.Show(self._effectImageListPanel)
+            self.refreshLayout()
+        else:
+            self.hideEffectImageListGui()
 
     def hideEffectImageListGui(self):
+        self._isEffectImageListOpen = False
         self._configSizer.Hide(self._effectImageListPanel)
         self.refreshLayout()
 
@@ -856,6 +864,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self.refreshLayout()
 
     def hideNoteGui(self):
+        self._updateEditButton(False)
         self._configSizer.Hide(self._noteConfigPanel)
         self._mainSelection = self.MainSelection.Unselected
         self.refreshLayout()
@@ -1546,7 +1555,17 @@ All notes on events are quantized to this.
                 widget.setBitmaps(self._modeBitmapImageSeqModulation, self._modeBitmapImageSeqModulation)
 
     def _onOverviewClipEditButton(self, event):
-        self.showNoteGui()
+        if(self._noteGuiOpen == False):
+            self.showNoteGui()
+        else:
+            self.hideNoteGui()
+
+    def _updateEditButton(self, isOpen):
+        self._noteGuiOpen = isOpen
+        if(isOpen == True):
+            self._overviewClipEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._overviewClipEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onOverviewClipSaveButton(self, event):
         if(self._overviewClipSaveButtonDissabled == False):

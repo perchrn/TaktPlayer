@@ -35,7 +35,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration, PlayerConfiguration, LatestControllers, ConfigFileList, Preview = range(10)
+        ActiveNotes, Note, File, Track, ConfigState, Configuration, SendConfig, PlayerConfiguration, LatestControllers, ConfigFileList, Preview = range(11)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -625,12 +625,18 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.ConfigFileTransfer):
+#                print "GuiClient.ResponseTypes.ConfigFileTransfer"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
+                self._skippedConfigStateRequests = 99
+                self._requestConfigState()
+                if(foundTask != None):
+                    foundTask.taskDone()
+                    self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.PlayerConfiguration):
-                print "GuiClient.ResponseTypes.PlayerConfiguration"
-                print "DEBUG: " + str(result[1])
+#                print "GuiClient.ResponseTypes.PlayerConfiguration"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.PlayerConfiguration, None)
                 if(result[1] != None):
-                    print "DEBUG here!"
                     newConfigXmlString = result[1]
                     self._playerConfigString = newConfigXmlString
                     if(foundTask != None):
@@ -698,6 +704,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.ConfigFileList):
                     self._guiClient.requestConfigList()
+                    task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.SendConfig):
+                    xmlString = self._configuration.getXmlString()
+                    self._guiClient.sendConfiguration(xmlString)
                     task.setState(TaskHolder.States.Sendt)
 
     def _requestTrackState(self):
@@ -802,14 +812,15 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                 if(self._stoppingWebRequests == True):
                     self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
                 else:
-                    if(self._sendingConfig == True):
-                        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
-                    else:
+                    foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
+                    if(foundTask == None):
                         if(self._configuration.isAutoSendEnabled() == True):
                             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                             self._onSendButton(None)
                         else:
                             self._sendButton.setBitmaps(self._sendConfigBitmap, self._sendConfigPressedBitmap)
+                    else:
+                        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
             else:
                 self._sendingConfig = False
                 if(self._stoppingWebRequests == True):
@@ -882,7 +893,13 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onSendButton(self, event):
         xmlString = self._configuration.getXmlString()
+        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
+        if(foundTask == None):
+            trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
+            self._taskQueue.append(trackRequestTask)
         self._guiClient.sendConfiguration(xmlString)
+        if(foundTask == None):
+            trackRequestTask.setState(TaskHolder.States.Sendt)
         self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
         self._sendingConfig = True
 

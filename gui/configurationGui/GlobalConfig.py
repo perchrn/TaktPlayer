@@ -264,6 +264,12 @@ class EffectsGui(object):
         self._setDragCursor = parentClass.setDragCursor
         self._effectNameFieldUpdateCallback = parentClass.updateEffecChoices
 
+        headerLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect configuration:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainEffectsGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
         self._templateNameField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "MediaDefault1", size=(200, -1)) #@UndefinedVariable
@@ -447,6 +453,12 @@ class EffectsGui(object):
             bitmap = self._modulationGui.getBigModulationImageBitmap(i)
             index = self._effectImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
+
+        headerLabel = wx.StaticText(self._mainEffectsListPlane, wx.ID_ANY, "Effect list:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainEffectsListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._oldListHeight = 376
         self._effectListWidget = ultimatelistctrl.UltimateListCtrl(self._mainEffectsListPlane, id=wx.ID_ANY, size=(340,self._oldListHeight), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
@@ -813,6 +825,12 @@ A list of start values for the effect modulation.
         self._mainSliderSizer = sizer
         self._parentSizer = parentSizer
         self._hideSlidersCallback = parentClass.hideSlidersGui
+
+        headerLabel = wx.StaticText(plane, wx.ID_ANY, "GUI sliders:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainSliderSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._ammountSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountSliderLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
@@ -1333,6 +1351,12 @@ class FadeGui(object):
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
         self._fadeNameFieldUpdateCallback = parentClass.updateFadeChoices
 
+        headerLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade configuration:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainFadeGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
         templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
         self._templateNameField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
@@ -1411,6 +1435,12 @@ class FadeGui(object):
             bitmap = self._modulationGui.getModulationImageBitmap(i)
             index = self._fadeImageList.Add(bitmap)
             self._modIdImageIndex.append(index)
+
+        headerLabel = wx.StaticText(self._mainFadeListPlane, wx.ID_ANY, "Fade list:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainFadeListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
 #        self._oldListHeight = 376
         self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(220,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable

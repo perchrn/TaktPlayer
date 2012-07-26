@@ -59,6 +59,12 @@ class ModulationGui(object):
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixModulationGuiLayout = parentClass.fixModulationGuiLayout
 
+        headerLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation configuration:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainModulationGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable

@@ -500,6 +500,12 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._parentPlane.Bind(wx.EVT_SIZE, self._onResize) #@UndefinedVariable
 
+        headerLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Note configuration:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._noteConfigSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
         self._fileName = ""
         self._cameraId = 0
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||

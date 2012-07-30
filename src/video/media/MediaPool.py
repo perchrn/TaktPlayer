@@ -171,7 +171,7 @@ class MediaPool(object):
     def requestTrackState(self, timeStamp):
         noteListString = ""
         for i in range(16):
-            midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
+            _, midiTime = self._midiTiming.getSongPosition(timeStamp)
             midiChannelState = self._midiStateHolder.getMidiChannelState(i)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(noteListString != ""):
@@ -182,6 +182,23 @@ class MediaPool(object):
                 noteListString += "-1"
         return noteListString
 
+    def requestEffectState(self, midiChannel, midiNote):
+        if(midiChannel != None):
+            if(midiChannel < 0 or midiChannel >= 16):
+                print "Channel effect state request: Bad channel: " + str(midiChannel)
+            else:
+                print "Channel effect state request!"
+#                midiChannelObject = self._mediaTracks[midiChannel]
+        else:
+            if(midiNote != None):
+                if(midiNote < 0 or midiNote >= 128):
+                    print "Note effect state request: Bad note: " + str(midiNote)
+                else:
+                    print "Note effect state request!"
+                    midiNoteObject = self._mediaPool[midiNote]
+                    midiNoteObject.getEffectState()
+            else:
+                print "Error: Empty request!"
     def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):

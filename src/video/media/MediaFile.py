@@ -293,6 +293,15 @@ class MediaFile(object):
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
         return fadeMode, fadeValue, noteDone
 
+    def getEffectState(self):
+        guiEffectValues = self._guiCtrlStateHolder.getGuiContollerState(0)
+        effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = self._effect1OldValues
+        valuesString = str(effectAmount) + "|" + str(effectArg1) + "|" + str(effectArg2) + "|" + str(effectArg3) + "|" + str(effectArg4)
+        guiEffectValues = self._guiCtrlStateHolder.getGuiContollerState(5)
+        effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = self._effect2OldValues
+        valuesString += ";" + str(effectAmount) + "|" + str(effectArg1) + "|" + str(effectArg2) + "|" + str(effectArg3) + "|" + str(effectArg4)
+        return valuesString
+
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
             midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
@@ -448,10 +457,10 @@ class MediaFile(object):
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
             else:
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
-            (self._image, usedValues, unusedStarts) = self._applyOneEffect(self._image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
+            (self._image, currentPreValues, unusedStarts) = self._applyOneEffect(self._image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
             mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMask)
-            (mixedImage, usedValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
-            return mixedImage
+            (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
+            return (mixedImage, currentPreValues, currentPostValues)
     
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):

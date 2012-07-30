@@ -223,6 +223,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft__2 = wx.Bitmap("graphics/blackNoteLeft_-2.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft__1 = wx.Bitmap("graphics/blackNoteLeft_-1.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_0 = wx.Bitmap("graphics/blackNoteLeft_0.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_1 = wx.Bitmap("graphics/blackNoteLeft_1.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_2 = wx.Bitmap("graphics/blackNoteLeft_2.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_3 = wx.Bitmap("graphics/blackNoteLeft_3.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_4 = wx.Bitmap("graphics/blackNoteLeft_4.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_5 = wx.Bitmap("graphics/blackNoteLeft_5.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_6 = wx.Bitmap("graphics/blackNoteLeft_6.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_7 = wx.Bitmap("graphics/blackNoteLeft_7.png") #@UndefinedVariable
+        self._blackNoteBitmapLeft_8 = wx.Bitmap("graphics/blackNoteLeft_8.png") #@UndefinedVariable
         self._blackNoteBitmapRight = wx.Bitmap("graphics/blackNoteRight.png") #@UndefinedVariable
         self._blackNoteBitmap = wx.Bitmap("graphics/blackNote.png") #@UndefinedVariable
         self._newNoteBitmap = wx.Bitmap("graphics/newNote.png") #@UndefinedVariable
@@ -234,7 +245,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             octav = int(note / 12)
             octavNote = note % 12
             baseX = 1 + 308 * octav
-            keyboardButton = self.createNoteWidget(octavNote, baseX, (note==127))
+            keyboardButton = self.createNoteWidget(octavNote, octav-2, baseX, (note==127))
             self._noteWidgets.append(keyboardButton)
             self._noteWidgetIds.append(keyboardButton.GetId())
             keyboardButton.Bind(wx.EVT_BUTTON, self._onKeyboardButton) #@UndefinedVariable
@@ -244,6 +255,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             keyboardButton.SetDropTarget(dropTarget)
 
         self._activeNoteId = 24
+        self._configuration.setSelectedMidiChannel(0)
         self._configuration.setNoteNewThumbCallback(self.setNewImageOnNote)
         self._configuration.clearNoteNewThumbCallback(self.clearImageOnNote)
         self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
@@ -328,13 +340,34 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._statusQueue = None
         self._timedUpdate(None)
 
-    def createNoteWidget(self, noteId, baseX, lastNote=False):
+    def createNoteWidget(self, noteId, octav, baseX, lastNote=False):
         buttonPos = None
         bitmap = None
         if(noteId == 0):
             buttonPos = ( 0+baseX, 36)
             bitmap = self._whiteNoteBitmap
-            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=self._blackNoteBitmapLeft, id=wx.ID_ANY) #@UndefinedVariable
+            cornerBitmap = self._blackNoteBitmapLeft_8
+            if(octav == -2):
+                cornerBitmap = self._blackNoteBitmapLeft__2
+            if(octav == -1):
+                cornerBitmap = self._blackNoteBitmapLeft__1
+            if(octav == 0):
+                cornerBitmap = self._blackNoteBitmapLeft_0
+            if(octav == 1):
+                cornerBitmap = self._blackNoteBitmapLeft_1
+            if(octav == 2):
+                cornerBitmap = self._blackNoteBitmapLeft_2
+            if(octav == 3):
+                cornerBitmap = self._blackNoteBitmapLeft_3
+            if(octav == 4):
+                cornerBitmap = self._blackNoteBitmapLeft_4
+            if(octav == 5):
+                cornerBitmap = self._blackNoteBitmapLeft_5
+            if(octav == 6):
+                cornerBitmap = self._blackNoteBitmapLeft_6
+            if(octav == 7):
+                cornerBitmap = self._blackNoteBitmapLeft_7
+            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=cornerBitmap, id=wx.ID_ANY) #@UndefinedVariable
         elif(noteId == 1):
             buttonPos = (22+baseX,  1)
             bitmap = self._blackNoteBitmap

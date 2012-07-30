@@ -38,10 +38,14 @@ class MediaMixer(object):
         self._mediaTracks = []
         self._mediaTracksMixMode = []
         self._mediaTracksEffects = []
+        self._mediaTracksCurrentPreEffectValues = []
+        self._mediaTracksCurrentPostEffectValues = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
             self._mediaTracksMixMode.append(MixMode.Default)
             self._mediaTracksEffects.append(None)
+            self._mediaTracksCurrentPreEffectValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
+            self._mediaTracksCurrentPostEffectValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
         self._mediaTrackConfigs = []
         for i in range(16):
             trackConfig = self._configurationTree.addChildUniqueId("MediaTrack", "TrackId", str(i+1), i+1)
@@ -163,14 +167,18 @@ class MediaMixer(object):
                     if(imageMix != None):
                         # Apply effects...
                         if(imageMix == self._mixMat1):
-                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                            imageMix, preFxSettings, postFxSettings = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                         else:
-                            imageMix = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                            imageMix, preFxSettings, postFxSettings  = currenMedia.mixWithImage(imageMix, MixMode.Replace, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                        self._mediaTracksCurrentPreEffectValues[midiChannel] = preFxSettings
+                        self._mediaTracksCurrentPostEffectValues[midiChannel] = postFxSettings
                 else:
                     if(imageMix == self._mixMat1):
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                        imageMix, preFxSettings, postFxSettings  = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
-                        imageMix = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                        imageMix, preFxSettings, postFxSettings  = currenMedia.mixWithImage(imageMix, mixMode, effects, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                    self._mediaTracksCurrentPreEffectValues[midiChannel] = preFxSettings
+                    self._mediaTracksCurrentPostEffectValues[midiChannel] = postFxSettings
             else:
                 if(effects[0] != None):
                     effects[0].reset()

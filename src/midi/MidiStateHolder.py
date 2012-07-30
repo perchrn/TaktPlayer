@@ -518,6 +518,9 @@ class GuiControllerValues(object):
             for i in range(5):
                 self._controllerStates[baseController + i] = None
 
+    def getGuiContollerState(self, guiCtrlStateStartId):
+        return (self._controllerStates[guiCtrlStateStartId], self._controllerStates[guiCtrlStateStartId+1], self._controllerStates[guiCtrlStateStartId+2], self._controllerStates[guiCtrlStateStartId+3], self._controllerStates[guiCtrlStateStartId+4])
+
     def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
         if(self._controllerStates[guiCtrlStateStartId] != None):

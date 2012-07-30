@@ -18,6 +18,7 @@ from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
+from midi.MidiUtilities import noteToNoteString
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -832,6 +833,9 @@ A list of start values for the effect modulation.
         headerLabel.SetFont(headerFont)
         self._mainSliderSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._slidersInfoLabel = wx.StaticText(plane, wx.ID_ANY, "N/A") #@UndefinedVariable
+        self._mainSliderSizer.Add(self._slidersInfoLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
         self._ammountSliderSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountSliderLabel = wx.StaticText(plane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountSlider = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
@@ -1087,7 +1091,21 @@ A list of start values for the effect modulation.
             self._arg4ValueLabel.SetLabel(self._arg4ValueLabels[index])
         else:
             print str(type(self._arg4ValueLabels))
-
+        midiChannel = self._mainConfig.getSelectedMidiChannel()
+        isChannelController = False
+        if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+            isChannelController = True
+        if(isChannelController == True):
+            if((midiChannel < 0) or (midiChannel >= 16)):
+                self._slidersInfoLabel.SetLabel("No MIDI channel selected for channel controller message!")
+            else:
+                self._slidersInfoLabel.SetLabel(self._activeEffectId + " on channel " + str(midiChannel))
+        else:
+            if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+                self._slidersInfoLabel.SetLabel("No note selected for note controller message!")
+            else:
+                self._slidersInfoLabel.SetLabel(self._activeEffectId + " for note " + noteToNoteString(self._midiNote))
+            
     def _setupValueLabels(self, amount=None, arg1=None, arg2=None, arg3=None, arg4=None):
         self._ammountValueLabels = amount
         self._arg1ValueLabels = arg1

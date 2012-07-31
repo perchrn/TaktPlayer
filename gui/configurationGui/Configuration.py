@@ -32,6 +32,7 @@ class Configuration(object):
         self._selectedMidiChannel = -1
         self.setupMidiSender()
         self._latestMidiControllerRequestCallback = None
+        self._effectStateRequestCallback = None
 
     def setupGuiConfiguration(self):
         self._guiPlayerConfig = self._guiConfigurationTree.addChildUnique("Player")
@@ -105,6 +106,9 @@ class Configuration(object):
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback
+
+    def setEffectStateRequestCallback(self, callback):
+        self._effectStateRequestCallback = callback
 
     def isMidiEnabled(self):
         return self._guiConfig.getValue("MidiBroadcast")
@@ -181,6 +185,9 @@ class Configuration(object):
 
     def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget = None):
         self._globalConf.updateEffectsGui(configName, midiNote, editFieldName, editFieldWidget)
+
+    def updateEffectsSliders(self, valuesString, guiString):
+        self._globalConf.updateEffectsSliders(valuesString, guiString)
 
     def showSliderGuiEditButton(self, show = True):
         self._globalConf.showSliderGuiEditButton(show)
@@ -287,6 +294,12 @@ class Configuration(object):
     def stopModulationGui(self):
         self._globalConf.stopModulationGui()
 
+    def startSlidersUpdate(self):
+        self._globalConf.startSlidersUpdate()
+
+    def stopSlidersUpdate(self):
+        self._globalConf.stopSlidersUpdate()
+
     def updateFadeGui(self, configName, editFieldName = None, editFieldWidget = None):
         self._globalConf.updateFadeGui(configName, editFieldName, editFieldWidget)
 
@@ -324,7 +337,12 @@ class Configuration(object):
         return self._midiSender
 
     def getLatestMidiControllers(self):
-        return self._latestMidiControllerRequestCallback()
+        if(self._latestMidiControllerRequestCallback != None):
+            return self._latestMidiControllerRequestCallback()
+
+    def getEffectState(self, channel, note):
+        if(self._effectStateRequestCallback != None):
+            return self._effectStateRequestCallback(channel, note)
 
     def printConfiguration(self):
         print self.getXmlString()

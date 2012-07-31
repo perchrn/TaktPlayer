@@ -1217,6 +1217,7 @@ All notes on events are quantized to this.
             self._selectedEditor = self.EditSelection.Unselected
             self._highlightButton(self._selectedEditor)
         self.refreshLayout()
+        self._mainConfig.stopModulationGui()
 
     def setDragCursor(self):
         self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
@@ -1227,10 +1228,12 @@ All notes on events are quantized to this.
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)
         self.refreshLayout()
+        self._mainConfig.startSlidersUpdate()
 
     def hideSlidersGui(self):
         self._configSizer.Hide(self._slidersPanel)
         self.refreshLayout()
+        self._mainConfig.stopSlidersUpdate()
 
     def _onFadeEdit(self, event, showFadeGui=True):
         if(showFadeGui == True):

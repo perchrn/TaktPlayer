@@ -187,18 +187,20 @@ class MediaPool(object):
             if(midiChannel < 0 or midiChannel >= 16):
                 print "Channel effect state request: Bad channel: " + str(midiChannel)
             else:
-                print "Channel effect state request!"
-#                midiChannelObject = self._mediaTracks[midiChannel]
+#                print "Channel effect state request!"
+                return self._mediaMixer.getEffectState(midiChannel)
         else:
             if(midiNote != None):
                 if(midiNote < 0 or midiNote >= 128):
                     print "Note effect state request: Bad note: " + str(midiNote)
                 else:
-                    print "Note effect state request!"
+#                    print "Note effect state request!"
                     midiNoteObject = self._mediaPool[midiNote]
-                    midiNoteObject.getEffectState()
+                    if(midiNoteObject != None):
+                        return midiNoteObject.getEffectState()
             else:
                 print "Error: Empty request!"
+        return None, None
     def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):

@@ -89,6 +89,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                 configRequestPath = self._getKeyValueFromList(queryDict, 'configPath', None)
                 noteListString = self._getKeyValueFromList(queryDict, 'noteList', None)
                 trackStateString = self._getKeyValueFromList(queryDict, 'trackState', None)
+                effectStateString = self._getKeyValueFromList(queryDict, 'effectState', None)
                 configStateString = self._getKeyValueFromList(queryDict, 'configState', None)
                 latestMidiControllersString = self._getKeyValueFromList(queryDict, 'latestMidiContollers', None)
                 configFileRequestType = self._getKeyValueFromList(queryDict, 'configFileRequest', None)
@@ -136,6 +137,20 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                     try:
                         trackStateXmlString = webOutputQueue.get(True, 5.0)
                         self._returnXmlRespose(trackStateXmlString)
+                    except:
+                        serverMessageXml = MiniXml("servermessage", "Timeout waiting for track state XML: %s" % configRequestPath)
+                        self.send_error(500)
+                        webInputQueue.put(serverMessageXml.getXmlString())
+                elif(effectStateString != None):
+                    channelString = self._getKeyValueFromList(queryDict, 'channel', "None")
+                    noteString = self._getKeyValueFromList(queryDict, 'note', "None")
+                    effectStateRequestXml = MiniXml("effectStateRequest")
+                    effectStateRequestXml.addAttribute("channel", channelString)
+                    effectStateRequestXml.addAttribute("note", noteString)
+                    webInputQueue.put(effectStateRequestXml.getXmlString())
+                    try:
+                        effectStateXmlString = webOutputQueue.get(True, 5.0)
+                        self._returnXmlRespose(effectStateXmlString)
                     except:
                         serverMessageXml = MiniXml("servermessage", "Timeout waiting for track state XML: %s" % configRequestPath)
                         self.send_error(500)
@@ -398,7 +413,7 @@ class GuiServer(object):
                     forceUpdate = False
                     if(forceText == "True"):
                         forceUpdate = True
-                    print "GuiServer client request for note: %s at %f (force update: %s)" % (noteText, imageTime, forceText)
+#                    print "GuiServer client request for note: %s at %f (force update: %s)" % (noteText, imageTime, forceText)
                     noteId = max(min(int(noteText), 127), 0)
                     thumbnailFileName = self._mediaPool.requestVideoThumbnail(noteId, imageTime, forceUpdate)
                     resposeXml = MiniXml("thumbRequest")
@@ -417,6 +432,23 @@ class GuiServer(object):
                     trackStateString = self._mediaPool.requestTrackState(time.time())
                     resposeXml = MiniXml("trackStateRequest")
                     resposeXml.addAttribute("list", trackStateString)
+                    self._webOutputQueue.put(resposeXml.getXmlString())
+                elif(webCommandXml.tag == "effectStateRequest"):
+                    noteText = getFromXml(webCommandXml, "note", "None")
+                    midiText = getFromXml(webCommandXml, "channel", "None")
+#                    print "GuiServer client request for effect state. Note: " + noteText + " MIDI channel: " + midiText
+                    try:
+                        noteId = max(min(int(noteText), 127), 0)
+                    except:
+                        noteId = None
+                    try:
+                        midiId = max(min(int(midiText), 15), 0)
+                    except:
+                        midiId = None
+                    effectStateString, guiStateString = self._mediaPool.requestEffectState(midiId, noteId)
+                    resposeXml = MiniXml("effectStateRequest")
+                    resposeXml.addAttribute("state", effectStateString)
+                    resposeXml.addAttribute("gui", guiStateString)
                     self._webOutputQueue.put(resposeXml.getXmlString())
                 elif(webCommandXml.tag == "configStateRequest"):
                     configStateString = self._configurationTree.getConfigId()

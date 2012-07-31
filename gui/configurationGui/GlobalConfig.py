@@ -19,6 +19,7 @@ import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
+import re
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -81,6 +82,15 @@ class GlobalConfig(object):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
             self._effectsGui.updateGui(template, midiNote, editFieldName, editFieldWidget)
+
+    def updateEffectsSliders(self, valuesString, guiString):
+        self._effectsGui.updateEffectsSliders(valuesString, guiString)
+
+    def startSlidersUpdate(self):
+        self._effectsGui.startSlidersUpdate()
+
+    def stopSlidersUpdate(self):
+        self._effectsGui.stopSlidersUpdate()
 
     def updateEffectList(self, selectedName):
         self._effectsGui.updateEffectList(self._effectsConfiguration, selectedName)
@@ -650,7 +660,6 @@ A list of start values for the effect modulation.
         self._hideEffectsListCallback()
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.stopModulationGui()
 
     def _onListDuplicateButton(self, event):
         if(self._effectListSelectedIndex >= 0):
@@ -904,6 +913,33 @@ A list of start values for the effect modulation.
 
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
+        self._effectSlidersUpdate = wx.Timer(plane, -1) #@UndefinedVariable
+        plane.Bind(wx.EVT_TIMER, self._onEffectSlidersUpdate) #@UndefinedVariable
+
+    def startSlidersUpdate(self):
+        if(self._effectSlidersUpdate.IsRunning() == False):
+            self._effectSlidersUpdate.Start(200)#5 times a second
+
+    def stopSlidersUpdate(self):
+        if(self._effectSlidersUpdate.IsRunning() == True):
+            self._effectSlidersUpdate.Stop()
+
+    def _onEffectSlidersUpdate(self, event):
+        isChannelController = False
+        if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+            isChannelController = True
+        if(isChannelController == True):
+            midiChannel = self._mainConfig.getSelectedMidiChannel()
+            if((midiChannel < 0) or (midiChannel >= 16)):
+                pass
+            else:
+                self._mainConfig.getEffectState(midiChannel, None)
+        else:
+            if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+                pass
+            else:
+                self._mainConfig.getEffectState(None, self._midiNote)
+    
     def _onSliderCloseButton(self, event):
         self._hideSlidersCallback()
 
@@ -964,7 +1000,7 @@ A list of start values for the effect modulation.
                 self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+3, self._arg3Slider.GetValue())
             elif(sliderId == self._arg4SliderId):
                 self.sendGuiController(isChannelController, midiChannel, self._midiNote, baseId+4, self._arg4Slider.GetValue())
-        self._updateValueLabels()
+        self._updateValueLabels(False)
 
     def _onEffectChosen(self, event):
         selectedEffectId = self._effectNameField.GetSelection()
@@ -1050,7 +1086,7 @@ A list of start values for the effect modulation.
             self._mainSliderSizer.Hide(self._arg4SliderSizer)
         self._fixEffectGuiLayout()
 
-    def _updateValueLabels(self):
+    def _updateValueLabels(self, updateSliderValues):
         if(self._ammountValueLabels == None):
             valueString = "%.2f" % (float(self._ammountSlider.GetValue()) / 127.0)
             self._amountValueLabel.SetLabel(valueString)
@@ -1091,21 +1127,47 @@ A list of start values for the effect modulation.
             self._arg4ValueLabel.SetLabel(self._arg4ValueLabels[index])
         else:
             print str(type(self._arg4ValueLabels))
-        midiChannel = self._mainConfig.getSelectedMidiChannel()
-        isChannelController = False
-        if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
-            isChannelController = True
-        if(isChannelController == True):
-            if((midiChannel < 0) or (midiChannel >= 16)):
-                self._slidersInfoLabel.SetLabel("No MIDI channel selected for channel controller message!")
+        if(updateSliderValues == True):
+            isChannelController = False
+            if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+                isChannelController = True
+            if(isChannelController == True):
+                midiChannel = self._mainConfig.getSelectedMidiChannel()
+                if((midiChannel < 0) or (midiChannel >= 16)):
+                    self._slidersInfoLabel.SetLabel("No MIDI channel selected for channel controller message!")
+                else:
+                    self._mainConfig.getEffectState(midiChannel, None)
+                    self._slidersInfoLabel.SetLabel(self._activeEffectId + " on channel " + str(midiChannel))
             else:
-                self._slidersInfoLabel.SetLabel(self._activeEffectId + " on channel " + str(midiChannel))
+                if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+                    self._slidersInfoLabel.SetLabel("No note selected for note controller message!")
+                else:
+                    self._mainConfig.getEffectState(None, self._midiNote)
+                    self._slidersInfoLabel.SetLabel(self._activeEffectId + " for note " + noteToNoteString(self._midiNote))
+
+    def updateEffectsSliders(self, valuesString, guiString):
+        if(valuesString == None or valuesString == "None"):
+            values = (0.0, 0.0, 0.0, 0.0, 0.0)
         else:
-            if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
-                self._slidersInfoLabel.SetLabel("No note selected for note controller message!")
+            valueSplit = valuesString.split(';')
+            if((self._activeEffectId == "Effect2") or (self._activeEffectId == "PostEffect")):
+                activeValueString = valueSplit[1]
             else:
-                self._slidersInfoLabel.SetLabel(self._activeEffectId + " for note " + noteToNoteString(self._midiNote))
-            
+                activeValueString = valueSplit[0]
+            values = tuple(float(v) for v in re.findall("[0-9]+.[0-9]+", activeValueString))
+#        print "DEBUG values: " + str(values)
+        calcValue = int(127.0 * values[0])
+        self._ammountSlider.SetValue(calcValue)
+        calcValue = int(127.0 * values[1])
+        self._arg1Slider.SetValue(calcValue)
+        calcValue = int(127.0 * values[2])
+        self._arg2Slider.SetValue(calcValue)
+        calcValue = int(127.0 * values[3])
+        self._arg3Slider.SetValue(calcValue)
+        calcValue = int(127.0 * values[4])
+        self._arg4Slider.SetValue(calcValue)
+        self._updateValueLabels(False)
+
     def _setupValueLabels(self, amount=None, arg1=None, arg2=None, arg3=None, arg4=None):
         self._ammountValueLabels = amount
         self._arg1ValueLabels = arg1
@@ -1168,7 +1230,7 @@ A list of start values for the effect modulation.
             self._mainEffectsGuiSizer.Show(self._imagesSizer)
         else:
             self._mainEffectsGuiSizer.Hide(self._imagesSizer)
-        self._updateValueLabels()
+        self._updateValueLabels(True)
 
     def _checkIfUpdated(self):
         if(self._config == None):
@@ -1541,7 +1603,6 @@ Decides if this image fades to black or white.
         self._hideModulationCallback()
         self._selectedEditor = self.EditSelected.Unselected
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.stopModulationGui()
 
     def _onListCloseButton(self, event):
         self._hideModulationCallback()
@@ -1549,7 +1610,6 @@ Decides if this image fades to black or white.
         self._hideFadeListCallback()
         self._selectedEditor = self.EditSelected.Unselected
         self._highlightButton(self._selectedEditor)
-        self._mainConfig.stopModulationGui()
 
     def _onListDuplicateButton(self, event):
         if(self._fadeListSelectedIndex >= 0):

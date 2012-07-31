@@ -324,10 +324,6 @@ class ModulationGui(object):
 
         self._onModulationSourceChosen(None)
 
-    def closeConfig(self):
-        if(self._activeControllersUpdate.IsRunning() == True):
-            self._activeControllersUpdate.Stop()
-
     def _onModulationSourceChosen(self, event):
         choice = self._modulationSorcesField.GetValue()
         if(choice == "MidiChannel"):

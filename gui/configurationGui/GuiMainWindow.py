@@ -35,7 +35,7 @@ class TaskHolder(object):
         Init, Sendt, Received, Done = range(4)
 
     class RequestTypes():
-        ActiveNotes, Note, File, Track, ConfigState, Configuration, SendConfig, PlayerConfiguration, LatestControllers, ConfigFileList, Preview = range(11)
+        ActiveNotes, Note, File, Track, ConfigState, EffectState, Configuration, SendConfig, PlayerConfiguration, LatestControllers, ConfigFileList, Preview = range(12)
 
     def __init__(self, description, taskType, widget, uniqueId = None):
         self._desc = description
@@ -417,6 +417,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
 
     def setupClientProcess(self):
         self._guiClient = GuiClient()
+        self._configuration.setEffectStateRequestCallback(self._guiClient.requestEffectState)
         host, port = self._configuration.getWebConfig()
         self._guiClient.startGuiClientProcess(host, port, None)
 
@@ -591,6 +592,14 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
+            if(result[0] == GuiClient.ResponseTypes.EffectState):
+#                print "GuiClient.ResponseTypes.EffectState"
+                foundTask = self._findQueuedTask(TaskHolder.RequestTypes.EffectState, None)
+                if(result[1] != None):
+                    valuesString = result[1][0]
+                    guiString = result[1][1]
+                    self._configuration.updateEffectsSliders(valuesString, guiString)
+#                    print "DEBUG values: %s gui: %s" %(valuesString, guiString)
             if(result[0] == GuiClient.ResponseTypes.ConfigState):
 #                print "GuiClient.ResponseTypes.ConfigState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)

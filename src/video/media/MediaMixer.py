@@ -152,6 +152,14 @@ class MediaMixer(object):
             self._currentImageId = self._nextImageId
             self._currentImage = self._nextImage
 
+    def getEffectState(self, midiChannel):
+        guiCtrlStateHolder = self._midiStateHolder.getMidiChannelControllerStateHolder(midiChannel)
+        guiEffectValuesString = str(guiCtrlStateHolder.getGuiContollerState(0)) + ";"
+        valuesString = str(self._mediaTracksCurrentPreEffectValues[midiChannel]) + ";"
+        guiEffectValuesString += str(guiCtrlStateHolder.getGuiContollerState(5))
+        valuesString += str(self._mediaTracksCurrentPostEffectValues[midiChannel])
+        return (valuesString, guiEffectValuesString)
+
     def mixImages(self, midiTime):
         imageMix = None
         for midiChannel in range(16):

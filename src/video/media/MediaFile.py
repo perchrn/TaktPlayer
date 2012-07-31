@@ -294,18 +294,16 @@ class MediaFile(object):
         return fadeMode, fadeValue, noteDone
 
     def getEffectState(self):
-        guiEffectValues = self._guiCtrlStateHolder.getGuiContollerState(0)
-        effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = self._effect1OldValues
-        valuesString = str(effectAmount) + "|" + str(effectArg1) + "|" + str(effectArg2) + "|" + str(effectArg3) + "|" + str(effectArg4)
-        guiEffectValues = self._guiCtrlStateHolder.getGuiContollerState(5)
-        effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = self._effect2OldValues
-        valuesString += ";" + str(effectAmount) + "|" + str(effectArg1) + "|" + str(effectArg2) + "|" + str(effectArg3) + "|" + str(effectArg4)
-        return valuesString
+        guiEffectValuesString = str(self._guiCtrlStateHolder.getGuiContollerState(0)) + ";"
+        valuesString = str(self._effect1OldValues) + ";"
+        guiEffectValuesString += str(self._guiCtrlStateHolder.getGuiContollerState(5))
+        valuesString += str(self._effect2OldValues)
+        return (valuesString, guiEffectValuesString)
 
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
             midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
-            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules)
+            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
             #print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
             effectSCV0 = None

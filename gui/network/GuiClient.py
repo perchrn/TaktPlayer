@@ -44,6 +44,13 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                     urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
                     resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml", "trackStateRequest")
                     resultQueue.put(resposeXmlString)
+                elif(commandXml.tag == "effectStateRequest"):
+                    channelTxt = getFromXml(commandXml, "channel", "None")
+                    noteTxt = getFromXml(commandXml, "note", "None")
+                    urlArgs = "?effectState=true&channel=%s&note=%s" %(channelTxt, noteTxt)
+                    urlArgs = urlSignaturer.getUrlWithSignature(urlArgs)
+                    resposeXmlString = requestUrl(hostPort, urlArgs, "text/xml", "effectStateRequest")
+                    resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "configStateRequest"):
                     oldId = getFromXml(commandXml, "id", "-1")
                     urlArgs = "?configState=%s" %(oldId)
@@ -295,6 +302,12 @@ class GuiClient(object):
         commandXml = MiniXml("trackStateRequest")
         self._commandQueue.put(commandXml.getXmlString())
 
+    def requestEffectState(self, channel, note):
+        commandXml = MiniXml("effectStateRequest")
+        commandXml.addAttribute("channel", channel)
+        commandXml.addAttribute("note", note)
+        self._commandQueue.put(commandXml.getXmlString())
+
     def requestConfigState(self, oldState):
         commandXml = MiniXml("configStateRequest")
         commandXml.addAttribute("oldState", oldState)
@@ -319,9 +332,9 @@ class GuiClient(object):
         self._commandQueue.put(xmlString)
 
     def sendPlayerConfiguration(self, xmlString):
-        print "DEBUG " * 20
-        print xmlString
-        print "DEBUG " * 20
+#        print "DEBUG " * 20
+#        print xmlString
+#        print "DEBUG " * 20
         commandXml = MiniXml("playerConfigurationSend")
         commandXml.addAttribute("string", xmlString)
         self._commandQueue.put(commandXml.getXmlString())
@@ -344,7 +357,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     class ResponseTypes():
-        FileDownload, ThumbRequest, Preview, NoteList, TrackState, TrackStateError, ConfigState, Configuration, PlayerConfiguration, ConfigFileTransfer, PlayerConfigFileTransfer, LatestControllers, ConfigFileList = range(13)
+        FileDownload, ThumbRequest, Preview, NoteList, TrackState, EffectState, TrackStateError, ConfigState, Configuration, PlayerConfiguration, ConfigFileTransfer, PlayerConfigFileTransfer, LatestControllers, ConfigFileList = range(14)
 
     def getServerResponse(self):
         returnValue = (None, None)
@@ -369,7 +382,7 @@ class GuiClient(object):
                     noteTime = float(serverXml.get("time", "0.0"))
                     fileName = serverXml.get("fileName")
                     if((noteTxt == None) or (fileName == None)):
-                        print "ERRORRRRRRR!!!!! note"
+#                        print "ERRORRRRRRR!!!!! thumbRequest"
                         return (self.ResponseTypes.ThumbRequest, None)
                     noteId = max(min(int(noteTxt), 127), 0)
 #                    print "Got thumbRequest response: %s at %.2f with filename: %s" % (noteTxt, noteTime, fileName)
@@ -407,6 +420,14 @@ class GuiClient(object):
                             if(self._lastTrackRequestError != "unknown"):
                                 print "Unknown Error: " + serverResponse
                                 self._lastTrackRequestError = "unknown"
+                elif(serverXml.tag == "effectStateRequest"):
+                    effectState = serverXml.get("state")
+                    guiState = serverXml.get("gui")
+                    if((effectState == None) or (guiState == None)):
+#                        print "ERRORRRRRRR!!!!! effectStateRequest"
+                        return (self.ResponseTypes.EffectState, None)
+#                    print "Got effectStateRequest response: %s GUI: %s" % (effectState, guiState)
+                    returnValue = (self.ResponseTypes.EffectState, (effectState, guiState))
                 elif(serverXml.tag == "configStateRequest"):
 #                    returnValue = (self.ResponseTypes.ConfigState, None)
                     configId = serverXml.get("id")

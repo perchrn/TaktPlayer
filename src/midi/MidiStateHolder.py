@@ -516,23 +516,43 @@ class GuiControllerValues(object):
         else:
             baseController = int(command & 0x0f)
             for i in range(5):
-                self._controllerStates[baseController + i] = None
+                self._controllerStates[baseController + i] = -1.0
 
     def getGuiContollerState(self, guiCtrlStateStartId):
         return (self._controllerStates[guiCtrlStateStartId], self._controllerStates[guiCtrlStateStartId+1], self._controllerStates[guiCtrlStateStartId+2], self._controllerStates[guiCtrlStateStartId+3], self._controllerStates[guiCtrlStateStartId+4])
 
-    def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues):
+    def updateWithGuiSettings(self, guiCtrlStateStartId, effectsValues, effectStartValues):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
         if(self._controllerStates[guiCtrlStateStartId] != None):
-            effectAmount = self._controllerStates[guiCtrlStateStartId]
+            if(self._controllerStates[guiCtrlStateStartId] < 0.0):
+                effectAmount = effectStartValues[0]
+                self._controllerStates[guiCtrlStateStartId] = None
+            else:
+                effectAmount = self._controllerStates[guiCtrlStateStartId]
         if(self._controllerStates[guiCtrlStateStartId+1] != None):
-            effectArg1 = self._controllerStates[guiCtrlStateStartId+1]
+            if(self._controllerStates[guiCtrlStateStartId+1] < 0.0):
+                effectArg1 = effectStartValues[1]
+                self._controllerStates[guiCtrlStateStartId+1] = None
+            else:
+                effectArg1 = self._controllerStates[guiCtrlStateStartId+1]
         if(self._controllerStates[guiCtrlStateStartId+2] != None):
-            effectArg2 = self._controllerStates[guiCtrlStateStartId+2]
+            if(self._controllerStates[guiCtrlStateStartId+2] < 0.0):
+                effectArg2 = effectStartValues[2]
+                self._controllerStates[guiCtrlStateStartId+2] = None
+            else:
+                effectArg2 = self._controllerStates[guiCtrlStateStartId+2]
         if(self._controllerStates[guiCtrlStateStartId+3] != None):
-            effectArg3 = self._controllerStates[guiCtrlStateStartId+3]
+            if(self._controllerStates[guiCtrlStateStartId+3] < 0.0):
+                effectArg3 = effectStartValues[3]
+                self._controllerStates[guiCtrlStateStartId+3] = None
+            else:
+                effectArg3 = self._controllerStates[guiCtrlStateStartId+3]
         if(self._controllerStates[guiCtrlStateStartId+4] != None):
-            effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
+            if(self._controllerStates[guiCtrlStateStartId+4] < 0.0):
+                effectArg4 = effectStartValues[4]
+                self._controllerStates[guiCtrlStateStartId+4] = None
+            else:
+                effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
         
 class MidiStateHolder(object):

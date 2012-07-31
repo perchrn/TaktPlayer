@@ -918,7 +918,7 @@ A list of start values for the effect modulation.
 
     def startSlidersUpdate(self):
         if(self._effectSlidersUpdate.IsRunning() == False):
-            self._effectSlidersUpdate.Start(200)#5 times a second
+            self._effectSlidersUpdate.Start(100)#10 times a second
 
     def stopSlidersUpdate(self):
         if(self._effectSlidersUpdate.IsRunning() == True):

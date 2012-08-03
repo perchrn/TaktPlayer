@@ -7,11 +7,18 @@ import ntpath
 import posixpath
 #Media file utility to force unix paths in configurations.
 def forceUnixPath(pathPart):
+    drive, _ = ntpath.splitdrive(pathPart)
+    if(drive != ""):
+        if((drive == pathPart) or ((drive + "\\") == pathPart)):
+            return drive
     firstPart, lastPart = ntpath.split(pathPart)
-    if(firstPart != ""):
+    if((firstPart != "") and (lastPart != "")):
         unixPathPart = forceUnixPath(firstPart)
         return posixpath.join(unixPathPart, lastPart)
-    return lastPart
+    if(firstPart != ""):
+        return firstPart
+    else:
+        return lastPart
 
 class MixMode:
     Default, Add, Multiply, LumaKey, WhiteLumaKey, Replace = range(6)

@@ -1299,9 +1299,8 @@ All notes on events are quantized to this.
         if(self._type == "Camera" or self._type == "KinectCamera"):
             noteFileName = str(self._cameraId)
         else:
-            guiVideoDir = self._mainConfig.getGuiVideoDir()
             noteFileName = self._fileName
-            if((guiVideoDir != "") and (self._fileName != "")):
+            if((self._videoDirectory != "") and (self._fileName != "")):
                 if(os.path.isabs(self._fileName)):
                     try:
                         noteFileName = os.path.relpath(self._fileName, self._videoDirectory)

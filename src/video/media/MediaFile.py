@@ -13,6 +13,7 @@ import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
     getModulationValueModeFromName, KinectMode
+import math
 try:
     import freenect
 except:
@@ -463,7 +464,23 @@ class MediaFile(object):
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._radians360 = math.radians(360)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation.setModulationReceiver("ZoomModulation", "None")
+        self._midiModulation.setModulationReceiver("MoveModulation", "None")
+        self._midiModulation.setModulationReceiver("MoveAngleModulation", "None")
+        self._oldZoom = -1.0
+        self._oldMove = -1.0
+        self._oldMoveAngle = -1.0
+        self._oldCrop = False
         self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._zoomModulationId = self._midiModulation.connectModulation("ZoomModulation")
+        self._moveModulationId = self._midiModulation.connectModulation("MoveModulation")
+        self._moveAngleModulationId = self._midiModulation.connectModulation("MoveAngleModulation")
 
     def getType(self):
         return "Image"
@@ -476,6 +493,72 @@ class ImageFile(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
+        zoom = self._midiModulation.getModlulationValue(self._zoomModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        move = self._midiModulation.getModlulationValue(self._moveModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        angle = self._midiModulation.getModlulationValue(self._moveAngleModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        crop = True
+        if((zoom != self._oldZoom) or (move != self._oldMove) or (angle != self._oldMoveAngle) or (crop != self._oldCrop)):
+            self._oldZoom = zoom
+            self._oldMove = move
+            self._oldMoveAngle = angle
+            self._oldCrop = crop
+            if(zoom <= 0.5):
+                multiplicator = 1.0 - zoom
+            elif(zoom <= 0.75):
+                multiplicator = 0.5 - (0.1666666 * ((zoom - 0.5) * 4))
+            else:
+                multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) *4))
+#            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
+            if(crop == True):
+                sourceRectangleX = int(self._source100percentCropX * multiplicator)
+                sourceRectangleY = int(self._source100percentCropY * multiplicator)
+            else:
+                sourceRectangleX = int(self._sourceX * multiplicator)
+                sourceRectangleY = int(self._sourceY * multiplicator)                
+            if(sourceRectangleX < self._sourceX):
+                left = int((self._sourceX - sourceRectangleX) / 2)
+            else:
+                sourceRectangleX = self._sourceX
+                left = 0
+            maxXmovmentPlussMinus = left
+            if(sourceRectangleY < self._sourceY):
+                top = int((self._sourceY - sourceRectangleY) / 2)
+            else:
+                sourceRectangleY = self._sourceY
+                top = 0
+            maxYmovmentPlussMinus = top
+            if(move >= 0.002):
+                angle360 = angle * 360
+                if(angle360 < 45.0):
+                    moveX = -maxXmovmentPlussMinus * move
+                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
+                elif(angle360 < 135):
+                    moveY = -maxYmovmentPlussMinus * move
+                    moveX = math.tan(self._radians360 * (angle-0.25)) * move * maxXmovmentPlussMinus
+                elif(angle360 < 225):
+                    moveX = maxXmovmentPlussMinus * move
+                    moveY = math.tan(self._radians360 * (angle-0.5)) * move * maxYmovmentPlussMinus
+                elif(angle360 < 315):
+                    moveY = maxYmovmentPlussMinus * move
+                    moveX = math.tan(self._radians360 * (angle-0.75)) * move * -maxXmovmentPlussMinus
+                else:
+                    moveX = -maxXmovmentPlussMinus * move
+                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
+                left = int(moveX) + left
+                if(left < 0):
+                    left = 0
+                elif((left + sourceRectangleX) > self._sourceX):
+                    left = self._sourceX - sourceRectangleX
+                top = int(moveY) + top
+                if(top < 0):
+                    top = 0
+                elif((top + sourceRectangleY) > self._sourceY):
+                    top = self._sourceY - sourceRectangleY
+#                print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
+#            print "DEBUG source %d:%d dest %d:%d rect: %d:%d:%d:%d" %(self._sourceX, self._sourceY, self._internalResolutionX, self._internalResolutionY, left, top, sourceRectangleX, sourceRectangleY)
+            src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
+            cv.Resize(src_region, self._zoomResizeMat)
+            self._captureImage = self._zoomResizeMat
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
@@ -495,6 +578,18 @@ class ImageFile(MediaFile):
             raise MediaError("File could not be read!")
         self._firstImage = self._captureImage
         self._originalTime = 1.0
+        self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
+        self._sourceAspect = float(self._sourceX) / self._sourceY
+        self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
+        print "DEBUG aspects: source: " + str(self._sourceAspect) + " dest: " + str(self._destinationAspect)
+        if(self._sourceAspect > self._destinationAspect):
+            self._source100percentCropX = int(self._sourceY * self._destinationAspect)
+            self._source100percentCropY = self._sourceY
+            print "DEBUG pcn: Y source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
+        else:
+            self._source100percentCropX = self._sourceX
+            self._source100percentCropY = int(self._sourceX / self._destinationAspect)
+            print "DEBUG pcn: X source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 

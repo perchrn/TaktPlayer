@@ -2,46 +2,32 @@
 
 set taktRoot=%~dp0
 
-set kivy_portable_root=%taktRoot%Kivy-1.0.9-w32\
-ECHO botstrapping Kivy @ %kivy_portable_root%
-
-
-IF DEFINED kivy_paths_initialized (GOTO :runkivy)
+IF DEFINED takt_paths_initialized (GOTO :runtakt)
 
 ECHO Setting Environment Variables:
 ECHO #################################
 
-set GST_REGISTRY=%kivy_portable_root%gstreamer\registry.bin
-ECHO GST_REGISTRY
-ECHO %GST_REGISTRY%
-ECHO ---------------
+::Adding local ffmpeg to path
+set PATH=%taktRoot%ffmpeg\bin;%PATH%
 
-set GST_PLUGIN_PATH=%kivy_portable_root%gstreamer\lib\gstreamer-0.10
-ECHO GST_PLUGIN_PATH:
-ECHO %GST_PLUGIN_PATH%
-ECHO ---------------
-
-set PATH=%kivy_portable_root%;%kivy_portable_root%Python;%kivy_portable_root%gstreamer\bin;%kivy_portable_root%MinGW\bin;%PATH%
+set PATH=%taktRoot%Python27;%PATH%
 ECHO PATH:
 ECHO %PATH%
 ECHO ----------------------------------
+
+copy %taktRoot%GuiMain.py %taktRoot%GuiMain.pyw
+set PYTHONPATH=%taktRoot%gui;%taktRoot%src;%PYTHONPATH%
 
 set PYTHONPATH=%kivy_portable_root%kivy;%PYTHONPATH%
 ECHO PYTHONPATH:
 ECHO %PYTHONPATH%
 ECHO ----------------------------------
 
-SET kivy_paths_initialized=1
+SET takt_paths_initialized=1
 ECHO ##################################
 
-:runkivy
-ECHO done bootstraping kivy...\n
+:runtakt
 
-::Adding local ffmpeg to path
-set PATH=%taktRoot%ffmpeg\bin;%PATH%
-
-copy %taktRoot%GuiMain.py %taktRoot%GuiMain.pyw
-set PYTHONPATH=%taktRoot%gui;%taktRoot%src;%PYTHONPATH%
 start %taktRoot%GuiMain.pyw
 IF %errorlevel% NEQ 0 (PAUSE)
 exit

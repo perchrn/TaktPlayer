@@ -4,6 +4,12 @@ mv dist/TaktPlayer.app .
 mv TaktPlayer.app dist/
 
 chmod +x dist/TaktGui.app/Contents/Resources/ffmpeg
+
+cp -R /Users/pcn/Documents/TaktAudioUnitPlugin/build/Debug/TaktAudioUnitPlugin.component dist/
+ln -s /Applications dist/
+ln -s /Library/Audio/Plug-Ins/Components dist/GlobalAudioUnitsFolder
+ln -s /Library/Audio/Plug-Ins/VST dist/GlobalVSTFolder
+
 #Cleanup?
 
 mv TaktPlayer.dmg TaktPlayer.dmg.old

@@ -14,6 +14,7 @@ from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
     FadeMode, getMixModeFromName, ModulationValueMode,\
     getModulationValueModeFromName, KinectMode
 import math
+from utilities.FloatListText import textToFloatValues
 try:
     import freenect
 except:
@@ -466,21 +467,23 @@ class ImageFile(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._radians360 = math.radians(360)
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
-        self._midiModulation.setModulationReceiver("ZoomModulation", "None")
-        self._midiModulation.setModulationReceiver("MoveModulation", "None")
-        self._midiModulation.setModulationReceiver("MoveAngleModulation", "None")
+
+        self._startZoom, self._startMove, self._startAngle = textToFloatValues("0.5|1.0|0.5", 3)
+        self._endZoom, self._endMove, self._endAngle = textToFloatValues("0.5|1.0|1.0", 3)
+#        print "DEBUG start: " + str(textToFloatValues("0.5|1.0|0.5", 3)) + " end: " + str(textToFloatValues("0.5|1.0|1.0", 3))
+        self._zoomTime = 48.0
+        self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
+        self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
+
+        self.debugCount = 0
         self._oldZoom = -1.0
-        self._oldMove = -1.0
-        self._oldMoveAngle = -1.0
+        self._oldMoveX = -1.0
+        self._oldMoveY = -1.0
         self._oldCrop = False
         self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        self._zoomModulationId = self._midiModulation.connectModulation("ZoomModulation")
-        self._moveModulationId = self._midiModulation.connectModulation("MoveModulation")
-        self._moveAngleModulationId = self._midiModulation.connectModulation("MoveAngleModulation")
 
     def getType(self):
         return "Image"
@@ -493,14 +496,43 @@ class ImageFile(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-        zoom = self._midiModulation.getModlulationValue(self._zoomModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        move = self._midiModulation.getModlulationValue(self._moveModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        angle = self._midiModulation.getModlulationValue(self._moveAngleModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        zoom = self._startZoom
+        moveX = self._startX
+        moveY = self._startY
+        angle = self._startAngle
+        move = self._startMove
+        guiMove = False
+        if((self._startSongPosition + self._zoomTime) < currentSongPosition):
+            zoom = self._endZoom
+            moveX = self._endX
+            moveY = self._endY
+        elif(self._startSongPosition < currentSongPosition):
+#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(self._zoomTime)
+            if(self._endZoom != self._startZoom):
+                zoom = self._startZoom + (((self._endZoom - self._startZoom) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+            if(self._endX != self._startX):
+                moveX = self._startX + (((self._endX - self._startX) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+            if(self._endY != self._startY):
+                moveY = self._startY + (((self._endY - self._startY) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                zoom = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                move = guiStates[1]
+                guiMove = True
+        if(guiStates[2] != None):
+            if(guiStates[2] > -0.5):
+                angle = guiStates[2]
+                guiMove = True
+        if(guiMove == True):
+            moveX, moveY = self._angleAndMoveToXY(angle, move)
         crop = True
-        if((zoom != self._oldZoom) or (move != self._oldMove) or (angle != self._oldMoveAngle) or (crop != self._oldCrop)):
+        if((zoom != self._oldZoom) or (moveX != self._oldMoveX) or (moveY != self._oldMoveY) or (crop != self._oldCrop)):
             self._oldZoom = zoom
-            self._oldMove = move
-            self._oldMoveAngle = angle
+            self._oldMoveX = moveX
+            self._oldMoveY = moveY
             self._oldCrop = crop
             if(zoom <= 0.5):
                 multiplicator = 1.0 - zoom
@@ -527,34 +559,18 @@ class ImageFile(MediaFile):
                 sourceRectangleY = self._sourceY
                 top = 0
             maxYmovmentPlussMinus = top
-            if(move >= 0.002):
-                angle360 = angle * 360
-                if(angle360 < 45.0):
-                    moveX = -maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
-                elif(angle360 < 135):
-                    moveY = -maxYmovmentPlussMinus * move
-                    moveX = math.tan(self._radians360 * (angle-0.25)) * move * maxXmovmentPlussMinus
-                elif(angle360 < 225):
-                    moveX = maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * (angle-0.5)) * move * maxYmovmentPlussMinus
-                elif(angle360 < 315):
-                    moveY = maxYmovmentPlussMinus * move
-                    moveX = math.tan(self._radians360 * (angle-0.75)) * move * -maxXmovmentPlussMinus
-                else:
-                    moveX = -maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
-                left = int(moveX) + left
-                if(left < 0):
-                    left = 0
-                elif((left + sourceRectangleX) > self._sourceX):
-                    left = self._sourceX - sourceRectangleX
-                top = int(moveY) + top
-                if(top < 0):
-                    top = 0
-                elif((top + sourceRectangleY) > self._sourceY):
-                    top = self._sourceY - sourceRectangleY
-#                print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
+            left = int(moveX * maxXmovmentPlussMinus) + left
+            left = int(moveX) + left
+            if(left < 0):
+                left = 0
+            elif((left + sourceRectangleX) > self._sourceX):
+                left = self._sourceX - sourceRectangleX
+            top = int(moveY * maxYmovmentPlussMinus) + top
+            if(top < 0):
+                top = 0
+            elif((top + sourceRectangleY) > self._sourceY):
+                top = self._sourceY - sourceRectangleY
+#            print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
 #            print "DEBUG source %d:%d dest %d:%d rect: %d:%d:%d:%d" %(self._sourceX, self._sourceY, self._internalResolutionX, self._internalResolutionY, left, top, sourceRectangleX, sourceRectangleY)
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, self._zoomResizeMat)
@@ -562,6 +578,25 @@ class ImageFile(MediaFile):
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
+    def _angleAndMoveToXY(self, angle, move):
+        angle360 = angle * 360
+        if(angle360 < 45.0):
+            moveX = -move
+            moveY = math.tan(self._radians360 * angle) * -move
+        elif(angle360 < 135):
+            moveX = math.tan(self._radians360 * (angle-0.25)) * move
+            moveY = -move
+        elif(angle360 < 225):
+            moveX = move
+            moveY = math.tan(self._radians360 * (angle-0.5)) * move
+        elif(angle360 < 315):
+            moveX = math.tan(self._radians360 * (angle-0.75)) * -move
+            moveY = move
+        else:
+            moveX = -move
+            moveY = math.tan(self._radians360 * angle) * -move
+        return moveX, moveY
+        
     def openFile(self, midiLength):
         if (os.path.isfile(self._fullFilePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
@@ -581,15 +616,12 @@ class ImageFile(MediaFile):
         self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
         self._sourceAspect = float(self._sourceX) / self._sourceY
         self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
-        print "DEBUG aspects: source: " + str(self._sourceAspect) + " dest: " + str(self._destinationAspect)
         if(self._sourceAspect > self._destinationAspect):
             self._source100percentCropX = int(self._sourceY * self._destinationAspect)
             self._source100percentCropY = self._sourceY
-            print "DEBUG pcn: Y source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
         else:
             self._source100percentCropX = self._sourceX
             self._source100percentCropY = int(self._sourceX / self._destinationAspect)
-            print "DEBUG pcn: X source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 

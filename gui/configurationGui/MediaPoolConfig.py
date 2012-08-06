@@ -424,6 +424,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._clipOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(84,0)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._noteSlidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectImageListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(280,-1)) #@UndefinedVariable
@@ -438,6 +439,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._noteSlidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectImageListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -449,6 +451,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._overviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
+        self._configSizer.Add(self._noteSlidersPanel)
         self._configSizer.Add(self._effectListPanel)
         self._configSizer.Add(self._effectConfigPanel)
         self._configSizer.Add(self._effectImageListPanel)
@@ -459,6 +462,7 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
+#        self._configSizer.Hide(self._noteSlidersPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._effectImageListPanel)
@@ -484,6 +488,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel.SetBackgroundColour((180,180,180))
         self._noteConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteConfigPanel.SetSizer(self._noteConfigSizer)
+
+        self._noteSlidersPanel.SetBackgroundColour((170,170,170))
+        self._noteSlidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._noteSlidersPanel.SetSizer(self._noteSlidersSizer)
+        self._setupNoteSlidersGui(self._noteSlidersPanel, self._noteSlidersSizer)
 
         self._effectListPanel.SetBackgroundColour((160,160,160))
         self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -840,6 +849,136 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
+
+    def _setupNoteSlidersGui(self, plane, sizer):
+        self._mainSliderSizer = sizer
+
+        headerLabel = wx.StaticText(plane, wx.ID_ANY, "Note sliders:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainSliderSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._slidersInfoLabel = wx.StaticText(plane, wx.ID_ANY, "N/A") #@UndefinedVariable
+        self._mainSliderSizer.Add(self._slidersInfoLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._noteSlider1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._noteSlider1Label = wx.StaticText(plane, wx.ID_ANY, "Slider 1:") #@UndefinedVariable
+        self._noteSlider1 = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._noteSlider1ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        self._noteSlider1Sizer.Add(self._noteSlider1Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider1Sizer.Add(self._noteSlider1, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider1Sizer.Add(self._noteSlider1ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._noteSlider1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteSlider1Id = self._noteSlider1.GetId()
+
+        self._noteSlider2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._noteSlider2Label = wx.StaticText(plane, wx.ID_ANY, "Slider 2:") #@UndefinedVariable
+        self._noteSlider2 = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._noteSlider2ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        self._noteSlider2Sizer.Add(self._noteSlider2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider2Sizer.Add(self._noteSlider2, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider2Sizer.Add(self._noteSlider2ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._noteSlider2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteSlider2Id = self._noteSlider2.GetId()
+
+        self._noteSlider3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._noteSlider3Label = wx.StaticText(plane, wx.ID_ANY, "Slider 3:") #@UndefinedVariable
+        self._noteSlider3 = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._noteSlider3ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        self._noteSlider3Sizer.Add(self._noteSlider3Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider3Sizer.Add(self._noteSlider3, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider3Sizer.Add(self._noteSlider3ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._noteSlider3Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteSlider3Id = self._noteSlider3.GetId()
+
+        self._noteSlider4Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._noteSlider4Label = wx.StaticText(plane, wx.ID_ANY, "Slider 4:") #@UndefinedVariable
+        self._noteSlider4 = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._noteSlider4ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        self._noteSlider4Sizer.Add(self._noteSlider4Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider4Sizer.Add(self._noteSlider4, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider4Sizer.Add(self._noteSlider4ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._noteSlider4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteSlider4Id = self._noteSlider4.GetId()
+
+        self._noteSlider5Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._noteSlider5Label = wx.StaticText(plane, wx.ID_ANY, "Slider 5:") #@UndefinedVariable
+        self._noteSlider5 = wx.Slider(plane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._noteSlider5ValueLabel = wx.StaticText(plane, wx.ID_ANY, "0.0", size=(30,-1)) #@UndefinedVariable
+        self._noteSlider5Sizer.Add(self._noteSlider5Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider5Sizer.Add(self._noteSlider5, 2, wx.ALL, 5) #@UndefinedVariable
+        self._noteSlider5Sizer.Add(self._noteSlider5ValueLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._noteSlider5Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteSlider5Id = self._noteSlider5.GetId()
+
+        self._resetButtonBitmap = wx.Bitmap("graphics/releaseSlidersButton.png") #@UndefinedVariable
+        self._resetButtonPressedBitmap = wx.Bitmap("graphics/releaseSlidersButtonPressed.png") #@UndefinedVariable
+        self._updateButtonBitmap = wx.Bitmap("graphics/updateButton.png") #@UndefinedVariable
+        self._updateButtonPressedBitmap = wx.Bitmap("graphics/updateButtonPressed.png") #@UndefinedVariable
+        self._updateRedButtonBitmap = wx.Bitmap("graphics/updateButtonRed.png") #@UndefinedVariable
+        self._updateRedButtonPressedBitmap = wx.Bitmap("graphics/updateButtonRedPressed.png") #@UndefinedVariable
+
+        self._sliderButtonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = PcnImageButton(plane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onSliderCloseButton) #@UndefinedVariable
+        self._updateButton = PcnImageButton(plane, self._updateButtonBitmap, self._updateButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
+        self._updateButton.Bind(wx.EVT_BUTTON, self._onSliderUpdateButton) #@UndefinedVariable
+        #TODO: Make this a tesst button for image zoom...
+        self._resetButton = PcnImageButton(plane, self._resetButtonBitmap, self._resetButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(67, 17)) #@UndefinedVariable
+        self._resetButton.Bind(wx.EVT_BUTTON, self._onResetButton) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._updateButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._sliderButtonsSizer.Add(self._resetButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+    def _onSliderCloseButton(self, event):
+        pass
+
+    def _onSliderUpdateButton(self, event):
+        pass
+
+    def _onResetButton(self, event):
+        pass
+
+    def _onSlide(self, event):
+        sliderId = event.GetEventObject().GetId()
+        baseId = 10
+        if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+            print "No note selected for note controller message!"
+        else:
+            if(sliderId == self._noteSlider1Id):
+                self.sendGuiController(self._midiNote, baseId, self._noteSlider1.GetValue())
+            elif(sliderId == self._noteSlider2Id):
+                self.sendGuiController(self._midiNote, baseId+1, self._noteSlider2.GetValue())
+            elif(sliderId == self._noteSlider3Id):
+                self.sendGuiController(self._midiNote, baseId+2, self._noteSlider3.GetValue())
+            elif(sliderId == self._noteSlider4Id):
+                self.sendGuiController(self._midiNote, baseId+3, self._noteSlider4.GetValue())
+            elif(sliderId == self._noteSlider5Id):
+                self.sendGuiController(self._midiNote, baseId+4, self._noteSlider5.GetValue())
+#        self._updateValueLabels(False)
+
+#    def sendGuiRelease(self, isChannelController, channel, note, guiControllerId):
+#        guiControllerId = (guiControllerId & 0x0f)
+#        if(isChannelController == True):
+#            command = 0xc0
+#            note = 0
+#        else:
+#            command = 0xd0
+#        command += guiControllerId
+#        midiSender = self._mainConfig.getMidiSender()
+#        midiSender.sendGuiRelease(channel, note, command)
+
+    def sendGuiController(self, note, guiControllerId, value):
+        channel = 0
+        guiControllerId = (guiControllerId & 0x0f)
+        command = 0xf0
+        command += guiControllerId
+        midiSender = self._mainConfig.getMidiSender()
+        midiSender.sendGuiController(channel, note, command, value)
 
     def getPlane(self):
         return self._mediaFileGuiPanel

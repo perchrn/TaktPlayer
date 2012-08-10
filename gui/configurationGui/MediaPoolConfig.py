@@ -15,6 +15,7 @@ from video.EffectModes import getEffectId, EffectTypes
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
 import sys
+from utilities.FloatListText import textToFloatValues, floatValuesToString
 
 class MediaPoolConfig(object):
     def __init__(self, configParent):
@@ -152,17 +153,15 @@ class MediaFile(object):
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
         elif(mediaType == "Image"):
-            self._configurationTree.addTextParameter("ZoomModulation", "None")
-            self._configurationTree.addTextParameter("MoveModulation", "None")
-            self._configurationTree.addTextParameter("MoveAngleModulation", "None")
+            self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+            self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+            self._configurationTree.addBoolParameter("CropMode", True)
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
-            self._configurationTree.addTextParameter("PlayBackModulation", "None")
+            self._configurationTree.addTextParameter("PlaybackModulation", "None")
         elif(mediaType == "KinectCamera"):
             self._configurationTree.addTextParameter("DisplayModeModulation", "None")
-            self._configurationTree.addTextParameter("BlackFilterModulation", "None")
-            self._configurationTree.addTextParameter("DiffFilterModulation", "None")
-            self._configurationTree.addTextParameter("ErodeFilterModulation", "None")
+            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
         if(xmlConfig != None):
             self._configurationTree._updateFromXml(xmlConfig)
 
@@ -172,26 +171,41 @@ class MediaFile(object):
     def updateFileName(self, fileName, isVideoFile):
         self._configurationTree.setValue("FileName", fileName)
         if(isVideoFile == False):
+            #Image file
+            oldType = self._configurationTree.getValue("Type")
             self._configurationTree.setValue("Type", "Image")
-            self._configurationTree.removeParameter("LoopMode")
-            self._configurationTree.removeParameter("SequenceMode")
-            self._configurationTree.removeParameter("PlayBackModulation")
+            if(oldType == "VideoLoop"):
+                self._configurationTree.removeParameter("LoopMode")
+            if(oldType == "KinectCamera"):
+                self._configurationTree.removeParameter("DisplayModeModulation")
+                self._configurationTree.removeParameter("FilterValues")
+            elif(oldType == "ImageSequence"):
+                self._configurationTree.removeParameter("SequenceMode")
+                self._configurationTree.removeParameter("PlaybackModulation")
+
+            self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+            self._values1Field.SetValue("0.0|0.0|0.0")
+            self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+            self._values2Field.SetValue("0.0|0.0|0.0")
+            self._configurationTree.addBoolParameter("CropMode", True)
         else:
+            #Video file
             oldType = self._configurationTree.getValue("Type")
             if((oldType == "Image") or (oldType == "Camera") or (oldType == "KinectCamera")):
                 self._configurationTree.setValue("Type", "VideoLoop")
                 oldloopMode = self._configurationTree.getValue("LoopMode")
                 if(oldloopMode == None):
                     self._configurationTree.setValue("LoopMode", "Normal")
-                self._configurationTree.removeParameter("ZoomModulation")
-                self._configurationTree.removeParameter("MoveModulation")
-                self._configurationTree.removeParameter("MoveAngleModulation")
-                self._configurationTree.removeParameter("SequenceMode")
-                self._configurationTree.removeParameter("PlayBackModulation")
-                self._configurationTree.removeParameter("DisplayModeModulation")
-                self._configurationTree.removeParameter("BlackFilterModulation")
-                self._configurationTree.removeParameter("DiffFilterModulation")
-                self._configurationTree.removeParameter("ErodeFilterModulation")
+                if(oldType == "KinectCamera"):
+                    self._configurationTree.removeParameter("DisplayModeModulation")
+                    self._configurationTree.removeParameter("FilterValues")
+                elif(oldType == "ImageSequence"):
+                    self._configurationTree.removeParameter("SequenceMode")
+                    self._configurationTree.removeParameter("PlaybackModulation")
+                elif(oldType == "Image"):
+                    self._configurationTree.removeParameter("StartValues")
+                    self._configurationTree.removeParameter("EndValues")
+                    self._configurationTree.removeParameter("CropMode")
 
     def getMixMode(self):
         return self._configurationTree.getValue("MixMode")
@@ -218,51 +232,43 @@ class MediaFile(object):
             self._configurationTree.removeParameter("LoopMode")
 
         if(mediaType == "Image"):
-            zoomMod = sourceConfigTree.getValue("ZoomModulation")
-            if(zoomMod != None):
-                self._configurationTree.setValue("ZoomModulation", zoomMod)
-            moveMod = sourceConfigTree.getValue("MoveModulation")
-            if(moveMod != None):
-                self._configurationTree.setValue("MoveModulation", moveMod)
-            moveAngleMod = sourceConfigTree.getValue("MoveAngleModulation")
-            if(moveAngleMod != None):
-                self._configurationTree.setValue("MoveAngleModulation", moveAngleMod)
+            startVal = sourceConfigTree.getValue("StartValues")
+            if(startVal != None):
+                self._configurationTree.setValue("StartValues", startVal)
+            endVal = sourceConfigTree.getValue("EndValues")
+            if(endVal != None):
+                self._configurationTree.setValue("EndValues", endVal)
+            cropMode = sourceConfigTree.getValue("CropMode")
+            if(cropMode != None):
+                self._configurationTree.setValue("CropMode", cropMode)
         else:
-            self._configurationTree.removeParameter("ZoomModulation")
-            self._configurationTree.removeParameter("MoveModulation")
-            self._configurationTree.removeParameter("MoveAngleModulation")
+            self._configurationTree.removeParameter("StartValues")
+            self._configurationTree.removeParameter("EndValues")
+            self._configurationTree.removeParameter("CropMode")
 
         if(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
-            self._configurationTree.addTextParameter("PlayBackModulation", "None")
+            self._configurationTree.addTextParameter("PlaybackModulation", "None")
             sequenceMode = sourceConfigTree.getValue("SequenceMode")
             if(sequenceMode != None):
                 self._configurationTree.setValue("SequenceMode", sequenceMode)
-            playBackMod = sourceConfigTree.getValue("PlayBackModulation")
+            playBackMod = sourceConfigTree.getValue("PlaybackModulation")
             if(playBackMod != None):
-                self._configurationTree.setValue("PlayBackModulation", playBackMod)
+                self._configurationTree.setValue("PlaybackModulation", playBackMod)
         else:
             self._configurationTree.removeParameter("SequenceMode")
-            self._configurationTree.removeParameter("PlayBackModulation")
+            self._configurationTree.removeParameter("PlaybackModulation")
 
         if(mediaType == "KinectCamera"):
             tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("DisplayModeModulation", tmpModulation)
-            tmpModulation = sourceConfigTree.getValue("BlackFilterModulation")
-            if(tmpModulation != None):
-                self._configurationTree.setValue("BlackFilterModulation", tmpModulation)
-            tmpModulation = sourceConfigTree.getValue("DiffFilterModulation")
-            if(tmpModulation != None):
-                self._configurationTree.setValue("DiffFilterModulation", tmpModulation)
-            tmpModulation = sourceConfigTree.getValue("ErodeFilterModulation")
-            if(tmpModulation != None):
-                self._configurationTree.setValue("ErodeFilterModulation", tmpModulation)
+            filterVal = sourceConfigTree.getValue("FilterValues")
+            if(filterVal != None):
+                self._configurationTree.setValue("FilterValues", filterVal)
         else:
             self._configurationTree.removeParameter("DisplayModeModulation")
-            self._configurationTree.removeParameter("BlackFilterModulation")
-            self._configurationTree.removeParameter("DiffFilterModulation")
-            self._configurationTree.removeParameter("ErodeFilterModulation")
+            self._configurationTree.removeParameter("FilterValues")
         
     def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):
         returnNumber = 0
@@ -462,7 +468,7 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
-#        self._configSizer.Hide(self._noteSlidersPanel)
+        self._configSizer.Hide(self._noteSlidersPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._effectImageListPanel)
@@ -588,41 +594,29 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._extraModulation1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._extraModulation1Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Black filter modulation:") #@UndefinedVariable
-        self._extraModulation1Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
-        self._extraModulation1Field.SetInsertionPoint(0)
-        self._extraModulation1Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._extraModulation1EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._extraModulation1EditButton.Bind(wx.EVT_BUTTON, self._onFilter1Edit) #@UndefinedVariable
-        self._extraModulation1Sizer.Add(self._extraModulation1Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation1Sizer.Add(self._extraModulation1Field, 2, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation1Sizer.Add(self._extraModulation1EditButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._noteConfigSizer.Add(self._extraModulation1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._values1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._values1Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Values 1:") #@UndefinedVariable
+        self._values1Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "0.0|0.0|0.0", size=(200, -1)) #@UndefinedVariable
+        self._values1Field.SetInsertionPoint(0)
+        self._values1Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._values1EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._values1EditButton.Bind(wx.EVT_BUTTON, self._onValues1Edit) #@UndefinedVariable
+        self._values1Sizer.Add(self._values1Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._values1Sizer.Add(self._values1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._values1Sizer.Add(self._values1EditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._values1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._extraModulation2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._extraModulation2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Diff filter modulation:") #@UndefinedVariable
-        self._extraModulation2Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
-        self._extraModulation2Field.SetInsertionPoint(0)
-        self._extraModulation2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._extraModulation2EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._extraModulation2EditButton.Bind(wx.EVT_BUTTON, self._onFilter2Edit) #@UndefinedVariable
-        self._extraModulation2Sizer.Add(self._extraModulation2Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation2Sizer.Add(self._extraModulation2Field, 2, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation2Sizer.Add(self._extraModulation2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._noteConfigSizer.Add(self._extraModulation2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-
-        self._extraModulation3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._extraModulation3Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Erode filter modulation:") #@UndefinedVariable
-        self._extraModulation3Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
-        self._extraModulation3Field.SetInsertionPoint(0)
-        self._extraModulation3Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        self._extraModulation3EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._extraModulation3EditButton.Bind(wx.EVT_BUTTON, self._onFilter3Edit) #@UndefinedVariable
-        self._extraModulation3Sizer.Add(self._extraModulation3Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation3Sizer.Add(self._extraModulation3Field, 2, wx.ALL, 5) #@UndefinedVariable
-        self._extraModulation3Sizer.Add(self._extraModulation3EditButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._noteConfigSizer.Add(self._extraModulation3Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._values2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._values2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Values 2:") #@UndefinedVariable
+        self._values2Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "0.0|0.0|0.0", size=(200, -1)) #@UndefinedVariable
+        self._values2Field.SetInsertionPoint(0)
+        self._values2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._values2EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._values2EditButton.Bind(wx.EVT_BUTTON, self._onValues2Edit) #@UndefinedVariable
+        self._values2Sizer.Add(self._values2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._values2Sizer.Add(self._values2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._values2Sizer.Add(self._values2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._values2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._midiNote = 24
         noteSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -932,16 +926,87 @@ class MediaFileGui(object): #@UndefinedVariable
         self._sliderButtonsSizer.Add(self._resetButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainSliderSizer.Add(self._sliderButtonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._noteValuesWidget = None
+        self._noteValuesNumValues = 0
+
         plane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
+    def _updateNoteSliders(self, valueString, labelList, valueField, numValues, infoText):
+        self._valuesString = valueString
+        self._labelList = labelList
+        self._noteValuesWidget = valueField
+        self._noteValuesNumValues = numValues
+        self._infoText = infoText
+
+        self._slidersInfoLabel.SetLabel(infoText)
+        values = textToFloatValues(valueString, numValues)
+        if(numValues > 0):
+            calcValue = int(127.0 * values[0])
+            self._noteSlider1.SetValue(calcValue)
+            self._mainSliderSizer.Show(self._noteSlider1Sizer)
+            self._noteSlider1Label.SetLabel(labelList[0])
+        else:
+            self._mainSliderSizer.Hide(self._noteSlider1Sizer)
+        if(numValues > 1):
+            calcValue = int(127.0 * values[1])
+            self._noteSlider2.SetValue(calcValue)
+            self._mainSliderSizer.Show(self._noteSlider2Sizer)
+            self._noteSlider2Label.SetLabel(labelList[1])
+        else:
+            self._mainSliderSizer.Hide(self._noteSlider2Sizer)
+        if(numValues > 2):
+            calcValue = int(127.0 * values[2])
+            self._noteSlider3.SetValue(calcValue)
+            self._mainSliderSizer.Show(self._noteSlider3Sizer)
+            self._noteSlider3Label.SetLabel(labelList[2])
+        else:
+            self._mainSliderSizer.Hide(self._noteSlider3Sizer)
+        if(numValues > 3):
+            calcValue = int(127.0 * values[3])
+            self._noteSlider4.SetValue(calcValue)
+            self._mainSliderSizer.Show(self._noteSlider4Sizer)
+            self._noteSlider4Label.SetLabel(labelList[3])
+        else:
+            self._mainSliderSizer.Hide(self._noteSlider4Sizer)
+        if(numValues > 4):
+            calcValue = int(127.0 * values[4])
+            self._noteSlider5.SetValue(calcValue)
+            self._mainSliderSizer.Show(self._noteSlider5Sizer)
+            self._noteSlider5Label.SetLabel(labelList[4])
+        else:
+            self._mainSliderSizer.Hide(self._noteSlider5Sizer)
+        self._noteSlidersPanel.Layout()
+        self.refreshLayout()
+        self._updateValueLabels()
+
     def _onSliderCloseButton(self, event):
-        pass
+        self._configSizer.Hide(self._noteSlidersPanel)
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+        baseId = 10
+        self.sendGuiRelease(self._midiNote, baseId)
 
     def _onSliderUpdateButton(self, event):
-        pass
+        if(self._noteValuesWidget != None):
+            values = []
+            if(self._noteValuesNumValues > 0):
+                values.append(round(float(self._noteSlider1.GetValue()) / 127.0, 2))
+            if(self._noteValuesNumValues > 1):
+                values.append(round(float(self._noteSlider2.GetValue()) / 127.0, 2))
+            if(self._noteValuesNumValues > 2):
+                values.append(round(float(self._noteSlider3.GetValue()) / 127.0, 2))
+            if(self._noteValuesNumValues > 3):
+                values.append(round(float(self._noteSlider4.GetValue()) / 127.0, 2))
+            if(self._noteValuesNumValues > 4):
+                values.append(round(float(self._noteSlider5.GetValue()) / 127.0, 2))
+            self._valuesString = floatValuesToString(values)
+            self._noteValuesWidget.SetValue(self._valuesString)
+            self._updateNoteSliders(self._valuesString, self._labelList, self._noteValuesWidget, self._noteValuesNumValues, self._infoText)
 
     def _onResetButton(self, event):
-        pass
+        baseId = 10
+        self.sendGuiRelease(self._midiNote, baseId)
+        self._updateNoteSliders(self._valuesString, self._labelList, self._noteValuesWidget, self._noteValuesNumValues, self._infoText)
 
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
@@ -959,18 +1024,30 @@ class MediaFileGui(object): #@UndefinedVariable
                 self.sendGuiController(self._midiNote, baseId+3, self._noteSlider4.GetValue())
             elif(sliderId == self._noteSlider5Id):
                 self.sendGuiController(self._midiNote, baseId+4, self._noteSlider5.GetValue())
-#        self._updateValueLabels(False)
+        self._updateValueLabels()
 
-#    def sendGuiRelease(self, isChannelController, channel, note, guiControllerId):
-#        guiControllerId = (guiControllerId & 0x0f)
-#        if(isChannelController == True):
-#            command = 0xc0
-#            note = 0
-#        else:
-#            command = 0xd0
-#        command += guiControllerId
-#        midiSender = self._mainConfig.getMidiSender()
-#        midiSender.sendGuiRelease(channel, note, command)
+    def _updateValueLabels(self):
+        valueString = "%.2f" % (float(self._noteSlider1.GetValue()) / 127.0)
+        self._noteSlider1ValueLabel.SetLabel(valueString)
+        valueString = "%.2f" % (float(self._noteSlider2.GetValue()) / 127.0)
+        self._noteSlider2ValueLabel.SetLabel(valueString)
+        valueString = "%.2f" % (float(self._noteSlider3.GetValue()) / 127.0)
+        self._noteSlider3ValueLabel.SetLabel(valueString)
+        valueString = "%.2f" % (float(self._noteSlider4.GetValue()) / 127.0)
+        self._noteSlider4ValueLabel.SetLabel(valueString)
+        valueString = "%.2f" % (float(self._noteSlider5.GetValue()) / 127.0)
+        self._noteSlider5ValueLabel.SetLabel(valueString)
+
+    def sendGuiRelease(self, note, guiControllerId):
+        if((note == None) or (note < 0) or (note >= 128)):
+            print "No note selected for note controller message!"
+        else:
+            channel = 0
+            guiControllerId = (guiControllerId & 0x0f)
+            command = 0xd0
+            command += guiControllerId
+            midiSender = self._mainConfig.getMidiSender()
+            midiSender.sendGuiRelease(channel, note, command)
 
     def sendGuiController(self, note, guiControllerId, value):
         channel = 0
@@ -1054,7 +1131,7 @@ class MediaFileGui(object): #@UndefinedVariable
         Unselected, Track, Note = range(3)
 
     class EditSelection():
-        Unselected, Effect1, Effect2, Fade, ImageSeqModulation, Filter1Modulation, Filter2Modulation, Filter3Modulation = range(8)
+        Unselected, Effect1, Effect2, Fade, ImageSeqModulation, Values1, Values2 = range(7)
 
     def _onOpenFile(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -1066,7 +1143,7 @@ class MediaFileGui(object): #@UndefinedVariable
         else:
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-                self._fileName = dlg.GetPath()
+                self._fileName = forceUnixPath(dlg.GetPath())
                 basename = os.path.basename(self._fileName)
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
@@ -1146,50 +1223,42 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._noteSlidersPanel)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
         self._highlightButton(self._selectedEditor)
 
-    def _onFilter1Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.Filter1Modulation):
-            self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Filter1Modulation
+    def _onValues1Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.Values1):
+            self._configSizer.Show(self._noteSlidersPanel)
+            self._selectedEditor = self.EditSelection.Values1
         else:
-            self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
             self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._moulationConfigPanel)
         self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._extraModulation1Field.GetValue(), self._extraModulation1Field, None, None)
+        if(self._type == "Image"):
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Start zoom:", "Start move:", "Start angle:"), self._values1Field, 3, "Start zoom:")
+        else: #KinectInput
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
 
-    def _onFilter2Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.Filter2Modulation):
-            self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Filter2Modulation
+    def _onValues2Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.Values2):
+            self._configSizer.Show(self._noteSlidersPanel)
+            self._selectedEditor = self.EditSelection.Values2
         else:
-            self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
             self._selectedEditor = self.EditSelection.Unselected
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._moulationConfigPanel)
         self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._extraModulation2Field.GetValue(), self._extraModulation2Field, None, None)
-        self._highlightButton(self._selectedEditor)
-
-    def _onFilter3Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.Filter3Modulation):
-            self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Filter3Modulation
-        else:
-            self._configSizer.Hide(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Unselected
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._extraModulation3Field.GetValue(), self._extraModulation3Field, None, None)
+        self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
         self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
@@ -1285,18 +1354,14 @@ All notes on events are quantized to this.
             self._subModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._subModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Filter1Modulation):
-            self._extraModulation1EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        if(selected == self.EditSelection.Values1):
+            self._values1EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._extraModulation1EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Filter2Modulation):
-            self._extraModulation2EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+            self._values1EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(selected == self.EditSelection.Values2):
+            self._values2EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
-            self._extraModulation2EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Filter3Modulation):
-            self._extraModulation3EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
-        else:
-            self._extraModulation3EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+            self._values2EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Effect1):
             self._effect1Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
@@ -1320,6 +1385,7 @@ All notes on events are quantized to this.
                 self._configSizer.Hide(self._effectConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
@@ -1335,6 +1401,7 @@ All notes on events are quantized to this.
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
@@ -1407,6 +1474,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._effectConfigPanel)
             self._configSizer.Hide(self._slidersPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
         self._mainConfig.updateFadeGui(selectedFadeConfig, None, self._fadeField)
@@ -1418,6 +1486,7 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._noteSlidersPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
@@ -1473,18 +1542,23 @@ All notes on events are quantized to this.
                     self._config.removeParameter("LoopMode")
 
                 if(self._type == "Image"):
-                    zoomModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
-                    self._subModulationField.SetValue(zoomModulation)
-                    self._config.addTextParameter("ZoomModulation", "None")
-                    self._config.setValue("ZoomModulation", zoomModulation)
-                    moveModulation = self._midiModulation.validateModulationString(self._extraModulation1Field.GetValue())
-                    self._extraModulation1Field.SetValue(moveModulation)
-                    self._config.addTextParameter("MoveModulation", "None")
-                    self._config.setValue("MoveModulation", moveModulation)
-                    moveAngleModulation = self._midiModulation.validateModulationString(self._extraModulation2Field.GetValue())
-                    self._extraModulation2Field.SetValue(moveAngleModulation)
-                    self._config.addTextParameter("MoveAngleModulation", "None")
-                    self._config.setValue("MoveAngleModulation", moveAngleModulation)
+                    startVal = textToFloatValues(self._values1Field.GetValue(), 3)
+                    startValString = floatValuesToString(startVal)
+                    self._values1Field.SetValue(startValString)
+                    self._config.addTextParameter("StartValues", "0.0|0.0|0.0")
+                    self._config.setValue("StartValues", startValString)
+                    endVal = textToFloatValues(self._values2Field.GetValue(), 3)
+                    endValString = floatValuesToString(endVal)
+                    self._values2Field.SetValue(endValString)
+                    self._config.addTextParameter("EndValues", "0.0|0.0|0.0")
+                    self._config.setValue("EndValues", endValString)
+                    resizeMode = self._subModeField.GetValue()
+                    if(resizeMode == "Crop"):
+                        cropMode = True
+                    else:
+                        cropMode = False
+                    self._config.addBoolParameter("CropMode", True)
+                    self._config.setValue("CropMode", cropMode)
                 else:
                     self._config.removeParameter("ZoomModulation")
 
@@ -1494,34 +1568,25 @@ All notes on events are quantized to this.
                     self._config.setValue("SequenceMode", sequenceMode)
                     sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(sequenceModulation)
-                    self._config.addTextParameter("PlayBackModulation", "None")
-                    self._config.setValue("PlayBackModulation", sequenceModulation)
+                    self._config.addTextParameter("PlaybackModulation", "None")
+                    self._config.setValue("PlaybackModulation", sequenceModulation)
                 else:
                     self._config.removeParameter("SequenceMode")
-                    self._config.removeParameter("PlayBackModulation")
+                    self._config.removeParameter("PlaybackModulation")
 
                 if(self._type == "KinectCamera"):
                     modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(modeModulation)
                     self._config.addTextParameter("DisplayModeModulation", "None")
                     self._config.setValue("DisplayModeModulation", modeModulation)
-                    filterModulation = self._midiModulation.validateModulationString(self._extraModulation1Field.GetValue())
-                    self._extraModulation1Field.SetValue(filterModulation)
-                    self._config.addTextParameter("BlackFilterModulation", "None")
-                    self._config.setValue("BlackFilterModulation", filterModulation)
-                    filterModulation = self._midiModulation.validateModulationString(self._extraModulation2Field.GetValue())
-                    self._extraModulation2Field.SetValue(filterModulation)
-                    self._config.addTextParameter("DiffFilterModulation", "None")
-                    self._config.setValue("DiffFilterModulation", filterModulation)
-                    filterModulation = self._midiModulation.validateModulationString(self._extraModulation3Field.GetValue())
-                    self._extraModulation3Field.SetValue(filterModulation)
-                    self._config.addTextParameter("ErodeFilterModulation", "None")
-                    self._config.setValue("ErodeFilterModulation", filterModulation)
+                    filterVal = textToFloatValues(self._values1Field.GetValue(), 3)
+                    filterValString = floatValuesToString(filterVal)
+                    self._values1Field.SetValue(filterValString)
+                    self._config.addTextParameter("FilterValues", "0.0|0.0|0.0")
+                    self._config.setValue("FilterValues", filterValString)
                 else:
                     self._config.removeParameter("DisplayModeModulation")
-                    self._config.removeParameter("BlackFilterModulation")
-                    self._config.removeParameter("DiffFilterModulation")
-                    self._config.removeParameter("ErodeFilterModulation")
+                    self._config.removeParameter("FilterValues")
                 self._onSyncValidate(event)
                 syncLength = self._syncField.GetValue()
                 self._config.setValue("SyncLength", syncLength)
@@ -1557,22 +1622,27 @@ All notes on events are quantized to this.
             if(config != None):
                 self._selectedSubMode = config.getValue("SequenceMode")
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
-                playbackMod = config.getValue("PlayBackModulation")
+                playbackMod = config.getValue("PlaybackModulation")
                 self._subModulationField.SetValue(str(playbackMod))
             else:
                 self._selectedSubMode = self._subModeField.GetValue()
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
                 self._subModulationField.SetValue("None")
+        elif(self._type == "Image"):
+            self._subModeLabel.SetLabel("Resize mode:")
+            if(config != None):
+                cropMode = config.getValue("CropMode")
+                if(cropMode == True):
+                    self._selectedSubMode = "Crop"
+                else:
+                    self._selectedSubMode = "Stretch"
+                self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
+            else:
+                self._selectedSubMode = self._subModeField.GetValue()
+                self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
 
-        if(self._type == "Image"):
-            self._subModulationLabel.SetLabel("Zoom modulation:")
-            self._extraModulation1Label.SetLabel("Move modulation:")
-            self._extraModulation2Label.SetLabel("Angle modulation:")
-        elif(self._type == "KinectCamera"):
+        if(self._type == "KinectCamera"):
             self._subModulationLabel.SetLabel("Display mode:")
-            self._extraModulation1Label.SetLabel("Black filter modulation:")
-            self._extraModulation2Label.SetLabel("Diff filter modulation:")
-            self._extraModulation3Label.SetLabel("Erode filter modulation:")
         else:
             self._subModulationLabel.SetLabel("Playback modulation:")
 
@@ -1580,8 +1650,8 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
         elif(self._type == "Image"):
-            self._noteConfigSizer.Hide(self._subModeSizer)
-            self._noteConfigSizer.Show(self._subModulationSizer)
+            self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subModulationSizer)
         elif(self._type == "ImageSequence"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._showOrHideSubModeModulation()
@@ -1591,21 +1661,21 @@ All notes on events are quantized to this.
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+
         if(self._type == "KinectCamera"):
-            self._noteConfigSizer.Show(self._extraModulation1Sizer)
-            self._noteConfigSizer.Show(self._extraModulation2Sizer)
-            self._noteConfigSizer.Show(self._extraModulation3Sizer)
+            self._values1Label.SetLabel("Filter values:")
+            self._noteConfigSizer.Show(self._values1Sizer)
+            self._noteConfigSizer.Hide(self._values2Sizer)
         elif(self._type == "Image"):
-            self._noteConfigSizer.Show(self._extraModulation1Sizer)
-            self._noteConfigSizer.Show(self._extraModulation2Sizer)
-            self._noteConfigSizer.Hide(self._extraModulation3Sizer)
+            self._values1Label.SetLabel("Start zoom:")
+            self._noteConfigSizer.Show(self._values1Sizer)
+            self._values2Label.SetLabel("End zoom:")
+            self._noteConfigSizer.Show(self._values2Sizer)
         else:
-            self._noteConfigSizer.Hide(self._extraModulation1Sizer)
-            self._noteConfigSizer.Hide(self._extraModulation2Sizer)
-            self._noteConfigSizer.Hide(self._extraModulation3Sizer)
-        if(self._type == "Image"):
-            self._noteConfigSizer.Hide(self._syncSizer)
-        elif(self._type == "Camera"):
+            self._noteConfigSizer.Hide(self._values1Sizer)
+            self._noteConfigSizer.Hide(self._values2Sizer)
+
+        if(self._type == "Camera"):
             self._noteConfigSizer.Hide(self._syncSizer)
         elif(self._type == "KinectCamera"):
             self._noteConfigSizer.Hide(self._syncSizer)
@@ -1633,6 +1703,12 @@ All notes on events are quantized to this.
 
     def _updateSequenceModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._sequenceModes.getChoices, value, defaultValue)
+
+    def _getCropChoises(self):
+        return ["Crop", "Stretch"]
+
+    def _updateCropModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._getCropChoises, value, defaultValue)
 
     def _updateTypeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
@@ -2085,17 +2161,21 @@ All notes on events are quantized to this.
             if(guiMode != configMode):
                 return True
         if(self._type == "Image"):
-            guiSubMode = self._subModulationField.GetValue()
-            configSubMode = self._config.getValue("ZoomModulation")
+            guiSubMode = self._values1Field.GetValue()
+            configSubMode = self._config.getValue("StartValues")
             if(guiSubMode != configSubMode):
                 return True
-            guiSubMode = self._extraModulation1Field.GetValue()
-            configSubMode = self._config.getValue("MoveModulation")
+            guiSubMode = self._values2Field.GetValue()
+            configSubMode = self._config.getValue("EndValues")
             if(guiSubMode != configSubMode):
                 return True
-            guiSubMode = self._extraModulation2Field.GetValue()
-            configSubMode = self._config.getValue("MoveAngleModulation")
-            if(guiSubMode != configSubMode):
+            guiSubMode = self._subModeField.GetValue()
+            if(guiSubMode == "Crop"):
+                guiSubModeVal = True
+            else:
+                guiSubModeVal = False
+            configSubMode = self._config.getValue("CropMode")
+            if(guiSubModeVal != configSubMode):
                 return True
         if(self._type == "ImageSequence"):
             guiMode = self._subModeField.GetValue()
@@ -2103,7 +2183,7 @@ All notes on events are quantized to this.
             if(guiMode != configMode):
                 return True
             guiSubMode = self._subModulationField.GetValue()
-            configSubMode = self._config.getValue("PlayBackModulation")
+            configSubMode = self._config.getValue("PlaybackModulation")
             if(guiSubMode != configSubMode):
                 return True
         if(self._type == "KinectCamera"):
@@ -2111,16 +2191,8 @@ All notes on events are quantized to this.
             configSubMode = self._config.getValue("DisplayModeModulation")
             if(guiSubMode != configSubMode):
                 return True
-            guiSubMode = self._extraModulation1Field.GetValue()
-            configSubMode = self._config.getValue("BlackFilterModulation")
-            if(guiSubMode != configSubMode):
-                return True
-            guiSubMode = self._extraModulation2Field.GetValue()
-            configSubMode = self._config.getValue("DiffFilterModulation")
-            if(guiSubMode != configSubMode):
-                return True
-            guiSubMode = self._extraModulation3Field.GetValue()
-            configSubMode = self._config.getValue("ErodeFilterModulation")
+            guiSubMode = self._values1Field.GetValue()
+            configSubMode = self._config.getValue("FilterValues")
             if(guiSubMode != configSubMode):
                 return True
         guiSyncLength = float(self._syncField.GetValue())

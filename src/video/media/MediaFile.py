@@ -468,12 +468,15 @@ class ImageFile(MediaFile):
         self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._radians360 = math.radians(360)
 
-        self._startZoom, self._startMove, self._startAngle = textToFloatValues("0.5|1.0|0.5", 3)
-        self._endZoom, self._endMove, self._endAngle = textToFloatValues("0.5|1.0|1.0", 3)
-#        print "DEBUG start: " + str(textToFloatValues("0.5|1.0|0.5", 3)) + " end: " + str(textToFloatValues("0.5|1.0|1.0", 3))
-        self._zoomTime = 48.0
+        self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+        self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+        self._configurationTree.addBoolParameter("CropMode", True)
+
+        self._startZoom, self._startMove, self._startAngle = textToFloatValues("0.0|0.0|0.0", 3)
+        self._endZoom, self._endMove, self._endAngle = textToFloatValues("0.0|0.0|0.0", 3)
         self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
         self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
+        self._cropMode = True
 
         self.debugCount = 0
         self._oldZoom = -1.0
@@ -484,6 +487,13 @@ class ImageFile(MediaFile):
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
+        startValuesString = self._configurationTree.getValue("StartValues")
+        self._startZoom, self._startMove, self._startAngle = textToFloatValues(startValuesString, 3)
+        endValuesString = self._configurationTree.getValue("EndValues")
+        self._endZoom, self._endMove, self._endAngle = textToFloatValues(endValuesString, 3)
+        self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
+        self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
+        self._cropMode = self._configurationTree.getValue("CropMode")
 
     def getType(self):
         return "Image"
@@ -502,18 +512,18 @@ class ImageFile(MediaFile):
         angle = self._startAngle
         move = self._startMove
         guiMove = False
-        if((self._startSongPosition + self._zoomTime) < currentSongPosition):
+        if((self._startSongPosition + self._syncLength) < currentSongPosition):
             zoom = self._endZoom
             moveX = self._endX
             moveY = self._endY
         elif(self._startSongPosition < currentSongPosition):
-#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(self._zoomTime)
+#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(self._syncLength)
             if(self._endZoom != self._startZoom):
-                zoom = self._startZoom + (((self._endZoom - self._startZoom) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+                zoom = self._startZoom + (((self._endZoom - self._startZoom) / self._syncLength) * (currentSongPosition-self._startSongPosition))
             if(self._endX != self._startX):
-                moveX = self._startX + (((self._endX - self._startX) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+                moveX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
             if(self._endY != self._startY):
-                moveY = self._startY + (((self._endY - self._startY) / self._zoomTime) * (currentSongPosition-self._startSongPosition))
+                moveY = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[0] != None):
             if(guiStates[0] > -0.5):
@@ -528,12 +538,11 @@ class ImageFile(MediaFile):
                 guiMove = True
         if(guiMove == True):
             moveX, moveY = self._angleAndMoveToXY(angle, move)
-        crop = True
-        if((zoom != self._oldZoom) or (moveX != self._oldMoveX) or (moveY != self._oldMoveY) or (crop != self._oldCrop)):
+        if((zoom != self._oldZoom) or (moveX != self._oldMoveX) or (moveY != self._oldMoveY) or (self._cropMode != self._oldCrop)):
             self._oldZoom = zoom
             self._oldMoveX = moveX
             self._oldMoveY = moveY
-            self._oldCrop = crop
+            self._oldCrop = self._cropMode
             if(zoom <= 0.5):
                 multiplicator = 1.0 - zoom
             elif(zoom <= 0.75):
@@ -541,7 +550,7 @@ class ImageFile(MediaFile):
             else:
                 multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) *4))
 #            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
-            if(crop == True):
+            if(self._cropMode == True):
                 sourceRectangleX = int(self._source100percentCropX * multiplicator)
                 sourceRectangleY = int(self._source100percentCropY * multiplicator)
             else:
@@ -860,19 +869,17 @@ class KinectCameraInput(MediaFile):
         self._erodeFilterModulationId = -1
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
-        self._midiModulation.setModulationReceiver("BlackFilterModulation", "None")
-        self._midiModulation.setModulationReceiver("DiffFilterModulation", "None")
-        self._midiModulation.setModulationReceiver("ErodeFilterModulation", "None")
+        self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
         self._firstTrigger = True
         self._kinectModesHolder = KinectMode()
         self._getConfiguration()
+        self._filterValues = 0.0, 0.0, 0.0
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         self._modeModulationId = self._midiModulation.connectModulation("DisplayModeModulation")
-        self._blackFilterModulationId = self._midiModulation.connectModulation("BlackFilterModulation")
-        self._diffFilterModulationId = self._midiModulation.connectModulation("DiffFilterModulation")
-        self._erodeFilterModulationId = self._midiModulation.connectModulation("ErodeFilterModulation")
+        filterValuesString = self._configurationTree.getValue("FilterValues")
+        self._filterValues = textToFloatValues(filterValuesString, 3)
 
     def getType(self):
         return "KinectCamera"
@@ -895,14 +902,19 @@ class KinectCameraInput(MediaFile):
             if(freenect != None):
                 pass
 
-    def getBlackFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._blackFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-
-    def getDifferenceFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._diffFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-
-    def getErodeFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._erodeFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+    def _getFilterValues(self):
+        blackThreshold, diffThreshold, erodeValue = self._filterValues
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                blackThreshold = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                diffThreshold = guiStates[1]
+        if(guiStates[2] != None):
+            if(guiStates[2] > -0.5):
+                erodeValue = guiStates[2]
+        return blackThreshold, diffThreshold, erodeValue
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         if(freenect == None):
@@ -923,11 +935,12 @@ class KinectCameraInput(MediaFile):
             cv.Merge(depthImage, depthImage, depthImage, None, self._captureImage)
         elif(kinectMode == KinectMode.DepthMask):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
+            cv.CmpS(depthImage, 10 + (50 * blackThreshold), self._tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, self._tmpMat2, self._tmpMat1)
-            cv.AddS(self._tmpMat1, 5 + (35 * self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2)
+            cv.AddS(self._tmpMat1, 5 + (35 * diffThreshold), self._tmpMat2)
             cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
-            erodeIttrations = int(10 * self.getErodeFilterModulation(currentSongPosition, midiNoteState, midiChannelState))
+            erodeIttrations = int(10 * erodeValue)
             if(erodeIttrations > 0):
                 cv.Erode(self._tmpMat1, self._tmpMat2, None, erodeIttrations)
                 cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
@@ -935,15 +948,16 @@ class KinectCameraInput(MediaFile):
                 cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
         elif(kinectMode == KinectMode.DepthThreshold):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            darkFilterValue = 256 - int(self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
-            lightFilterValue = int(self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
+            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
+            darkFilterValue = 256 - int(blackThreshold * 256)
+            lightFilterValue = int(diffThreshold * 256)
             cv.CmpS(depthImage, darkFilterValue, self._tmpMat1, cv.CV_CMP_LE)
             cv.CmpS(depthImage, lightFilterValue, self._tmpMat2, cv.CV_CMP_GE)
             cv.Mul(self._tmpMat1, self._tmpMat2, self._tmpMat1)
             cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
         else: # (kinectMode == KinectMode.Reset):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.CmpS(depthImage, 10 + (50 * blackThreshold), self._tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, self._tmpMat2, self._startDepthMat)
             cv.Merge(self._startDepthMat, self._tmpMat1, self._tmpMat2, None, self._captureImage)
 
@@ -980,13 +994,13 @@ class ImageSequenceFile(MediaFile):
         self._sequenceMode = ImageSequenceMode.Time
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
-        self._midiModulation.setModulationReceiver("PlayBackModulation", "None")
+        self._midiModulation.setModulationReceiver("PlaybackModulation", "None")
         self._playbackModulationId = -1
         self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        self._playbackModulationId = self._midiModulation.connectModulation("PlayBackModulation")
+        self._playbackModulationId = self._midiModulation.connectModulation("PlaybackModulation")
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
             self._sequenceMode = ImageSequenceMode.ReTrigger

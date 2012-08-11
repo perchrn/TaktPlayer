@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold, ImageAdd = range(16)
+    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold, ImageAdd = range(17)
 
     def getChoices(self):
         return ["None",
@@ -15,6 +15,7 @@ class EffectTypes():
                 "BlurContrast",
                 "Feedback",
                 "Delay",
+                "SelfDifference",
                 "Distortion",
                 "Edge",
                 "Desaturate",
@@ -33,6 +34,7 @@ class EffectTypes():
                 "Blur and multiply with self.",
                 "Video feedback effect.",
                 "Video delay effect.",
+                "Delaying video and subtracting it with self.",
                 "Distort image to black or white.",
                 "Edge detection effects.",
                 "Selective desaturation effects.",
@@ -59,6 +61,8 @@ def getEffectId(name):
         return EffectTypes.Feedback
     elif(lowername == "delay"):
         return EffectTypes.Delay
+    elif(lowername == "selfdifference"):
+        return EffectTypes.SelfDifference
     elif(lowername == "distortion"):
         return EffectTypes.Distortion
     elif(lowername == "edge"):
@@ -95,6 +99,8 @@ def getEffectName(effectId):
         return "Feedback"
     elif(effectId == EffectTypes.Delay):
         return "Delay"
+    elif(effectId == EffectTypes.SelfDifference):
+        return "SelfDifference"
     elif(effectId == EffectTypes.Distortion):
         return "Distortion"
     elif(effectId == EffectTypes.Edge):

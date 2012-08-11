@@ -402,6 +402,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
+        self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
@@ -1771,6 +1772,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapFeedback, self._fxBitmapFeedback)
         elif(effectId == EffectTypes.Delay):
             widget.setBitmaps(self._fxBitmapDelay, self._fxBitmapDelay)
+        elif(effectId == EffectTypes.SelfDifference):
+            widget.setBitmaps(self._fxBitmapSelfDiff, self._fxBitmapSelfDiff)
         elif(effectId == EffectTypes.Colorize):
             widget.setBitmaps(self._fxBitmapColorize, self._fxBitmapColorize)
         elif(effectId == EffectTypes.Contrast):

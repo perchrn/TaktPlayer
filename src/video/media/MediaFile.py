@@ -8,7 +8,8 @@ import logging
 from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat, getEffectByName, getEmptyImage, createMask
+from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
+    copyImage
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
@@ -38,11 +39,6 @@ def hasCvWindowStoped():
     if k == 27: #Escape
         return True
     return False
-
-def copyImage(image):
-    if(type(image) is cv.cvmat):
-        return cv.CloneMat(image)
-    return cv.CloneImage(image)
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)

@@ -25,6 +25,8 @@ def createMask(width, heigth):
     return cv.CreateMat(heigth, width, cv.CV_8UC1)
 
 def copyImage(image):
+    if(type(image) is cv.cvmat):
+        return cv.CloneMat(image)
     return cv.CloneImage(image)
 
 def resizeImage(image, resizeMat):
@@ -46,6 +48,8 @@ def getEffectById(effectType, configurationTree, effectImagesConfiguration, inte
         return FeedbackEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Delay):
         return DelayEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.SelfDifference):
+        return SelfDifferenceEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
         return DistortionEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Edge):
@@ -604,6 +608,56 @@ class DelayEffect(object):
             cv.Copy(image, self._memoryMat, self._replaceMask)
         return self._memoryMat
 
+class SelfDifferenceEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._currentPos = 0
+        self._memoryLength = 10
+        self._memoryArray = []
+        for _ in range(self._memoryLength):
+            self._memoryArray.append(getEmptyImage(self._internalResolutionX, self._internalResolutionY))
+        self._diffMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._contrastMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "SelfDifference"
+
+    def reset(self):
+        for _ in range(self._memoryLength):
+            self._memoryArray.append(getEmptyImage(self._internalResolutionX, self._internalResolutionY))
+
+    def applyEffect(self, image, amount, contrast, invert, smooth, dummy4):
+        return self.diffImage(image, amount, contrast, invert, smooth)
+
+    def diffImage(self, image, delay, contrast, invert, smooth):
+        delayFrames = int((delay * self._memoryLength) + 0.5)
+        if(delayFrames <= 0):
+            if(smooth > 0.02):
+                xSize = 2 + int(smooth * 8)
+                ySize = 2 + int(smooth * 6)
+                cv.Smooth(image, self._memoryArray[self._currentPos], cv.CV_BLUR, xSize, ySize)
+            else:
+                self._memoryArray[self._currentPos] = copyImage(image)
+            return image
+        self._currentPos = (self._currentPos + 1) % self._memoryLength
+        delayPos = (self._currentPos - delayFrames) % self._memoryLength
+        cv.Sub(image, self._memoryArray[delayPos], self._diffMat)
+        if(smooth > 0.02):
+            xSize = 2 + int(smooth * 8)
+            ySize = 2 + int(smooth * 6)
+            cv.Smooth(image, self._memoryArray[self._currentPos], cv.CV_BLUR, xSize, ySize)
+        else:
+            self._memoryArray[self._currentPos] = copyImage(image)
+#        print "DEBUG diffImage: currPos: " + str(self._currentPos) + " delayPos: " + str(delayPos) + " delayLength: " + str(delayFrames)
+        if((contrast > 0.02) or (invert > 0.02)):
+            contrastVal = 1.0 + (9.0 * contrast)
+            invertVal = int(-256.0 * invert)
+            cv.ConvertScaleAbs(self._diffMat, self._contrastMat, contrastVal, invertVal)
+            return self._contrastMat
+        return self._diffMat
+
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -836,7 +890,7 @@ class ContrastBrightnessEffect(object):
         self._configurationTree = configurationTree
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-        self._scaleMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._processMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def findMode(self, value):
         modeSelected = int(value*3.99)
@@ -880,8 +934,8 @@ class ContrastBrightnessEffect(object):
         if((contrast > -0.01) and (contrast < 0.01) and (brightness < 0.1) and (brightness > -0.1)):
             return image
         else:
-            cv.ConvertScaleAbs(image, self._scaleMat, contrastVal, brightnessVal)
-            return self._scaleMat
+            cv.ConvertScaleAbs(image, self._processMat, contrastVal, brightnessVal)
+            return self._processMat
 
 class HueSaturationEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -993,7 +1047,7 @@ class InvertEffect(object):
         self._configurationTree = configurationTree
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-        self._scaleMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._invertMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def getName(self):
         return "Invert"
@@ -1011,8 +1065,8 @@ class InvertEffect(object):
             return image
         else:
 #            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
-            cv.ConvertScaleAbs(image, self._scaleMat, 1.0, brightnessVal)
-            return self._scaleMat
+            cv.ConvertScaleAbs(image, self._invertMat, 1.0, brightnessVal)
+            return self._invertMat
 
 class ThresholdEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):

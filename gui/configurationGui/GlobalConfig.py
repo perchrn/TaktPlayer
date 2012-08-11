@@ -217,6 +217,7 @@ class EffectsGui(object):
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
+        self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
@@ -439,6 +440,8 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapFeedback)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapDelay)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapSelfDiff)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapDist)
         self._fxIdImageIndex.append(index)
@@ -1195,6 +1198,9 @@ A list of start values for the effect modulation.
             self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:")
         elif(self._chosenEffectId == EffectTypes.Delay):
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:")
+            self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.SelfDifference):
+            self._setLabels("Delay:", "Contrast:", "Invert:", "Smooth:", None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Distortion):
             self._setLabels("Distortion amount:", "Distortion mode", None, None, None)

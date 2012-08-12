@@ -7,7 +7,7 @@ from cv2 import cv
 import numpy #@UnusedImport
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
-    ScrollModes, ContrastModes, HueSatModes
+    ScrollModes, ContrastModes, HueSatModes, ValueToHueModes
 import math
 import os
 
@@ -64,6 +64,8 @@ def getEffectById(effectType, configurationTree, effectImagesConfiguration, inte
         return ColorizeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Invert):
         return InvertEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.ValueToHue):
+        return ValueToHueEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Threshold):
         return ThresholdEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.ImageAdd):
@@ -1068,6 +1070,63 @@ class InvertEffect(object):
             cv.ConvertScaleAbs(image, self._invertMat, 1.0, brightnessVal)
             return self._invertMat
 
+class ValueToHueEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._colourMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._hueMat = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._satMat = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._valMat = createMask(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "ValueToHue"
+
+    def reset(self):
+        pass
+
+    def _findMode(self, modeVal):
+        modeSelected = int(3.99 * modeVal)
+        if(modeSelected == ValueToHueModes.Off):
+            return ValueToHueModes.Off
+        elif(modeSelected == ValueToHueModes.Value):
+            return ValueToHueModes.Value
+        elif(modeSelected == ValueToHueModes.Saturation):
+            return ValueToHueModes.Saturation
+        else:
+            return ValueToHueModes.Hue
+
+    def applyEffect(self, image, modeVal, rotate, saturate, dummy3, dummy4):
+        mode = self._findMode(modeVal)
+        return self.processImage(image, mode, rotate, saturate)
+
+    def processImage(self, image, mode, rotate, saturate):
+        if(mode == ValueToHueModes.Off):
+            return image
+        cv.CvtColor(image, self._colourMat, cv.CV_RGB2HSV)
+        if(mode == ValueToHueModes.Value):
+            cv.Split(self._colourMat, None, None, self._valMat, None)
+        elif(mode == ValueToHueModes.Saturation):
+            cv.Split(self._colourMat, None, self._valMat, None, None)
+        else:
+            cv.Split(self._colourMat, None, None, self._valMat, None)
+        if(rotate > 0.02):
+            rotateVal = int(256.0 * rotate)
+            cv.SubS(self._valMat, rotateVal, self._hueMat)
+            hueMat = self._hueMat
+        else:
+            hueMat = self._valMat
+        if(saturate > 0.02):
+            contrastVal = 1 + (9.0 * saturate)
+            cv.ConvertScaleAbs(self._valMat, self._satMat, contrastVal, 0)
+            satMat = self._satMat
+        else:
+            satMat = self._valMat
+        cv.Merge(hueMat, satMat, self._valMat, None, image)
+        cv.CvtColor(image, self._colourMat, cv.CV_HSV2RGB)
+        return self._colourMat
+
 class ThresholdEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -1204,8 +1263,6 @@ class ImageAddEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
 #class BwToRainbowEffect(object): #Or value to hue effect.
-
-#class EnergyEffect(object): #Or difference from last (x?) frame(s) + feedback?
 
 #class SpriteImage(MediaFile):
 #class ScrollingImage(MediaFile):

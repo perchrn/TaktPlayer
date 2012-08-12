@@ -13,7 +13,7 @@ from midi.MidiController import MidiControllers
 from video.media.MediaFileModes import FadeMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
-    EdgeColourModes, ContrastModes, HueSatModes, ScrollModes
+    EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -214,6 +214,7 @@ class EffectsGui(object):
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
+        self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
@@ -416,6 +417,7 @@ class EffectsGui(object):
         self._contrastModes = ContrastModes()
         self._hueSatModes = HueSatModes()
         self._colorizeModes = ColorizeModes()
+        self._valueToHueModes = ValueToHueModes()
         self._midiControllers = MidiControllers()
 
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
@@ -456,6 +458,8 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapColorize)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapInverse)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapVal2Hue)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapThreshold)
         self._fxIdImageIndex.append(index)
@@ -1215,7 +1219,7 @@ A list of start values for the effect modulation.
             self._setLabels("Contrast:", "Brightness", "Mode", None, None)
             self._setupValueLabels(None, None, self._contrastModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.HueSaturation):
-            self._setLabels("Color rotate:", "Saturation", "Brightness", "Mode", None)
+            self._setLabels("Colour rotate:", "Saturation", "Brightness", "Mode", None)
             self._setupValueLabels(None, None, None, self._hueSatModes.getChoices(), None)
         elif(self._chosenEffectId == EffectTypes.Colorize):
             self._setLabels("Amount:", "Red", "Green", "Blue", "Mode")
@@ -1223,6 +1227,9 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Invert):
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.ValueToHue):
+            self._setLabels("Mode:", "Colour rotate:", "Saturation:", None, None)
+            self._setupValueLabels(self._valueToHueModes.getChoices(), None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Threshold):
             self._setLabels("Threshold:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)

@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, Threshold, ImageAdd = range(17)
+    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(18)
 
     def getChoices(self):
         return ["None",
@@ -23,6 +23,7 @@ class EffectTypes():
                 "HueSaturation",
                 "Colorize",
                 "Invert",
+                "ValueToHue",
                 "Threshold",
                 "ImageAdd"]
     def getDescriptions(self):
@@ -42,6 +43,7 @@ class EffectTypes():
                 "Rotate colors and adjust saturation.",
                 "Add/subtract/multiply with color.",
                 "Invert video.",
+                "Turns BW images into a rainbow of colours.",
                 "Threshold video to black and white.",
                 "Can mask and add image to video."]
 
@@ -77,6 +79,8 @@ def getEffectId(name):
         return EffectTypes.Colorize
     elif(lowername == "invert"):
         return EffectTypes.Invert
+    elif(lowername == "valuetohue"):
+        return EffectTypes.ValueToHue
     elif(lowername == "threshold"):
         return EffectTypes.Threshold
     elif(lowername == "imageadd"):
@@ -115,6 +119,8 @@ def getEffectName(effectId):
         return "Colorize"
     elif(effectId == EffectTypes.Invert):
         return "Invert"
+    elif(effectId == EffectTypes.ValueToHue):
+        return "ValueToHue"
     elif(effectId == EffectTypes.Threshold):
         return "Threshold"
     elif(effectId == EffectTypes.ImageAdd):
@@ -181,4 +187,10 @@ class ColorizeModes():
 
     def getChoices(self):
         return ["Add", "Subtract", "SubFrom", "Multiply"]
+
+class ValueToHueModes():
+    Off, Value, Saturation, Hue = range(4)
+
+    def getChoices(self):
+        return ["Off", "Value", "Saturation", "Hue"]
 

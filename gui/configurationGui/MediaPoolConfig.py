@@ -404,6 +404,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
@@ -1145,6 +1146,7 @@ class MediaFileGui(object): #@UndefinedVariable
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
                 self._fileName = forceUnixPath(dlg.GetPath())
+                print "DEBUG new file: original path: " + str(dlg.GetPath()) + " unix path: " + str(self._fileName)
                 basename = os.path.basename(self._fileName)
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
@@ -1512,7 +1514,7 @@ All notes on events are quantized to this.
             if((self._videoDirectory != "") and (self._fileName != "")):
                 if(os.path.isabs(self._fileName)):
                     try:
-                        noteFileName = os.path.relpath(self._fileName, self._videoDirectory)
+                        noteFileName = forceUnixPath(os.path.relpath(self._fileName, self._videoDirectory))
                     except:
                         noteFileName = self._fileName
                     else:
@@ -1796,6 +1798,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapScroll, self._fxBitmapScroll)
         elif(effectId == EffectTypes.Threshold):
             widget.setBitmaps(self._fxBitmapThreshold, self._fxBitmapThreshold)
+        elif(effectId == EffectTypes.ValueToHue):
+            widget.setBitmaps(self._fxBitmapVal2Hue, self._fxBitmapVal2Hue)
         elif(effectId == EffectTypes.Zoom):
             widget.setBitmaps(self._fxBitmapZoom, self._fxBitmapZoom)
 

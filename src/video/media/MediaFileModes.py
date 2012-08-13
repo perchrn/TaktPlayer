@@ -104,6 +104,18 @@ class KinectMode:
                 return self.getChoices()[i]
         return self.getChoices()[0]
 
+class VideoLoopModulationMode:
+    Off, SpeedModulation, TriggeredJump, TriggeredLoop = range(4)
+
+    def getChoices(self):
+        return ["Off", "SpeedModulation", "TriggeredJump", "TriggeredLoop"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
 class MediaTypes:
     VideoLoop, Image, ImageSequence, Camera, KinectCamera = range(5)
 

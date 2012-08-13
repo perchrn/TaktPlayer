@@ -225,7 +225,6 @@ class MediaPool(object):
                 newMedia = self._mediaPool[midiNoteState.getNote()]
                 if(midiNoteState.isNew() == True):
                     if(newMedia != None):
-                        newMedia.noteJustTriggered(midiTime, midiNoteState, midiChannelState)
                         midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
                 if(oldMedia == None):
@@ -234,7 +233,7 @@ class MediaPool(object):
                     oldMedia.restartSequence()
                     self._mediaTracks[midiChannel] = newMedia
                 if(newMedia):
-                    newMedia.setStartPosition(midiNoteState.getStartPosition())
+                    newMedia.setStartPosition(midiNoteState.getStartPosition(), midiTime, midiNoteState, midiChannelState)
                     activeMedia = newMedia
             if(activeMedia != None):
                 noteIsDone = activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)

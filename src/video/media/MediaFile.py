@@ -13,7 +13,7 @@ from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName, KinectMode
+    getModulationValueModeFromName, KinectMode, VideoLoopModulationMode
 import math
 from utilities.FloatListText import textToFloatValues
 try:
@@ -254,8 +254,9 @@ class MediaFile(object):
             quantizeLength = roundLength
         self._quantizeLength = quantizeLength
 
-    def setStartPosition(self, startSpp):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         self._startSongPosition = startSpp
+        self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
     def restartSequence(self):
         pass
@@ -263,7 +264,7 @@ class MediaFile(object):
     def getCurrentFramePos(self):
         return self._currentFrame
 
-    def noteJustTriggered(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+    def _resetEffects(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         self._guiCtrlStateHolder.resetState()
         if(self._modulationRestartMode != ModulationValueMode.RawInput):
             self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
@@ -892,7 +893,7 @@ class KinectCameraInput(MediaFile):
         modeSelected = int(value*maxValue)
         return modeSelected
 
-    def setStartPosition(self, startSpp):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         if(self._firstTrigger == True):
             self._firstTrigger = False
             if(freenect != None):
@@ -1016,14 +1017,15 @@ class ImageSequenceFile(MediaFile):
         self._startSongPosition = 0.0
         self._triggerCounter = 0
 
-    def setStartPosition(self, startSpp):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         lastSpp = self._startSongPosition
         if(startSpp != lastSpp):
             if(self._firstTrigger == True):
                 self._firstTrigger = False
+                self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
             else:
                 self._triggerCounter += 1
-            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
+#            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
         self._startSongPosition = startSpp
 
     def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
@@ -1078,8 +1080,17 @@ class VideoLoopFile(MediaFile):
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
 
+        self._loopModulationMode = VideoLoopModulationMode.TriggeredJump
+
         self._lastFramePos = 0.0
         self._lastFramePosSongPosition = 0.0
+        self._isLastFrameSpeedModified = False
+
+        self._noteTriggerCounter = 0
+        self._lastTriggerCount = 0
+        self._firstNoteTrigger = True
+        self._triggerModificationSum = 0.0
+        self._triggerSongPosition = 0.0
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -1105,6 +1116,30 @@ class VideoLoopFile(MediaFile):
     def getType(self):
         return "VideoLoop"
 
+    def restartSequence(self):
+        self._noteTriggerCounter = 0
+        self._lastTriggerCount = 0
+        self._firstNoteTrigger = True
+        self._triggerModificationSum = 0.0
+        self._triggerSongPosition = 0.0
+
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        if((self._loopModulationMode == VideoLoopModulationMode.TriggeredJump) or (self._loopModulationMode == VideoLoopModulationMode.TriggeredLoop)):
+            lastSpp = self._triggerSongPosition
+            if(startSpp != lastSpp):
+                if(self._firstNoteTrigger == True):
+                    self._firstNoteTrigger = False
+                    self._startSongPosition = startSpp
+                    self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+                    self._triggerSongPosition = startSpp
+                else:
+                    self._noteTriggerCounter += 1
+                    self._triggerSongPosition = startSpp
+                print "TriggerCount: " + str(self._noteTriggerCounter) + " startSPP: " + str(startSpp) + " lastSPP: " + str(lastSpp)
+        else:
+            self._startSongPosition = startSpp
+            self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
@@ -1120,43 +1155,78 @@ class VideoLoopFile(MediaFile):
                 speedMod = 0.0
         else:
             speedMod = 0.0
+#        if(guiStates[1] != None):
+#            if(guiStates[1] > 0.02):
+#                trigger = True
+#            else:
+#                trigger = False
+#        else:
+#            trigger = False
 
         speedRange = 4.0
         speedQuantize = 1.0
+        jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
+        jumpRange = speedRange * self._midiTiming.getTicksPerQuarteNote()
 
-        if(self._startSongPosition > self._lastFramePosSongPosition):
-            self._lastFramePosSongPosition = self._startSongPosition
         unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
-        if(speedQuantize > 0.02):
-            steps = int(speedRange / speedQuantize)
-            if(steps < 1):
-                steps = 1
-            currentStep = int((steps + 0.5) * speedMod)
-            speedMod = float(currentStep) / steps
-#            print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep) + " speedMod: " + str(speedMod)
-        if(speedMod < 0):
-            speedMultiplyer = 1.0 - ((1.0 - (1.0 / speedRange)) * -speedMod)
-            framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
-        elif(speedMod > 0):
-            speedMultiplyer = 1.0 + (speedRange - 1.0) * speedMod
-            framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
-        else:
-            speedMultiplyer = 1.0
-            framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
-            framesSpeed = float(self._numberOfFrames) / self._syncLength
-            if(framesDiff > (2.0 * framesSpeed)):
-                if(framesDiff < self._numberOfFrames):
-                    framePosFloat = self._lastFramePos + 2.0 * framesSpeed
-                else:
-                    framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
-                print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
+        if(self._loopModulationMode == VideoLoopModulationMode.SpeedModulation):
+            if(self._startSongPosition > self._lastFramePosSongPosition):
+                self._lastFramePosSongPosition = self._startSongPosition
+            if(speedQuantize > 0.02):
+                steps = int(speedRange / speedQuantize)
+                if(steps < 1):
+                    steps = 1
+                currentStep = int((steps + 0.5) * speedMod)
+                speedMod = float(currentStep) / steps
+    #            print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep) + " speedMod: " + str(speedMod)
+            if(speedMod < -0.01):
+                speedMultiplyer = 1.0 - ((1.0 - (1.0 / speedRange)) * -speedMod)
+                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
+                self._isLastFrameSpeedModified = True
+            elif(speedMod > 0.01):
+                speedMultiplyer = 1.0 + (speedRange - 1.0) * speedMod
+                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
+                self._isLastFrameSpeedModified = True
             else:
-                framePosFloat = unmodifiedFramePos
-        self._lastFramePos = framePosFloat
-        self._lastFramePosSongPosition = currentSongPosition
+                if(self._isLastFrameSpeedModified == True):
+                    framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
+                    framesSpeed = float(self._numberOfFrames) / self._syncLength
+                    if(framesDiff > (2.0 * framesSpeed)):
+                        if(framesDiff < self._numberOfFrames):
+                            framePosFloat = self._lastFramePos + 2.0 * framesSpeed
+                        else:
+                            framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
+    #                    print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
+                    else:
+                        framePosFloat = unmodifiedFramePos
+                        self._isLastFrameSpeedModified = False
+                else:
+                    framePosFloat = unmodifiedFramePos
+            self._lastFramePos = framePosFloat
+            self._lastFramePosSongPosition = currentSongPosition
+        elif(self._loopModulationMode == VideoLoopModulationMode.TriggeredJump):
+            if(self._noteTriggerCounter != self._lastTriggerCount):
+                print "Trigger!!!"
+                if(jumpQuantize > 0.02):
+                    steps = int(jumpRange / jumpQuantize)
+                    print "Quantize!!! jumpRange: " + str(jumpRange) + " jumpQuantize: " + str(jumpQuantize) + " steps: " + str(steps) + " speedMod: " + str(speedMod)
+                    if(steps < 1):
+                        steps = 1
+                    currentStep = int((steps + 0.5) * speedMod)
+                    speedMod = float(currentStep) / steps
+                    print "speedMod = " + str(speedMod) + " currentStep: " + str(currentStep) + " steps: "+ str(steps)
+                if((speedMod < -0.01) or (speedMod > 0.01)):
+                    jumpLength = jumpRange * speedMod
+                    self._triggerModificationSum += jumpLength
+                    print "Adding " + str(jumpLength) + " sum: " + str(self._triggerModificationSum)
+                else:
+                    print "SpeedMod == 0.0 :-("
+                self._lastTriggerCount = self._noteTriggerCounter
+            framePosFloat = unmodifiedFramePos + self._triggerModificationSum
+        else:
+            framePosFloat = unmodifiedFramePos
 
         framePos = int(framePosFloat)
-#        print "DEBUG speedMod: " + str(speedMod) + " speedMul: " + str(speedMultiplyer) + " framePos: " + str(framePos)
         if(self._loopMode == VideoLoopMode.Normal):
             self._currentFrame = framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.Reverse):

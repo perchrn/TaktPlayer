@@ -1078,6 +1078,9 @@ class VideoLoopFile(MediaFile):
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
 
+        self._lastFramePos = 0.0
+        self._lastFramePosSongPosition = 0.0
+
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         loopMode = self._configurationTree.getValue("LoopMode")
@@ -1109,7 +1112,51 @@ class VideoLoopFile(MediaFile):
             return noteDone
         lastFrame = self._currentFrame
 
-        framePos = int(((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames)
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                speedMod = (2.0 * guiStates[0]) - 1.0
+            else:
+                speedMod = 0.0
+        else:
+            speedMod = 0.0
+
+        speedRange = 4.0
+        speedQuantize = 1.0
+
+        if(self._startSongPosition > self._lastFramePosSongPosition):
+            self._lastFramePosSongPosition = self._startSongPosition
+        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+        if(speedQuantize > 0.02):
+            steps = int(speedRange / speedQuantize)
+            if(steps < 1):
+                steps = 1
+            currentStep = int((steps + 0.5) * speedMod)
+            speedMod = float(currentStep) / steps
+#            print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep) + " speedMod: " + str(speedMod)
+        if(speedMod < 0):
+            speedMultiplyer = 1.0 - ((1.0 - (1.0 / speedRange)) * -speedMod)
+            framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
+        elif(speedMod > 0):
+            speedMultiplyer = 1.0 + (speedRange - 1.0) * speedMod
+            framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
+        else:
+            speedMultiplyer = 1.0
+            framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
+            framesSpeed = float(self._numberOfFrames) / self._syncLength
+            if(framesDiff > (2.0 * framesSpeed)):
+                if(framesDiff < self._numberOfFrames):
+                    framePosFloat = self._lastFramePos + 2.0 * framesSpeed
+                else:
+                    framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
+                print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
+            else:
+                framePosFloat = unmodifiedFramePos
+        self._lastFramePos = framePosFloat
+        self._lastFramePosSongPosition = currentSongPosition
+
+        framePos = int(framePosFloat)
+#        print "DEBUG speedMod: " + str(speedMod) + " speedMul: " + str(speedMultiplyer) + " framePos: " + str(framePos)
         if(self._loopMode == VideoLoopMode.Normal):
             self._currentFrame = framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.Reverse):

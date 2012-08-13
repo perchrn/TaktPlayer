@@ -1245,6 +1245,8 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self.refreshLayout()
         if(self._type == "Image"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start zoom:", "Start move:", "Start angle:"), self._values1Field, 3, "Start zoom:")
+        if(self._type == "VideoLoop"):
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Pitch bend:", "Hmm1:", "Hmm2:"), self._values1Field, 3, "Video loop test:")
         else: #KinectInput
             self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
@@ -1674,6 +1676,10 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._values1Sizer)
             self._values2Label.SetLabel("End zoom:")
             self._noteConfigSizer.Show(self._values2Sizer)
+        elif(self._type == "VideoLoop"):
+            self._values1Label.SetLabel("Loop experiment:")
+            self._noteConfigSizer.Show(self._values1Sizer)
+            self._noteConfigSizer.Hide(self._values2Sizer)
         else:
             self._noteConfigSizer.Hide(self._values1Sizer)
             self._noteConfigSizer.Hide(self._values2Sizer)

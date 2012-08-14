@@ -29,6 +29,20 @@ def copyImage(image):
         return cv.CloneMat(image)
     return cv.CloneImage(image)
 
+def pilToCvImage(pilImage):
+    cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
+    cv.SetData(cvImage, pilImage.tostring())
+#    resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+#    cv.Resize(cvImage, resizeMat)
+    return cvImage
+
+def pilToCvMask(pilImage):
+    cvMask = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 1)
+    cv.SetData(cvMask, pilImage.tostring())
+#    resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+#    cv.Resize(cvMask, resizeMat)
+    return cvMask
+
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat

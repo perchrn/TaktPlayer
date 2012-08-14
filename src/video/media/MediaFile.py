@@ -481,6 +481,8 @@ class ImageFile(MediaFile):
         self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
         self._configurationTree.addBoolParameter("CropMode", True)
 
+        self._oldScrollLength = -1.0
+        self._oldScrollMode = False
         self._getConfiguration()
 
     def _getConfiguration(self):
@@ -507,73 +509,77 @@ class ImageFile(MediaFile):
                 scrollLength = 0.0
         else:
             scrollLength = 0.0
-        isScrollModeHorisontel = True
-        if(isScrollModeHorisontel == True):
-            left = int(scrollLength * (self._sourceX - 1))
-            if((left + self._source100percentCropX) <= self._sourceX):
-                srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-            else:
-                extraWidth = (left + self._source100percentCropX) - self._sourceX
-                destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
-                #Rest:
-                srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+        isScrollModeHorisontal = False
+        if((isScrollModeHorisontal != self._oldScrollMode) or (scrollLength != self._oldScrollLength)):
+            self._oldScrollLength = scrollLength
+            self._oldScrollMode = isScrollModeHorisontal
+            if(isScrollModeHorisontal == True):
+                left = int(scrollLength * (self._sourceX - 1))
+                if((left + self._source100percentCropX) <= self._sourceX):
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraWidth = (left + self._source100percentCropX) - self._sourceX
+                    destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    width = self._sourceX - left
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
                 cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
                 if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
                     cv.Resize(srcRegionMask, dstRegionMask)
-                #Main:
-                width = self._sourceX - left
-                srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-                if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-            cv.Resize(srcRegion, dstRegion)
-            self._captureImage = self._scrollResizeMat
-            if(self._firstImageMask != None):
-                cv.Resize(srcRegionMask, dstRegionMask)
-                self._captureMask = self._scrollResizeMask
-            else:
-                self._captureMask = None
-        else:
-            left = int(scrollLength * (self._sourceX - 1))
-            if((left + self._source100percentCropX) <= self._sourceX):
-                srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-            else:
-                extraWidth = (left + self._source100percentCropX) - self._sourceX
-                destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
-                #Rest:
-                srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+            else: # isScrollModeHorisontal == False -> Vertical mode
+                top = int(scrollLength * (self._sourceY - 1))
+                if((top + self._source100percentCropY) <= self._sourceY):
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraHeight = (top + self._source100percentCropY) - self._sourceY
+                    destinationHeight = int((extraHeight * self._internalResolutionY) / self._source100percentCropY)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, self._source100percentCropX, extraHeight))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, self._source100percentCropX, extraHeight))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    height = self._sourceY - top
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, height))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, height))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
                 cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
                 if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
                     cv.Resize(srcRegionMask, dstRegionMask)
-                #Main:
-                width = self._sourceX - left
-                srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
-                dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-                if(self._firstImageMask != None):
-                    srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
-                    dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-            cv.Resize(srcRegion, dstRegion)
-            self._captureImage = self._scrollResizeMat
-            if(self._firstImageMask != None):
-                cv.Resize(srcRegionMask, dstRegionMask)
-                self._captureMask = self._scrollResizeMask
-            else:
-                self._captureMask = None
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+
         self._imageMask = self._captureMask
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
@@ -978,13 +984,12 @@ class KinectCameras(object):
                 depthArray, _ = freenect.sync_get_depth()
                 depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
                 resizeImage(depthCapture, self._depthMask)
-    #            depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+#                depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
                 rgbImage, _ = freenect.sync_get_video()
                 rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
                 resizeImage(rgbCapture, self._videoImage)
             except:
-                self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
-                print "Exception while opening camera with ID: %s" % (self._cameraId)
+                print "Exception while opening kinnect camera!"
                 self._depthMask = None
                 self._videoImage = None
                 self._irMask = None

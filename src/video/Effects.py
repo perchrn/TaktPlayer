@@ -36,12 +36,16 @@ def pilToCvImage(pilImage):
 #    cv.Resize(cvImage, resizeMat)
     return cvImage
 
-def pilToCvMask(pilImage):
-    cvMask = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 1)
+def pilToCvMask(pilImage, extraFilter = False):
+    pilSize = pilImage.size
+    cvMask = cv.CreateImageHeader(pilSize, cv.IPL_DEPTH_8U, 1)
     cv.SetData(cvMask, pilImage.tostring())
-#    resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-#    cv.Resize(cvMask, resizeMat)
-    return cvMask
+    if(extraFilter == True):
+        filterMask = createMask(pilSize[0], pilSize[1])
+        cv.CmpS(cvMask, 255, filterMask, cv.CV_CMP_EQ)
+        return filterMask
+    else:
+        return cvMask
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)

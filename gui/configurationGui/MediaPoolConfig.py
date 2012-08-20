@@ -173,7 +173,12 @@ class MediaFile(object):
         if(isVideoFile == False):
             #Image file
             oldType = self._configurationTree.getValue("Type")
-            self._configurationTree.setValue("Type", "Image")
+            changedToImage = False
+            if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite")):
+                pass
+            else:
+                changedToImage = True
+                self._configurationTree.setValue("Type", newType)
             if(oldType == "VideoLoop"):
                 self._configurationTree.removeParameter("LoopMode")
             if(oldType == "KinectCamera"):
@@ -183,15 +188,16 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("SequenceMode")
                 self._configurationTree.removeParameter("PlaybackModulation")
 
-            self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
-            self._values1Field.SetValue("0.0|0.0|0.0")
-            self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-            self._values2Field.SetValue("0.0|0.0|0.0")
-            self._configurationTree.addBoolParameter("CropMode", True)
+            if(changedToImage == True):
+                self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+                self._values1Field.SetValue("0.0|0.0|0.0")
+                self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+                self._values2Field.SetValue("0.0|0.0|0.0")
+                self._configurationTree.addBoolParameter("CropMode", True)
         else:
             #Video file
             oldType = self._configurationTree.getValue("Type")
-            if((oldType == "Image") or (oldType == "Camera") or (oldType == "KinectCamera")):
+            if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite") or (oldType == "Camera") or (oldType == "KinectCamera")):
                 self._configurationTree.setValue("Type", "VideoLoop")
                 oldloopMode = self._configurationTree.getValue("LoopMode")
                 if(oldloopMode == None):
@@ -1151,7 +1157,13 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
                 if(lowerName.endswith(".jpg") or lowerName.endswith(".jpeg") or lowerName.endswith(".gif") or lowerName.endswith(".png")):
-                    self._type = "Image"
+                    selectedTypeId = self._typeField.GetSelection()
+                    oldType = self._typeModes.getNames(selectedTypeId)
+                    if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite")):
+                        self._type = oldType
+                    else:
+                        self._type = "Image"
+                        self._selectedSubMode = "Crop"
                     self._updateTypeChoices(self._typeField, self._type, "VideoLoop")
                     self._setupSubConfig(self._config)
                     self._showOrHideSaveButton()
@@ -1565,7 +1577,9 @@ All notes on events are quantized to this.
                     self._config.addBoolParameter("CropMode", True)
                     self._config.setValue("CropMode", cropMode)
                 else:
-                    self._config.removeParameter("ZoomModulation")
+                    self._config.removeParameter("StartValues")
+                    self._config.removeParameter("EndValues")
+                    self._config.removeParameter("CropMode")
 
                 if(self._type == "ImageSequence"):
                     sequenceMode = self._subModeField.GetValue()
@@ -1578,6 +1592,29 @@ All notes on events are quantized to this.
                 else:
                     self._config.removeParameter("SequenceMode")
                     self._config.removeParameter("PlaybackModulation")
+
+                if(self._type == "ScrollImage"):
+                    self._config.addBoolParameter("HorizontalMode", True)
+                    self._config.addBoolParameter("ReverseMode", False)
+                    sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                    self._subModulationField.SetValue(sequenceModulation)
+                    self._config.addTextParameter("ScrollModulation", "None")
+                    self._config.setValue("ScrollModulation", sequenceModulation)
+                else:
+                    self._config.removeParameter("HorizontalMode")
+                    self._config.removeParameter("ReverseMode")
+                    self._config.removeParameter("ScrollModulation")
+
+                if(self._type == "Sprite"):
+                    sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                    self._subModulationField.SetValue(sequenceModulation)
+                    self._config.addTextParameter("XModulation", "None")
+                    self._config.setValue("XModulation", sequenceModulation)
+                    self._config.addTextParameter("YModulation", "None")
+                    self._config.setValue("YModulation", sequenceModulation)
+                else:
+                    self._config.removeParameter("XModulation")
+                    self._config.removeParameter("YModulation")
 
                 if(self._type == "KinectCamera"):
                     modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
@@ -1678,6 +1715,10 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._values2Sizer)
         elif(self._type == "VideoLoop"):
             self._values1Label.SetLabel("Loop experiment:")
+            self._noteConfigSizer.Show(self._values1Sizer)
+            self._noteConfigSizer.Hide(self._values2Sizer)
+        elif(self._type == "Sprite"):
+            self._values1Label.SetLabel("Sprite experiment:")
             self._noteConfigSizer.Show(self._values1Sizer)
             self._noteConfigSizer.Hide(self._values2Sizer)
         else:

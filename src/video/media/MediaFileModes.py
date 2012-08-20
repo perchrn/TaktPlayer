@@ -21,10 +21,10 @@ def forceUnixPath(pathPart):
         return lastPart
 
 class MixMode:
-    Default, Add, Multiply, LumaKey, WhiteLumaKey, Replace = range(6)
+    Default, Add, Multiply, LumaKey, WhiteLumaKey, AlphaMask, Replace = range(7)
 
     def getChoices(self):
-        return ["Default", "Add", "Multiply", "LumaKey", "WhiteLumaKey", "Replace"]
+        return ["Default", "Add", "Multiply", "LumaKey", "WhiteLumaKey", "AlphaMask", "Replace"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
@@ -41,6 +41,8 @@ def getMixModeFromName(name):
         return MixMode.LumaKey
     elif(name == "WhiteLumaKey"):
         return MixMode.WhiteLumaKey
+    elif(name == "AlphaMask"):
+        return MixMode.AlphaMask
     elif(name == "Replace"):
         return MixMode.Replace
     else:
@@ -117,10 +119,10 @@ class VideoLoopModulationMode:
         return self.getChoices()[0]
 
 class MediaTypes:
-    VideoLoop, Image, ImageSequence, Camera, KinectCamera = range(5)
+    VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Camera, KinectCamera = range(7)
 
     def getChoices(self):
-        return ["VideoLoop", "Image", "ImageSequence", "Camera", "KinectCamera"]
+        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Camera", "KinectCamera"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

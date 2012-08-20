@@ -6,7 +6,7 @@ Created on 21. des. 2011
 import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
-    CameraInput, MediaError, KinectCameraInput
+    CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
@@ -114,7 +114,7 @@ class MediaPool(object):
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
                     print "FileName OK"
-                    if(oldMedia.getType() == mediaType):
+                    if((oldMedia.getType() == mediaType) and (mediaType != "Sprite")):
                         print "MediaType OK"
                         keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
@@ -138,6 +138,14 @@ class MediaPool(object):
                     elif(mediaType == "ImageSequence"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "ScrollImage"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = ScrollImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "Sprite"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = SpriteImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)

@@ -135,10 +135,15 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
             return False
         else:
             myWxImage  = wx.EmptyImage(pilImage.size[0],pilImage.size[1]) #@UndefinedVariable
-            myWxImage .SetData(pilImage.convert("RGB").tostring())
-            bitmap = wx.BitmapFromImage(myWxImage ) #@UndefinedVariable
-            self.setBitmap(bitmap)
-            return True
+            try:
+                myWxImage.SetData(pilImage.convert("RGB").tostring())
+            except:
+                print "Warning: Error reading %s image!" % (fileName)
+                return False
+            else:
+                bitmap = wx.BitmapFromImage(myWxImage ) #@UndefinedVariable
+                self.setBitmap(bitmap)
+                return True
 
     def getBitmapSize(self):
         return self._bitmap.GetSize()

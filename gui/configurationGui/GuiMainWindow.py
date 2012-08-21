@@ -332,6 +332,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._stoppingWebRequests = True
         self._sendingConfig = False
         self._lastConfigState = -1
+        self._configUpdatedRequestIsOpen = False
         self._latestControllersRequestResult = None
         self._dragSource = None
         self.setupClientProcess()
@@ -632,18 +633,22 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
-                                print "Both configs are updated! " * 5
-                                print "GUI " * 50
-                                print currentGuiConfigString
-                                print "NEW " * 50
-                                print newConfigString
-                                print "XXX " * 50
-                                text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
-                                dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                                dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                                dlg.Destroy()
-                                if(dialogResult == False):
-                                    loadConfig = False
+                                if(self._configUpdatedRequestIsOpen == False):
+                                    self._configUpdatedRequestIsOpen = True
+                                    print "Both configs are updated! " * 5
+                                    print "GUI " * 50
+                                    print currentGuiConfigString
+                                    print "NEW " * 50
+                                    print newConfigString
+                                    print "XXX " * 50
+                                    text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
+                                    dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                                    dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                                    dlg.Destroy()
+                                    if(dialogResult == False):
+                                        loadConfig = False
+                                        self._oldServerConfigurationString = newConfigString
+                                    self._configUpdatedRequestIsOpen = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
@@ -659,9 +664,9 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             self._configuration.updateEffectList(None)
                             self._configuration.updateFadeList(None)
                             self._configuration.updateEffectImageList()
-                            print "#" * 150
-                            self._configuration.printConfiguration()
-                            print "#" * 150
+#                            print "#" * 150
+#                            self._configuration.printConfiguration()
+#                            print "#" * 150
                         self.updateKeyboardImages()
                     self._oldServerConfigurationString = newConfigString
                     if(foundTask != None):
@@ -751,6 +756,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     xmlString = self._configuration.getXmlString()
                     self._guiClient.sendConfiguration(xmlString)
                     task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.Configuration):
+                    if(self._configUpdatedRequestIsOpen == False):
+                        self._guiClient.requestConfiguration()
+                        task.setState(TaskHolder.States.Sendt)
+                    else:
+                        print "Waiting for user response..."
 
     def _requestTrackState(self):
         if(self._skippedTrackStateRequests > 5):
@@ -934,16 +945,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.sendPlayerConfiguration(xmlString)
 
     def _onSendButton(self, event):
-        xmlString = self._configuration.getXmlString()
-        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-        if(foundTask == None):
-            trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
-            self._taskQueue.append(trackRequestTask)
-        self._guiClient.sendConfiguration(xmlString)
-        if(foundTask == None):
-            trackRequestTask.setState(TaskHolder.States.Sendt)
-        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
-        self._sendingConfig = True
+        if(self._configUpdatedRequestIsOpen == False):
+            xmlString = self._configuration.getXmlString()
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
+            if(foundTask == None):
+                trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
+                self._taskQueue.append(trackRequestTask)
+            self._guiClient.sendConfiguration(xmlString)
+            if(foundTask == None):
+                trackRequestTask.setState(TaskHolder.States.Sendt)
+            self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
+            self._sendingConfig = True
 
     def _updateMidiButtonColor(self, midiOn):
         if(self._stoppingWebRequests):

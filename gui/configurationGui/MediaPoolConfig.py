@@ -156,6 +156,16 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
             self._configurationTree.addBoolParameter("CropMode", True)
+        elif(mediaType == "ScrollImage"):
+            self._configurationTree.addTextParameter("ScrollModulation", "None")
+            self._configurationTree.addBoolParameter("HorizontalMode", True)
+            self._configurationTree.addBoolParameter("ReverseMode", False)
+        elif(mediaType == "Sprite"):
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("XModulation", "None")
+            self._configurationTree.addTextParameter("YModulation", "None")
+            self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlaybackModulation", "None")
@@ -173,15 +183,16 @@ class MediaFile(object):
         if(isVideoFile == False):
             #Image file
             oldType = self._configurationTree.getValue("Type")
-            changedToImage = False
             if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite")):
-                pass
+                changedToImage = False
             else:
                 changedToImage = True
-                self._configurationTree.setValue("Type", newType)
+                self._configurationTree.setValue("Type", "Image")
             if(oldType == "VideoLoop"):
                 self._configurationTree.removeParameter("LoopMode")
-            if(oldType == "KinectCamera"):
+            elif(oldType == "Camera"):
+                pass
+            elif(oldType == "KinectCamera"):
                 self._configurationTree.removeParameter("DisplayModeModulation")
                 self._configurationTree.removeParameter("FilterValues")
             elif(oldType == "ImageSequence"):
@@ -205,6 +216,8 @@ class MediaFile(object):
                 if(oldType == "KinectCamera"):
                     self._configurationTree.removeParameter("DisplayModeModulation")
                     self._configurationTree.removeParameter("FilterValues")
+                elif(oldType == "Camera"):
+                    pass
                 elif(oldType == "ImageSequence"):
                     self._configurationTree.removeParameter("SequenceMode")
                     self._configurationTree.removeParameter("PlaybackModulation")
@@ -212,6 +225,16 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("StartValues")
                     self._configurationTree.removeParameter("EndValues")
                     self._configurationTree.removeParameter("CropMode")
+                elif(oldType == "ScrollImage"):
+                    self._configurationTree.removeParameter("ScrollModulation")
+                    self._configurationTree.removeParameter("HorizontalMode")
+                    self._configurationTree.removeParameter("ReverseMode")
+                elif(oldType == "Sprite"):
+                    self._configurationTree.removeParameter("StartPosition")
+                    self._configurationTree.removeParameter("EndPosition")
+                    self._configurationTree.removeParameter("XModulation")
+                    self._configurationTree.removeParameter("YModulation")
+                    self._configurationTree.removeParameter("InvertFirstFrameMask")
 
     def getMixMode(self):
         return self._configurationTree.getValue("MixMode")
@@ -251,6 +274,44 @@ class MediaFile(object):
             self._configurationTree.removeParameter("StartValues")
             self._configurationTree.removeParameter("EndValues")
             self._configurationTree.removeParameter("CropMode")
+
+        if(mediaType == "ScrollImage"):
+            scrollVal = sourceConfigTree.getValue("ScrollModulation")
+            if(scrollVal != None):
+                self._configurationTree.setValue("ScrollModulation", scrollVal)
+            horVal = sourceConfigTree.getValue("HorizontalMode")
+            if(horVal != None):
+                self._configurationTree.setValue("HorizontalMode", horVal)
+            revMode = sourceConfigTree.getValue("ReverseMode")
+            if(revMode != None):
+                self._configurationTree.setValue("ReverseMode", revMode)
+        else:
+            self._configurationTree.removeParameter("ScrollModulation")
+            self._configurationTree.removeParameter("HorizontalMode")
+            self._configurationTree.removeParameter("ReverseMode")
+            
+        if(mediaType == "Sprite"):
+            startVal = sourceConfigTree.getValue("StartPosition")
+            if(startVal != None):
+                self._configurationTree.setValue("StartPosition", startVal)
+            endVal = sourceConfigTree.getValue("EndPosition")
+            if(endVal != None):
+                self._configurationTree.setValue("EndPosition", endVal)
+            xVal = sourceConfigTree.getValue("XModulation")
+            if(xVal != None):
+                self._configurationTree.setValue("XModulation", xVal)
+            yVal = sourceConfigTree.getValue("YModulation")
+            if(yVal != None):
+                self._configurationTree.setValue("YModulation", yVal)
+            invMode = sourceConfigTree.getValue("InvertFirstFrameMask")
+            if(invMode != None):
+                self._configurationTree.setValue("InvertFirstFrameMask", invMode)
+        else:
+            self._configurationTree.removeParameter("StartPosition")
+            self._configurationTree.removeParameter("EndPosition")
+            self._configurationTree.removeParameter("XModulation")
+            self._configurationTree.removeParameter("YModulation")
+            self._configurationTree.removeParameter("InvertFirstFrameMask")
 
         if(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
@@ -355,6 +416,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapCamera = wx.Bitmap("graphics/modeCamera.png") #@UndefinedVariable
         self._modeBitmapImage = wx.Bitmap("graphics/modeImage.png") #@UndefinedVariable
         self._modeBitmapImageScroll = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
+        self._modeBitmapSprite = wx.Bitmap("graphics/modeImageSprite.png") #@UndefinedVariable
         self._modeBitmapImageSeqModulation = wx.Bitmap("graphics/modeImageSeqModulation.png") #@UndefinedVariable
         self._modeBitmapImageSeqReTrigger = wx.Bitmap("graphics/modeImageSeqReTrigger.png") #@UndefinedVariable
         self._modeBitmapImageSeqTime = wx.Bitmap("graphics/modeImageSeqTime.png") #@UndefinedVariable
@@ -590,6 +652,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onSubModeChosen, id=self._subModeField.GetId()) #@UndefinedVariable
 
+        self._subMode2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subMode2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Reverse scrollin:") #@UndefinedVariable
+        self._subMode2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Off"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateReverseModeChoices(self._subMode2Field, "Off", "Off")
+        subMode2HelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        subMode2HelpButton.Bind(wx.EVT_BUTTON, self._onSubMode2Help) #@UndefinedVariable
+        self._subMode2Sizer.Add(self._subMode2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subMode2Sizer.Add(self._subMode2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subMode2Sizer.Add(subMode2HelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subMode2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onSubMode2Chosen, id=self._subMode2Field.GetId()) #@UndefinedVariable
+
         self._subModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._subModulationLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Playback modulation:") #@UndefinedVariable
         self._subModulationField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
@@ -601,6 +675,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._subModulation2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModulation2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Y position modulation:") #@UndefinedVariable
+        self._subModulation2Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._subModulation2Field.SetInsertionPoint(0)
+        self._subModulation2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._subModulation2EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._subModulation2EditButton.Bind(wx.EVT_BUTTON, self._onSubmodulation2Edit) #@UndefinedVariable
+        self._subModulation2Sizer.Add(self._subModulation2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulation2Sizer.Add(self._subModulation2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subModulation2Sizer.Add(self._subModulation2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModulation2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._values1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._values1Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Values 1:") #@UndefinedVariable
@@ -1139,7 +1225,7 @@ class MediaFileGui(object): #@UndefinedVariable
         Unselected, Track, Note = range(3)
 
     class EditSelection():
-        Unselected, Effect1, Effect2, Fade, ImageSeqModulation, Values1, Values2 = range(7)
+        Unselected, Effect1, Effect2, Fade, SubModulation1, SubModulation2, Values1, Values2 = range(8)
 
     def _onOpenFile(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -1152,7 +1238,7 @@ class MediaFileGui(object): #@UndefinedVariable
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
                 self._fileName = forceUnixPath(dlg.GetPath())
-                print "DEBUG new file: original path: " + str(dlg.GetPath()) + " unix path: " + str(self._fileName)
+#                print "DEBUG new file: original path: " + str(dlg.GetPath()) + " unix path: " + str(self._fileName)
                 basename = os.path.basename(self._fileName)
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
@@ -1185,6 +1271,8 @@ Decides what kind of input this is.
 
 VideoLoop:\tOur normal video file playing in loop.
 Image:\t\tA single static image.
+ScrollImage:\tAn image that scrolls horizontally or vertically.
+Sprite:\t\tAn small image (or GIF anim) that can be moved.
 ImageSequence:\tA sequence of images.
 Camera:\t\tCamera or capture input.
 """
@@ -1223,15 +1311,44 @@ Modulation:\tUses modulation source to select image.
 ReTrigger Will be restarted when another note is activated on the same track.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Sequence mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        if(self._type == "ScrollImage"):
+            text = """
+Decides which direction the image scrolls when not modulated.
+"""
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Scroll direction help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        if(self._type == "Sprite"):
+            text = """
+Sometimes you may need to invert the mask on the first image.
+"""
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mask invertion help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         else:
-            return
+            text = "\nMissing help text for " + str(self._type) + " (subMode1)"
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Unknown help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSubMode2Chosen(self, event):
+        if(self._type == "ImageSequence"):
+            selectedSubMode = self._subMode2Field.GetValue()
+            self._selectedSubMode = selectedSubMode
+        self._showOrHideSaveButton()
+
+    def _onSubMode2Help(self, event):
+        if(self._type == "ScrollImage"):
+            text = """
+Reverses the scroll direction when not modulated.
+"""
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Scroll direction help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        else:
+            text = "\nMissing help text for " + str(self._type) + " (subMode2)"
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Unknown help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onSubmodulationEdit(self, event):
-        if(self._selectedEditor != self.EditSelection.ImageSeqModulation):
+        if(self._selectedEditor != self.EditSelection.SubModulation1):
             self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.ImageSeqModulation
+            self._selectedEditor = self.EditSelection.SubModulation1
         else:
             self._configSizer.Hide(self._moulationConfigPanel)
             self._selectedEditor = self.EditSelection.Unselected
@@ -1241,6 +1358,21 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self._configSizer.Hide(self._noteSlidersPanel)
         self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
+        self._highlightButton(self._selectedEditor)
+
+    def _onSubmodulation2Edit(self, event):
+        if(self._selectedEditor != self.EditSelection.SubModulation2):
+            self._configSizer.Show(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.SubModulation2
+        else:
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._selectedEditor = self.EditSelection.Unselected
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._slidersPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._noteSlidersPanel)
+        self.refreshLayout()
+        self._mainConfig.updateModulationGui(self._subModulation2Field.GetValue(), self._subModulation2Field, None, None)
         self._highlightButton(self._selectedEditor)
 
     def _onValues1Edit(self, event):
@@ -1259,6 +1391,8 @@ ReTrigger Will be restarted when another note is activated on the same track.
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start zoom:", "Start move:", "Start angle:"), self._values1Field, 3, "Start zoom:")
         elif(self._type == "VideoLoop"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Pitch bend:", "Hmm1:", "Hmm2:"), self._values1Field, 3, "Video loop test:")
+        elif(self._type == "Sprite"):
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Start X position:", "Start Y position:"), self._values1Field, 2, "Start position:")
         else: #KinectInput
             self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
@@ -1275,7 +1409,10 @@ ReTrigger Will be restarted when another note is activated on the same track.
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
         self.refreshLayout()
-        self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
+        if(self._type == "Image"):
+            self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
+        elif(self._type == "Sprite"):
+            self._updateNoteSliders(self._values2Field.GetValue(), ("End X position:", "End Y position:"), self._values2Field, 2, "End position:")
         self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
@@ -1283,11 +1420,12 @@ ReTrigger Will be restarted when another note is activated on the same track.
 Decides how this image is mixed with images on lower MIDI channels.
 \t(This only gets used if track mix mode is set to Default.)
 
-Default:\tUses Add if no other mode has been selected by track.
-Add:\tSums the images together.
-Multiply:\tMultiplies the images together. Very handy for masking.
-Lumakey:\tReplaces source everywhere the image is not black.
-Replace:\tNo mixing. Just use this image.
+Add:\t\tSums the images together.
+Multiply:\t\tMultiplies the images together.
+Lumakey:\t\tReplaces source everywhere the image is black.
+WhiteLumakey:\tReplaces source everywhere the image is white.
+AlphaMask:\tIf source has alpha channel it will use this as mask.
+Replace:\t\tNo mixing. Just use this image.
 """
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -1367,10 +1505,14 @@ All notes on events are quantized to this.
         dlg.Destroy()
 
     def _highlightButton(self, selected):
-        if(selected == self.EditSelection.ImageSeqModulation):
+        if(selected == self.EditSelection.SubModulation1):
             self._subModulationEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._subModulationEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(selected == self.EditSelection.SubModulation2):
+            self._subModulation2EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._subModulation2EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Values1):
             self._values1EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
@@ -1458,7 +1600,7 @@ All notes on events are quantized to this.
 
     def hideModulationGui(self):
         self._configSizer.Hide(self._moulationConfigPanel)
-        if(self._selectedEditor == self.EditSelection.ImageSeqModulation):
+        if((self._selectedEditor == self.EditSelection.SubModulation1) or (self._selectedEditor == self.EditSelection.SubModulation2)):
             self._selectedEditor = self.EditSelection.Unselected
             self._highlightButton(self._selectedEditor)
         self.refreshLayout()
@@ -1559,13 +1701,19 @@ All notes on events are quantized to this.
                     self._config.removeParameter("LoopMode")
 
                 if(self._type == "Image"):
-                    startVal = textToFloatValues(self._values1Field.GetValue(), 3)
+                    fieldValString = self._values1Field.GetValue()
+                    startVal = textToFloatValues(fieldValString, 3)
                     startValString = floatValuesToString(startVal)
+                    if(fieldValString != startValString):
+                        startValString = "0.0|0.0|0.0"
                     self._values1Field.SetValue(startValString)
                     self._config.addTextParameter("StartValues", "0.0|0.0|0.0")
                     self._config.setValue("StartValues", startValString)
-                    endVal = textToFloatValues(self._values2Field.GetValue(), 3)
+                    fieldValString = self._values2Field.GetValue()
+                    endVal = textToFloatValues(fieldValString, 3)
                     endValString = floatValuesToString(endVal)
+                    if(fieldValString != endValString):
+                        endValString = "0.0|0.0|0.0"
                     self._values2Field.SetValue(endValString)
                     self._config.addTextParameter("EndValues", "0.0|0.0|0.0")
                     self._config.setValue("EndValues", endValString)
@@ -1594,8 +1742,20 @@ All notes on events are quantized to this.
                     self._config.removeParameter("PlaybackModulation")
 
                 if(self._type == "ScrollImage"):
+                    scrollMode = self._subModeField.GetValue()
+                    if(scrollMode == "Horizontal"):
+                        scrollMode = True
+                    else:
+                        scrollMode = False
                     self._config.addBoolParameter("HorizontalMode", True)
+                    self._config.setValue("HorizontalMode", scrollMode)
+                    revMode = self._subMode2Field.GetValue()
+                    if(revMode == "On"):
+                        revMode = True
+                    else:
+                        revMode = False
                     self._config.addBoolParameter("ReverseMode", False)
+                    self._config.setValue("ReverseMode", revMode)
                     sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(sequenceModulation)
                     self._config.addTextParameter("ScrollModulation", "None")
@@ -1606,15 +1766,43 @@ All notes on events are quantized to this.
                     self._config.removeParameter("ScrollModulation")
 
                 if(self._type == "Sprite"):
-                    sequenceModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
-                    self._subModulationField.SetValue(sequenceModulation)
+                    fieldValString = self._values1Field.GetValue()
+                    startVal = textToFloatValues(fieldValString, 2)
+                    startValString = floatValuesToString(startVal)
+                    if(fieldValString != startValString):
+                        startValString = "0.5|0.5"
+                    self._values1Field.SetValue(startValString)
+                    self._config.addTextParameter("StartPosition", "0.5|0.5")
+                    self._config.setValue("StartPosition", startValString)
+                    fieldValString = self._values2Field.GetValue()
+                    endVal = textToFloatValues(fieldValString, 2)
+                    endValString = floatValuesToString(endVal)
+                    if(fieldValString != endValString):
+                        endValString = "0.5|0.5"
+                    self._values2Field.SetValue(endValString)
+                    self._config.addTextParameter("EndPosition", "0.5|0.5")
+                    self._config.setValue("EndPosition", endValString)
+                    xModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+                    self._subModulationField.SetValue(xModulation)
                     self._config.addTextParameter("XModulation", "None")
-                    self._config.setValue("XModulation", sequenceModulation)
+                    self._config.setValue("XModulation", xModulation)
+                    yModulation = self._midiModulation.validateModulationString(self._subModulation2Field.GetValue())
+                    self._subModulation2Field.SetValue(yModulation)
                     self._config.addTextParameter("YModulation", "None")
-                    self._config.setValue("YModulation", sequenceModulation)
+                    self._config.setValue("YModulation", yModulation)
+                    subMode = self._subModeField.GetValue()
+                    if(subMode == "Normal"):
+                        invMode = False
+                    else:
+                        invMode = True
+                    self._config.addBoolParameter("InvertFirstFrameMask", False)
+                    self._config.setValue("InvertFirstFrameMask", invMode)
                 else:
+                    self._config.removeParameter("StartPosition")
+                    self._config.removeParameter("EndPosition")
                     self._config.removeParameter("XModulation")
                     self._config.removeParameter("YModulation")
+                    self._config.removeParameter("InvertFirstFrameMask")
 
                 if(self._type == "KinectCamera"):
                     modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
@@ -1679,30 +1867,114 @@ All notes on events are quantized to this.
                 else:
                     self._selectedSubMode = "Stretch"
                 self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
+                confString = self._config.getValue("StartValues")
+                confVal = textToFloatValues(confString, 3)
+                confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+                confString = self._config.getValue("EndValues")
+                confVal = textToFloatValues(confString, 3)
+                confValString = floatValuesToString(confVal)
+                self._values2Field.SetValue(confValString)
             else:
                 self._selectedSubMode = self._subModeField.GetValue()
                 self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
+                self._values1Field.SetValue("0.0|0.0|0.0")
+                self._values2Field.SetValue("0.0|0.0|0.0")
+        elif(self._type == "ScrollImage"):
+            self._subModeLabel.SetLabel("Scroll direction:")
+            if(config != None):
+                horMode = config.getValue("HorizontalMode")
+                if(horMode == True):
+                    self._selectedSubMode = "Horizontal"
+                else:
+                    self._selectedSubMode = "Vertical"
+                self._updateScrollModeChoices(self._subModeField, self._selectedSubMode, "Horizontal")
+                revMode = config.getValue("ReverseMode")
+                if(revMode == True):
+                    selectedSub2Mode = "On"
+                else:
+                    selectedSub2Mode = "Off"
+                self._updateReverseModeChoices(self._subMode2Field, selectedSub2Mode, "Off")
+                scrMod = config.getValue("ScrollModulation")
+                self._subModulationField.SetValue(str(scrMod))
+            else:
+                oldSubMode = self._subModeField.GetValue()
+                self._updateScrollModeChoices(self._subModeField, oldSubMode, "Horizontal")
+                self._selectedSubMode = self._subModeField.GetValue()
+                oldSub2Mode = self._subMode2Field.GetValue()
+                self._updateReverseModeChoices(self._subMode2Field, oldSub2Mode, "Off")
+                self._subModulationField.SetValue("None")
+        elif(self._type == "Sprite"):
+            self._subModeLabel.SetLabel("First frame mask mode:")
+            if(config != None):
+                invMode = config.getValue("InvertFirstFrameMask")
+                if(invMode == True):
+                    self._selectedSubMode = "Invert mask"
+                else:
+                    self._selectedSubMode = "Normal"
+                self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
+                confString = self._config.getValue("StartPosition")
+                confVal = textToFloatValues(confString, 2)
+                confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+                confString = self._config.getValue("EndPosition")
+                confVal = textToFloatValues(confString, 2)
+                confValString = floatValuesToString(confVal)
+                self._values2Field.SetValue(confValString)
+                xMod = config.getValue("XModulation")
+                self._subModulationField.SetValue(str(xMod))
+                yMod = config.getValue("YModulation")
+                self._subModulation2Field.SetValue(str(yMod))
+            else:
+                self._selectedSubMode = self._subModeField.GetValue()
+                self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
+                self._values1Field.SetValue("0.5|0.5")
+                self._values2Field.SetValue("0.5|0.5")
+                self._subModulationField.SetValue("None")
+                self._subModulation2Field.SetValue("None")
 
         if(self._type == "KinectCamera"):
             self._subModulationLabel.SetLabel("Display mode:")
+        elif(self._type == "Sprite"):
+            self._subModulationLabel.SetLabel("X position modulation:")
         else:
             self._subModulationLabel.SetLabel("Playback modulation:")
 
         if(self._type == "VideoLoop"):
             self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "Image"):
             self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
+        elif(self._type == "ScrollImage"):
+            self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Show(self._subMode2Sizer)
+            self._noteConfigSizer.Show(self._subModulationSizer)
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
+        elif(self._type == "Sprite"):
+            self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
+            self._noteConfigSizer.Show(self._subModulationSizer)
+            self._noteConfigSizer.Show(self._subModulation2Sizer)
         elif(self._type == "ImageSequence"):
             self._noteConfigSizer.Show(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
             self._showOrHideSubModeModulation()
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "KinectCamera"):
             self._noteConfigSizer.Hide(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
             self._noteConfigSizer.Show(self._subModulationSizer)
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
+            self._noteConfigSizer.Hide(self._subMode2Sizer)
             self._noteConfigSizer.Hide(self._subModulationSizer)
+            self._noteConfigSizer.Hide(self._subModulation2Sizer)
 
         if(self._type == "KinectCamera"):
             self._values1Label.SetLabel("Filter values:")
@@ -1718,9 +1990,10 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._values1Sizer)
             self._noteConfigSizer.Hide(self._values2Sizer)
         elif(self._type == "Sprite"):
-            self._values1Label.SetLabel("Sprite experiment:")
+            self._values1Label.SetLabel("Start position:")
             self._noteConfigSizer.Show(self._values1Sizer)
-            self._noteConfigSizer.Hide(self._values2Sizer)
+            self._values2Label.SetLabel("End position:")
+            self._noteConfigSizer.Show(self._values2Sizer)
         else:
             self._noteConfigSizer.Hide(self._values1Sizer)
             self._noteConfigSizer.Hide(self._values2Sizer)
@@ -1731,6 +2004,7 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._syncSizer)
         else:
             self._noteConfigSizer.Show(self._syncSizer)
+        self._noteConfigPanel.Layout()
         self.refreshLayout()
 
     def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
@@ -1745,8 +2019,16 @@ All notes on events are quantized to this.
         else:
             self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
+    def _getMediaMixModes(self):
+        fullList = self._mixModes.getChoices()
+        noDefaultList = []
+        for entry in fullList:
+            if(entry != "Default"):
+                noDefaultList.append(entry)
+        return noDefaultList
+
     def _updateMixModeChoices(self, widget, value, defaultValue):
-        self._updateChoices(widget, self._mixModes.getChoices, value, defaultValue)
+        self._updateChoices(widget, self._getMediaMixModes, value, defaultValue)
 
     def _updateLoopModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._loopModes.getChoices, value, defaultValue)
@@ -1759,6 +2041,24 @@ All notes on events are quantized to this.
 
     def _updateCropModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCropChoises, value, defaultValue)
+
+    def _getScrollChoises(self):
+        return ["Horizontal", "Vertical"]
+
+    def _updateScrollModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._getScrollChoises, value, defaultValue)
+
+    def _getReverseChoises(self):
+        return ["Off", "On"]
+
+    def _updateReverseModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._getReverseChoises, value, defaultValue)
+
+    def _getInvertChoises(self):
+        return ["Normal", "Invert mask"]
+
+    def _updateInvertModeChoices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._getInvertChoises, value, defaultValue)
 
     def _updateTypeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
@@ -1859,6 +2159,10 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._modeBitmapCamera, self._modeBitmapCamera)
         elif(mediaType == "Image"):
             widget.setBitmaps(self._modeBitmapImage, self._modeBitmapImage)
+        elif(mediaType == "ScrollImage"):
+            widget.setBitmaps(self._modeBitmapImageScroll, self._modeBitmapImageScroll)
+        elif(mediaType == "Sprite"):
+            widget.setBitmaps(self._modeBitmapSprite, self._modeBitmapSprite)
         elif(mediaType == "VideoLoop"):
             if(configHolder != None):
                 loopMode = configHolder.getValue("LoopMode")
@@ -1969,8 +2273,10 @@ All notes on events are quantized to this.
                 self._type = "KinectCamera"
             elif(modeText == "Image"):
                 self._type = "Image"
-    #        elif(modeText == "ScrollingImage"):
-    #            self._type = "ImageSequence"
+            elif(modeText == "ScrollImage"):
+                self._type = "ScrollImage"
+            elif(modeText == "Sprite"):
+                self._type = "Sprite"
             elif(modeText == "ImageSeqTime"):
                 self._type = "ImageSequence"
                 self._updateSequenceModeChoices(self._subModeField, "Time", "Time")
@@ -2229,6 +2535,52 @@ All notes on events are quantized to this.
             else:
                 guiSubModeVal = False
             configSubMode = self._config.getValue("CropMode")
+            if(guiSubModeVal != configSubMode):
+                return True
+        if(self._type == "ScrollImage"):
+            guiSubMode = self._subModulationField.GetValue()
+            configSubMode = self._config.getValue("ScrollModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._subModeField.GetValue()
+            if(guiSubMode == "Horizontal"):
+                guiSubModeVal = True
+            else:
+                guiSubModeVal = False
+            configSubMode = self._config.getValue("HorizontalMode")
+            if(guiSubModeVal != configSubMode):
+                return True
+            guiSubMode = self._subMode2Field.GetValue()
+            if(guiSubMode == "On"):
+                guiSubModeVal = True
+            else:
+                guiSubModeVal = False
+            configSubMode = self._config.getValue("ReverseMode")
+            if(guiSubModeVal != configSubMode):
+                return True
+        if(self._type == "Sprite"):
+            guiSubMode = self._subModulationField.GetValue()
+            configSubMode = self._config.getValue("XModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._subModulation2Field.GetValue()
+            configSubMode = self._config.getValue("YModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._values1Field.GetValue()
+            configSubMode = self._config.getValue("StartPosition")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._values2Field.GetValue()
+            configSubMode = self._config.getValue("EndPosition")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._subModeField.GetValue()
+            if(guiSubMode == "Normal"):
+                guiSubModeVal = False
+            else:
+                guiSubModeVal = True
+            configSubMode = self._config.getValue("InvertFirstFrameMask")
             if(guiSubModeVal != configSubMode):
                 return True
         if(self._type == "ImageSequence"):

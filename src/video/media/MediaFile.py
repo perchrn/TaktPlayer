@@ -68,10 +68,10 @@ def mixImageSelfMask(image1, image2, mixMask, mixMat1, whiteMode):
 
 def mixImageAlphaMask(image1, image2, image2mask, mixMat1):
     cv.Copy(image2, image1, image2mask)
-    maskMat = createMat(800, 600)
-    cv.Merge(image2mask, image2mask, image2mask, None, maskMat)
-    cv.ShowImage("DEBUG mask: ", maskMat)
-    cv.ShowImage("DEBUG image2: ", image2)
+#    maskMat = createMat(800, 600)
+#    cv.Merge(image2mask, image2mask, image2mask, None, maskMat)
+#    cv.ShowImage("DEBUG mask: ", maskMat)
+#    cv.ShowImage("DEBUG image2: ", image2)
     return image1
 
 def mixImagesAdd(image1, image2, mixMat):
@@ -476,375 +476,6 @@ class MediaFile(object):
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return (mixedImage, currentPreValues, currentPostValues)
 
-class ScrollImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
-        self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
-
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
-        self._configurationTree.addBoolParameter("HorizontalMode", True)
-        self._configurationTree.addBoolParameter("ReverseMode", False)
-        self._midiModulation.setModulationReceiver("ScrollModulation", "None")
-
-        self._oldScrollLength = -1.0
-        self._oldScrollMode = False
-        self._getConfiguration()
-
-    def _getConfiguration(self):
-        MediaFile._getConfiguration(self)
-        self._isScrollModeHorizontal = self._configurationTree.getValue("HorizontalMode")
-        self._isScrollModeReverse = self._configurationTree.getValue("ReverseMode")
-        self._scrollModulationId = self._midiModulation.connectModulation("ScrollModulation")
-
-    def getType(self):
-        return "ScrollImage"
-
-    def close(self):
-        pass
-
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
-            self._image = None
-            return noteDone
-
-        #Scroll image + mask
-#        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-#        if(guiStates[0] != None):
-#            if(guiStates[0] > -0.5):
-#                scrollLength = guiStates[0]
-#            else:
-#                scrollLength = 0.0
-#        else:
-#            scrollLength = 0.0
-        if(self._scrollModulationId == None):
-            scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
-            if(self._isScrollModeReverse == False):
-                scrollLength = 1.0 - scrollLength
-        else:
-            scrollLength = self._fixThis()
-        if((self._isScrollModeHorizontal != self._oldScrollMode) or (scrollLength != self._oldScrollLength)):
-            self._oldScrollLength = scrollLength
-            self._oldScrollMode = self._isScrollModeHorizontal
-            if(self._isScrollModeHorizontal == True):
-                left = int(scrollLength * (self._sourceX - 1))
-                if((left + self._source100percentCropX) <= self._sourceX):
-                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                else:
-                    extraWidth = (left + self._source100percentCropX) - self._sourceX
-                    destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
-                    #Rest:
-                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
-                    cv.Resize(srcRegion, dstRegion)
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
-                        cv.Resize(srcRegionMask, dstRegionMask)
-                    #Main:
-                    width = self._sourceX - left
-                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
-                cv.Resize(srcRegion, dstRegion)
-                self._captureImage = self._scrollResizeMat
-                if(self._firstImageMask != None):
-                    cv.Resize(srcRegionMask, dstRegionMask)
-                    self._captureMask = self._scrollResizeMask
-                else:
-                    self._captureMask = None
-            else: # self._isScrollModeHorizontal == False -> Vertical mode
-                top = int(scrollLength * (self._sourceY - 1))
-                if((top + self._source100percentCropY) <= self._sourceY):
-                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, self._source100percentCropY) )
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
-                else:
-                    extraHeight = (top + self._source100percentCropY) - self._sourceY
-                    destinationHeight = int((extraHeight * self._internalResolutionY) / self._source100percentCropY)
-                    #Rest:
-                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, self._source100percentCropX, extraHeight))
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
-                    cv.Resize(srcRegion, dstRegion)
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, self._source100percentCropX, extraHeight))
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
-                        cv.Resize(srcRegionMask, dstRegionMask)
-                    #Main:
-                    height = self._sourceY - top
-                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, height))
-                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
-                    if(self._firstImageMask != None):
-                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, height))
-                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
-                cv.Resize(srcRegion, dstRegion)
-                self._captureImage = self._scrollResizeMat
-                if(self._firstImageMask != None):
-                    cv.Resize(srcRegionMask, dstRegionMask)
-                    self._captureMask = self._scrollResizeMask
-                else:
-                    self._captureMask = None
-
-        self._imageMask = self._captureMask
-        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-        return False
-
-    def openFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
-            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
-            raise MediaError("File does not exist!")
-        try:
-            pilImage = Image.open(self._fullFilePath)
-            pilImage.load()
-        except:
-            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
-            raise MediaError("File caused exception!")
-        pilSplit = pilImage.split()
-#        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
-        pilDepth = len(pilSplit)
-        if(pilDepth == 1):
-            pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
-            pilMask = None
-        if(pilDepth > 2):
-            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
-            if(pilDepth > 3):
-                pilMask = pilSplit[3]
-            else:
-                pilMask = None
-        self._captureImage = pilToCvImage(pilRgb)
-        if(pilMask != None):
-            self._captureMask = pilToCvMask(pilMask)
-        else:
-            self._captureMask = None
-        if (self._captureImage == None):
-            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
-            print "Could not read image from: " + os.path.basename(self._cfgFileName)
-            raise MediaError("File could not be read!")
-        self._firstImage = self._captureImage
-        self._firstImageMask = self._captureMask
-        self._originalTime = 1.0
-        self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
-        self._sourceAspect = float(self._sourceX) / self._sourceY
-        self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
-        if(self._sourceAspect > self._destinationAspect):
-            self._source100percentCropX = int(self._sourceY * self._destinationAspect)
-            self._source100percentCropY = self._sourceY
-        else:
-            self._source100percentCropX = self._sourceX
-            self._source100percentCropY = int(self._sourceX / self._destinationAspect)
-        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
-        self._fileOk = True
-
-class SpriteImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
-        self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
-
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
-        self._midiModulation.setModulationReceiver("XModulation", "None")
-        self._midiModulation.setModulationReceiver("YModulation", "None")
-        self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
-        self._invertFirstImageMask = False
-
-        self._bufferedImageList = []
-        self._bufferedImageMasks = []
-
-        self._oldX = -2.0
-        self._oldY = -2.0
-        self._oldCurrentFrame = -1
-
-        self._getConfiguration()
-
-    def _getConfiguration(self):
-        MediaFile._getConfiguration(self)
-        self._scrollModulationId = self._midiModulation.connectModulation("XModulation")
-        self._scrollModulationId = self._midiModulation.connectModulation("YModulation")
-        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
-
-    def getType(self):
-        return "Sprite"
-
-    def close(self):
-        pass
-
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
-            self._image = None
-            return noteDone
-
-        posX = 0.5
-        posY = 0.5
-        #Scroll image + mask
-        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                posX = guiStates[0]
-            else:
-                pass #TODO: release
-        if(guiStates[1] != None):
-            if(guiStates[1] > -0.5):
-                posY = guiStates[1]
-            else:
-                pass #TODO: release
-        if(self._numberOfFrames == 1):
-            self._currentFrame = 0
-        else:
-            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
-            self._currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
-        if((posX != self._oldX) or(posY != self._oldY) or (self._currentFrame != self._oldCurrentFrame)):
-            self._oldX = posX
-            self._oldY = posY
-            self._oldCurrentFrame = self._currentFrame
-            cv.SetZero(self._spritePlacementMat)
-            cv.SetZero(self._spritePlacementMask)
-            currentSource = self._bufferedImageList[self._currentFrame]
-            currentSourceMask = self._bufferedImageMasks[self._currentFrame]
-            sourceX, sourceY = cv.GetSize(currentSource)
-            xMovmentRange = self._internalResolutionX + sourceX
-            yMovmentRange = self._internalResolutionY + sourceY
-            left = int(xMovmentRange * posX) - sourceX
-            top = int(yMovmentRange * posY) - sourceY
-            width = sourceX
-            height = sourceY
-            sourceLeft = 0
-            sourceTop = 0
-            sourceWidth = sourceX
-            sourceHeight = sourceY
-            if(left < 0):
-                sourceLeft = -left
-                sourceWidth = sourceWidth + left
-                width = width + left
-                left = 0
-            elif((left + sourceX) > self._internalResolutionX):
-                overflow = (left + sourceX - self._internalResolutionX)
-                sourceWidth = sourceWidth - overflow
-                width = width - overflow
-            if(top < 0):
-                sourceTop = -top
-                sourceHeight = sourceHeight + top
-                height = height + top
-                top = 0
-            elif((top + sourceY) > self._internalResolutionY):
-                overflow = (top + sourceY - self._internalResolutionY)
-                sourceHeight = sourceHeight - overflow
-                height = height - overflow
-            if((width > 0) and (height > 0)):
-                srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
-                dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
-                cv.Resize(srcRegion, dstRegion)
-                srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
-                dstRegion = cv.GetSubRect(self._spritePlacementMask, (left, top, width, height))
-                cv.Resize(srcRegion, dstRegion)
-            self._captureImage = self._spritePlacementMat
-            self._captureMask = self._spritePlacementMask
-
-        self._imageMask = self._captureMask
-        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-        return False
-
-    def openFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
-            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
-            raise MediaError("File does not exist!")
-        try:
-            pilImage = Image.open(self._fullFilePath)
-            pilImage.load()
-        except:
-            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
-            raise MediaError("File caused exception!")
-        pilSplit = pilImage.split()
-        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
-        pilDepth = len(pilSplit)
-        if(pilDepth == 1):
-            if(pilImage.mode == "P"):
-                try:
-                    transparencyIndex = pilImage.info["transparency"]
-                    if(self._invertFirstImageMask == True):
-                        pilMask = pilImage.point(lambda i: i == transparencyIndex and 255).convert("L")
-                    else:
-                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
-#                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
-                except:
-                    pilMask = None
-                firstImagePallette = pilImage.getpalette()
-                pilRgb = pilImage.convert("RGB")
-                pilSplit2 = pilRgb.split()
-                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
-            else:
-                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
-                pilMask = None
-        elif(pilDepth > 2):
-            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
-            if(pilDepth > 3):
-                pilMask = pilSplit[3]
-            else:
-                pilMask = None
-        self._captureImage = pilToCvImage(pilRgb)
-        if(pilMask != None):
-            self._captureMask = pilToCvMask(pilMask, True)
-        else:
-            sizeX, sizeY = cv.GetSize(self._captureImage)
-            captureMask = createMask(sizeX, sizeY)
-            cv.Set(captureMask, 255)
-            self._captureMask = captureMask
-        if (self._captureImage == None):
-            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
-            print "Could not read image from: " + os.path.basename(self._cfgFileName)
-            raise MediaError("File could not be read!")
-        self._bufferedImageList.append(self._captureImage)
-        self._bufferedImageMasks.append(self._captureMask)
-        try:
-            while(True):
-                pilImage.seek(pilImage.tell()+1)
-                pilSplit = pilImage.split()
-                pilDepth = len(pilSplit)
-                if(pilDepth == 1):
-                    if(pilImage.mode == "P"):
-                        try:
-                            transparencyIndex = pilImage.info["transparency"]
-                            pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
-                        except:
-                            pilMask = None
-                        pilImage.putpalette(firstImagePallette)
-                        pilRgb = pilImage.convert("RGB")
-                        pilSplit2 = pilRgb.split()
-                        pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
-                    else:
-                        pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
-                        pilMask = None
-                elif(pilDepth > 2):
-                    pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
-                    if(pilDepth > 3):
-                        pilMask = pilSplit[3]
-                    else:
-                        pilMask = None
-                self._bufferedImageList.append(pilToCvImage(pilRgb))
-                if(pilMask != None):
-                    self._bufferedImageMasks.append(pilToCvMask(pilMask, True))
-                else:
-                    self._bufferedImageMasks.append(self._captureMask)
-        except EOFError:
-            pass
-        self._firstImage = self._captureImage
-        self._firstImageMask = self._captureMask
-        self._numberOfFrames = len(self._bufferedImageList)
-        self._originalTime = 1.0
-        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
-        self._fileOk = True
-
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
@@ -994,13 +625,25 @@ class ImageFile(MediaFile):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            self._captureImage = cv.LoadImage(self._fullFilePath)
             pilImage = Image.open(self._fullFilePath)
             pilImage.load()
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+#        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
+        pilDepth = len(pilSplit)
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+        if(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+        self._captureImage = pilToCvImage(pilRgb)
         if(self._captureImage == None):
             self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
             print "Could not read image from: " + os.path.basename(self._cfgFileName)
@@ -1016,6 +659,435 @@ class ImageFile(MediaFile):
         else:
             self._source100percentCropX = self._sourceX
             self._source100percentCropY = int(self._sourceX / self._destinationAspect)
+        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+        self._fileOk = True
+
+class ScrollImageFile(MediaFile):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._configurationTree.addBoolParameter("HorizontalMode", True)
+        self._configurationTree.addBoolParameter("ReverseMode", False)
+        self._midiModulation.setModulationReceiver("ScrollModulation", "None")
+        self._scrollModulationId = None
+
+        self._oldScrollLength = -1.0
+        self._oldScrollMode = False
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._isScrollModeHorizontal = self._configurationTree.getValue("HorizontalMode")
+        self._isScrollModeReverse = self._configurationTree.getValue("ReverseMode")
+        self._scrollModulationId = self._midiModulation.connectModulation("ScrollModulation")
+
+    def getType(self):
+        return "ScrollImage"
+
+    def close(self):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+
+        #Scroll image + mask
+#        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+#        if(guiStates[0] != None):
+#            if(guiStates[0] > -0.5):
+#                scrollLength = guiStates[0]
+#            else:
+#                scrollLength = 0.0
+#        else:
+#            scrollLength = 0.0
+        if(self._scrollModulationId == None):
+            scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
+            if(self._isScrollModeHorizontal == True):
+                scrollLength = 1.0 - scrollLength
+            if(self._isScrollModeReverse == False):
+                scrollLength = 1.0 - scrollLength
+        else:
+            scrollLength = self._fixThis()
+        if((self._isScrollModeHorizontal != self._oldScrollMode) or (scrollLength != self._oldScrollLength)):
+            self._oldScrollLength = scrollLength
+            self._oldScrollMode = self._isScrollModeHorizontal
+            if(self._isScrollModeHorizontal == True):
+                left = int(scrollLength * (self._sourceX - 1))
+                if((left + self._source100percentCropX) <= self._sourceX):
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraWidth = (left + self._source100percentCropX) - self._sourceX
+                    destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    width = self._sourceX - left
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
+                if(self._firstImageMask != None):
+                    cv.Resize(srcRegionMask, dstRegionMask)
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+            else: # self._isScrollModeHorizontal == False -> Vertical mode
+                top = int(scrollLength * (self._sourceY - 1))
+                if((top + self._source100percentCropY) <= self._sourceY):
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraHeight = (top + self._source100percentCropY) - self._sourceY
+                    destinationHeight = int((extraHeight * self._internalResolutionY) / self._source100percentCropY)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, self._source100percentCropX, extraHeight))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, self._source100percentCropX, extraHeight))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    height = self._sourceY - top
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, height))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, height))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
+                if(self._firstImageMask != None):
+                    cv.Resize(srcRegionMask, dstRegionMask)
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+
+        self._imageMask = self._captureMask
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
+
+    def openFile(self, midiLength):
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            raise MediaError("File does not exist!")
+        try:
+            pilImage = Image.open(self._fullFilePath)
+            pilImage.load()
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+#        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
+        pilDepth = len(pilSplit)
+        maskThreshold = 128
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                try:
+                    transparencyIndex = pilImage.info["transparency"]
+                    pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                    maskThreshold = 255
+                except:
+                    pilMask = None
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                pilMask = None
+        if(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+            if(pilDepth > 3):
+                pilMask = pilSplit[3]
+            else:
+                pilMask = None
+        self._captureImage = pilToCvImage(pilRgb)
+        if(pilMask != None):
+            self._captureMask = pilToCvMask(pilMask, maskThreshold)
+        else:
+            self._captureMask = None
+        if (self._captureImage == None):
+            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File could not be read!")
+        self._firstImage = self._captureImage
+        self._firstImageMask = self._captureMask
+        self._originalTime = 1.0
+        self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
+        self._sourceAspect = float(self._sourceX) / self._sourceY
+        self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
+        if(self._sourceAspect > self._destinationAspect):
+            self._source100percentCropX = int(self._sourceY * self._destinationAspect)
+            self._source100percentCropY = self._sourceY
+        else:
+            self._source100percentCropX = self._sourceX
+            self._source100percentCropY = int(self._sourceX / self._destinationAspect)
+        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+        self._fileOk = True
+
+class SpriteImageFile(MediaFile):
+    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
+        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+        self._midiModulation.setModulationReceiver("XModulation", "None")
+        self._midiModulation.setModulationReceiver("YModulation", "None")
+        self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
+        self._invertFirstImageMask = False
+        self._startX, self._startY = textToFloatValues("0.5|0.5", 2)
+        self._endX, self._endY = textToFloatValues("0.5|0.5", 2)
+        self._xModulationId = None
+        self._yModulationId = None
+
+        self._bufferedImageList = []
+        self._bufferedImageMasks = []
+
+        self._oldX = -2.0
+        self._oldY = -2.0
+        self._oldCurrentFrame = -1
+
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        startValuesString = self._configurationTree.getValue("StartPosition")
+        self._startX, self._startY = textToFloatValues(startValuesString, 2)
+        endValuesString = self._configurationTree.getValue("EndPosition")
+        self._endX, self._endY = textToFloatValues(endValuesString, 2)
+        self._xModulationId = self._midiModulation.connectModulation("XModulation")
+        self._yModulationId = self._midiModulation.connectModulation("YModulation")
+        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
+
+    def getType(self):
+        return "Sprite"
+
+    def close(self):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+
+        #Find pos.
+        posX = 0.5
+        posY = 0.5
+        modulationIsActive = False
+        if((self._xModulationId != None)):
+            posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            modulationIsActive = True
+        if((self._yModulationId != None)):
+            posY = self._midiModulation.getModlulationValue(self._yModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            modulationIsActive = True
+
+        if(modulationIsActive == False):
+            posX = self._startX
+            posY = self._startY
+            if((self._startSongPosition + self._syncLength) < currentSongPosition):
+                posX = self._endX
+                posY = self._endY
+            elif(self._startSongPosition < currentSongPosition):
+                if(self._endX != self._startX):
+                    posX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                if(self._endY != self._startY):
+                    posX = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                posX = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                posY = guiStates[1]
+
+        #Select frame.
+        if(self._numberOfFrames == 1):
+            self._currentFrame = 0
+        else:
+            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+            self._currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
+
+        #Scroll image + mask
+        if((posX != self._oldX) or(posY != self._oldY) or (self._currentFrame != self._oldCurrentFrame)):
+            self._oldX = posX
+            self._oldY = posY
+            self._oldCurrentFrame = self._currentFrame
+            cv.SetZero(self._spritePlacementMat)
+            cv.SetZero(self._spritePlacementMask)
+            currentSource = self._bufferedImageList[self._currentFrame]
+            currentSourceMask = self._bufferedImageMasks[self._currentFrame]
+            sourceX, sourceY = cv.GetSize(currentSource)
+            xMovmentRange = self._internalResolutionX + sourceX
+            yMovmentRange = self._internalResolutionY + sourceY
+            left = int(xMovmentRange * posX) - sourceX
+            top = int(yMovmentRange * posY) - sourceY
+            width = sourceX
+            height = sourceY
+            sourceLeft = 0
+            sourceTop = 0
+            sourceWidth = sourceX
+            sourceHeight = sourceY
+            if(left < 0):
+                sourceLeft = -left
+                sourceWidth = sourceWidth + left
+                width = width + left
+                left = 0
+            elif((left + sourceX) > self._internalResolutionX):
+                overflow = (left + sourceX - self._internalResolutionX)
+                sourceWidth = sourceWidth - overflow
+                width = width - overflow
+            if(top < 0):
+                sourceTop = -top
+                sourceHeight = sourceHeight + top
+                height = height + top
+                top = 0
+            elif((top + sourceY) > self._internalResolutionY):
+                overflow = (top + sourceY - self._internalResolutionY)
+                sourceHeight = sourceHeight - overflow
+                height = height - overflow
+            if(left < 0):
+                width = width + left
+                left = 0
+            if(width > (left + self._internalResolutionX)):
+                overflow = (width + left - self._internalResolutionX)
+                sourceWidth = sourceWidth - overflow
+                width = width - overflow
+            if(top < 0):
+                top = 0
+                height = height + top
+            if(height > (top + self._internalResolutionY)):
+                overflow = (height + top - self._internalResolutionY)
+                sourceHeight = sourceHeight - overflow
+                height = height - overflow
+            if((width > 0) and (height > 0)):
+                srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
+                cv.Resize(srcRegion, dstRegion)
+                srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                dstRegion = cv.GetSubRect(self._spritePlacementMask, (left, top, width, height))
+                cv.Resize(srcRegion, dstRegion)
+            self._captureImage = self._spritePlacementMat
+            self._captureMask = self._spritePlacementMask
+
+        self._imageMask = self._captureMask
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
+
+    def openFile(self, midiLength):
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            raise MediaError("File does not exist!")
+        try:
+            pilImage = Image.open(self._fullFilePath)
+            pilImage.load()
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+        pilDepth = len(pilSplit)
+        maskThreshold = 128
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                try:
+                    transparencyIndex = pilImage.info["transparency"]
+                    maskThreshold = 255
+                    if(self._invertFirstImageMask == True):
+                        pilMask = pilImage.point(lambda i: i == transparencyIndex and 255).convert("L")
+                    else:
+                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+#                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                except:
+                    pilMask = None
+                firstImagePallette = pilImage.getpalette()
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                pilMask = None
+        elif(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+            if(pilDepth > 3):
+                pilMask = pilSplit[3]
+            else:
+                pilMask = None
+        self._captureImage = pilToCvImage(pilRgb)
+        if(pilMask != None):
+            self._captureMask = pilToCvMask(pilMask, maskThreshold)
+        else:
+            sizeX, sizeY = cv.GetSize(self._captureImage)
+            captureMask = createMask(sizeX, sizeY)
+            cv.Set(captureMask, 255)
+            self._captureMask = captureMask
+        if (self._captureImage == None):
+            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File could not be read!")
+        self._bufferedImageList.append(self._captureImage)
+        self._bufferedImageMasks.append(self._captureMask)
+        try:
+            while(True):
+                pilImage.seek(pilImage.tell()+1)
+                pilSplit = pilImage.split()
+                pilDepth = len(pilSplit)
+                if(pilDepth == 1):
+                    if(pilImage.mode == "P"):
+                        try:
+                            transparencyIndex = pilImage.info["transparency"]
+                            pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                        except:
+                            pilMask = None
+                        pilImage.putpalette(firstImagePallette)
+                        pilRgb = pilImage.convert("RGB")
+                        pilSplit2 = pilRgb.split()
+                        pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+                    else:
+                        pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                        pilMask = None
+                elif(pilDepth > 2):
+                    pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+                    if(pilDepth > 3):
+                        pilMask = pilSplit[3]
+                    else:
+                        pilMask = None
+                self._bufferedImageList.append(pilToCvImage(pilRgb))
+                if(pilMask != None):
+                    self._bufferedImageMasks.append(pilToCvMask(pilMask, maskThreshold))
+                else:
+                    self._bufferedImageMasks.append(self._captureMask)
+        except EOFError:
+            pass
+        self._firstImage = self._captureImage
+        self._firstImageMask = self._captureMask
+        self._numberOfFrames = len(self._bufferedImageList)
+        self._originalTime = 1.0
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 
@@ -1258,6 +1330,7 @@ class KinectCameraInput(MediaFile):
         self._kinectModesHolder = KinectMode()
         self._getConfiguration()
         self._filterValues = 0.0, 0.0, 0.0
+        self._modeModulationId = None
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -1379,7 +1452,7 @@ class ImageSequenceFile(MediaFile):
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
         self._midiModulation.setModulationReceiver("PlaybackModulation", "None")
-        self._playbackModulationId = -1
+        self._playbackModulationId = None
         self._getConfiguration()
 
     def _getConfiguration(self):

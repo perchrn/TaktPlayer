@@ -27,10 +27,16 @@ class LowFrequencyOscilator(object):
         self._valRange = maxVal - minVal
         random.seed(self._midiTiming.getTime())
         self._radians360 = math.radians(360)
+        self._lastRandomId = -1
+        self._lastRandomValue = 0.0
 
     def getValue(self, songPosition, argument):
         if(self._shape == LfoShapes.Random):
-            return self._minVal + (random.random() * self._valRange)
+            randomId = int((songPosition - self._startSongPosition) / self._syncLength)
+            if(randomId != self._lastRandomId):
+                self._lastRandomId = randomId
+                self._lastRandomValue = self._minVal + (random.random() * self._valRange)
+            return self._lastRandomValue
         else:
             phase = ((songPosition - self._startSongPosition) / self._syncLength) % 1.0
             if(self._shape == LfoShapes.Triangle):
@@ -258,6 +264,8 @@ class MidiModulation(object):
                 mode = getLfoShapeId(sourceSplit[1])
                 if(mode != None):
                     midiLength = 4.0
+                    if(mode == LfoShapes.Random):
+                        midiLength = 0.0
                     startBeat = 0.0
                     minVal = 0.0
                     maxVal = 1.0

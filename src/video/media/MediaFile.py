@@ -696,15 +696,7 @@ class ScrollImageFile(MediaFile):
             self._image = None
             return noteDone
 
-        #Scroll image + mask
-#        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-#        if(guiStates[0] != None):
-#            if(guiStates[0] > -0.5):
-#                scrollLength = guiStates[0]
-#            else:
-#                scrollLength = 0.0
-#        else:
-#            scrollLength = 0.0
+        #Find scroll langth.
         if(self._scrollModulationId == None):
             scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
             if(self._isScrollModeHorizontal == True):
@@ -712,7 +704,13 @@ class ScrollImageFile(MediaFile):
             if(self._isScrollModeReverse == False):
                 scrollLength = 1.0 - scrollLength
         else:
-            scrollLength = self._fixThis()
+            scrollLength = self._midiModulation.getModlulationValue(self._scrollModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                scrollLength = guiStates[0]
+
+        #Scroll image + mask
         if((self._isScrollModeHorizontal != self._oldScrollMode) or (scrollLength != self._oldScrollLength)):
             self._oldScrollLength = scrollLength
             self._oldScrollMode = self._isScrollModeHorizontal

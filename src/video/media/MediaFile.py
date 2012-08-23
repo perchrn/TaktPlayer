@@ -13,7 +13,7 @@ from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName, KinectMode, VideoLoopModulationMode
+    getModulationValueModeFromName, KinectMode, TimeModulationMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
@@ -107,9 +107,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._timeModulationConfigurationTemplates = timeModulationConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfig
         self._guiCtrlStateHolder = guiCtrlStateHolder
         self._mediaFadeConfigurationTemplates = fadeConfiguration
@@ -147,6 +148,8 @@ class MediaFile(object):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
+        self._defaultTimeModulationSettingsName = "Default"
+        self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
         self._defaultEffect1SettingsName = "MediaDefault1"
         self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
         self._defaultEffect2SettingsName = "MediaDefault2"
@@ -170,15 +173,21 @@ class MediaFile(object):
         self._effect2 = None
         self._effect1Settings = None
         self._effect2Settings = None
+        self._timeModulationSettings = None
 
     def _getConfiguration(self):
+        timeModulationTemplateName = self._configurationTree.getValue("TimeModulationConfig")
+        self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(timeModulationTemplateName)
+        if(self._timeModulationSettings == None):
+            self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(self._defaultTimeModulationSettingsName)
+        
         oldEffect1Name = "None"
         oldEffect1Values = "0.0|0.0|0.0|0.0|0.0"
         if(self._effect1Settings != None):
             oldEffect1Name = self._effect1Settings.getEffectName()
             oldEffect1Values = self._effect1Settings.getStartValuesString()
-        self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
-        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
+        effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
+        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
         self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
@@ -191,8 +200,8 @@ class MediaFile(object):
         if(self._effect2Settings != None):
             oldEffect2Name = self._effect2Settings.getEffectName()
             oldEffect2Values = self._effect2Settings.getStartValuesString()
-        self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
-        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
+        effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
+        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
         self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
@@ -477,8 +486,8 @@ class MediaFile(object):
             return (mixedImage, currentPreValues, currentPostValues)
 
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._radians360 = math.radians(360)
 
@@ -663,8 +672,8 @@ class ImageFile(MediaFile):
         self._fileOk = True
 
 class ScrollImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
@@ -845,8 +854,8 @@ class ScrollImageFile(MediaFile):
         self._fileOk = True
 
 class SpriteImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
@@ -1190,8 +1199,8 @@ videoCaptureCameras = VideoCaptureCameras()
 openCvCameras = OpenCvCameras()
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
         self._cameraMode = self.CameraModes.OpenCV
@@ -1315,8 +1324,8 @@ class KinectCameras(object):
 kinectCameras = KinectCameras()
     
 class KinectCameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._blackFilterModulationId = -1
         self._diffFilterModulationId = -1
@@ -1442,8 +1451,8 @@ class KinectCameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
@@ -1532,13 +1541,13 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
 
-        self._loopModulationMode = VideoLoopModulationMode.TriggeredLoop
+        self._loopModulationMode = TimeModulationMode.Off
 
         self._lastFramePos = 0.0
         self._lastFramePosSongPosition = 0.0
@@ -1584,7 +1593,7 @@ class VideoLoopFile(MediaFile):
         self._triggerSongPosition = 0.0
 
     def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
-        if((self._loopModulationMode == VideoLoopModulationMode.TriggeredJump) or (self._loopModulationMode == VideoLoopModulationMode.TriggeredLoop)):
+        if((self._loopModulationMode == TimeModulationMode.TriggeredJump) or (self._loopModulationMode == TimeModulationMode.TriggeredLoop)):
             lastSpp = self._triggerSongPosition
             if(startSpp != lastSpp):
                 if(self._firstNoteTrigger == True):
@@ -1601,45 +1610,18 @@ class VideoLoopFile(MediaFile):
                 self._startSongPosition = startSpp
                 self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
-            self._image = None
-            return noteDone
-        lastFrame = self._currentFrame
+    def _timeModulateFramePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState):
+        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
 
-        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                speedMod = (2.0 * guiStates[0]) - 1.0
-            else:
-                speedMod = 0.0
-        else:
-            speedMod = 0.0
-        if(guiStates[1] != None):
-            if(guiStates[1] > 0.02):
-                trigger = True
-            else:
-                trigger = False
-        else:
-            trigger = False
-        if(guiStates[2] != None):
-            if(guiStates[2] > -0.5):
-                loopLength = guiStates[2]
-            else:
-                loopLength = 0.0
-        else:
-            loopLength = 0.0
-
-        #TODO: This needs config system!
-        speedRange = 4.0
-        speedQuantize = 1.0
         jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
         jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / self._syncLength) * self._numberOfFrames
         jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
 
-        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
-        if(self._loopModulationMode == VideoLoopModulationMode.SpeedModulation):
+        timeMod = TimeModulationMode() #DEBUG
+        print "DEBUG _timeModulateFramePos: mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
+
+        if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
+            speedMod = (2.0 * modulation) - 1.0
             if(self._startSongPosition > self._lastFramePosSongPosition):
                 self._lastFramePosSongPosition = self._startSongPosition
             if(speedQuantize > 0.02):
@@ -1674,8 +1656,9 @@ class VideoLoopFile(MediaFile):
                     framePosFloat = unmodifiedFramePos
             self._lastFramePos = framePosFloat
             self._lastFramePosSongPosition = currentSongPosition
-        elif(self._loopModulationMode == VideoLoopModulationMode.TriggeredJump):
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredJump):
             if(self._noteTriggerCounter != self._lastTriggerCount):
+                speedMod = (2.0 * modulation) - 1.0
                 if(jumpQuantize > 0.02):
                     steps = int(jumpRange / jumpQuantize)
                     if(steps < 1):
@@ -1690,10 +1673,12 @@ class VideoLoopFile(MediaFile):
 #                    print "SpeedMod == 0.0 :-(  ->  No jump!"
                 self._lastTriggerCount = self._noteTriggerCounter
             framePosFloat = unmodifiedFramePos + self._triggerModificationSum
-        elif(self._loopModulationMode == VideoLoopModulationMode.TriggeredLoop):
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredLoop):
+            trigger = self._noteTriggerCounter != self._lastTriggerCount
             if((trigger == True) and (self._loopEndSongPosition < 0.0)):
                 self._loopEndSongPosition = currentSongPosition
             if(currentSongPosition >= self._loopEndSongPosition):
+                loopLength = modulation
                 if(trigger == True):
                     if(jumpQuantize > 0.02):
                         steps = int(jumpRange / jumpQuantize)
@@ -1716,8 +1701,19 @@ class VideoLoopFile(MediaFile):
             framePosFloat = unmodifiedFramePos - self._triggerModificationSum
         else:
             framePosFloat = unmodifiedFramePos
+        return  framePosFloat
 
-        framePos = int(framePosFloat)
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+        lastFrame = self._currentFrame
+
+        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+        modifiedFramePos = self._timeModulateFramePos(unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState)
+
+        framePos = int(modifiedFramePos)
         if(self._loopMode == VideoLoopMode.Normal):
             self._currentFrame = framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.Reverse):

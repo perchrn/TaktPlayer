@@ -4,7 +4,8 @@ Created on 25. jan. 2012
 @author: pcn
 '''
 from midi.MidiModulation import MidiModulation
-from video.media.MediaFileModes import FadeMode, forceUnixPath
+from video.media.MediaFileModes import FadeMode, forceUnixPath,\
+    TimeModulationMode
 import os
 
 class ConfigurationTemplates(object):
@@ -155,18 +156,18 @@ class EffectTemplates(ConfigurationTemplates):
             foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
             if(foundConfig == None):
                 effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-                self._defaultModulationConfig = EffectSettings(name, self, effectConfigTree, self._templateConfig, self._templateId)
+                self._defaultModulationConfig = EffectSettings(self._templateName, name, self, effectConfigTree, self._templateConfig, self._templateId)
                 self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = EffectSettings(name, self, effectConfigTree, self._templateConfig, self._templateId)
+        newTemplate = EffectSettings(self._templateName, name, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = EffectSettings(saveName, self, effectConfigTree, self._templateConfig, self._templateId)
+        newTemplate = EffectSettings(self._templateName, saveName, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -178,9 +179,10 @@ class EffectTemplates(ConfigurationTemplates):
         return False
         
 class EffectSettings(object):
-    def __init__(self, templateName, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
+    def __init__(self, templateName, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
         self._effectTemplates = effectTemplates
         self._templateName = templateName
+        self._name = name
         self._midiTiming = self._effectTemplates.getMidiTiming()
         self._configurationTree = effectConfigTree
         self._parentConfigurationTree = parentConfigurationTree
@@ -192,7 +194,7 @@ class EffectSettings(object):
 
     def getCopy(self, newName):
         effectConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
-        copyTemplate = EffectSettings(newName, self._effectTemplates, effectConfigTree, self._parentConfigurationTree, self._templateId)
+        copyTemplate = EffectSettings(self._templateName, newName, self._effectTemplates, effectConfigTree, self._parentConfigurationTree, self._templateId)
         effectName = self._configurationTree.getValue("Effect")
         ammountMod = self._configurationTree.getValue("Amount")
         arg1Mod = self._configurationTree.getValue("Arg1")
@@ -205,10 +207,10 @@ class EffectSettings(object):
 
 
     def getName(self):
-        return self._templateName
+        return self._name
 
     def setName(self, name):
-        self._templateName = name
+        self._name = name
         self._configurationTree.setValue(self._templateId, name)
 
     def _setupConfiguration(self):
@@ -303,25 +305,25 @@ class EffectSettings(object):
 class FadeTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming):
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "FadeAndLevelTemplates")
-        self._templateTypeName = "Effect templates"
+        self._templateTypeName = "Fade templates"
 
     def _validateDefault(self):
         name = "Default"
         foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
         if(foundConfig == None):
             fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-            self._defaultModulationConfig = FadeSettings(name, self, fadeConfigTree, self._templateConfig, self._templateId)
+            self._defaultModulationConfig = FadeSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
             self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = FadeSettings(name, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = FadeSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, fadeMode, fadeMod, levelMod):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = FadeSettings(saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = FadeSettings(self._templateName, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(fadeMode, fadeMod, levelMod)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -333,9 +335,10 @@ class FadeTemplates(ConfigurationTemplates):
         return False
         
 class FadeSettings(object):
-    def __init__(self, templateName, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
+    def __init__(self, templateName, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
         self._templateName = templateName
+        self._name = name
         self._midiTiming = self._fadeTemplates.getMidiTiming()
         self._configurationTree = fadeConfigTree
         self._parentConfigurationTree = parentConfigurationTree
@@ -346,7 +349,7 @@ class FadeSettings(object):
 
     def getCopy(self, newName):
         fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
-        copyTemplate = FadeSettings(newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
+        copyTemplate = FadeSettings(self._templateName, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
         fadeModeString = self._configurationTree.getValue("Mode")
         fadeModulationString = self._configurationTree.getValue("Modulation")
         levelModulationString = self._configurationTree.getValue("Level")
@@ -354,10 +357,10 @@ class FadeSettings(object):
         return copyTemplate
 
     def getName(self):
-        return self._templateName
+        return self._name
 
     def setName(self, name):
-        self._templateName = name
+        self._name = name
         self._configurationTree.setValue(self._templateId, name)
 
     def getFadeMode(self):
@@ -406,6 +409,124 @@ class FadeSettings(object):
         fadeVal =  self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         levelVal =  self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         return (self._fadeMode, fadeVal, levelVal)
+
+class TimeModulationTemplates(ConfigurationTemplates):
+    def __init__(self, configurationTree, midiTiming):
+        ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "TimeModulationTemplates")
+        self._templateTypeName = "Time modulation templates"
+
+    def _validateDefault(self):
+        name = "Default"
+        foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
+        if(foundConfig == None):
+            fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
+            self._defaultModulationConfig = TimeModulationSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+            self._configurationTemplates.append(self._defaultModulationConfig)
+
+    def createTemplateFromXml(self, name, xmlConfig):
+        fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
+        newTemplate = TimeModulationSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate.updateFromXml(xmlConfig)
+        return newTemplate
+
+    def createTemplate(self, saveName, fadeMode, fadeMod, rangeVal, rangeQuantize):
+        fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
+        newTemplate = TimeModulationSettings(self._templateName, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate.update(fadeMode, fadeMod, rangeVal, rangeQuantize)
+        self._configurationTemplates.append(newTemplate)
+        return newTemplate
+
+    def checkIfNameIsDefaultName(self, configName):
+        for name in "Default":
+            if(configName == name):
+                return True
+        return False
+        
+class TimeModulationSettings(object):
+    def __init__(self, templateName, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
+        self._fadeTemplates = fadeTemplates
+        self._templateName = templateName
+        self._name = name
+        self._midiTiming = self._fadeTemplates.getMidiTiming()
+        self._configurationTree = fadeConfigTree
+        self._parentConfigurationTree = parentConfigurationTree
+        self._templateId = templateId
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._setupConfiguration()
+        self._getConfiguration()
+
+    def getCopy(self, newName):
+        fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
+        copyTemplate = TimeModulationSettings(self._templateName, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
+        modeString = self._configurationTree.getValue("Mode")
+        modulationString = self._configurationTree.getValue("Modulation")
+        rangeValue = self._configurationTree.getValue("Range")
+        rangeQuantize = self._configurationTree.getValue("RangeQuantize")
+        copyTemplate.update(modeString, modulationString, rangeValue, rangeQuantize)
+        return copyTemplate
+
+    def getName(self):
+        return self._name
+
+    def setName(self, name):
+        self._name = name
+        self._configurationTree.setValue(self._templateId, name)
+
+    def getTimeModulationMode(self):
+        return self._configurationTree.getValue("Mode")
+
+    def _setupConfiguration(self):
+        self._configurationTree.addTextParameter("Mode", "SpeedModulation")
+        self._midiModulation.setModulationReceiver("Modulation", "MidiChannel.PitchBend")
+        self._configurationTree.addFloatParameter("Range", 4.0)
+        self._configurationTree.addFloatParameter("RangeQuantize", 0.0)
+        self._mode = TimeModulationMode.SpeedModulation
+        self._modulationId = None
+        self._range = 4.0
+        self._rangeQuantize = 0.0
+
+    def getConfigHolder(self):
+        return self._configurationTree
+
+    def _getConfiguration(self):
+        fadeMode = self._configurationTree.getValue("Mode")
+        if(fadeMode == "Off"):
+            self._mode = TimeModulationMode.Off
+        elif(fadeMode == "SpeedModulation"):
+            self._mode = TimeModulationMode.SpeedModulation
+        elif(fadeMode == "TriggeredJump"):
+            self._mode = TimeModulationMode.TriggeredJump
+        elif(fadeMode == "TriggeredLoop"):
+            self._mode = TimeModulationMode.TriggeredLoop
+        else:
+            self._mode = TimeModulationMode.SpeedModulation #Defaults to pitchbend
+        self._modulationId = self._midiModulation.connectModulation("Modulation")
+        self._range = self._configurationTree.getValue("Range")
+        self._rangeQuantize = self._configurationTree.getValue("RangeQuantize")
+
+    def update(self, mode, modulation, rangeVal, rangeQuantize):
+        self._configurationTree.setValue("Mode", mode)
+        if(modulation != None):
+            self._midiModulation.setValue("Modulation", modulation)
+        if(rangeVal != None):
+            self._configurationTree.setValue("Range", rangeVal)
+        if(rangeQuantize != None):
+            self._configurationTree.setValue("RangeQuantize", rangeQuantize)
+        self._getConfiguration()
+        
+    def checkAndUpdateFromConfiguration(self):
+        if(self._configurationTree.isConfigurationUpdated()):
+            print "TimeModulationSettings config is updated..."
+            self._getConfiguration()
+            self._midiModulation.checkAndUpdateFromConfiguration()
+            self._configurationTree.resetConfigurationUpdated()
+
+    def updateFromXml(self, xmlFile):
+        self._configurationTree._updateFromXml(xmlFile)
+
+    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+        modulation =  self._midiModulation.getModlulationValue(self._modulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        return (self._mode, modulation, self._range, self._rangeQuantize)
 
 class EffectImageList(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming, videoDir = None):

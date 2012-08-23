@@ -5,12 +5,12 @@ Created on 6. feb. 2012
 '''
 from midi.MidiTiming import MidiTiming
 from configuration.EffectSettings import EffectTemplates, FadeTemplates,\
-    EffectImageList
+    EffectImageList, TimeModulationTemplates
 import wx
 from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 from midi.MidiModulation import MidiModulation
 from midi.MidiController import MidiControllers
-from video.media.MediaFileModes import FadeMode
+from video.media.MediaFileModes import FadeMode, TimeModulationMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes
@@ -29,6 +29,9 @@ class GlobalConfig(object):
         self._midiTiming = MidiTiming()
 
         self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
+
+        self._timeModulationConfiguration = TimeModulationTemplates(self._configurationTree, self._midiTiming)
+        self._timeModulationGui = TimeModulationGui(self._mainConfig, self._midiTiming, self._modulationGui)
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, 800, 600)
         self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui)
@@ -53,6 +56,44 @@ class GlobalConfig(object):
 
     def getFadeChoices(self):
         return self._fadeConfiguration.getChoices()
+
+    def getTimeModulationTemplate(self, configName):
+        return self._timeModulationConfiguration.getTemplate(configName)
+
+    def getTimeModulationTemplateByIndex(self, index):
+        return self._timeModulationConfiguration.getTemplateByIndex(index)
+
+    def makeTimeModulationTemplate(self, saveName, mode, modulation, rangeVal, rangeQuantize):
+        return self._timeModulationConfiguration.createTemplate(saveName, mode, modulation, rangeVal, rangeQuantize)
+
+    def deleteTimeModulationTemplate(self, configName):
+        self._timeModulationConfiguration.deleteTemplate(configName)
+
+    def duplicateTimeModulationTemplate(self, configName):
+        return self._timeModulationConfiguration.duplicateTemplate(configName)
+
+    def checkIfNameIsDefaultTimeModulationName(self, configName):
+        return self._timeModulationConfiguration.checkIfNameIsDefaultName(configName)
+
+    def getTimeModulationTemplateNamesList(self):
+        return self._timeModulationConfiguration.getTemplateNamesList()
+
+    def getTimeModulationChoices(self):
+        return self._timeModulationConfiguration.getChoices()
+
+    def setupTimeModulationsGui(self, plane, sizer, parentSizer, parentClass):
+        self._timeModulationGui.setupTimeModulationGui(plane, sizer, parentSizer, parentClass)
+
+    def setupTimeModulationsListGui(self, plane, sizer, parentSizer, parentClass):
+        self._timeModulationGui.setupTimeModulationListGui(plane, sizer, parentSizer, parentClass)
+
+    def updateTimeModulationGui(self, configName, midiNote, editFieldWidget = None):
+        template = self._timeModulationConfiguration.getTemplate(configName)
+        if(template != None):
+            self._timeModulationGui.updateGui(template, midiNote, editFieldWidget)
+
+    def updateTimeModulationList(self, selectedName):
+        self._timeModulationGui.updateTimeModulationList(self._timeModulationConfiguration, selectedName)
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsGui(plane, sizer, parentSizer, parentClass)
@@ -1859,3 +1900,640 @@ Decides if this image fades to black or white.
             self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
 
         self._showOrHideSaveButton()
+
+class TimeModulationGui(object):
+    def __init__(self, mainConfing, midiTiming, modulationGui):
+        self._mainConfig = mainConfing
+        self._midiTiming = midiTiming
+        self._modulationGui = modulationGui
+        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._selectedEditor = self.EditSelected.Unselected
+        self._timeModes = TimeModulationMode()
+        self._timeModListSelectedIndex = -1
+
+        self._timeOffBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
+        self._timeSpeedBitmap = wx.Bitmap("graphics/timeModSpeed.png") #@UndefinedVariable
+        self._timeJumpBitmap = wx.Bitmap("graphics/timeModJump.png") #@UndefinedVariable
+        self._timeLoopBitmap = wx.Bitmap("graphics/timeModLoop.png") #@UndefinedVariable
+
+        self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
+        self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
+        self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
+        self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
+        self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
+        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
+        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
+        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
+
+        self._duplicateButtonBitmap = wx.Bitmap("graphics/duplicateButton.png") #@UndefinedVariable
+        self._duplicateButtonPressedBitmap = wx.Bitmap("graphics/duplicateButtonPressed.png") #@UndefinedVariable
+        self._deleteButtonBitmap = wx.Bitmap("graphics/deleteButton.png") #@UndefinedVariable
+        self._deleteButtonPressedBitmap = wx.Bitmap("graphics/deleteButtonPressed.png") #@UndefinedVariable
+
+        self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
+        self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
+        self._listButtonBitmap = wx.Bitmap("graphics/listButton.png") #@UndefinedVariable
+        self._listButtonPressedBitmap = wx.Bitmap("graphics/listButtonPressed.png") #@UndefinedVariable
+        self._saveBigBitmap = wx.Bitmap("graphics/saveButtonBig.png") #@UndefinedVariable
+        self._saveBigPressedBitmap = wx.Bitmap("graphics/saveButtonBigPressed.png") #@UndefinedVariable
+        self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
+
+        self._modeImages = [self._timeOffBitmap, self._timeSpeedBitmap, self._timeJumpBitmap, self._timeLoopBitmap]
+        self._modeLabels = self._timeModes.getChoices()
+        self._config = None
+        self._midiNote = -1
+        self._editFieldWidget = None
+
+    def getModeLists(self):
+        return (self._modeImages, self._modeLabels)
+
+    class EditSelected():
+        Unselected, Mode = range(2)
+
+    def setupTimeModulationGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainTimeModulationGuiPlane = plane
+        self._mainTimeModulationGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideTimeModulationCallback = parentClass.hideTimeModulationGui
+        self._showTimeModulationCallback = parentClass.showTimeModulationGui
+        self._showTimeModulationListCallback = parentClass.showTimeModulationListGui
+        self._showModulationCallback = parentClass.showModulationGui
+        self._hideModulationCallback = parentClass.hideModulationGui
+        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
+        self._timeModulationNameFieldUpdateCallback = parentClass.updateTimeModulationChoices
+
+        headerLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Time Modulation configuration:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainTimeModulationGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        templateNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Name:") #@UndefinedVariable
+        self._templateNameField = wx.TextCtrl(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Default", size=(200, -1)) #@UndefinedVariable
+        self._templateNameField.SetInsertionPoint(0)
+        self._templateNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        templateNameSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        templateNameSizer.Add(self._templateNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        timeModulationModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText2 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
+        self._timeModulationModesField = wx.ComboBox(self._mainTimeModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["SpeedModulation"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._timeModulationModesField, self._timeModes.getChoices, "SpeedModulation", "SpeedModulation")
+        self._timeModulationModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        timeModulationModeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        timeModulationModeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationModeHelp) #@UndefinedVariable
+        timeModulationModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
+        timeModulationModeSizer.Add(self._timeModulationModesField, 2, wx.ALL, 5) #@UndefinedVariable
+        timeModulationModeSizer.Add(timeModulationModeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(timeModulationModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainTimeModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onTimeModulationModeChosen, id=self._timeModulationModesField.GetId()) #@UndefinedVariable
+
+        timeModulationModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Modulation source:") #@UndefinedVariable
+        self._timeModulationModulationField = wx.TextCtrl(self._mainTimeModulationGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._timeModulationModulationField.SetInsertionPoint(0)
+        self._timeModulationModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._timeModulationModulationButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._timeModulationModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationModulationEdit) #@UndefinedVariable
+        timeModulationModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        timeModulationModulationSizer.Add(self._timeModulationModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        timeModulationModulationSizer.Add(self._timeModulationModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(timeModulationModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._timeModulationModulationTestSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Modulation test:") #@UndefinedVariable
+        self._timeModulationModulationTestSlider = wx.Slider(self._mainTimeModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
+        self._timeModulationModulationTestSlider.SetValue(64)
+        self._timeModulationModulationTestLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "0.5", size=(30,-1)) #@UndefinedVariable
+        timeModulationModulationTestButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        timeModulationModulationTestButton.Bind(wx.EVT_BUTTON, self._onTimeModulationModulationTestHelp) #@UndefinedVariable
+        self._timeModulationModulationTestSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationModulationTestSizer.Add(self._timeModulationModulationTestSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationModulationTestSizer.Add(self._timeModulationModulationTestLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationModulationTestSizer.Add(timeModulationModulationTestButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._timeModulationModulationTestSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._timeModulationModulationTestSliderId = self._timeModulationModulationTestSlider.GetId()
+
+
+        self._timeModulationRangeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Range:") #@UndefinedVariable
+        self._timeModulationRangeField = wx.TextCtrl(self._mainTimeModulationGuiPlane, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
+        self._timeModulationRangeField.SetInsertionPoint(0)
+        self._timeModulationRangeField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._timeModulationRangeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._timeModulationRangeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationRangeHelp) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(self._timeModulationRangeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(self._timeModulationRangeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._timeModulationRangeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._timeModulationRangeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Range:") #@UndefinedVariable
+        self._timeModulationRangeSlider = wx.Slider(self._mainTimeModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._timeModulationRangeLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "4.0", size=(30,-1)) #@UndefinedVariable
+        timeModulationRangeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        timeModulationRangeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationRangeHelp) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(self._timeModulationRangeSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(self._timeModulationRangeLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeSizer.Add(timeModulationRangeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._timeModulationRangeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._timeModulationRangeSliderId = self._timeModulationRangeSlider.GetId()
+
+        self._timeModulationRangeQuantizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Range quantization:") #@UndefinedVariable
+        self._timeModulationRangeQuantizeField = wx.TextCtrl(self._mainTimeModulationGuiPlane, wx.ID_ANY, "1.0", size=(200, -1)) #@UndefinedVariable
+        self._timeModulationRangeQuantizeField.SetInsertionPoint(0)
+        self._timeModulationRangeQuantizeField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._timeModulationRangeQuantizeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._timeModulationRangeQuantizeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationRangeQuantizeHelp) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(self._timeModulationRangeQuantizeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(self._timeModulationRangeQuantizeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._timeModulationRangeQuantizeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._timeModulationRangeQuantizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Range quantization:") #@UndefinedVariable
+        self._timeModulationRangeQuantizeSlider = wx.Slider(self._mainTimeModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=160, size=(200, -1)) #@UndefinedVariable
+        self._timeModulationRangeQuantizeLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "1.0", size=(30,-1)) #@UndefinedVariable
+        timeModulationRangeQuantizeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        timeModulationRangeQuantizeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationRangeQuantizeHelp) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(self._timeModulationRangeQuantizeSlider, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(self._timeModulationRangeQuantizeLabel, 0, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSizer.Add(timeModulationRangeQuantizeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._timeModulationRangeQuantizeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._timeModulationRangeQuantizeSliderId = self._timeModulationRangeQuantizeSlider.GetId()
+
+        self._mainTimeModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
+
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onCloseButton) #@UndefinedVariable
+        listButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._listButtonBitmap, self._listButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(46, 17)) #@UndefinedVariable
+        listButton.Bind(wx.EVT_BUTTON, self._onListButton) #@UndefinedVariable
+        self._saveButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._saveBigGreyBitmap, self._saveBigGreyBitmap, (-1, -1), wx.ID_ANY, size=(52, 17)) #@UndefinedVariable
+        self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(listButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+    def setupTimeModulationListGui(self, plane, sizer, parentSizer, parentClass):
+        self._mainTimeModulationListPlane = plane
+        self._mainTimeModulationListGuiSizer = sizer
+        self._parentSizer = parentSizer
+        self._hideTimeModulationListCallback = parentClass.hideTimeModulationListGui
+
+        self._timeModulationImageList = wx.ImageList(25, 16) #@UndefinedVariable
+
+        self._modeIdImageIndex = []
+        index = self._timeModulationImageList.Add(self._timeOffBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._timeModulationImageList.Add(self._timeSpeedBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._timeModulationImageList.Add(self._timeJumpBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._timeModulationImageList.Add(self._timeLoopBitmap)
+        self._modeIdImageIndex.append(index)
+
+        self._modIdImageIndex = []
+        for i in range(self._modulationGui.getModulationImageCount()):
+            bitmap = self._modulationGui.getModulationImageBitmap(i)
+            index = self._timeModulationImageList.Add(bitmap)
+            self._modIdImageIndex.append(index)
+
+        headerLabel = wx.StaticText(self._mainTimeModulationListPlane, wx.ID_ANY, "TimeModulation list:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainTimeModulationListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+#        self._oldListHeight = 376
+        self._timeModulationListWidget = ultimatelistctrl.UltimateListCtrl(self._mainTimeModulationListPlane, id=wx.ID_ANY, size=(220,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._timeModulationListWidget.SetImageList(self._timeModulationImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
+        self._timeModulationListWidget.SetBackgroundColour((170,170,170))
+
+        self._timeModulationListWidget.InsertColumn(0, 'Name', width=150)
+        self._timeModulationListWidget.InsertColumn(1, 'TimeModulation', width=34)
+        self._timeModulationListWidget.InsertColumn(2, 'Level', width=36)
+
+        self._mainTimeModulationListGuiSizer.Add(self._timeModulationListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_COL_CLICK, self._onListItemMouseDown, self._timeModulationListWidget)
+        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListItemSelected, self._timeModulationListWidget)
+        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_DESELECTED, self._onListItemDeselected, self._timeModulationListWidget)
+        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._timeModulationListWidget)
+        self._timeModulationListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
+
+        self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        closeButton = PcnImageButton(self._mainTimeModulationListPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onListCloseButton) #@UndefinedVariable
+        duplicateButton = PcnImageButton(self._mainTimeModulationListPlane, self._duplicateButtonBitmap, self._duplicateButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(79, 17)) #@UndefinedVariable
+        duplicateButton.Bind(wx.EVT_BUTTON, self._onListDuplicateButton) #@UndefinedVariable
+        deleteButton = PcnImageButton(self._mainTimeModulationListPlane, self._deleteButtonBitmap, self._deleteButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(62, 17)) #@UndefinedVariable
+        deleteButton.Bind(wx.EVT_BUTTON, self._onListDeleteButton) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(duplicateButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTimeModulationListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+    def _onTimeModulationModeChosen(self, event):
+        pass
+
+    def _onTimeModulationModeHelp(self, event):
+        text = """
+Decides what kind of time modulation this clip will use.
+
+SpeedModulation:\tUse modulation to change playback speed.
+TriggerdJump:\tRepress note to make a jump accoring modulation.
+TriggeredJump:\tRepress note and hold it to loop clip.
+"""
+        dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Time Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _highlightButton(self, selected):
+        if(selected == self.EditSelected.Mode):
+            self._timeModulationModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._timeModulationModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+
+    def unselectButton(self):
+        self._selectedEditor = self.EditSelected.Unselected
+        self._highlightButton(self._selectedEditor)
+
+    def _onTimeModulationModulationEdit(self, event):
+        if(self._selectedEditor != self.EditSelected.Mode):
+            self._selectedEditor = self.EditSelected.Mode
+            self._showModulationCallback()
+        else:
+            self._selectedEditor = self.EditSelected.Unselected
+            self._hideModulationCallback()
+        self._fixEffectGuiLayout()
+        self._mainConfig.updateModulationGui(self._timeModulationModulationField.GetValue(), self._timeModulationModulationField, self.unselectButton, None)
+        self._highlightButton(self._selectedEditor)
+
+    def _onTimeModulationModulationTestHelp(self, event):
+        text = """
+A slider that can be used to test modulation values.
+"""
+        dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Range help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onTimeModulationRangeHelp(self, event):
+        modeSelected = self._timeModulationModesField.GetValue()
+        if(modeSelected == "SpeedModulation"):
+            text = """
+Decides how much the modulation changes the speed.
+
+4.0  -> From 0.25 to  4.0 times the speed.
+10.0 -> From 0.10 to 10.0 times the speed.
+"""
+        else:
+            text = """
+Decides how long we jump or loops in bars.
+"""
+        dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Range help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onTimeModulationRangeQuantizeHelp(self, event):
+        modeSelected = self._timeModulationModesField.GetValue()
+        if(modeSelected == "SpeedModulation"):
+            text = """
+Decides how many steps we get.
+
+Example for range = 4.0
+4.0  -> 0.25, 0.0 4.0
+1.0  -> 0.25, 0.50, 0.75, 0.0, 1.0, 2.0, 3.0 4.0
+"""
+        else:
+            text = """
+Decides how we quantize the jump or loop length.
+
+Example for range = 4.0
+4.0    -> 0.0, 4.0
+1.0    -> 0.0, 1.0, 2.0, 3.0, 4.0
+"""
+        dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Range quantization help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSlide(self, event):
+        sliderId = event.GetEventObject().GetId()
+        baseId = 10
+        if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+            print "No note selected for note controller message!"
+        else:
+            if(sliderId == self._timeModulationModulationTestSliderId):
+                self.sendGuiController(self._midiNote, baseId+4, self._timeModulationModulationTestSlider.GetValue())
+        if(sliderId == self._timeModulationRangeSliderId):
+            self._updateValueLabels(True, False)
+        elif(sliderId == self._timeModulationRangeQuantizeSliderId):
+            self._updateValueLabels(False, True)
+        else:
+            self._updateValueLabels(False, False)
+
+    def _updateValueLabels(self, updateRangeField = False, updateRangeQuantizeField = False):
+        valueString = "%.2f" % (float(self._timeModulationModulationTestSlider.GetValue()) / 127.0)
+        self._timeModulationModulationTestLabel.SetLabel(valueString)
+
+        valueString = "%.1f" % (float(self._timeModulationRangeSlider.GetValue()) / 2.0)
+        self._timeModulationRangeLabel.SetLabel(valueString)
+        if(updateRangeField == True):
+            self._timeModulationRangeField.SetValue(valueString)
+        valueString = "%.2f" % (float(self._timeModulationRangeQuantizeSlider.GetValue()) / 8.0)
+        self._timeModulationRangeQuantizeLabel.SetLabel(valueString)
+        if(updateRangeQuantizeField == True):
+            self._timeModulationRangeQuantizeField.SetValue(valueString)
+
+    def sendGuiRelease(self, note, guiControllerId):
+        if((note == None) or (note < 0) or (note >= 128)):
+            print "No note selected for note controller message!"
+        else:
+            channel = 0
+            guiControllerId = (guiControllerId & 0x0f)
+            command = 0xd0
+            command += guiControllerId
+            midiSender = self._mainConfig.getMidiSender()
+            midiSender.sendGuiRelease(channel, note, command)
+
+    def sendGuiController(self, note, guiControllerId, value):
+        channel = 0
+        guiControllerId = (guiControllerId & 0x0f)
+        command = 0xf0
+        command += guiControllerId
+        midiSender = self._mainConfig.getMidiSender()
+        midiSender.sendGuiController(channel, note, command, value)
+
+    def _onCloseButton(self, event):
+        self._hideTimeModulationCallback()
+        self._hideModulationCallback()
+        self._selectedEditor = self.EditSelected.Unselected
+        self._highlightButton(self._selectedEditor)
+        self.sendGuiRelease(self._midiNote, 4)
+
+    def _onListCloseButton(self, event):
+        self._hideModulationCallback()
+        self._hideTimeModulationCallback()
+        self._hideTimeModulationListCallback()
+        self._selectedEditor = self.EditSelected.Unselected
+        self._highlightButton(self._selectedEditor)
+
+    def _onListDuplicateButton(self, event):
+        if(self._timeModListSelectedIndex >= 0):
+            timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+            if(timeModulationTemplate != None):
+                timeModulationName = timeModulationTemplate.getName()
+                newName = self._mainConfig.duplicateTimeModulationTemplate(timeModulationName)
+                self._mainConfig.updateTimeModulationList(newName)
+
+    def _onListDeleteButton(self, event):
+        if(self._timeModListSelectedIndex >= 0):
+            timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+            if(timeModulationTemplate != None):
+                timeModulationName = timeModulationTemplate.getName()
+                inUseNumber = self._mainConfig.countNumberOfTimeTimeModulationTemplateUsed(timeModulationName)
+                text = "Are you sure you want to delete \"%s\"? (It is used %d times)" % (timeModulationName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainTimeModulationListPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    self._mainConfig.deleteTimeModulationTemplate(timeModulationName)
+                    self._mainConfig.verifyTimeModulationTemplateUsed()
+                    self._mainConfig.updateTimeModulationList(None)
+                    self._mainConfig.updateNoteGui()
+                    self._mainConfig.updateMixerGui()
+
+    def _onListItemMouseDown(self, event):
+        self._timeModListSelectedIndex = event.m_itemIndex
+        self._timeModulationListDraggedIndex = -1
+
+    def _onListItemSelected(self, event):
+        self._timeModListSelectedIndex = event.m_itemIndex
+        self._timeModulationListDraggedIndex = -1
+
+    def _onListItemDeselected(self, event):
+        self._timeModulationListDraggedIndex = -1
+        self._timeModListSelectedIndex = -1
+
+    def _onListDragStart(self, event):
+        self._timeModListSelectedIndex = event.m_itemIndex
+        self._timeModulationListDraggedIndex = event.m_itemIndex
+        self._setDragCursor()
+
+    def getDraggedFxIndex(self):
+        dragIndex = self._timeModulationListDraggedIndex # Gets updated by state calls
+        if(dragIndex > -1):
+            self._timeModulationListWidget.SetItemState(dragIndex, 0, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+            self._timeModulationListWidget.SetItemState(dragIndex, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED) #@UndefinedVariable
+        self._timeModulationListWidget.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
+        return dragIndex
+
+    def _onListDoubbleClick(self, event):
+        self._timeModulationListDraggedIndex = -1
+        timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+        if(timeModulationTemplate != None):
+            self.updateGui(timeModulationTemplate, None)
+            self._showTimeModulationCallback()
+
+    def _onListButton(self, event):
+        timeModulationConfigName = self._templateNameField.GetValue()
+        self._mainConfig.updateTimeModulationList(timeModulationConfigName)
+        self._showTimeModulationListCallback()
+
+    def _onSaveButton(self, event):
+        saveName = self._templateNameField.GetValue()
+        oldTemplate = self._mainConfig.getTimeModulationTemplate(saveName)
+        rename = False
+        cancel = False
+        if(saveName != self._startConfigName):
+            inUseNumber = self._mainConfig.countNumberOfTimeTimeModulationTemplateUsed(self._startConfigName)
+            
+            if(oldTemplate != None):
+                text = "\"%s\" already exists!!! Do you want to overwrite?" % (saveName)
+                dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == False):
+                    cancel = True
+                else:
+                    text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                    dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                    result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                    dlg.Destroy()
+                    if(result == True):
+                        rename = True
+            else:
+                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    rename = True
+        timeModulationMode = self._timeModulationModesField.GetValue()
+        timeModulationMod = self._midiModulation.validateModulationString(self._timeModulationModulationField.GetValue())
+        try:
+            timeModulationRange = float(self._timeModulationRangeField.GetValue())
+        except:
+            timeModulationRange = 4.0
+        try:
+            timeModulationRangeQuantize = float(self._timeModulationRangeQuantizeField.GetValue())
+        except:
+            timeModulationRangeQuantize = 1.0
+        if(cancel == True):
+            self._timeModulationModesField.SetValue(timeModulationMode)
+            self._timeModulationModulationField.SetValue(timeModulationMod)
+        else:
+            if(oldTemplate == None):
+                print "Make new template..."
+                savedTemplate = self._mainConfig.makeTimeModulationTemplate(saveName, timeModulationMode, timeModulationMod, timeModulationRangeQuantize)
+                if(rename == True):
+                    self._mainConfig.renameTimeModulationTemplateUsed(self._startConfigName, saveName)
+                self._mainConfig.verifyTimeModulationTemplateUsed()
+            else:
+                oldTemplate.update(timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
+                savedTemplate = oldTemplate
+            self.updateGui(savedTemplate, None)
+            self._mainConfig.updateNoteGui()
+            self._mainConfig.updateMixerGui()
+            self._mainConfig.updateTimeModulationList(saveName)
+            if(self._editFieldWidget != None):
+                self._timeModulationNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
+
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+        widget.Clear()
+        valueOk = False
+        for choice in choiceList:
+            widget.Append(choice)
+            if(choice == value):
+                valueOk = True
+        if(valueOk == True):
+            widget.SetStringSelection(value)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+    def _checkIfUpdated(self):
+        if(self._config == None):
+            return False
+        guiName = self._templateNameField.GetValue()
+        configName = self._config.getValue("Name")
+        if(guiName != configName):
+            return True
+        guiMode = self._timeModulationModesField.GetValue()
+        configMode = self._config.getValue("Mode")
+        if(guiMode != configMode):
+            return True
+        guiModulation = self._timeModulationModulationField.GetValue()
+        configModulation = self._config.getValue("Modulation")
+        if(guiModulation != configModulation):
+            return True
+        try:
+            guiRange = float(self._timeModulationRangeField.GetValue())
+        except:
+            guiRange = 4.0
+        configRange = self._config.getValue("Range")
+        if(guiRange != configRange):
+            return True
+        try:
+            guiRangeQuantize = float(self._timeModulationRangeQuantizeField.GetValue())
+        except:
+            guiRangeQuantize = 1.0
+        configRangeQuantize = self._config.getValue("RangeQuantize")
+        if(guiRangeQuantize != configRangeQuantize):
+            return True
+        return False
+
+    def _onUpdate(self, event):
+        self._showOrHideSaveButton()
+
+    def _showOrHideSaveButton(self):
+        updated = self._checkIfUpdated()
+        if(updated == False):
+            self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
+        if(updated == True):
+            self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
+
+    def updateTimeModeThumb(self, widget, mode):
+        if(mode == "Off"):
+            widget.setBitmaps(self._timeOffBitmap, self._timeOffBitmap)
+        elif(mode == "SpeedModulation"):
+            widget.setBitmaps(self._timeSpeedBitmap, self._timeSpeedBitmap)
+        elif(mode == "TriggeredJump"):
+            widget.setBitmaps(self._timeJumpBitmap, self._timeJumpBitmap)
+        elif(mode == "TriggeredLoop"):
+            widget.setBitmaps(self._timeLoopBitmap, self._timeLoopBitmap)
+        else:
+            widget.setBitmaps(self._timeSpeedBitmap, self._timeSpeedBitmap)
+
+    def updateTimeModulationGuiButtons(self, timeModulationTemplate, modeWidget, modulationWidget, levelWidget):
+        if(timeModulationTemplate == None):
+            self.updateTimeModeThumb(modeWidget, "SpeedModulation")
+            self._mainConfig.updateModulationGuiButton(modulationWidget, "MidiChannel.PitchBend")
+        else:
+            config = timeModulationTemplate.getConfigHolder()
+            mode = config.getValue("Mode")
+            self.updateTimeModeThumb(modeWidget, mode)
+            modulation = config.getValue("Modulation")
+            self._mainConfig.updateModulationGuiButton(modulationWidget, modulation)
+
+    def updateTimeModulationList(self, effectConfiguration, selectedName):
+        self._timeModulationListWidget.DeleteAllItems()
+        selectedIndex = -1
+        for effectConfig in effectConfiguration.getList():
+            config = effectConfig.getConfigHolder()
+            selectedMode = config.getValue("Mode")
+            if(selectedMode.lower() == "white"):
+                bitmapId = self._modeIdImageIndex[0]
+            else:
+                bitmapId = self._modeIdImageIndex[1]
+            configName = effectConfig.getName()
+            index = self._timeModulationListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
+            if(configName == selectedName):
+                selectedIndex = index
+            modulationString = config.getValue("Modulation")
+            modBitmapId = self._modulationGui.getModulationImageId(modulationString)
+            imageId = self._modIdImageIndex[modBitmapId]
+            self._timeModulationListWidget.SetStringItem(index, 1, "", imageId)
+
+            if(index % 2):
+                self._timeModulationListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable
+            else:
+                self._timeModulationListWidget.SetItemBackgroundColour(index, wx.Colour(190,190,190)) #@UndefinedVariable
+        if(selectedIndex > -1):
+            self._timeModListSelectedIndex = selectedIndex
+            self._timeModulationListWidget.Select(selectedIndex)
+
+    def updateGui(self, timeModulationTemplate, midiNote, editFieldWidget = None):
+        self._config = timeModulationTemplate.getConfigHolder()
+        self._midiNote = midiNote
+        self._selectedEditor = self.EditSelected.Unselected
+        self._editFieldWidget = editFieldWidget
+        self._highlightButton(self._selectedEditor)
+        self._startConfigName = self._config.getValue("Name")
+        self._templateNameField.SetValue(self._startConfigName)
+        self._updateChoices(self._timeModulationModesField, self._timeModes.getChoices, self._config.getValue("Mode"), "SpeedModulation")
+        self._timeModulationModulationField.SetValue(self._config.getValue("Modulation"))
+
+        rangeValue = self._config.getValue("Range")
+        self._timeModulationRangeField.SetValue(str(rangeValue))
+        calcValue = max(min(int(2.0 * rangeValue), 160), 0)
+        self._timeModulationRangeSlider.SetValue(calcValue)
+        rangeQuantizeValue = self._config.getValue("RangeQuantize")
+        self._timeModulationRangeQuantizeField.SetValue(str(rangeQuantizeValue))
+        calcValue = max(min(int(8.0 * rangeQuantizeValue), 160), 0)
+        self._timeModulationRangeQuantizeSlider.SetValue(calcValue)
+
+        self._updateValueLabels()
+
+        self._showOrHideSaveButton()
+

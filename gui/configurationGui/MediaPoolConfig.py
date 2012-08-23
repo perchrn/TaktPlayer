@@ -95,6 +95,13 @@ class MediaPoolConfig(object):
                 print "Config child removed OK"
                 self._mediaPool[midiNote] = None
 
+    def countNumberOfTimeTimeModulationTemplateUsed(self, effectConfigName):
+        returnNumer = 0
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                returnNumer += noteConfig.countNumberOfTimeTimeModulationTemplateUsed(effectConfigName)
+        return returnNumer
+
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0
         for noteConfig in self._mediaPool:
@@ -109,6 +116,11 @@ class MediaPoolConfig(object):
                 returnNumer += noteConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
         return returnNumer
 
+    def renameTimeModulationTemplateUsed(self, oldName, newName):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.renameTimeModulationTemplateUsed(oldName, newName)
+
     def renameEffectTemplateUsed(self, oldName, newName):
         for noteConfig in self._mediaPool:
             if(noteConfig != None):
@@ -118,6 +130,11 @@ class MediaPoolConfig(object):
         for noteConfig in self._mediaPool:
             if(noteConfig != None):
                 noteConfig.renameFadeTemplateUsed(oldName, newName)
+
+    def verifyTimeModulationTemplateUsed(self, fadeConfigNameList):
+        for noteConfig in self._mediaPool:
+            if(noteConfig != None):
+                noteConfig.verifyTimeModulationTemplateUsed(fadeConfigNameList)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         for noteConfig in self._mediaPool:
@@ -143,6 +160,8 @@ class MediaFile(object):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 1.0)#Default one beat
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
+        self._defaultTimeModulationSettingsName = "Default"
+        self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
         self._defaultEffect1SettingsName = "MediaDefault1"
         self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
         self._defaultEffect2SettingsName = "MediaDefault2"
@@ -247,6 +266,7 @@ class MediaFile(object):
         self._configurationTree.setValue("SyncLength", sourceConfigTree.getValue("SyncLength"))
         self._configurationTree.setValue("QuantizeLength", sourceConfigTree.getValue("QuantizeLength"))
         self._configurationTree.setValue("MixMode", sourceConfigTree.getValue("MixMode"))
+        self._configurationTree.setValue("TimeModulationConfig", sourceConfigTree.getValue("TimeModulationConfig"))
         self._configurationTree.setValue("Effect1Config", sourceConfigTree.getValue("Effect1Config"))
         self._configurationTree.setValue("Effect2Config", sourceConfigTree.getValue("Effect2Config"))
         self._configurationTree.setValue("FadeConfig", sourceConfigTree.getValue("FadeConfig"))
@@ -345,6 +365,14 @@ class MediaFile(object):
                 returnNumber += 1
         return returnNumber
 
+    def countNumberOfTimeTimeModulationTemplateUsed(self, effectsConfigName):
+        returnNumber = 0
+        for configName in ["TimeModulationConfig"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == effectsConfigName):
+                returnNumber += 1
+        return returnNumber
+
     def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
         returnNumber = 0
         for configName in ["FadeConfig"]:
@@ -352,6 +380,12 @@ class MediaFile(object):
             if(usedConfigName == fadeConfigName):
                 returnNumber += 1
         return returnNumber
+
+    def renameTimeModulationTemplateUsed(self, oldName, newName):
+        for configName in ["TimeModulationConfig"]:
+            usedConfigName = self._configurationTree.getValue(configName)
+            if(usedConfigName == oldName):
+                self._configurationTree.setValue(configName, newName)
 
     def renameEffectTemplateUsed(self, oldName, newName):
         for configName in ["Effect1Config", "Effect2Config"]:
@@ -364,6 +398,16 @@ class MediaFile(object):
             usedConfigName = self._configurationTree.getValue(configName)
             if(usedConfigName == oldName):
                 self._configurationTree.setValue(configName, newName)
+
+    def verifyTimeModulationTemplateUsed(self, timeModulationConfigNameList):
+        usedConfigName = self._configurationTree.getValue("TimeModulationConfig")
+        nameOk = False
+        for configName in timeModulationConfigNameList:
+            if(usedConfigName == configName):
+                nameOk = True
+                break
+        if(nameOk == False):
+            self._configurationTree.setValue("TimeModulationConfig", self._defaultTimeModulationSettingsName)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         usedConfigName = self._configurationTree.getValue("Effect1Config")
@@ -501,6 +545,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteSlidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._timeModulationListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
+        self._timeModulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
         self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._effectImageListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(280,-1)) #@UndefinedVariable
@@ -516,6 +562,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._noteSlidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._timeModulationListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+        self._timeModulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._effectImageListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -528,6 +576,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._noteSlidersPanel)
+        self._configSizer.Add(self._timeModulationListPanel)
+        self._configSizer.Add(self._timeModulationConfigPanel)
         self._configSizer.Add(self._effectListPanel)
         self._configSizer.Add(self._effectConfigPanel)
         self._configSizer.Add(self._effectImageListPanel)
@@ -539,6 +589,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._trackGuiPlane)
         self._configSizer.Hide(self._noteConfigPanel)
         self._configSizer.Hide(self._noteSlidersPanel)
+        self._configSizer.Hide(self._timeModulationListPanel)
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectListPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._effectImageListPanel)
@@ -569,6 +621,16 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteSlidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._noteSlidersPanel.SetSizer(self._noteSlidersSizer)
         self._setupNoteSlidersGui(self._noteSlidersPanel, self._noteSlidersSizer)
+
+        self._timeModulationListPanel.SetBackgroundColour((160,160,160))
+        self._timeModulationListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._timeModulationListPanel.SetSizer(self._timeModulationListSizer)
+        self._mainConfig.setupTimeModulationsListGui(self._timeModulationListPanel, self._timeModulationListSizer, self._configSizer, self)
+
+        self._timeModulationConfigPanel.SetBackgroundColour((170,170,170))
+        self._timeModulationConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._timeModulationConfigPanel.SetSizer(self._timeModulationConfigSizer)
+        self._mainConfig.setupTimeModulationsGui(self._timeModulationConfigPanel, self._timeModulationConfigSizer, self._configSizer, self)
 
         self._effectListPanel.SetBackgroundColour((160,160,160))
         self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -761,6 +823,18 @@ class MediaFileGui(object): #@UndefinedVariable
         mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        timeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Time modulation template:") #@UndefinedVariable
+        self._timeModulationField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
+        self.updateTimeModulationChoices(self._timeModulationField, "Default", "Default")
+        self._timeModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        self._timeModulationButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._timeModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationEdit) #@UndefinedVariable
+        timeModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        timeModulationSizer.Add(self._timeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        timeModulationSizer.Add(self._timeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(timeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
@@ -1172,6 +1246,14 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mainSelection = self.MainSelection.Note
         self.refreshLayout()
 
+    def showTimeModulationListGui(self):
+        self._configSizer.Show(self._timeModulationListPanel)
+        self.refreshLayout()
+
+    def hideTimeModulationListGui(self):
+        self._configSizer.Hide(self._timeModulationListPanel)
+        self.refreshLayout()
+
     def showEffectList(self):
         self._configSizer.Show(self._effectListPanel)
         self.refreshLayout()
@@ -1225,7 +1307,7 @@ class MediaFileGui(object): #@UndefinedVariable
         Unselected, Track, Note = range(3)
 
     class EditSelection():
-        Unselected, Effect1, Effect2, Fade, SubModulation1, SubModulation2, Values1, Values2 = range(8)
+        Unselected, TimeModulation, Effect1, Effect2, Fade, SubModulation1, SubModulation2, Values1, Values2 = range(9)
 
     def _onOpenFile(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -1352,6 +1434,7 @@ Reverses the scroll direction when not modulated.
         else:
             self._configSizer.Hide(self._moulationConfigPanel)
             self._selectedEditor = self.EditSelection.Unselected
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
@@ -1367,6 +1450,7 @@ Reverses the scroll direction when not modulated.
         else:
             self._configSizer.Hide(self._moulationConfigPanel)
             self._selectedEditor = self.EditSelection.Unselected
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
@@ -1382,6 +1466,7 @@ Reverses the scroll direction when not modulated.
         else:
             self._configSizer.Hide(self._noteSlidersPanel)
             self._selectedEditor = self.EditSelection.Unselected
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
@@ -1404,6 +1489,7 @@ Reverses the scroll direction when not modulated.
         else:
             self._configSizer.Hide(self._noteSlidersPanel)
             self._selectedEditor = self.EditSelection.Unselected
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
@@ -1534,6 +1620,22 @@ All notes on events are quantized to this.
         else:
             self._fadeButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
+    def _onTimeModulationEdit(self, event):
+        if(self._selectedEditor != self.EditSelection.TimeModulation):
+            self._selectedEditor = self.EditSelection.TimeModulation
+            self._configSizer.Show(self._timeModulationConfigPanel)
+        else:
+            self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+        self._configSizer.Hide(self._effectConfigPanel)
+        self._configSizer.Hide(self._fadeConfigPanel)
+        self._configSizer.Hide(self._moulationConfigPanel)
+        self._configSizer.Hide(self._noteSlidersPanel)
+        self.refreshLayout()
+        selectedConfig = self._timeModulationField.GetValue()
+        self._mainConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
+        self._highlightButton(self._selectedEditor)
+
     def _onEffect1Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.Effect1):
@@ -1542,6 +1644,7 @@ All notes on events are quantized to this.
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
@@ -1558,6 +1661,7 @@ All notes on events are quantized to this.
             else:
                 self._configSizer.Hide(self._effectConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
@@ -1565,6 +1669,17 @@ All notes on events are quantized to this.
         selectedEffectConfig = self._effect2Field.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
         self._highlightButton(self._selectedEditor)
+
+    def showTimeModulationGui(self):
+        self._configSizer.Show(self._timeModulationConfigPanel)
+        self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+
+    def hideTimeModulationGui(self):
+        self._configSizer.Hide(self._timeModulationConfigPanel)
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
 
     def showEffectsGui(self):
         self._configSizer.Show(self._effectConfigPanel)
@@ -1630,6 +1745,7 @@ All notes on events are quantized to this.
             else:
                 self._configSizer.Hide(self._fadeConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._effectConfigPanel)
             self._configSizer.Hide(self._slidersPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
@@ -1641,6 +1757,7 @@ All notes on events are quantized to this.
 
     def _onCloseButton(self, event):
         self.hideNoteGui()
+        self._configSizer.Hide(self._timeModulationConfigPanel)
         self._configSizer.Hide(self._effectConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._configSizer.Hide(self._moulationConfigPanel)
@@ -2007,6 +2124,12 @@ All notes on events are quantized to this.
         self._noteConfigPanel.Layout()
         self.refreshLayout()
 
+    def updateTimeModulationChoices(self, widget, value, defaultValue, updateSaveButton = False):
+        if(self._mainConfig == None):
+            self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
+        else:
+            self._updateChoices(widget, self._mainConfig.getTimeModulationChoices, value, defaultValue, updateSaveButton)
+
     def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
@@ -2368,6 +2491,7 @@ All notes on events are quantized to this.
                     fadeConfigName = newFadeConfigName
                 if(fadeConfig != None):
                     self._mainConfig.updateFadeGui(fadeConfigName, name)
+                    self._configSizer.Hide(self._timeModulationConfigPanel)
                     self._configSizer.Hide(self._effectConfigPanel)
                     self._configSizer.Hide(self._slidersPanel)
                     self.showModulationGui()

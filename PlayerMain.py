@@ -5,7 +5,8 @@ Created on 28. nov. 2011
 '''
 
 #Imports
-from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList
+from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList,\
+    TimeModulationTemplates
 from configuration.GuiServer import GuiServer
 import multiprocessing
 from multiprocessing import Process, Queue
@@ -64,6 +65,7 @@ class PlayerMain(object):
         self._midiStateHolder = MidiStateHolder()
 
 
+        self._timeModulationConfiguration = TimeModulationTemplates(self._globalConfig, self._midiTiming)
         self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
         self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)
         self._effectImagesConfiguration = EffectImageList(self._globalConfig, self._midiTiming, self._playerConfiguration.getVideoDir())
@@ -71,7 +73,7 @@ class PlayerMain(object):
         confChild = self._configurationTree.addChildUnique("MediaMixer")
         self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._effectImagesConfiguration, self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._timeModulationConfiguration, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
@@ -107,6 +109,7 @@ class PlayerMain(object):
                 print "**********" * 10
                 print "config is updated..."
                 self._getConfiguration()
+                self._timeModulationConfiguration.checkAndUpdateFromConfiguration()
                 self._effectsConfiguration.checkAndUpdateFromConfiguration()
                 self._effectImagesConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()

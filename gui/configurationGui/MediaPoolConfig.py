@@ -1234,7 +1234,6 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def refreshLayout(self):
         self._onResize(None)
-        self._mediaFileGuiPanel.Layout()
         self._parentPlane.Layout()
         self._parentPlane.SendSizeEvent()
 
@@ -1607,6 +1606,10 @@ All notes on events are quantized to this.
             self._values2EditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._values2EditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(selected == self.EditSelection.TimeModulation):
+            self._timeModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._timeModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Effect1):
             self._effect1Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
@@ -1679,6 +1682,9 @@ All notes on events are quantized to this.
         self._configSizer.Hide(self._timeModulationConfigPanel)
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+
+    def fixTimeModulationGuiLayout(self):
         self.refreshLayout()
 
     def showEffectsGui(self):

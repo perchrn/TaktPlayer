@@ -152,24 +152,24 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetupScrolling(False, True)
-        scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
-        self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel.SetupScrolling(False, True)
+        self._scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
+        self._midiTrackPanel = wx.Panel(self._scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
-        scrollingEditAreaPanel.SetupScrolling(True, True)
-        scrollingEditAreaPanel.SetSizer(editAreaSizer)
-        scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
+        self._scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
+        self._scrollingEditAreaPanel.SetupScrolling(True, True)
+        self._scrollingEditAreaPanel.SetSizer(editAreaSizer)
+        self._scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
         self._trackGui = MediaTrackGui(self._configuration)
         self._configuration.setMixerGui(self._trackGui)
-        self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
+        self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
         self._configuration.setNoteGui(self._noteGui)
-        self._trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        self._trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(self._scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(self._scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._mainSizer.Add(self._menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
@@ -854,7 +854,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._inputButton.setBitmaps(self._inputGreenBitmap, self._inputGreenBitmap)
         else:
             self._inputButton.setBitmaps(self._inputGrayBitmap, self._inputGrayBitmap)
-            
+
+#TODO: Better refresh...
+#        self._scrollingEditAreaPanel.Layout()
+#        self._noteGui.refreshLayout()
+#        self._scrollingKeyboardPannel.Layout()
+#        self._scrollingMidiTrackPanel.Layout()
+#        self._scrollingEditAreaPanel.SendSizeEvent()
+#        self._scrollingKeyboardPannel.SendSizeEvent()
+#        self._scrollingMidiTrackPanel.SendSizeEvent()
+
 
     def _checkConfigState(self):
         if(self._skippedCheckConfigState > 3):

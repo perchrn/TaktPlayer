@@ -1613,6 +1613,11 @@ class VideoLoopFile(MediaFile):
     def _timeModulateFramePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState):
         self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
 
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[4] != None):
+            if(guiStates[4] > -0.5):
+                modulation = guiStates[4]
+
         jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
         jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / self._syncLength) * self._numberOfFrames
         jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
@@ -1701,7 +1706,7 @@ class VideoLoopFile(MediaFile):
             framePosFloat = unmodifiedFramePos - self._triggerModificationSum
         else:
             framePosFloat = unmodifiedFramePos
-        return  framePosFloat
+        return framePosFloat
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)

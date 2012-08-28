@@ -96,8 +96,7 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
 
 class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
-        super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
-            size=(800, 600))
+        super(MusicalVideoPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
         self._updateTitle(self._activeConfig)

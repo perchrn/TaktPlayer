@@ -39,6 +39,8 @@ def hasCvWindowStoped():
     k = cv.WaitKey(1);
     if k == 27: #Escape
         return True
+    else:
+        print "DEBUG WaitKey: " + str(k)
     return False
 
 def resizeImage(image, resizeMat):
@@ -383,6 +385,7 @@ class MediaFile(object):
     def openVideoFile(self, midiLength):
         if (os.path.isfile(self._fullFilePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         self._videoFile = cv.CaptureFromFile(self._fullFilePath.encode("utf-8"))
         try:
@@ -1622,8 +1625,8 @@ class VideoLoopFile(MediaFile):
         jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / self._syncLength) * self._numberOfFrames
         jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
 
-        timeMod = TimeModulationMode() #DEBUG
-        print "DEBUG _timeModulateFramePos: mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
+#        timeMod = TimeModulationMode() #DEBUG
+#        print "DEBUG _timeModulateFramePos: mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
 
         if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
             speedMod = (2.0 * modulation) - 1.0

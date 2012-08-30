@@ -1644,6 +1644,10 @@ class VideoLoopFile(MediaFile):
 
         if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
             speedMod = (2.0 * modulation) - 1.0
+            if(speedRange < 0.0):
+                #Invert
+                speedRange = -speedRange
+                speedMod = -speedMod
             if(self._startSongPosition > self._lastFramePosSongPosition):
                 self._lastFramePosSongPosition = self._startSongPosition
             if(speedQuantize > 0.02):
@@ -1685,6 +1689,10 @@ class VideoLoopFile(MediaFile):
         elif(self._loopModulationMode == TimeModulationMode.TriggeredJump):
             if(self._noteTriggerCounter != self._lastTriggerCount):
                 speedMod = (2.0 * modulation) - 1.0
+                if(jumpRange < 0.0):
+                    #Invert
+                    jumpRange = -jumpRange
+                    speedMod = -speedMod
                 if(jumpQuantize > 0.02):
                     steps = int(jumpRange / jumpQuantize)
                     if(steps < 1):

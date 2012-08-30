@@ -670,7 +670,10 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     self._oldServerConfigurationString = newConfigString
                     if(foundTask != None):
                         foundTask.taskDone()
-                        self._taskQueue.remove(foundTask)
+                        try:
+                            self._taskQueue.remove(foundTask)
+                        except:
+                            pass
             if(result[0] == GuiClient.ResponseTypes.ConfigFileTransfer):
 #                print "GuiClient.ResponseTypes.ConfigFileTransfer"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)

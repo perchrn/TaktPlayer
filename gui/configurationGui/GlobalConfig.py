@@ -2006,7 +2006,7 @@ class TimeModulationGui(object):
         self._mainTimeModulationGuiSizer.Add(self._timeModulationModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._timeModulationModulationTestSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Modulation test:") #@UndefinedVariable
+        tmpText7 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Modulation test slider:") #@UndefinedVariable
         self._timeModulationModulationTestSlider = wx.Slider(self._mainTimeModulationGuiPlane, wx.ID_ANY, minValue=0, maxValue=127, size=(200, -1)) #@UndefinedVariable
         self._timeModulationModulationTestSlider.SetValue(64)
         self._timeModulationModulationTestLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "0.5", size=(30,-1)) #@UndefinedVariable
@@ -2145,35 +2145,38 @@ class TimeModulationGui(object):
         self._buttonsSizer.Add(deleteButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTimeModulationListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-    def _onTimeModulationModeChosen(self, event):
+    def _onTimeModulationModeChosen(self, event = None):
         currentModeString = self._timeModulationModesField.GetValue()
         if(currentModeString == "Off"):
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationModulationSizer)
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationModulationTestSizer)
-        else:
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationModulationSizer)
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationModulationTestSizer)
-        if((currentModeString == "TriggeredJump") or (currentModeString == "TriggeredLoop")):
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeSizer)
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeSliderSizer)
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeQuantizeSizer)
-            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeQuantizeSliderSizer)
-        else:
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationRangeSizer)
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationRangeSliderSizer)
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationRangeQuantizeSizer)
             self._mainTimeModulationGuiSizer.Hide(self._timeModulationRangeQuantizeSliderSizer)
+        else:
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationModulationSizer)
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationModulationTestSizer)
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeSizer)
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeSliderSizer)
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeQuantizeSizer)
+            self._mainTimeModulationGuiSizer.Show(self._timeModulationRangeQuantizeSliderSizer)
         self._mainTimeModulationGuiSizer.Layout()
         self._fixTimeModulationGuiLayout()
-        self._onUpdate(event)
+        self._onUpdate()
 
     def _onTimeModulationModeHelp(self, event):
         text = """
 Decides what kind of time modulation this clip will use.
 
 SpeedModulation:\tUse modulation to change playback speed.
-TriggerdJump:\tRepress note to make a jump accoring modulation.
+TriggerdJump:\tRepress note to make a jump.
+\t\t Jump length is set by modulation.
+\t\t Modulation < 0.5 -> backward jump.
+\t\t Modulation > 0.5 -> forward jump.
 TriggeredJump:\tRepress note and hold it to loop clip.
+\t\t Loop length is set by modulation.
+\t\t This needs MIDI input to work.
 """
         dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Time Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -2232,8 +2235,8 @@ Decides how long we jump or loops in bars.
 Decides how many steps we get.
 
 Example for range = 4.0
-4.0  -> 0.25, 0.0 4.0
-1.0  -> 0.25, 0.50, 0.75, 0.0, 1.0, 2.0, 3.0 4.0
+4.0  -> 0.25, 1.0 4.0
+1.0  -> 0.25, 0.33, 0.5, 0.66, 1.0, 1.5, 2.0, 3.0 4.0
 """
         else:
             text = """
@@ -2363,7 +2366,7 @@ Example for range = 4.0
         self._timeModulationListDraggedIndex = -1
         timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
         if(timeModulationTemplate != None):
-            self.updateGui(timeModulationTemplate, None)
+            self.updateGui(timeModulationTemplate, self._midiNote, self._editFieldWidget)
             self._showTimeModulationCallback()
 
     def _onListButton(self, event):
@@ -2423,7 +2426,7 @@ Example for range = 4.0
             else:
                 oldTemplate.update(timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate, None)
+            self.updateGui(savedTemplate, self._midiNote, self._editFieldWidget)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateTimeModulationList(saveName)
@@ -2477,7 +2480,7 @@ Example for range = 4.0
             return True
         return False
 
-    def _onUpdate(self, event):
+    def _onUpdate(self, event = None):
         self._showOrHideSaveButton()
 
     def _showOrHideSaveButton(self):
@@ -2586,6 +2589,7 @@ Example for range = 4.0
         self._timeModulationRangeQuantizeSlider.SetValue(calcValue)
 
         self._updateValueLabels()
+        self._onTimeModulationModeChosen()
 
         self._showOrHideSaveButton()
 

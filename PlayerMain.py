@@ -19,7 +19,7 @@ from configuration.ConfigurationHolder import ConfigurationHolder
 from video.media.MediaMixer import MediaMixer
 from video.media.MediaPool import MediaPool
 
-from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped
+from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped, addCvMouseCallback
 
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
@@ -60,6 +60,7 @@ class PlayerMain(object):
 
 #        print "createCvWindow: " + str(fullscreenMode) + " | " + str(self._internalResolutionX) + " | " + str(self._internalResolutionY) + " | " + str(positionX) + " | " + str(positionY)
         createCvWindow(fullscreenMode, self._internalResolutionX, self._internalResolutionY, positionX, positionY)
+        addCvMouseCallback(self.onMouseEvent)
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
@@ -163,6 +164,10 @@ class PlayerMain(object):
         self._guiServer.stopGuiServerProcess()
         self._stopGUIProcess()
 
+    def onMouseEvent(self, event, x, y, flags, param):
+        pass
+#        print "DEBUG: MouseEvent: " + str((event, x, y, flags, param))
+
     def processFrame(self):
 #            if (dt > self._timingThreshold):
 #                self._log.info("Too slow main schedule " + str(dt))
@@ -188,8 +193,9 @@ class PlayerMain(object):
         guiStatus = self._checkStatusQueue()
         if(guiStatus == "QUIT"):
             raise QuitRequestException("User has closed GUI window.")
-        if(hasCvWindowStoped() == True):
-            raise QuitRequestException("User has pressed escape.")
+        buttonPressed = hasCvWindowStoped()
+        if(buttonPressed != None):
+            raise QuitRequestException("User has pressed " + str(buttonPressed) + ".")
 #        for event in pygame.event.get():
 #            if event.type is pygame.QUIT:
 #                raise QuitRequestException("User has closed window.")
@@ -229,9 +235,14 @@ if __name__ in ('__android__', '__main__'):
         if(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
     if(sys.platform == "win32"):
-        from win32api import GetSystemMetrics #@UnresolvedImport
+        from win32api import GetSystemMetrics, GetCurrentProcessId, OpenProcess #@UnresolvedImport
+        import win32process,win32con
         currentWidth = GetSystemMetrics (0)
         currentHeight = GetSystemMetrics (1)
+        #Incerase priority
+        pid = GetCurrentProcessId()
+        handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+        win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
     elif(sys.platform == "darwin"):
         launchGUI = False
         if(fullscreenMode == "auto"):

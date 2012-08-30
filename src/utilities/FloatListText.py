@@ -5,7 +5,10 @@ Created on 6. aug. 2012
 '''
 
 def textToFloatValues(string, numberOfFloats):
-    stringSplit = string.split('|')
+    if(string == None):
+        stringSplit = []
+    else:
+        stringSplit = string.split('|')
     values = []
     i = 0
     while(i < numberOfFloats):

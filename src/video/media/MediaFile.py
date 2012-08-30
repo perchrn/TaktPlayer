@@ -32,16 +32,30 @@ def createCvWindow(fullScreenMode, sizeX, sizeY, posX=-1, posY=-1):
     else:
         cv.NamedWindow(windowName, cv.CV_WINDOW_FULLSCREEN)
 
+def addCvMouseCallback(callBack):
+    cv.SetMouseCallback(windowName, callBack)
+
 def showCvImage(image):
     cv.ShowImage(windowName, image)
 
 def hasCvWindowStoped():
     k = cv.WaitKey(1);
     if k == 27: #Escape
-        return True
+        return "Escape"
+    elif k == 3:
+        return "Ctrl c"
+    elif k == 17:
+        return "Ctrl q"
+    elif k == 24:
+        return "Ctrl x"
+    elif k == 113:
+        return "q"
+    elif k == 81:
+        return "Q"
     else:
-        print "DEBUG WaitKey: " + str(k)
-    return False
+        if k != -1:
+            print "DEBUG WaitKey: " + str(k)
+    return None
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
@@ -1626,7 +1640,7 @@ class VideoLoopFile(MediaFile):
         jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
 
 #        timeMod = TimeModulationMode() #DEBUG
-#        print "DEBUG _timeModulateFramePos: mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
+#        print "DEBUG _timeModulateFramePos: val: " + str(modulation) + " mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
 
         if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
             speedMod = (2.0 * modulation) - 1.0
@@ -1638,13 +1652,17 @@ class VideoLoopFile(MediaFile):
                     steps = 1
                 currentStep = int((steps + 0.5) * speedMod)
                 speedMod = float(currentStep) / steps
-#                print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep) + " speedMod: " + str(speedMod)
-            if(speedMod < -0.01):
-                speedMultiplyer = 1.0 - ((1.0 - (1.0 / speedRange)) * -speedMod)
-                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
-                self._isLastFrameSpeedModified = True
-            elif(speedMod > 0.01):
-                speedMultiplyer = 1.0 + (speedRange - 1.0) * speedMod
+#                print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep)
+            if((speedMod < -0.01) or (speedMod > 0.01)):
+                twoTimesPosition = 2.0 / speedRange
+                absSpeedMod = abs(speedMod)
+                if(absSpeedMod > twoTimesPosition):
+                    speedMultiplyer = 2.0 * (absSpeedMod / twoTimesPosition)
+                else:
+                    speedMultiplyer = 1.0 + (absSpeedMod / twoTimesPosition)
+                if(speedMod < 0):
+                    speedMultiplyer = 1.0 / speedMultiplyer
+#                print "DEBUG speedMod: " + str(speedMod) + " -> " + str(speedMultiplyer)
                 framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
                 self._isLastFrameSpeedModified = True
             else:

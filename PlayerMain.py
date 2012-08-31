@@ -12,6 +12,10 @@ import multiprocessing
 from multiprocessing import Process, Queue
 from configuration.PlayerConfiguration import PlayerConfiguration
 import sys
+import shutil
+import os
+
+import wx
 
 #pcn stuff
 from configuration.ConfigurationHolder import ConfigurationHolder
@@ -19,7 +23,7 @@ from configuration.ConfigurationHolder import ConfigurationHolder
 from video.media.MediaMixer import MediaMixer
 from video.media.MediaPool import MediaPool
 
-from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped, addCvMouseCallback
+#from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped, addCvMouseCallback
 
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
@@ -34,33 +38,72 @@ import signal
 import logging
 logging.root.setLevel(logging.ERROR)
 
-internalResolutionX = 800
-internalResolutionY = 600
-fullscreenMode = "off"
-positionX = -1
-positionY = -1
+APP_NAME = "TaktPlayer"
 launchGUI = True
+applicationHolder = None
 
-class PlayerMain(object):
-    def __init__(self):
-#        pygame.init()
+class PlayerMain(wx.Frame):
+    def __init__(self, parent, title):
+        super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
+
+        wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
+        self.SetIcon(wxIcon)
 
         #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 #        self._log.setLevel(logging.WARNING)
         self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
+        screenWidth = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_X)
+        screenHeight = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
+        print "DEBUG screensize: " + str((screenWidth, screenHeight))
+
         self._playerConfiguration = PlayerConfiguration()
-        self._internalResolutionX = internalResolutionX
-        self._internalResolutionY =  internalResolutionY
+        configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
+        configResolution = self._playerConfiguration.getResolution()
+        configPosition = self._playerConfiguration.getPosition()
+        if(configFullscreenmode == "auto"):
+            self._internalResolutionX = screenWidth
+            self._internalResolutionY =  screenHeight
+            self._fullscreenMode = True
+        elif(configFullscreenmode == "on"):
+            self._internalResolutionX = configResolution[0]
+            self._internalResolutionY =  configResolution[1]
+            self._fullscreenMode = True
+        else:
+            self._internalResolutionX = configResolution[0]
+            self._internalResolutionY =  configResolution[1]
+            self._fullscreenMode = False
+
+        self.Show()
+        if(self._fullscreenMode == True):
+            self.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
+        else:
+            borderX = 0
+            if((self._internalResolutionX + 40) < screenWidth):
+                borderX = 40
+            borderY = 0
+            if((self._internalResolutionY + 40) < screenHeight):
+                borderY = 40
+            menuHeight = wx.SystemSettings.GetMetric(wx.SYS_CAPTION_Y)
+            frameSizeX = 2 * wx.SystemSettings.GetMetric(wx.SYS_FRAMESIZE_X)
+            frameSizeY = 2 * wx.SystemSettings.GetMetric(wx.SYS_FRAMESIZE_Y)
+            windowSizeX = self._internalResolutionX + frameSizeX + borderX
+            windowSizeY = self._internalResolutionY + frameSizeY + menuHeight + borderY
+#            print "SetSize: " + str(self._fullscreenMode) + " | " + str(windowSizeX) + " | " + str(windowSizeY) + " | " + str(positionX) + " | " + str(positionY)
+            self.SetSize((windowSizeX, windowSizeY))
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
-#        print "createCvWindow: " + str(fullscreenMode) + " | " + str(self._internalResolutionX) + " | " + str(self._internalResolutionY) + " | " + str(positionX) + " | " + str(positionY)
-        createCvWindow(fullscreenMode, self._internalResolutionX, self._internalResolutionY, positionX, positionY)
-        addCvMouseCallback(self.onMouseEvent)
+
+        self.SetBackgroundColour((0,0,0)) #@UndefinedVariable
+        self._wxImageBuffer = wx.EmptyImage(self._internalResolutionX, self._internalResolutionY)
+        self._imagePosX = 0
+        self._imagePosY = 0
+        self.SetDoubleBuffered(True)
+        self._onSize(None)
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
@@ -99,7 +142,18 @@ class PlayerMain(object):
             self._startGUIProcess()
             print "*-*-*-" * 30
 
-        print self._configurationTree.getConfigurationXMLString()
+#        print self._configurationTree.getConfigurationXMLString()
+        self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
+        self._updateTimer.Start(1000 / 60)#30 times a second
+        self.Bind(wx.EVT_TIMER, self._frameUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
+        self.Bind(wx.EVT_PAINT, self._onPaint) #@UndefinedVariable
+        self.Bind(wx.EVT_SIZE, self._onSize) #@UndefinedVariable
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda evt: None)
+        self.Bind(wx.EVT_CLOSE, self._onWindowClose) #@UndefinedVariable
+        self._ctrlDown = False
+        self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
+        self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
+        
 
     def _getConfiguration(self):
         pass
@@ -155,20 +209,84 @@ class PlayerMain(object):
                 self._guiProcess.terminate()
             self._guiProcess = None
 
-    def stop(self):
-        self._log.info("Close applicaton")
+    def _onSize(self, event):
+        bufferSize  = self.ClientSize
+        print "DEBUG bufferSize: " + str(bufferSize)
+        bufferSizeX, bufferSizeY = bufferSize
+#        if(bufferSizeX > self._internalResolutionX):
+        self._imagePosX = (bufferSizeX - self._internalResolutionX) / 2
+#        else:
+#            self._imagePosX = 0
+#        if(bufferSizeY > self._internalResolutionY):
+        self._imagePosY = (bufferSizeY - self._internalResolutionY) / 2
+#        else:
+#            self._imagePosY = 0
+        self._paintBuffer = wx.EmptyBitmap(*bufferSize)
+        self._updateBuffer()
+
+    def _onPaint(self, event):
+        dc = wx.BufferedPaintDC(self, self._paintBuffer)
+
+    def _updateBuffer(self):
+        drawContext = wx.MemoryDC()
+        drawContext.SelectObject(self._paintBuffer)
+        self._showFrame(drawContext)
+        del drawContext
+        self.Refresh()
+        self.Update()
+
+    def _showFrame(self, drawContext):
+        drawContext.SetBackground(wx.Brush((0,0,0)))
+        drawContext.Clear()
+        drawContext.DrawBitmap(wx.BitmapFromImage(self._wxImageBuffer), self._imagePosX, self._imagePosY)
+
+    def _onKeyPress(self, event):
+        keyCode = event.GetKeyCode()
+        if(keyCode == 308): #Ctrl.
+            self._ctrlDown = True
+        elif(keyCode == 27): #ESC
+            print "User has pressed ESC!"
+            self._stopPlayer()
+        elif((self._ctrlDown == True) and (keyCode == 81)): #ctrl q
+            print "User has pressed CTRL-Q!"
+            self._stopPlayer()
+        elif((self._ctrlDown == True) and (keyCode == 67)): #ctrl c
+            print "User has pressed CTRL-C!"
+            self._stopPlayer()
+        else:
+            if(self._ctrlDown == True):
+                print "DEBUG key pressed: ctrl + " + str(keyCode)
+            else:
+                print "DEBUG key pressed: " + str(keyCode)
+
+    def _onKeyRelease(self, event):
+        keyCode = event.GetKeyCode()
+        if(keyCode == 308): #Ctrl.
+            self._ctrlDown = False
+
+    def _onWindowClose(self, event = None):
+        print "User has closed window!"
+        self._stopPlayer()
+
+    def _stopPlayer(self):
+        print "Closeing applicaton"
+        if(self._fullscreenMode == True):
+            self.ShowFullScreen(False, style=0)
         self._midiListner.requestTcpMidiListnerProcessToStop()
         self._guiServer.requestGuiServerProcessToStop()
         self._requestGuiProcessToStop()
         self._midiListner.stopDaemon()
         self._guiServer.stopGuiServerProcess()
         self._stopGUIProcess()
+        if(sys.platform != "darwin"):
+            self.Destroy()
+        wx.Exit() #@UndefinedVariable
+        if(self._fullscreenMode == True):
+            applicationHolder.Exit()
+            sys.exit()
+        print "Closeing done."
 
-    def onMouseEvent(self, event, x, y, flags, param):
-        pass
-#        print "DEBUG: MouseEvent: " + str((event, x, y, flags, param))
-
-    def processFrame(self):
+    def _frameUpdate(self, event = None):
 #            if (dt > self._timingThreshold):
 #                self._log.info("Too slow main schedule " + str(dt))
         #Prepare frame
@@ -183,25 +301,15 @@ class PlayerMain(object):
 
         #Show frame:
         mixedImage = self._mediaMixer.getImage()
-        showCvImage(mixedImage)
-#        print "DEBUG imageArray: " + str(type(imageArray)) + " array: " + str(imageArray)
-#        imageArray.transpose(1,0,2)
-#        pygame.surfarray.blit_array(self._pygameVideoSurface, imageArray)
-#        self._pygameDisplay.blit(self._pygameVideoSurface, self._pygameVideoRectangle)
+        self._wxImageBuffer.SetData(mixedImage.tostring())
+        self._updateBuffer()
+#        self._frameWidget.SetBitmap(wx.BitmapFromImage(self._wxImageBuffer))
 
         #Check for quit conditions...
         guiStatus = self._checkStatusQueue()
         if(guiStatus == "QUIT"):
-            raise QuitRequestException("User has closed GUI window.")
-        buttonPressed = hasCvWindowStoped()
-        if(buttonPressed != None):
-            raise QuitRequestException("User has pressed " + str(buttonPressed) + ".")
-#        for event in pygame.event.get():
-#            if event.type is pygame.QUIT:
-#                raise QuitRequestException("User has closed window.")
-#            if event.type is pygame.KEYDOWN:
-#                if event.key is pygame.K_ESCAPE:
-#                    raise QuitRequestException("User pressed escape.")
+            print "User has closed GUI window."
+            self._stopPlayer()
 
         #Sleep until next frame is needed...
 #        self._pygameClock.tick(60)
@@ -219,67 +327,46 @@ class QuitRequestException(Exception):
         return repr(self.value)
 
 if __name__ in ('__android__', '__main__'):
-#    global internalResolutionX
-#    global internalResolutionY
-#    global fullscreenMode
-#    global positionX
-#    global positionY
     multiprocessing.freeze_support()
 
-    playerConfiguration = PlayerConfiguration()
-    internalResolutionX, internalResolutionY =  playerConfiguration.getResolution()
-    fullscreenMode = playerConfiguration.getFullscreenMode()
-
     launchGUI = True
+    debugMode = False
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
+        if(sys.argv[i+1].lower() == "--debug"):
+            debugMode = True
     if(sys.platform == "win32"):
-        from win32api import GetSystemMetrics, GetCurrentProcessId, OpenProcess #@UnresolvedImport
-        import win32process,win32con
-        currentWidth = GetSystemMetrics (0)
-        currentHeight = GetSystemMetrics (1)
+        from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
+        import win32process
+        import win32con
         #Incerase priority
         pid = GetCurrentProcessId()
         handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
         win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
-    elif(sys.platform == "darwin"):
-        launchGUI = False
-        if(fullscreenMode == "auto"):
-            fullscreenMode = "on"
-#        import AppKit #@UnresolvedImport
-#        screen = Appkit.NSScreen.screens()[0]
-#        currentWidth = screen.frame().size.width
-#        currentHeight = screen.frame().size.height
     else:
-        print "do xrandr | grep '*' and parse to get resolution on linux etc..."
-    if(fullscreenMode == "auto"):
-        internalResolutionX = currentWidth
-        internalResolutionY = currentHeight
-        print "Startup fullscreen: Width: " + str(currentWidth) + " Height: " + str(currentHeight)
-    elif(fullscreenMode == "on"):
-        print "Startup fullscreen: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionY)
-    else:
-        autoMode = playerConfiguration.isAutoPositionEnabled()
-        if(autoMode == True):
-            positionX, positionY = (-1, -1)
-        else:
-            positionX, positionY = playerConfiguration.getPosition()
-            print "Custom position: Left: " + str(positionX) + " Top: " + str(positionY)
-        print "Startup windowed: Width: " + str(internalResolutionX) + " Height: " + str(internalResolutionX)
+        print "do os nice thing???"
 
-    mainApp = PlayerMain()
+    logFileName = APP_NAME + ".log"
+    if(debugMode == True):
+        redirectValue = 0
+        oldLogFileName = logFileName + ".old"
+        if(os.path.isfile(logFileName)):
+            try:
+                shutil.move(logFileName, oldLogFileName)
+            except:
+                pass
+    else:
+        redirectValue = 1
+    if(sys.platform == "darwin"):
+        os.environ["PATH"] += ":."
+    applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
+    gui = PlayerMain(None, title="Takt Player")
     try:
-        while(True):
-            mainApp.processFrame()
-    except QuitRequestException, quitRequest:
-        print "Stopping player... (" + str(quitRequest) + ")"
-        mainApp.stop()
-        print "Player stopped! (" + str(quitRequest) + ")"
-    except KeyboardInterrupt, keyboardInterrupt:
-        print "Stopping player... (Keyboard Interrupt.)"
-        mainApp.stop()
-        print "Player stopped! (Keyboard Interrupt.)"
+        applicationHolder.MainLoop()
+#    except QuitRequestException, quitRequest:
+#        app.Exit()
     except:
-        mainApp.stop()
+        gui._stopPlayer()
         raise
+

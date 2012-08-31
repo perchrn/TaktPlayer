@@ -9,6 +9,7 @@ from video.media.MediaFile import MixMode, scaleAndSave
 from video.media.MediaFileModes import getMixModeFromName
 import os
 import shutil
+from cv2 import cv
 
 
 class MediaMixer(object):
@@ -25,6 +26,7 @@ class MediaMixer(object):
 
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._convertedMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
         self._previewMat = createMat(160, 120)
@@ -142,7 +144,8 @@ class MediaMixer(object):
         self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
 
     def getImage(self):
-        return self._currentImage
+        cv.ConvertImage(self._currentImage, self._convertedMat, cv.CV_CVTIMG_SWAP_RB)
+        return self._convertedMat
 
     def gueueImage(self, media, midiChannel):
         self._mediaTracks[midiChannel] = media

@@ -94,9 +94,9 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
             self._callbackFunction(self._widgetId, name, nameId)
             nameId += 1
 
-class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
+class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
-        super(MusicalVideoPlayerGui, self).__init__(parent, title=title, size=(800, 600))
+        super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
         self._updateTitle(self._activeConfig)
@@ -1356,7 +1356,7 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = MusicalVideoPlayerGui(None, title="Takt Player GUI")
+    gui = TaktPlayerGui(None, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()

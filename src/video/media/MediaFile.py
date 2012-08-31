@@ -1628,7 +1628,7 @@ class VideoLoopFile(MediaFile):
                 self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
     def _timeModulateFramePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState):
-        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiNoteState, midiChannelState)
+        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
 
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[4] != None):

@@ -218,14 +218,14 @@ class ConfigurationHolder(object):
     def _addParameter(self, name, defaultValue, value, paramType):
         foundParam = self._findParameter(name)
         if(foundParam != None):
-            xmlValue = None
-            if(self._loadedXML != None):
-                xmlValue = self._getValueFromXml(self._loadedXML, name)
+#            xmlValue = None
+#            if(self._loadedXML != None):
+#                xmlValue = self._getValueFromXml(self._loadedXML, name)
             if(foundParam.getType() == paramType):
                 self._configIsUpdated = True
                 foundParam.setDefaultValue(defaultValue)
-                if(xmlValue == None):
-                    print "Warning! Same parameter with same type added! Updating default value."
+#                if(xmlValue == None):
+#                    print "Warning! Same parameter with same type added! Updating default value."
             else:
                 print "Error! Same parameter with different type cannot be added!"
         else:
@@ -410,7 +410,7 @@ class ConfigurationHolder(object):
 
     def findXmlChildrenList(self, name):
         if(self._loadedXML == None):
-            print "findXmlChildrenList self._loadedXML == None"
+#            print "findXmlChildrenList self._loadedXML == None"
             return None
         name = name.lower()
         return self._loadedXML.findall(name)
@@ -432,7 +432,7 @@ class ConfigurationHolder(object):
     def findChildUniqueId(self, name, idName, idValue):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
-            print "findChildUniqueId: Child found. " + name
+#            print "findChildUniqueId: Child found. " + name
             return foundChild
         else:
             return None
@@ -440,7 +440,7 @@ class ConfigurationHolder(object):
     def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
-            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
+#            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
             return foundChild
         else:
 #            print "Add Child Unique: " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
@@ -457,7 +457,7 @@ class ConfigurationHolder(object):
     def addChildUnique(self, name):
         foundChild = self._findChild(name)
         if(foundChild != None):
-            print "Warning! addChildUnique: Child exist already. Duplicate name? " + name
+#            print "Warning! addChildUnique: Child exist already. Duplicate name? " + name
             return foundChild
         else:
 #            print "Add Child: " + name
@@ -475,7 +475,7 @@ class ConfigurationHolder(object):
     def isConfigurationUpdated(self):
         if(self._configIsUpdated == True):
             self._updateId()
-            print "self._configIsUpdated == True for: " + self._name
+#            print "self._configIsUpdated == True for: " + self._name
             return True
         else:
             for child in self._children:

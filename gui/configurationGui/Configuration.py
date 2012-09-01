@@ -156,6 +156,51 @@ class Configuration(object):
         if(self._clearNoteNewThumbCallback != None):
             self._clearNoteNewThumbCallback(noteId)
 
+    def getTimeModulationTemplate(self, configName):
+        return self._globalConf.getTimeModulationTemplate(configName)
+
+    def getTimeModulationTemplateByIndex(self, index):
+        return self._globalConf.getTimeModulationTemplateByIndex(index)
+
+    def duplicateTimeModulationTemplate(self, configName):
+        return self._globalConf.duplicateTimeModulationTemplate(configName)
+
+    def makeTimeModulationTemplate(self, saveName, mode, modulation, rangeVal, rangeQuantize):
+        return self._globalConf.makeTimeModulationTemplate(saveName, mode, modulation, rangeVal, rangeQuantize)
+
+    def deleteTimeModulationTemplate(self, configName):
+        return self._globalConf.deleteTimeModulationTemplate(configName)
+
+    def renameTimeModulationTemplateUsed(self, oldName, newName):
+        self._mediaPoolConf.renameTimeModulationTemplateUsed(oldName, newName)
+
+    def checkIfNameIsDefaultTimeModulationName(self, configName):
+        return self._globalConf.checkIfNameIsDefaultTimeModulationName(configName)
+
+    def verifyTimeModulationTemplateUsed(self):
+        effectsConfigNames =  self._globalConf.getTimeModulationTemplateNamesList()
+        self._mediaPoolConf.verifyTimeModulationTemplateUsed(effectsConfigNames)
+
+    def countNumberOfTimeTimeModulationTemplateUsed(self, configName):
+        returnNumber = 0
+        returnNumber += self._mediaPoolConf.countNumberOfTimeTimeModulationTemplateUsed(configName)
+        return returnNumber
+
+    def getTimeModulationChoices(self):
+        return self._globalConf.getTimeModulationChoices()
+
+    def setupTimeModulationsGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupTimeModulationsGui(plane, sizer, parentSizer, parentClass)
+
+    def setupTimeModulationsListGui(self, plane, sizer, parentSizer, parentClass):
+        self._globalConf.setupTimeModulationsListGui(plane, sizer, parentSizer, parentClass)
+
+    def updateTimeModulationGui(self, configName, midiNote, editFieldWidget = None):
+        self._globalConf.updateTimeModulationGui(configName, midiNote, editFieldWidget)
+
+    def updateTimeModulationList(self, selectedName):
+        self._globalConf.updateTimeModulationList(selectedName)
+
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
 

@@ -493,7 +493,7 @@ Random:\t\tNo phase just random numbers.
             self._mainModulationGuiSizer.Layout()
             self._parentSizer.Layout()
         else:
-            self._mainModulationGuiSizer.Hide(self._lfoLengthSizer)
+            self._mainModulationGuiSizer.Show(self._lfoLengthSizer)
             self._mainModulationGuiSizer.Hide(self._lfoPhaseSizer)
             self._mainModulationGuiSizer.Show(self._lfoMinValueSliderSizer)
             self._mainModulationGuiSizer.Show(self._lfoMaxValueSliderSizer)

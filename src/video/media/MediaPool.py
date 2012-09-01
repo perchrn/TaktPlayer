@@ -6,14 +6,15 @@ Created on 21. des. 2011
 import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
-    CameraInput, MediaError, KinectCameraInput
+    CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, mediaMixer, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, midiTiming, midiStateHolder, mediaMixer, timeModulationConfiguration, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
+        self._timeModulationConfiguration = timeModulationConfiguration
         self._effectsConfigurationTemplates = effectsConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
@@ -114,7 +115,7 @@ class MediaPool(object):
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
                     print "FileName OK"
-                    if(oldMedia.getType() == mediaType):
+                    if((oldMedia.getType() == mediaType) and (mediaType != "Sprite")):
                         print "MediaType OK"
                         keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
@@ -133,23 +134,31 @@ class MediaPool(object):
                 try:
                     if(mediaType == "Image"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = ImageFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = ImageFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "ImageSequence"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = ImageSequenceFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = ImageSequenceFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "ScrollImage"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = ScrollImageFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "Sprite"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = SpriteImageFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = CameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = CameraInput(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "KinectCamera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = KinectCameraInput(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = KinectCameraInput(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = VideoLoopFile(fileName, self._midiTiming, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = VideoLoopFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                 except MediaError, mediaError:
                     print "Error opening media file: %s Message: %s" % (fileName.encode("utf-8"), str(mediaError))
@@ -225,7 +234,6 @@ class MediaPool(object):
                 newMedia = self._mediaPool[midiNoteState.getNote()]
                 if(midiNoteState.isNew() == True):
                     if(newMedia != None):
-                        newMedia.noteJustTriggered(midiTime, midiNoteState, midiChannelState)
                         midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
                 if(oldMedia == None):
@@ -234,7 +242,7 @@ class MediaPool(object):
                     oldMedia.restartSequence()
                     self._mediaTracks[midiChannel] = newMedia
                 if(newMedia):
-                    newMedia.setStartPosition(midiNoteState.getStartPosition())
+                    newMedia.setStartPosition(midiNoteState.getStartPosition(), midiTime, midiNoteState, midiChannelState)
                     activeMedia = newMedia
             if(activeMedia != None):
                 noteIsDone = activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)

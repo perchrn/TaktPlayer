@@ -94,10 +94,9 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
             self._callbackFunction(self._widgetId, name, nameId)
             nameId += 1
 
-class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
+class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, title):
-        super(MusicalVideoPlayerGui, self).__init__(parent, title=title, 
-            size=(800, 600))
+        super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
         self._updateTitle(self._activeConfig)
@@ -152,24 +151,24 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetupScrolling(False, True)
-        scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
-        self._midiTrackPanel = wx.Panel(scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
-        scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel.SetupScrolling(False, True)
+        self._scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
+        self._midiTrackPanel = wx.Panel(self._scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
-        scrollingEditAreaPanel.SetupScrolling(True, True)
-        scrollingEditAreaPanel.SetSizer(editAreaSizer)
-        scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
+        self._scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
+        self._scrollingEditAreaPanel.SetupScrolling(True, True)
+        self._scrollingEditAreaPanel.SetSizer(editAreaSizer)
+        self._scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
         self._trackGui = MediaTrackGui(self._configuration)
         self._configuration.setMixerGui(self._trackGui)
-        self._noteGui = MediaFileGui(scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
+        self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
         self._configuration.setNoteGui(self._noteGui)
-        self._trackAndEditAreaSizer.Add(scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
-        self._trackAndEditAreaSizer.Add(scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(self._scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._trackAndEditAreaSizer.Add(self._scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._mainSizer.Add(self._menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainSizer.Add(menuSeperatorSizer, proportion=0) #@UndefinedVariable
@@ -332,6 +331,7 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._stoppingWebRequests = True
         self._sendingConfig = False
         self._lastConfigState = -1
+        self._configUpdatedRequestIsOpen = False
         self._latestControllersRequestResult = None
         self._dragSource = None
         self.setupClientProcess()
@@ -632,18 +632,22 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
-                                print "Both configs are updated! " * 5
-                                print "GUI " * 50
-                                print currentGuiConfigString
-                                print "NEW " * 50
-                                print newConfigString
-                                print "XXX " * 50
-                                text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
-                                dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                                dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                                dlg.Destroy()
-                                if(dialogResult == False):
-                                    loadConfig = False
+                                if(self._configUpdatedRequestIsOpen == False):
+                                    self._configUpdatedRequestIsOpen = True
+                                    print "Both configs are updated! " * 5
+                                    print "GUI " * 50
+                                    print currentGuiConfigString
+                                    print "NEW " * 50
+                                    print newConfigString
+                                    print "XXX " * 50
+                                    text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
+                                    dlg = wx.MessageDialog(self, text, 'Load server configuration?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                                    dialogResult = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                                    dlg.Destroy()
+                                    if(dialogResult == False):
+                                        loadConfig = False
+                                        self._oldServerConfigurationString = newConfigString
+                                    self._configUpdatedRequestIsOpen = False
                         if(loadConfig == True):
                             self._configuration.setFromXml(newConfigXml)
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
@@ -659,14 +663,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                             self._configuration.updateEffectList(None)
                             self._configuration.updateFadeList(None)
                             self._configuration.updateEffectImageList()
-                            print "#" * 150
-                            self._configuration.printConfiguration()
-                            print "#" * 150
+#                            print "#" * 150
+#                            self._configuration.printConfiguration()
+#                            print "#" * 150
                         self.updateKeyboardImages()
                     self._oldServerConfigurationString = newConfigString
                     if(foundTask != None):
                         foundTask.taskDone()
-                        self._taskQueue.remove(foundTask)
+                        try:
+                            self._taskQueue.remove(foundTask)
+                        except:
+                            pass
             if(result[0] == GuiClient.ResponseTypes.ConfigFileTransfer):
 #                print "GuiClient.ResponseTypes.ConfigFileTransfer"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
@@ -751,6 +758,12 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
                     xmlString = self._configuration.getXmlString()
                     self._guiClient.sendConfiguration(xmlString)
                     task.setState(TaskHolder.States.Sendt)
+                elif(task.getType() == TaskHolder.RequestTypes.Configuration):
+                    if(self._configUpdatedRequestIsOpen == False):
+                        self._guiClient.requestConfiguration()
+                        task.setState(TaskHolder.States.Sendt)
+                    else:
+                        print "Waiting for user response..."
 
     def _requestTrackState(self):
         if(self._skippedTrackStateRequests > 5):
@@ -843,7 +856,16 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
             self._inputButton.setBitmaps(self._inputGreenBitmap, self._inputGreenBitmap)
         else:
             self._inputButton.setBitmaps(self._inputGrayBitmap, self._inputGrayBitmap)
-            
+
+#TODO: Better refresh...
+#        self._scrollingEditAreaPanel.Layout()
+#        self._noteGui.refreshLayout()
+#        self._scrollingKeyboardPannel.Layout()
+#        self._scrollingMidiTrackPanel.Layout()
+#        self._scrollingEditAreaPanel.SendSizeEvent()
+#        self._scrollingKeyboardPannel.SendSizeEvent()
+#        self._scrollingMidiTrackPanel.SendSizeEvent()
+
 
     def _checkConfigState(self):
         if(self._skippedCheckConfigState > 3):
@@ -934,16 +956,17 @@ class MusicalVideoPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.sendPlayerConfiguration(xmlString)
 
     def _onSendButton(self, event):
-        xmlString = self._configuration.getXmlString()
-        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-        if(foundTask == None):
-            trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
-            self._taskQueue.append(trackRequestTask)
-        self._guiClient.sendConfiguration(xmlString)
-        if(foundTask == None):
-            trackRequestTask.setState(TaskHolder.States.Sendt)
-        self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
-        self._sendingConfig = True
+        if(self._configUpdatedRequestIsOpen == False):
+            xmlString = self._configuration.getXmlString()
+            foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
+            if(foundTask == None):
+                trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
+                self._taskQueue.append(trackRequestTask)
+            self._guiClient.sendConfiguration(xmlString)
+            if(foundTask == None):
+                trackRequestTask.setState(TaskHolder.States.Sendt)
+            self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
+            self._sendingConfig = True
 
     def _updateMidiButtonColor(self, midiOn):
         if(self._stoppingWebRequests):
@@ -1333,7 +1356,7 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = MusicalVideoPlayerGui(None, title="Takt Player GUI")
+    gui = TaktPlayerGui(None, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()

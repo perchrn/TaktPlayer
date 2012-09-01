@@ -8,12 +8,15 @@ import logging
 from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
-from video.Effects import createMat, getEffectByName, getEmptyImage, createMask
+from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
+    copyImage, pilToCvImage, pilToCvMask
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName, KinectMode
+    getModulationValueModeFromName, KinectMode, TimeModulationMode
 import math
+from utilities.FloatListText import textToFloatValues
+import PIL.Image as Image
 try:
     import freenect
 except:
@@ -29,19 +32,30 @@ def createCvWindow(fullScreenMode, sizeX, sizeY, posX=-1, posY=-1):
     else:
         cv.NamedWindow(windowName, cv.CV_WINDOW_FULLSCREEN)
 
+def addCvMouseCallback(callBack):
+    cv.SetMouseCallback(windowName, callBack)
+
 def showCvImage(image):
     cv.ShowImage(windowName, image)
 
 def hasCvWindowStoped():
     k = cv.WaitKey(1);
     if k == 27: #Escape
-        return True
-    return False
-
-def copyImage(image):
-    if(type(image) is cv.cvmat):
-        return cv.CloneMat(image)
-    return cv.CloneImage(image)
+        return "Escape"
+    elif k == 3:
+        return "Ctrl c"
+    elif k == 17:
+        return "Ctrl q"
+    elif k == 24:
+        return "Ctrl x"
+    elif k == 113:
+        return "q"
+    elif k == 81:
+        return "Q"
+    else:
+        if k != -1:
+            print "DEBUG WaitKey: " + str(k)
+    return None
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
@@ -68,6 +82,14 @@ def mixImageSelfMask(image1, image2, mixMask, mixMat1, whiteMode):
     cv.Copy(mixMat1, image1, mixMask)
     return image1
 
+def mixImageAlphaMask(image1, image2, image2mask, mixMat1):
+    cv.Copy(image2, image1, image2mask)
+#    maskMat = createMat(800, 600)
+#    cv.Merge(image2mask, image2mask, image2mask, None, maskMat)
+#    cv.ShowImage("DEBUG mask: ", maskMat)
+#    cv.ShowImage("DEBUG image2: ", image2)
+    return image1
+
 def mixImagesAdd(image1, image2, mixMat):
     cv.Add(image1, image2, mixMat)
     return mixMat
@@ -76,7 +98,7 @@ def mixImagesMultiply(image1, image2, mixMat):
     cv.Mul(image1, image2, mixMat, 0.004)
     return mixMat
 
-def mixImages(mode, image1, image2, mixMat1, mixMask):
+def mixImages(mode, image1, image2, image2mask, mixMat1, mixMask):
     if(mode == MixMode.Add):
         return mixImagesAdd(image1, image2, mixMat1)
     elif(mode == MixMode.Multiply):
@@ -85,10 +107,14 @@ def mixImages(mode, image1, image2, mixMat1, mixMask):
         return mixImageSelfMask(image1, image2, mixMask, mixMat1, False)
     elif(mode == MixMode.WhiteLumaKey):
         return mixImageSelfMask(image1, image2, mixMask, mixMat1, True)
+    elif(mode == MixMode.AlphaMask):
+        if(image2mask != None):
+            return mixImageAlphaMask(image1, image2, image2mask, mixMat1)
+        #Will fall back to Add mode if there is no mask.
     elif(mode == MixMode.Replace):
         return image2
-    else:
-        return mixImagesAdd(image1, image2, mixMat1)
+    #Default is Add!
+    return mixImagesAdd(image1, image2, mixMat1)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -97,9 +123,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._timeModulationConfigurationTemplates = timeModulationConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfig
         self._guiCtrlStateHolder = guiCtrlStateHolder
         self._mediaFadeConfigurationTemplates = fadeConfiguration
@@ -112,8 +139,11 @@ class MediaFile(object):
         self._fadeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._fileOk = False
         self._image = None
+        self._imageMask = None
         self._captureImage = None
+        self._captureMask = None
         self._firstImage = None
+        self._firstImageMask = None
         self._secondImage = None
         self._bufferedImageList = None
         self._numberOfFrames = 0
@@ -134,6 +164,8 @@ class MediaFile(object):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
         self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
         self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
+        self._defaultTimeModulationSettingsName = "Default"
+        self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
         self._defaultEffect1SettingsName = "MediaDefault1"
         self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
         self._defaultEffect2SettingsName = "MediaDefault2"
@@ -157,15 +189,21 @@ class MediaFile(object):
         self._effect2 = None
         self._effect1Settings = None
         self._effect2Settings = None
+        self._timeModulationSettings = None
 
     def _getConfiguration(self):
+        timeModulationTemplateName = self._configurationTree.getValue("TimeModulationConfig")
+        self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(timeModulationTemplateName)
+        if(self._timeModulationSettings == None):
+            self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(self._defaultTimeModulationSettingsName)
+        
         oldEffect1Name = "None"
         oldEffect1Values = "0.0|0.0|0.0|0.0|0.0"
         if(self._effect1Settings != None):
             oldEffect1Name = self._effect1Settings.getEffectName()
             oldEffect1Values = self._effect1Settings.getStartValuesString()
-        self._effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
-        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1ModulationTemplate)
+        effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
+        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
         self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
@@ -178,8 +216,8 @@ class MediaFile(object):
         if(self._effect2Settings != None):
             oldEffect2Name = self._effect2Settings.getEffectName()
             oldEffect2Values = self._effect2Settings.getStartValuesString()
-        self._effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
-        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2ModulationTemplate)
+        effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
+        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
         self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
@@ -257,8 +295,10 @@ class MediaFile(object):
             quantizeLength = roundLength
         self._quantizeLength = quantizeLength
 
-    def setStartPosition(self, startSpp):
-        self._startSongPosition = startSpp
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        if(startSpp != self._startSongPosition):
+            self._startSongPosition = startSpp
+            self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
     def restartSequence(self):
         pass
@@ -266,7 +306,7 @@ class MediaFile(object):
     def getCurrentFramePos(self):
         return self._currentFrame
 
-    def noteJustTriggered(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+    def _resetEffects(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         self._guiCtrlStateHolder.resetState()
         if(self._modulationRestartMode != ModulationValueMode.RawInput):
             self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
@@ -359,6 +399,7 @@ class MediaFile(object):
     def openVideoFile(self, midiLength):
         if (os.path.isfile(self._fullFilePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         self._videoFile = cv.CaptureFromFile(self._fullFilePath.encode("utf-8"))
         try:
@@ -457,30 +498,42 @@ class MediaFile(object):
             else:
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
             (self._image, currentPreValues, unusedStarts) = self._applyOneEffect(self._image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
-            mixedImage =  mixImages(mixMode, image, self._image, mixMat1, mixMask)
+            mixedImage =  mixImages(mixMode, image, self._image, self._imageMask, mixMat1, mixMask)
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return (mixedImage, currentPreValues, currentPostValues)
-    
+
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._radians360 = math.radians(360)
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
-        self._midiModulation.setModulationReceiver("ZoomModulation", "None")
-        self._midiModulation.setModulationReceiver("MoveModulation", "None")
-        self._midiModulation.setModulationReceiver("MoveAngleModulation", "None")
+
+        self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+        self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+        self._configurationTree.addBoolParameter("CropMode", True)
+
+        self._startZoom, self._startMove, self._startAngle = textToFloatValues("0.0|0.0|0.0", 3)
+        self._endZoom, self._endMove, self._endAngle = textToFloatValues("0.0|0.0|0.0", 3)
+        self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
+        self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
+        self._cropMode = True
+
+        self.debugCount = 0
         self._oldZoom = -1.0
-        self._oldMove = -1.0
-        self._oldMoveAngle = -1.0
+        self._oldMoveX = -1.0
+        self._oldMoveY = -1.0
         self._oldCrop = False
         self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        self._zoomModulationId = self._midiModulation.connectModulation("ZoomModulation")
-        self._moveModulationId = self._midiModulation.connectModulation("MoveModulation")
-        self._moveAngleModulationId = self._midiModulation.connectModulation("MoveAngleModulation")
+        startValuesString = self._configurationTree.getValue("StartValues")
+        self._startZoom, self._startMove, self._startAngle = textToFloatValues(startValuesString, 3)
+        endValuesString = self._configurationTree.getValue("EndValues")
+        self._endZoom, self._endMove, self._endAngle = textToFloatValues(endValuesString, 3)
+        self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
+        self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
+        self._cropMode = self._configurationTree.getValue("CropMode")
 
     def getType(self):
         return "Image"
@@ -493,15 +546,43 @@ class ImageFile(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
-        zoom = self._midiModulation.getModlulationValue(self._zoomModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        move = self._midiModulation.getModlulationValue(self._moveModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        angle = self._midiModulation.getModlulationValue(self._moveAngleModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        crop = True
-        if((zoom != self._oldZoom) or (move != self._oldMove) or (angle != self._oldMoveAngle) or (crop != self._oldCrop)):
+        zoom = self._startZoom
+        moveX = self._startX
+        moveY = self._startY
+        angle = self._startAngle
+        move = self._startMove
+        guiMove = False
+        if((self._startSongPosition + self._syncLength) < currentSongPosition):
+            zoom = self._endZoom
+            moveX = self._endX
+            moveY = self._endY
+        elif(self._startSongPosition < currentSongPosition):
+#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(self._syncLength)
+            if(self._endZoom != self._startZoom):
+                zoom = self._startZoom + (((self._endZoom - self._startZoom) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+            if(self._endX != self._startX):
+                moveX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+            if(self._endY != self._startY):
+                moveY = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                zoom = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                move = guiStates[1]
+                guiMove = True
+        if(guiStates[2] != None):
+            if(guiStates[2] > -0.5):
+                angle = guiStates[2]
+                guiMove = True
+        if(guiMove == True):
+            moveX, moveY = self._angleAndMoveToXY(angle, move)
+        if((zoom != self._oldZoom) or (moveX != self._oldMoveX) or (moveY != self._oldMoveY) or (self._cropMode != self._oldCrop)):
             self._oldZoom = zoom
-            self._oldMove = move
-            self._oldMoveAngle = angle
-            self._oldCrop = crop
+            self._oldMoveX = moveX
+            self._oldMoveY = moveY
+            self._oldCrop = self._cropMode
             if(zoom <= 0.5):
                 multiplicator = 1.0 - zoom
             elif(zoom <= 0.75):
@@ -509,7 +590,7 @@ class ImageFile(MediaFile):
             else:
                 multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) *4))
 #            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
-            if(crop == True):
+            if(self._cropMode == True):
                 sourceRectangleX = int(self._source100percentCropX * multiplicator)
                 sourceRectangleY = int(self._source100percentCropY * multiplicator)
             else:
@@ -527,38 +608,206 @@ class ImageFile(MediaFile):
                 sourceRectangleY = self._sourceY
                 top = 0
             maxYmovmentPlussMinus = top
-            if(move >= 0.002):
-                angle360 = angle * 360
-                if(angle360 < 45.0):
-                    moveX = -maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
-                elif(angle360 < 135):
-                    moveY = -maxYmovmentPlussMinus * move
-                    moveX = math.tan(self._radians360 * (angle-0.25)) * move * maxXmovmentPlussMinus
-                elif(angle360 < 225):
-                    moveX = maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * (angle-0.5)) * move * maxYmovmentPlussMinus
-                elif(angle360 < 315):
-                    moveY = maxYmovmentPlussMinus * move
-                    moveX = math.tan(self._radians360 * (angle-0.75)) * move * -maxXmovmentPlussMinus
-                else:
-                    moveX = -maxXmovmentPlussMinus * move
-                    moveY = math.tan(self._radians360 * angle) * move * -maxYmovmentPlussMinus
-                left = int(moveX) + left
-                if(left < 0):
-                    left = 0
-                elif((left + sourceRectangleX) > self._sourceX):
-                    left = self._sourceX - sourceRectangleX
-                top = int(moveY) + top
-                if(top < 0):
-                    top = 0
-                elif((top + sourceRectangleY) > self._sourceY):
-                    top = self._sourceY - sourceRectangleY
-#                print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
+            left = int(moveX * maxXmovmentPlussMinus) + left
+            left = int(moveX) + left
+            if(left < 0):
+                left = 0
+            elif((left + sourceRectangleX) > self._sourceX):
+                left = self._sourceX - sourceRectangleX
+            top = int(moveY * maxYmovmentPlussMinus) + top
+            if(top < 0):
+                top = 0
+            elif((top + sourceRectangleY) > self._sourceY):
+                top = self._sourceY - sourceRectangleY
+#            print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
 #            print "DEBUG source %d:%d dest %d:%d rect: %d:%d:%d:%d" %(self._sourceX, self._sourceY, self._internalResolutionX, self._internalResolutionY, left, top, sourceRectangleX, sourceRectangleY)
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, self._zoomResizeMat)
             self._captureImage = self._zoomResizeMat
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
+
+    def _angleAndMoveToXY(self, angle, move):
+        angle360 = angle * 360
+        if(angle360 < 45.0):
+            moveX = -move
+            moveY = math.tan(self._radians360 * angle) * -move
+        elif(angle360 < 135):
+            moveX = math.tan(self._radians360 * (angle-0.25)) * move
+            moveY = -move
+        elif(angle360 < 225):
+            moveX = move
+            moveY = math.tan(self._radians360 * (angle-0.5)) * move
+        elif(angle360 < 315):
+            moveX = math.tan(self._radians360 * (angle-0.75)) * -move
+            moveY = move
+        else:
+            moveX = -move
+            moveY = math.tan(self._radians360 * angle) * -move
+        return moveX, moveY
+        
+    def openFile(self, midiLength):
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            raise MediaError("File does not exist!")
+        try:
+            pilImage = Image.open(self._fullFilePath)
+            pilImage.load()
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+#        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
+        pilDepth = len(pilSplit)
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+        if(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+        self._captureImage = pilToCvImage(pilRgb)
+        if(self._captureImage == None):
+            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File could not be read!")
+        self._firstImage = self._captureImage
+        self._originalTime = 1.0
+        self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
+        self._sourceAspect = float(self._sourceX) / self._sourceY
+        self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
+        if(self._sourceAspect > self._destinationAspect):
+            self._source100percentCropX = int(self._sourceY * self._destinationAspect)
+            self._source100percentCropY = self._sourceY
+        else:
+            self._source100percentCropX = self._sourceX
+            self._source100percentCropY = int(self._sourceX / self._destinationAspect)
+        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+        self._fileOk = True
+
+class ScrollImageFile(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._configurationTree.addBoolParameter("HorizontalMode", True)
+        self._configurationTree.addBoolParameter("ReverseMode", False)
+        self._midiModulation.setModulationReceiver("ScrollModulation", "None")
+        self._scrollModulationId = None
+
+        self._oldScrollLength = -1.0
+        self._oldScrollMode = False
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._isScrollModeHorizontal = self._configurationTree.getValue("HorizontalMode")
+        self._isScrollModeReverse = self._configurationTree.getValue("ReverseMode")
+        self._scrollModulationId = self._midiModulation.connectModulation("ScrollModulation")
+
+    def getType(self):
+        return "ScrollImage"
+
+    def close(self):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+
+        #Find scroll langth.
+        if(self._scrollModulationId == None):
+            scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
+            if(self._isScrollModeHorizontal == True):
+                scrollLength = 1.0 - scrollLength
+            if(self._isScrollModeReverse == False):
+                scrollLength = 1.0 - scrollLength
+        else:
+            scrollLength = self._midiModulation.getModlulationValue(self._scrollModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                scrollLength = guiStates[0]
+
+        #Scroll image + mask
+        if((self._isScrollModeHorizontal != self._oldScrollMode) or (scrollLength != self._oldScrollLength)):
+            self._oldScrollLength = scrollLength
+            self._oldScrollMode = self._isScrollModeHorizontal
+            if(self._isScrollModeHorizontal == True):
+                left = int(scrollLength * (self._sourceX - 1))
+                if((left + self._source100percentCropX) <= self._sourceX):
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraWidth = (left + self._source100percentCropX) - self._sourceX
+                    destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    width = self._sourceX - left
+                    srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
+                if(self._firstImageMask != None):
+                    cv.Resize(srcRegionMask, dstRegionMask)
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+            else: # self._isScrollModeHorizontal == False -> Vertical mode
+                top = int(scrollLength * (self._sourceY - 1))
+                if((top + self._source100percentCropY) <= self._sourceY):
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, self._source100percentCropY) )
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                else:
+                    extraHeight = (top + self._source100percentCropY) - self._sourceY
+                    destinationHeight = int((extraHeight * self._internalResolutionY) / self._source100percentCropY)
+                    #Rest:
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, 0, self._source100percentCropX, extraHeight))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                    cv.Resize(srcRegion, dstRegion)
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, self._source100percentCropX, extraHeight))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                        cv.Resize(srcRegionMask, dstRegionMask)
+                    #Main:
+                    height = self._sourceY - top
+                    srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, height))
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                    if(self._firstImageMask != None):
+                        srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, height))
+                        dstRegionMask = cv.GetSubRect(self._scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                cv.Resize(srcRegion, dstRegion)
+                self._captureImage = self._scrollResizeMat
+                if(self._firstImageMask != None):
+                    cv.Resize(srcRegionMask, dstRegionMask)
+                    self._captureMask = self._scrollResizeMask
+                else:
+                    self._captureMask = None
+
+        self._imageMask = self._captureMask
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 
@@ -567,29 +816,302 @@ class ImageFile(MediaFile):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            self._captureImage = cv.LoadImage(self._fullFilePath)
+            pilImage = Image.open(self._fullFilePath)
+            pilImage.load()
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+#        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
+        pilDepth = len(pilSplit)
+        maskThreshold = 128
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                try:
+                    transparencyIndex = pilImage.info["transparency"]
+                    pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                    maskThreshold = 255
+                except:
+                    pilMask = None
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                pilMask = None
+        if(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+            if(pilDepth > 3):
+                pilMask = pilSplit[3]
+            else:
+                pilMask = None
+        self._captureImage = pilToCvImage(pilRgb)
+        if(pilMask != None):
+            self._captureMask = pilToCvMask(pilMask, maskThreshold)
+        else:
+            self._captureMask = None
         if (self._captureImage == None):
-            self._log.warning("Could not read frames from: %s", os.path.basename(self._cfgFileName))
-            print "Could not read frames from: " + os.path.basename(self._cfgFileName)
+            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read image from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
         self._firstImage = self._captureImage
+        self._firstImageMask = self._captureMask
         self._originalTime = 1.0
         self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
         self._sourceAspect = float(self._sourceX) / self._sourceY
         self._destinationAspect = float(self._internalResolutionX) / self._internalResolutionY
-        print "DEBUG aspects: source: " + str(self._sourceAspect) + " dest: " + str(self._destinationAspect)
         if(self._sourceAspect > self._destinationAspect):
             self._source100percentCropX = int(self._sourceY * self._destinationAspect)
             self._source100percentCropY = self._sourceY
-            print "DEBUG pcn: Y source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
         else:
             self._source100percentCropX = self._sourceX
             self._source100percentCropY = int(self._sourceX / self._destinationAspect)
-            print "DEBUG pcn: X source!!!!!!!!!! (source %d:%d crop %d:%d)" % (self._sourceX, self._sourceY, self._source100percentCropX, self._source100percentCropY)
+        self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+        self._fileOk = True
+
+class SpriteImageFile(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
+        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+        self._midiModulation.setModulationReceiver("XModulation", "None")
+        self._midiModulation.setModulationReceiver("YModulation", "None")
+        self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
+        self._invertFirstImageMask = False
+        self._startX, self._startY = textToFloatValues("0.5|0.5", 2)
+        self._endX, self._endY = textToFloatValues("0.5|0.5", 2)
+        self._xModulationId = None
+        self._yModulationId = None
+
+        self._bufferedImageList = []
+        self._bufferedImageMasks = []
+
+        self._oldX = -2.0
+        self._oldY = -2.0
+        self._oldCurrentFrame = -1
+
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        startValuesString = self._configurationTree.getValue("StartPosition")
+        self._startX, self._startY = textToFloatValues(startValuesString, 2)
+        endValuesString = self._configurationTree.getValue("EndPosition")
+        self._endX, self._endY = textToFloatValues(endValuesString, 2)
+        self._xModulationId = self._midiModulation.connectModulation("XModulation")
+        self._yModulationId = self._midiModulation.connectModulation("YModulation")
+        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
+
+    def getType(self):
+        return "Sprite"
+
+    def close(self):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+
+        #Find pos.
+        posX = 0.5
+        posY = 0.5
+        modulationIsActive = False
+        if((self._xModulationId != None)):
+            posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            modulationIsActive = True
+        if((self._yModulationId != None)):
+            posY = self._midiModulation.getModlulationValue(self._yModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            modulationIsActive = True
+
+        if(modulationIsActive == False):
+            posX = self._startX
+            posY = self._startY
+            if((self._startSongPosition + self._syncLength) < currentSongPosition):
+                posX = self._endX
+                posY = self._endY
+            elif(self._startSongPosition < currentSongPosition):
+                if(self._endX != self._startX):
+                    posX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                if(self._endY != self._startY):
+                    posX = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                posX = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                posY = guiStates[1]
+
+        #Select frame.
+        if(self._numberOfFrames == 1):
+            self._currentFrame = 0
+        else:
+            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+            self._currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
+
+        #Scroll image + mask
+        if((posX != self._oldX) or(posY != self._oldY) or (self._currentFrame != self._oldCurrentFrame)):
+            self._oldX = posX
+            self._oldY = posY
+            self._oldCurrentFrame = self._currentFrame
+            cv.SetZero(self._spritePlacementMat)
+            cv.SetZero(self._spritePlacementMask)
+            currentSource = self._bufferedImageList[self._currentFrame]
+            currentSourceMask = self._bufferedImageMasks[self._currentFrame]
+            sourceX, sourceY = cv.GetSize(currentSource)
+            xMovmentRange = self._internalResolutionX + sourceX
+            yMovmentRange = self._internalResolutionY + sourceY
+            left = int(xMovmentRange * posX) - sourceX
+            top = int(yMovmentRange * posY) - sourceY
+            width = sourceX
+            height = sourceY
+            sourceLeft = 0
+            sourceTop = 0
+            sourceWidth = sourceX
+            sourceHeight = sourceY
+            if(left < 0):
+                sourceLeft = -left
+                sourceWidth = sourceWidth + left
+                width = width + left
+                left = 0
+            elif((left + sourceX) > self._internalResolutionX):
+                overflow = (left + sourceX - self._internalResolutionX)
+                sourceWidth = sourceWidth - overflow
+                width = width - overflow
+            if(top < 0):
+                sourceTop = -top
+                sourceHeight = sourceHeight + top
+                height = height + top
+                top = 0
+            elif((top + sourceY) > self._internalResolutionY):
+                overflow = (top + sourceY - self._internalResolutionY)
+                sourceHeight = sourceHeight - overflow
+                height = height - overflow
+            if(left < 0):
+                width = width + left
+                left = 0
+            if(width > (left + self._internalResolutionX)):
+                overflow = (width + left - self._internalResolutionX)
+                sourceWidth = sourceWidth - overflow
+                width = width - overflow
+            if(top < 0):
+                top = 0
+                height = height + top
+            if(height > (top + self._internalResolutionY)):
+                overflow = (height + top - self._internalResolutionY)
+                sourceHeight = sourceHeight - overflow
+                height = height - overflow
+            if((width > 0) and (height > 0)):
+                srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
+                cv.Resize(srcRegion, dstRegion)
+                srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                dstRegion = cv.GetSubRect(self._spritePlacementMask, (left, top, width, height))
+                cv.Resize(srcRegion, dstRegion)
+            self._captureImage = self._spritePlacementMat
+            self._captureMask = self._spritePlacementMask
+
+        self._imageMask = self._captureMask
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        return False
+
+    def openFile(self, midiLength):
+        if (os.path.isfile(self._fullFilePath) == False):
+            self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            raise MediaError("File does not exist!")
+        try:
+            pilImage = Image.open(self._fullFilePath)
+            pilImage.load()
+        except:
+            self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
+            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File caused exception!")
+        pilSplit = pilImage.split()
+        pilDepth = len(pilSplit)
+        maskThreshold = 128
+        if(pilDepth == 1):
+            if(pilImage.mode == "P"):
+                try:
+                    transparencyIndex = pilImage.info["transparency"]
+                    maskThreshold = 255
+                    if(self._invertFirstImageMask == True):
+                        pilMask = pilImage.point(lambda i: i == transparencyIndex and 255).convert("L")
+                    else:
+                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+#                        pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                except:
+                    pilMask = None
+                firstImagePallette = pilImage.getpalette()
+                pilRgb = pilImage.convert("RGB")
+                pilSplit2 = pilRgb.split()
+                pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+            else:
+                pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                pilMask = None
+        elif(pilDepth > 2):
+            pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+            if(pilDepth > 3):
+                pilMask = pilSplit[3]
+            else:
+                pilMask = None
+        self._captureImage = pilToCvImage(pilRgb)
+        if(pilMask != None):
+            self._captureMask = pilToCvMask(pilMask, maskThreshold)
+        else:
+            sizeX, sizeY = cv.GetSize(self._captureImage)
+            captureMask = createMask(sizeX, sizeY)
+            cv.Set(captureMask, 255)
+            self._captureMask = captureMask
+        if (self._captureImage == None):
+            self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
+            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            raise MediaError("File could not be read!")
+        self._bufferedImageList.append(self._captureImage)
+        self._bufferedImageMasks.append(self._captureMask)
+        try:
+            while(True):
+                pilImage.seek(pilImage.tell()+1)
+                pilSplit = pilImage.split()
+                pilDepth = len(pilSplit)
+                if(pilDepth == 1):
+                    if(pilImage.mode == "P"):
+                        try:
+                            transparencyIndex = pilImage.info["transparency"]
+                            pilMask = pilImage.point(lambda i: i != transparencyIndex and 255).convert("L")
+                        except:
+                            pilMask = None
+                        pilImage.putpalette(firstImagePallette)
+                        pilRgb = pilImage.convert("RGB")
+                        pilSplit2 = pilRgb.split()
+                        pilRgb = Image.merge("RGB", (pilSplit2[2], pilSplit2[1], pilSplit2[0])) #We need "BGR" and not "RGB"
+                    else:
+                        pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
+                        pilMask = None
+                elif(pilDepth > 2):
+                    pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
+                    if(pilDepth > 3):
+                        pilMask = pilSplit[3]
+                    else:
+                        pilMask = None
+                self._bufferedImageList.append(pilToCvImage(pilRgb))
+                if(pilMask != None):
+                    self._bufferedImageMasks.append(pilToCvMask(pilMask, maskThreshold))
+                else:
+                    self._bufferedImageMasks.append(self._captureMask)
+        except EOFError:
+            pass
+        self._firstImage = self._captureImage
+        self._firstImageMask = self._captureMask
+        self._numberOfFrames = len(self._bufferedImageList)
+        self._originalTime = 1.0
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 
@@ -694,8 +1216,8 @@ videoCaptureCameras = VideoCaptureCameras()
 openCvCameras = OpenCvCameras()
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
         self._cameraMode = self.CameraModes.OpenCV
@@ -772,13 +1294,12 @@ class KinectCameras(object):
                 depthArray, _ = freenect.sync_get_depth()
                 depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
                 resizeImage(depthCapture, self._depthMask)
-    #            depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
+#                depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
                 rgbImage, _ = freenect.sync_get_video()
                 rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
                 resizeImage(rgbCapture, self._videoImage)
             except:
-                self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
-                print "Exception while opening camera with ID: %s" % (self._cameraId)
+                print "Exception while opening kinnect camera!"
                 self._depthMask = None
                 self._videoImage = None
                 self._irMask = None
@@ -820,27 +1341,26 @@ class KinectCameras(object):
 kinectCameras = KinectCameras()
     
 class KinectCameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._blackFilterModulationId = -1
         self._diffFilterModulationId = -1
         self._erodeFilterModulationId = -1
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
-        self._midiModulation.setModulationReceiver("BlackFilterModulation", "None")
-        self._midiModulation.setModulationReceiver("DiffFilterModulation", "None")
-        self._midiModulation.setModulationReceiver("ErodeFilterModulation", "None")
+        self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
         self._firstTrigger = True
         self._kinectModesHolder = KinectMode()
         self._getConfiguration()
+        self._filterValues = 0.0, 0.0, 0.0
+        self._modeModulationId = None
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         self._modeModulationId = self._midiModulation.connectModulation("DisplayModeModulation")
-        self._blackFilterModulationId = self._midiModulation.connectModulation("BlackFilterModulation")
-        self._diffFilterModulationId = self._midiModulation.connectModulation("DiffFilterModulation")
-        self._erodeFilterModulationId = self._midiModulation.connectModulation("ErodeFilterModulation")
+        filterValuesString = self._configurationTree.getValue("FilterValues")
+        self._filterValues = textToFloatValues(filterValuesString, 3)
 
     def getType(self):
         return "KinectCamera"
@@ -857,20 +1377,25 @@ class KinectCameraInput(MediaFile):
         modeSelected = int(value*maxValue)
         return modeSelected
 
-    def setStartPosition(self, startSpp):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         if(self._firstTrigger == True):
             self._firstTrigger = False
             if(freenect != None):
                 pass
 
-    def getBlackFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._blackFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-
-    def getDifferenceFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._diffFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-
-    def getErodeFilterModulation(self, currentSongPosition, midiNoteState, midiChannelState):
-        return self._midiModulation.getModlulationValue(self._erodeFilterModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+    def _getFilterValues(self):
+        blackThreshold, diffThreshold, erodeValue = self._filterValues
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[0] != None):
+            if(guiStates[0] > -0.5):
+                blackThreshold = guiStates[0]
+        if(guiStates[1] != None):
+            if(guiStates[1] > -0.5):
+                diffThreshold = guiStates[1]
+        if(guiStates[2] != None):
+            if(guiStates[2] > -0.5):
+                erodeValue = guiStates[2]
+        return blackThreshold, diffThreshold, erodeValue
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         if(freenect == None):
@@ -891,11 +1416,12 @@ class KinectCameraInput(MediaFile):
             cv.Merge(depthImage, depthImage, depthImage, None, self._captureImage)
         elif(kinectMode == KinectMode.DepthMask):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
+            cv.CmpS(depthImage, 10 + (50 * blackThreshold), self._tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, self._tmpMat2, self._tmpMat1)
-            cv.AddS(self._tmpMat1, 5 + (35 * self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2)
+            cv.AddS(self._tmpMat1, 5 + (35 * diffThreshold), self._tmpMat2)
             cv.Cmp(self._tmpMat2, self._startDepthMat, self._tmpMat1, cv.CV_CMP_LT)
-            erodeIttrations = int(10 * self.getErodeFilterModulation(currentSongPosition, midiNoteState, midiChannelState))
+            erodeIttrations = int(10 * erodeValue)
             if(erodeIttrations > 0):
                 cv.Erode(self._tmpMat1, self._tmpMat2, None, erodeIttrations)
                 cv.Merge(self._tmpMat2, self._tmpMat2, self._tmpMat2, None, self._captureImage)
@@ -903,15 +1429,16 @@ class KinectCameraInput(MediaFile):
                 cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
         elif(kinectMode == KinectMode.DepthThreshold):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            darkFilterValue = 256 - int(self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
-            lightFilterValue = int(self.getDifferenceFilterModulation(currentSongPosition, midiNoteState, midiChannelState) * 256)
+            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
+            darkFilterValue = 256 - int(blackThreshold * 256)
+            lightFilterValue = int(diffThreshold * 256)
             cv.CmpS(depthImage, darkFilterValue, self._tmpMat1, cv.CV_CMP_LE)
             cv.CmpS(depthImage, lightFilterValue, self._tmpMat2, cv.CV_CMP_GE)
             cv.Mul(self._tmpMat1, self._tmpMat2, self._tmpMat1)
             cv.Merge(self._tmpMat1, self._tmpMat1, self._tmpMat1, None, self._captureImage)
         else: # (kinectMode == KinectMode.Reset):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            cv.CmpS(depthImage, 10 + (50 * self.getBlackFilterModulation(currentSongPosition, midiNoteState, midiChannelState)), self._tmpMat2, cv.CV_CMP_LE)
+            cv.CmpS(depthImage, 10 + (50 * blackThreshold), self._tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, self._tmpMat2, self._startDepthMat)
             cv.Merge(self._startDepthMat, self._tmpMat1, self._tmpMat2, None, self._captureImage)
 
@@ -941,20 +1468,20 @@ class KinectCameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
-        self._midiModulation.setModulationReceiver("PlayBackModulation", "None")
-        self._playbackModulationId = -1
+        self._midiModulation.setModulationReceiver("PlaybackModulation", "None")
+        self._playbackModulationId = None
         self._getConfiguration()
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        self._playbackModulationId = self._midiModulation.connectModulation("PlayBackModulation")
+        self._playbackModulationId = self._midiModulation.connectModulation("PlaybackModulation")
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
             self._sequenceMode = ImageSequenceMode.ReTrigger
@@ -974,14 +1501,15 @@ class ImageSequenceFile(MediaFile):
         self._startSongPosition = 0.0
         self._triggerCounter = 0
 
-    def setStartPosition(self, startSpp):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         lastSpp = self._startSongPosition
         if(startSpp != lastSpp):
             if(self._firstTrigger == True):
                 self._firstTrigger = False
+                self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
             else:
                 self._triggerCounter += 1
-            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
+#            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
         self._startSongPosition = startSpp
 
     def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
@@ -1030,11 +1558,25 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
+
+        self._loopModulationMode = TimeModulationMode.Off
+
+        self._lastFramePos = 0.0
+        self._lastFramePosSongPosition = 0.0
+        self._isLastFrameSpeedModified = False
+
+        self._noteTriggerCounter = 0
+        self._lastTriggerCount = 0
+        self._firstNoteTrigger = True
+        self._triggerModificationSum = 0.0
+        self._triggerSongPosition = 0.0
+
+        self._loopEndSongPosition = -1.0
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -1060,6 +1602,141 @@ class VideoLoopFile(MediaFile):
     def getType(self):
         return "VideoLoop"
 
+    def restartSequence(self):
+        self._noteTriggerCounter = 0
+        self._lastTriggerCount = 0
+        self._firstNoteTrigger = True
+        self._triggerModificationSum = 0.0
+        self._triggerSongPosition = 0.0
+
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        if((self._loopModulationMode == TimeModulationMode.TriggeredJump) or (self._loopModulationMode == TimeModulationMode.TriggeredLoop)):
+            lastSpp = self._triggerSongPosition
+            if(startSpp != lastSpp):
+                if(self._firstNoteTrigger == True):
+                    self._firstNoteTrigger = False
+                    self._startSongPosition = startSpp
+                    self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+                    self._triggerSongPosition = startSpp
+                else:
+                    self._noteTriggerCounter += 1
+                    self._triggerSongPosition = startSpp
+#                print "TriggerCount: " + str(self._noteTriggerCounter) + " startSPP: " + str(startSpp) + " lastSPP: " + str(lastSpp)
+        else:
+            if(startSpp != self._startSongPosition):
+                self._startSongPosition = startSpp
+                self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+
+    def _timeModulateFramePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState):
+        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[4] != None):
+            if(guiStates[4] > -0.5):
+                modulation = guiStates[4]
+
+        jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
+        jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / self._syncLength) * self._numberOfFrames
+        jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
+
+#        timeMod = TimeModulationMode() #DEBUG
+#        print "DEBUG _timeModulateFramePos: val: " + str(modulation) + " mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
+
+        if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
+            speedMod = (2.0 * modulation) - 1.0
+            if(speedRange < 0.0):
+                #Invert
+                speedRange = -speedRange
+                speedMod = -speedMod
+            if(self._startSongPosition > self._lastFramePosSongPosition):
+                self._lastFramePosSongPosition = self._startSongPosition
+            if(speedQuantize > 0.02):
+                steps = int(speedRange / speedQuantize)
+                if(steps < 1):
+                    steps = 1
+                currentStep = int((steps + 0.5) * speedMod)
+                speedMod = float(currentStep) / steps
+#                print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep)
+            if((speedMod < -0.01) or (speedMod > 0.01)):
+                twoTimesPosition = 2.0 / speedRange
+                absSpeedMod = abs(speedMod)
+                if(absSpeedMod > twoTimesPosition):
+                    speedMultiplyer = 2.0 * (absSpeedMod / twoTimesPosition)
+                else:
+                    speedMultiplyer = 1.0 + (absSpeedMod / twoTimesPosition)
+                if(speedMod < 0):
+                    speedMultiplyer = 1.0 / speedMultiplyer
+#                print "DEBUG speedMod: " + str(speedMod) + " -> " + str(speedMultiplyer)
+                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
+                self._isLastFrameSpeedModified = True
+            else:
+                if(self._isLastFrameSpeedModified == True):
+                    framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
+                    framesSpeed = float(self._numberOfFrames) / self._syncLength
+                    if(framesDiff > (2.0 * framesSpeed)):
+                        if(framesDiff < self._numberOfFrames):
+                            framePosFloat = self._lastFramePos + 2.0 * framesSpeed
+                        else:
+                            framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
+    #                    print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
+                    else:
+                        framePosFloat = unmodifiedFramePos
+                        self._isLastFrameSpeedModified = False
+                else:
+                    framePosFloat = unmodifiedFramePos
+            self._lastFramePos = framePosFloat
+            self._lastFramePosSongPosition = currentSongPosition
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredJump):
+            if(self._noteTriggerCounter != self._lastTriggerCount):
+                speedMod = (2.0 * modulation) - 1.0
+                if(jumpRange < 0.0):
+                    #Invert
+                    jumpRange = -jumpRange
+                    speedMod = -speedMod
+                if(jumpQuantize > 0.02):
+                    steps = int(jumpRange / jumpQuantize)
+                    if(steps < 1):
+                        steps = 1
+                    currentStep = int((steps + 0.5) * speedMod)
+                    speedMod = float(currentStep) / steps
+                if((speedMod < -0.01) or (speedMod > 0.01)):
+                    jumpLength = jumpRange * speedMod
+                    self._triggerModificationSum += jumpLength
+#                    print "Adding " + str(jumpLength) + " sum: " + str(self._triggerModificationSum)
+#                else:
+#                    print "SpeedMod == 0.0 :-(  ->  No jump!"
+                self._lastTriggerCount = self._noteTriggerCounter
+            framePosFloat = unmodifiedFramePos + self._triggerModificationSum
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredLoop):
+            trigger = self._noteTriggerCounter != self._lastTriggerCount
+            if((trigger == True) and (self._loopEndSongPosition < 0.0)):
+                self._loopEndSongPosition = currentSongPosition
+            if(currentSongPosition >= self._loopEndSongPosition):
+                loopLength = modulation
+                if(trigger == True):
+                    if(jumpQuantize > 0.02):
+                        steps = int(jumpRange / jumpQuantize)
+                        if(steps < 1):
+                            steps = 1
+                        currentStep = int((steps + 0.5) * loopLength)
+                        loopLength = float(currentStep) / steps
+                    if(loopLength > 0.01):
+                        jumpLength = jumpRange * loopLength
+                        self._triggerModificationSum += jumpLength
+                        self._loopEndSongPosition += loopLength * jumpSppStep
+#                        print "Subtracting " + str(jumpLength) + " sum: " + str(self._triggerModificationSum) + " unmod: " + str(unmodifiedFramePos) + " loopEnd: " + str(self._loopEndSongPosition) + " calc: " + str(currentSongPosition - self._triggerModificationSum) + " calc2: " + str(unmodifiedFramePos - self._triggerModificationSum)
+                    else:
+#                        print "loopLength == 0.0 ->  Freeze frame!"
+                        jumpLength = ((currentSongPosition - self._loopEndSongPosition) / self._syncLength) * self._numberOfFrames
+                        self._triggerModificationSum += jumpLength
+                        self._loopEndSongPosition = currentSongPosition
+                else:
+                    self._loopEndSongPosition = -1.0
+            framePosFloat = unmodifiedFramePos - self._triggerModificationSum
+        else:
+            framePosFloat = unmodifiedFramePos
+        return framePosFloat
+
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
@@ -1067,7 +1744,10 @@ class VideoLoopFile(MediaFile):
             return noteDone
         lastFrame = self._currentFrame
 
-        framePos = int(((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames)
+        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+        modifiedFramePos = self._timeModulateFramePos(unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState)
+
+        framePos = int(modifiedFramePos)
         if(self._loopMode == VideoLoopMode.Normal):
             self._currentFrame = framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.Reverse):

@@ -61,7 +61,7 @@ class PlayerMain(wx.Frame):
         self._playerConfiguration = PlayerConfiguration()
         configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
         configResolution = self._playerConfiguration.getResolution()
-        configPosition = self._playerConfiguration.getPosition()
+        configPositionX, configPositionY = self._playerConfiguration.getPosition()
         if(configFullscreenmode == "auto"):
             self._internalResolutionX = screenWidth
             self._internalResolutionY =  screenHeight
@@ -79,19 +79,23 @@ class PlayerMain(wx.Frame):
         if(self._fullscreenMode == True):
             self.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
         else:
+            startupSizeX, startupSizeY = self.ClientSize
+            neededExtraX = 800 - startupSizeX
+            neededExtraY = 600 - startupSizeY
+            baseWindowSizeX = self._internalResolutionX + neededExtraX
+            baseWindowSizeY = self._internalResolutionY + neededExtraY
             borderX = 0
-            if((self._internalResolutionX + 40) < screenWidth):
+            if((baseWindowSizeX + 40) < screenWidth):
                 borderX = 40
             borderY = 0
-            if((self._internalResolutionY + 40) < screenHeight):
+            if((baseWindowSizeY + 40) < screenHeight):
                 borderY = 40
-            menuHeight = wx.SystemSettings.GetMetric(wx.SYS_CAPTION_Y)
-            frameSizeX = 2 * wx.SystemSettings.GetMetric(wx.SYS_FRAMESIZE_X)
-            frameSizeY = 2 * wx.SystemSettings.GetMetric(wx.SYS_FRAMESIZE_Y)
-            windowSizeX = self._internalResolutionX + frameSizeX + borderX
-            windowSizeY = self._internalResolutionY + frameSizeY + menuHeight + borderY
-#            print "SetSize: " + str(self._fullscreenMode) + " | " + str(windowSizeX) + " | " + str(windowSizeY) + " | " + str(positionX) + " | " + str(positionY)
+            windowSizeX = baseWindowSizeX + borderX
+            windowSizeY = baseWindowSizeY + borderY
+#            print "SetSize: " + str(self._fullscreenMode) + " | " + str(windowSizeX) + " | " + str(windowSizeY) + " | " + str(configPositionX) + " | " + str(configPositionY)
             self.SetSize((windowSizeX, windowSizeY))
+            if((configPositionX >= 0) and (configPositionY >= 0)):
+                self.SetPosition((configPositionX, configPositionY))
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
@@ -201,26 +205,28 @@ class PlayerMain(wx.Frame):
             self._log.debug("Stopping GUI Process")
             self._commandQueue.put("QUIT")
 
-    def _stopGUIProcess(self):
+    def hasGuiProcessProcessShutdownNicely(self):
+        if(self._guiProcess == None):
+            return True
+        else:
+            if(self._guiProcess.is_alive() == False):
+                self._guiProcess = None
+                return True
+            return False
+
+    def forceGuiProcessProcessToStop(self):
         if(self._guiProcess != None):
-            self._guiProcess.join(20.0)
             if(self._guiProcess.is_alive()):
                 print "GUI Process did not respond to quit command. Terminating."
                 self._guiProcess.terminate()
-            self._guiProcess = None
+        self._guiProcess = None
 
     def _onSize(self, event):
         bufferSize  = self.ClientSize
         print "DEBUG bufferSize: " + str(bufferSize)
         bufferSizeX, bufferSizeY = bufferSize
-#        if(bufferSizeX > self._internalResolutionX):
         self._imagePosX = (bufferSizeX - self._internalResolutionX) / 2
-#        else:
-#            self._imagePosX = 0
-#        if(bufferSizeY > self._internalResolutionY):
         self._imagePosY = (bufferSizeY - self._internalResolutionY) / 2
-#        else:
-#            self._imagePosY = 0
         self._paintBuffer = wx.EmptyBitmap(*bufferSize)
         self._updateBuffer()
 
@@ -272,19 +278,43 @@ class PlayerMain(wx.Frame):
         print "Closeing applicaton"
         if(self._fullscreenMode == True):
             self.ShowFullScreen(False, style=0)
-        self._midiListner.requestTcpMidiListnerProcessToStop()
+        self._updateTimer.Stop()
+
         self._guiServer.requestGuiServerProcessToStop()
+        self._midiListner.requestTcpMidiListnerProcessToStop()
         self._requestGuiProcessToStop()
-        self._midiListner.stopDaemon()
-        self._guiServer.stopGuiServerProcess()
-        self._stopGUIProcess()
-        if(sys.platform != "darwin"):
-            self.Destroy()
-        wx.Exit() #@UndefinedVariable
-        if(self._fullscreenMode == True):
-            applicationHolder.Exit()
-            sys.exit()
-        print "Closeing done."
+
+        self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
+        self._shutdownTimer.Start(100)#10 times a second
+        self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
+        self._shutdownTimerCounter = 0
+
+    def _onShutdownTimer(self, event):
+        allDone = False
+        if(self._guiServer.hasGuiServerProcessShutdownNicely()):
+            if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
+                if(self.hasGuiProcessProcessShutdownNicely()):
+                    print "All done. (shutdown timer counter: " + str(self._shutdownTimerCounter) + " )"
+                    allDone = True
+        else:
+            self._shutdownTimerCounter += 1
+            if(self._shutdownTimerCounter > 200):
+                print "Shutdown timeout!!! Force killing rest..."
+                if(self._guiServer.hasGuiServerProcessShutdownNicely() != False):
+                    self._guiServer.forceGuiServerProcessToStop()
+                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
+                    self._midiListner.forceTcpMidiListnerProcessToStop()
+                if(self.hasGuiProcessProcessShutdownNicely() != False):
+                    self.forceGuiProcessProcessToStop()
+                allDone = True
+        if(allDone == True):
+            if(sys.platform != "darwin"):
+                self.Destroy()
+            wx.Exit() #@UndefinedVariable
+            if((self._fullscreenMode == True) and (sys.platform != "darwin")):
+                applicationHolder.Exit()
+                sys.exit()
+            print "Closeing done."
 
     def _frameUpdate(self, event = None):
 #            if (dt > self._timingThreshold):

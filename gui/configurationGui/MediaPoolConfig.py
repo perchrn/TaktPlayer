@@ -824,17 +824,17 @@ class MediaFileGui(object): #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        timeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._timeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Time modulation template:") #@UndefinedVariable
         self._timeModulationField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self.updateTimeModulationChoices(self._timeModulationField, "Default", "Default")
         self._timeModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._timeModulationButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._timeModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationEdit) #@UndefinedVariable
-        timeModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        timeModulationSizer.Add(self._timeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
-        timeModulationSizer.Add(self._timeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._noteConfigSizer.Add(timeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._timeModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationSizer.Add(self._timeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationSizer.Add(self._timeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._timeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
@@ -1426,51 +1426,54 @@ Reverses the scroll direction when not modulated.
         dlg.ShowModal()
         dlg.Destroy()
 
-    def _onSubmodulationEdit(self, event):
-        if(self._selectedEditor != self.EditSelection.SubModulation1):
-            self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.SubModulation1
-        else:
-            self._configSizer.Hide(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Unselected
-        self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._noteSlidersPanel)
-        self.refreshLayout()
+    def _onSubmodulationEdit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            if(self._selectedEditor != self.EditSelection.SubModulation1):
+                self._configSizer.Show(self._moulationConfigPanel)
+                self._selectedEditor = self.EditSelection.SubModulation1
+            else:
+                self._configSizer.Hide(self._moulationConfigPanel)
+                self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._slidersPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
+            self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
         self._highlightButton(self._selectedEditor)
 
-    def _onSubmodulation2Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.SubModulation2):
-            self._configSizer.Show(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.SubModulation2
-        else:
-            self._configSizer.Hide(self._moulationConfigPanel)
-            self._selectedEditor = self.EditSelection.Unselected
-        self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._noteSlidersPanel)
-        self.refreshLayout()
+    def _onSubmodulation2Edit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            if(self._selectedEditor != self.EditSelection.SubModulation2):
+                self._configSizer.Show(self._moulationConfigPanel)
+                self._selectedEditor = self.EditSelection.SubModulation2
+            else:
+                self._configSizer.Hide(self._moulationConfigPanel)
+                self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._slidersPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
+            self.refreshLayout()
         self._mainConfig.updateModulationGui(self._subModulation2Field.GetValue(), self._subModulation2Field, None, None)
         self._highlightButton(self._selectedEditor)
 
-    def _onValues1Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.Values1):
-            self._configSizer.Show(self._noteSlidersPanel)
-            self._selectedEditor = self.EditSelection.Values1
-        else:
-            self._configSizer.Hide(self._noteSlidersPanel)
-            self._selectedEditor = self.EditSelection.Unselected
-        self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._moulationConfigPanel)
-        self.refreshLayout()
+    def _onValues1Edit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            if(self._selectedEditor != self.EditSelection.Values1):
+                self._configSizer.Show(self._noteSlidersPanel)
+                self._selectedEditor = self.EditSelection.Values1
+            else:
+                self._configSizer.Hide(self._noteSlidersPanel)
+                self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._slidersPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self.refreshLayout()
         if(self._type == "Image"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start zoom:", "Start move:", "Start angle:"), self._values1Field, 3, "Start zoom:")
         elif(self._type == "VideoLoop"):
@@ -1481,19 +1484,20 @@ Reverses the scroll direction when not modulated.
             self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
 
-    def _onValues2Edit(self, event):
-        if(self._selectedEditor != self.EditSelection.Values2):
-            self._configSizer.Show(self._noteSlidersPanel)
-            self._selectedEditor = self.EditSelection.Values2
-        else:
-            self._configSizer.Hide(self._noteSlidersPanel)
-            self._selectedEditor = self.EditSelection.Unselected
-        self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._moulationConfigPanel)
-        self.refreshLayout()
+    def _onValues2Edit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            if(self._selectedEditor != self.EditSelection.Values2):
+                self._configSizer.Show(self._noteSlidersPanel)
+                self._selectedEditor = self.EditSelection.Values2
+            else:
+                self._configSizer.Hide(self._noteSlidersPanel)
+                self._selectedEditor = self.EditSelection.Unselected
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._slidersPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self.refreshLayout()
         if(self._type == "Image"):
             self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
         elif(self._type == "Sprite"):
@@ -1623,18 +1627,19 @@ All notes on events are quantized to this.
         else:
             self._fadeButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
-    def _onTimeModulationEdit(self, event):
-        if(self._selectedEditor != self.EditSelection.TimeModulation):
-            self._selectedEditor = self.EditSelection.TimeModulation
-            self._configSizer.Show(self._timeModulationConfigPanel)
-        else:
-            self._selectedEditor = self.EditSelection.Unselected
-            self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._moulationConfigPanel)
-        self._configSizer.Hide(self._noteSlidersPanel)
-        self.refreshLayout()
+    def _onTimeModulationEdit(self, event, showEffectGui = True):
+        if(showEffectGui == True):
+            if(self._selectedEditor != self.EditSelection.TimeModulation):
+                self._selectedEditor = self.EditSelection.TimeModulation
+                self._configSizer.Show(self._timeModulationConfigPanel)
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._effectConfigPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
+            self.refreshLayout()
         selectedConfig = self._timeModulationField.GetValue()
         self._mainConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
         self._highlightButton(self._selectedEditor)
@@ -1961,6 +1966,8 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._subModulationSizer)
         else:
             self._noteConfigSizer.Hide(self._subModulationSizer)
+            if(self._selectedEditor == self.EditSelection.SubModulation1):
+                self._onSubmodulationEdit(None, True)
         self.refreshLayout()
 
     def _setupSubConfig(self, config):
@@ -2066,60 +2073,77 @@ All notes on events are quantized to this.
         if(self._type == "VideoLoop"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
-            self._noteConfigSizer.Hide(self._subModulationSizer)
-            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "Image"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
-            self._noteConfigSizer.Hide(self._subModulationSizer)
-            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "ScrollImage"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Show(self._subMode2Sizer)
-            self._noteConfigSizer.Show(self._subModulationSizer)
-            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "Sprite"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
-            self._noteConfigSizer.Show(self._subModulationSizer)
-            self._noteConfigSizer.Show(self._subModulation2Sizer)
         elif(self._type == "ImageSequence"):
             self._noteConfigSizer.Show(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
-            self._showOrHideSubModeModulation()
-            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         elif(self._type == "KinectCamera"):
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
-            self._noteConfigSizer.Show(self._subModulationSizer)
-            self._noteConfigSizer.Hide(self._subModulation2Sizer)
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
             self._noteConfigSizer.Hide(self._subMode2Sizer)
+
+        if(self._type == "ScrollImage"):
+            self._noteConfigSizer.Show(self._subModulationSizer)
+        elif(self._type == "Sprite"):
+            self._noteConfigSizer.Show(self._subModulationSizer)
+        elif(self._type == "ImageSequence"):
+            self._showOrHideSubModeModulation()
+        elif(self._type == "KinectCamera"):
+            self._noteConfigSizer.Show(self._subModulationSizer)
+        else:
             self._noteConfigSizer.Hide(self._subModulationSizer)
+            if(self._selectedEditor == self.EditSelection.SubModulation1):
+                self._onSubmodulationEdit(None, True)
+
+        if(self._type == "Sprite"):
+            self._noteConfigSizer.Show(self._subModulation2Sizer)
+        else:
             self._noteConfigSizer.Hide(self._subModulation2Sizer)
+            if(self._selectedEditor == self.EditSelection.SubModulation2):
+                self._onSubmodulation2Edit(None, True)
 
         if(self._type == "KinectCamera"):
             self._values1Label.SetLabel("Filter values:")
             self._noteConfigSizer.Show(self._values1Sizer)
-            self._noteConfigSizer.Hide(self._values2Sizer)
         elif(self._type == "Image"):
             self._values1Label.SetLabel("Start zoom:")
             self._noteConfigSizer.Show(self._values1Sizer)
-            self._values2Label.SetLabel("End zoom:")
-            self._noteConfigSizer.Show(self._values2Sizer)
-        elif(self._type == "VideoLoop"):
-            self._values1Label.SetLabel("Loop experiment:")
-            self._noteConfigSizer.Show(self._values1Sizer)
-            self._noteConfigSizer.Hide(self._values2Sizer)
         elif(self._type == "Sprite"):
             self._values1Label.SetLabel("Start position:")
             self._noteConfigSizer.Show(self._values1Sizer)
+        else:
+            self._noteConfigSizer.Hide(self._values1Sizer)
+            if(self._selectedEditor == self.EditSelection.Values1):
+                self._onValues1Edit(None, True)
+
+
+        if(self._type == "Image"):
+            self._values2Label.SetLabel("End zoom:")
+            self._noteConfigSizer.Show(self._values2Sizer)
+        elif(self._type == "Sprite"):
             self._values2Label.SetLabel("End position:")
             self._noteConfigSizer.Show(self._values2Sizer)
         else:
-            self._noteConfigSizer.Hide(self._values1Sizer)
             self._noteConfigSizer.Hide(self._values2Sizer)
+            if(self._selectedEditor == self.EditSelection.Values2):
+                self._onValues2Edit(None, True)
+
+        if(self._type == "VideoLoop"):
+            self._noteConfigSizer.Show(self._timeModulationSizer)
+        else:
+            self._noteConfigSizer.Hide(self._timeModulationSizer)
+            if(self._selectedEditor == self.EditSelection.TimeModulation):
+                self._onTimeModulationEdit(None, True)
 
         if(self._type == "Camera"):
             self._noteConfigSizer.Hide(self._syncSizer)
@@ -2819,12 +2843,22 @@ All notes on events are quantized to this.
         self._mainConfig.updateFadeGuiButtons(fadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
-            if(self._selectedEditor == self.EditSelection.Effect1):
+            if(self._selectedEditor == self.EditSelection.TimeModulation):
+                self._onTimeModulationEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Effect1):
                 self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
                 self._onEffect2Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.SubModulation1):
+                self._onSubmodulationEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.SubModulation2):
+                self._onSubmodulation2Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Values1):
+                self._onValues1Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Values2):
+                self._onValues2Edit(None, False)
 
         self._showOrHideSaveButton()
 
@@ -2848,12 +2882,22 @@ All notes on events are quantized to this.
         self.updateFadeChoices(self._fadeField, "Default", "Default")
 
         if(self._selectedEditor != None):
-            if(self._selectedEditor == self.EditSelection.Effect1):
+            if(self._selectedEditor == self.EditSelection.TimeModulation):
+                self._onTimeModulationEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Effect1):
                 self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
                 self._onEffect2Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.SubModulation1):
+                self._onSubmodulationEdit(None, False)
+            elif(self._selectedEditor == self.EditSelection.SubModulation2):
+                self._onSubmodulation2Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Values1):
+                self._onValues1Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Values2):
+                self._onValues2Edit(None, False)
 
         self._overviewClipButton.setBitmap(self._emptyBitMap)
         self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)

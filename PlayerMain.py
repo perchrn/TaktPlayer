@@ -178,19 +178,20 @@ class PlayerMain(wx.Frame):
                 #TODO: autosave...
 #                print "**********" * 10
 #                print self._configurationTree.getConfigurationXMLString()
-                print "**********" * 10
+#                print "**********" * 10
             self._configCheckCounter = 0
         else:
             self._configCheckCounter += 1
 
     def _startGUIProcess(self):
-        self._log.debug("Starting GUI Process")
-        from configurationGui.GuiMainWindow import startGui
-        self._commandQueue = Queue(10)
-        self._statusQueue = Queue(-1)
-        self._guiProcess = Process(target=startGui, args=(False, self._commandQueue, self._statusQueue))
-        self._guiProcess.name = "guiProcess"
-        self._guiProcess.start()
+        if(sys.platform != "darwin"):
+            self._log.debug("Starting GUI Process")
+            from configurationGui.GuiMainWindow import startGui
+            self._commandQueue = Queue(10)
+            self._statusQueue = Queue(-1)
+            self._guiProcess = Process(target=startGui, args=(False, self._commandQueue, self._statusQueue))
+            self._guiProcess.name = "guiProcess"
+            self._guiProcess.start()
 
     def _checkStatusQueue(self):
         if(self._guiProcess != None):
@@ -374,8 +375,8 @@ if __name__ in ('__android__', '__main__'):
         pid = GetCurrentProcessId()
         handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
         win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
-    else:
-        print "do os nice thing???"
+#    else:
+#        print "do os nice thing???"
 
     logFileName = APP_NAME + ".log"
     if(debugMode == True):
@@ -390,6 +391,7 @@ if __name__ in ('__android__', '__main__'):
         redirectValue = 1
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
+        launchGUI = False
     applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
     gui = PlayerMain(None, title="Takt Player")
     try:

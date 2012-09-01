@@ -371,18 +371,19 @@ class GuiServer(object):
             print "Stopping guiNetworkServer"
             self._serverCommandQueue.put("QUIT")
 
-    def stopGuiServerProcess(self):
+    def hasGuiServerProcessShutdownNicely(self):
+        if(self._guiServerProcess == None):
+            return True
+        else:
+            if(self._guiServerProcess.is_alive() == False):
+                self._guiServerProcess = None
+                return True
+            return False
+
+    def forceGuiServerProcessToStop(self):
         if(self._guiServerProcess != None):
-            roundsLeft = 20
-            while(roundsLeft >= 0):
-                if(self._guiServerProcess.is_alive()):
-                    time.sleep(1)
-                    roundsLeft -= 1
-                else:
-                    roundsLeft = -1
-            self._guiServerProcess.join(1.0)
             if(self._guiServerProcess.is_alive()):
-                print "guiNetworkServer did not respond to quit command. Terminating."
+                print "GUI server daemon did not respond to quit command. Terminating."
                 self._guiServerProcess.terminate()
         self._guiServerProcess = None
 

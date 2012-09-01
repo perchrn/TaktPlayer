@@ -22,11 +22,23 @@ class PlayerConfiguration(object):
         self._screenConfig.addIntParameter("ResolutionX", 800)
         self._screenConfig.addIntParameter("ResolutionY", 600)
         self._screenConfig.addTextParameter("FullscreenMode", "off") #on, off, auto
+        self._screenConfig.addTextParameter("Position", "auto") #auto, xpos,ypos, 0,0 etc.
+        self._updateScrrenValues()
+
+        self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
+        self._serverConfig.addBoolParameter("MidiBroadcast", True)
+        self._serverConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
+        self._serverConfig.addIntParameter("MidiPort", 2020)
+        self._serverConfig.addTextParameter("WebBindAddress", "0.0.0.0")
+        self._serverConfig.addIntParameter("WebPort", 2021)
+
+        if(loadAndSave == True):
+            self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
+
+    def _updateScrrenValues(self):
         self._internalResolutionX =  self._screenConfig.getValue("ResolutionX")
         self._internalResolutionY =  self._screenConfig.getValue("ResolutionY")
         self._fullscreenMode =  self._screenConfig.getValue("FullscreenMode")
-
-        self._screenConfig.addTextParameter("Position", "auto") #auto, xpos,ypos, 0,0 etc.
         self._positionAutoMode = True
         self._positionTuplet = (-1, -1)
         positionString = self._screenConfig.getValue("Position")
@@ -44,18 +56,9 @@ class PlayerConfiguration(object):
                 self._positionTuplet = (int(positionList[0]), int(positionList[1]))
                 self._positionAutoMode = False
 
-        self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
-        self._serverConfig.addBoolParameter("MidiBroadcast", True)
-        self._serverConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
-        self._serverConfig.addIntParameter("MidiPort", 2020)
-        self._serverConfig.addTextParameter("WebBindAddress", "0.0.0.0")
-        self._serverConfig.addIntParameter("WebPort", 2021)
-
-        if(loadAndSave == True):
-            self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
-
     def setFromXmlString(self, xmlString):
         self._playerConfigurationTree.setFromXmlString(xmlString)
+        self._updateScrrenValues()
 
     def saveConfig(self):
         self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")

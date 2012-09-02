@@ -46,8 +46,12 @@ class PlayerMain(wx.Frame):
     def __init__(self, parent, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
 
-        wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
-        self.SetIcon(wxIcon)
+        if(os.path.isfile("graphics/TaktPlayer.ico")):
+            wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
+            self.SetIcon(wxIcon)
+        elif(os.path.isfile("TaktPlayer.ico")):
+            wxIcon = wx.Icon(os.path.normpath("TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
+            self.SetIcon(wxIcon)
 
         #Multithreaded logging utility and regular logging:
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))

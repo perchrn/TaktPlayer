@@ -281,6 +281,9 @@ class MediaFile(object):
             self._configurationTree.removeParameter("LoopMode")
 
         if(mediaType == "Image"):
+            self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
+            self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
+            self._configurationTree.addBoolParameter("CropMode", True)
             startVal = sourceConfigTree.getValue("StartValues")
             if(startVal != None):
                 self._configurationTree.setValue("StartValues", startVal)

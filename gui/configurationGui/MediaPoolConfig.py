@@ -296,6 +296,9 @@ class MediaFile(object):
             self._configurationTree.removeParameter("CropMode")
 
         if(mediaType == "ScrollImage"):
+            self._configurationTree.addTextParameter("ScrollModulation", "None")
+            self._configurationTree.addBoolParameter("HorizontalMode", True)
+            self._configurationTree.addBoolParameter("ReverseMode", False)
             scrollVal = sourceConfigTree.getValue("ScrollModulation")
             if(scrollVal != None):
                 self._configurationTree.setValue("ScrollModulation", scrollVal)
@@ -311,6 +314,11 @@ class MediaFile(object):
             self._configurationTree.removeParameter("ReverseMode")
             
         if(mediaType == "Sprite"):
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("XModulation", "None")
+            self._configurationTree.addTextParameter("YModulation", "None")
+            self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
             startVal = sourceConfigTree.getValue("StartPosition")
             if(startVal != None):
                 self._configurationTree.setValue("StartPosition", startVal)
@@ -347,6 +355,8 @@ class MediaFile(object):
             self._configurationTree.removeParameter("PlaybackModulation")
 
         if(mediaType == "KinectCamera"):
+            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
+            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
             tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("DisplayModeModulation", tmpModulation)

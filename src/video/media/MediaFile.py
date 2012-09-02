@@ -940,7 +940,7 @@ class SpriteImageFile(MediaFile):
                 if(self._endX != self._startX):
                     posX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
                 if(self._endY != self._startY):
-                    posX = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                    posY = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
 
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[0] != None):

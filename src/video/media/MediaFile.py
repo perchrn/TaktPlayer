@@ -489,7 +489,7 @@ class MediaFile(object):
 
     def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
-            return image
+            return (image, None, None)
         else:
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode

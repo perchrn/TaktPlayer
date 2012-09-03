@@ -1083,7 +1083,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         except:
             text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
             text += " from directory: \"" + os.getcwd() + "\"\n"
-            text += "\nPlease check your path or update GuiMain.bat.\n"
+            text += "\nPlease check your path or update GUI config under file menu.\n"
             dlg = wx.MessageDialog(self, text, 'ffmpeg error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
             dlg.ShowModal()
             dlg.Destroy()

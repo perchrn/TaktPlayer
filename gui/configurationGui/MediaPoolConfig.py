@@ -220,9 +220,7 @@ class MediaFile(object):
 
             if(changedToImage == True):
                 self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
-                self._values1Field.SetValue("0.0|0.0|0.0")
                 self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-                self._values2Field.SetValue("0.0|0.0|0.0")
                 self._configurationTree.addBoolParameter("CropMode", True)
         else:
             #Video file
@@ -2005,7 +2003,7 @@ All notes on events are quantized to this.
             self._subModeLabel.SetLabel("Resize mode:")
             if(config != None):
                 cropMode = config.getValue("CropMode")
-                if(cropMode == True):
+                if((cropMode == None) or (cropMode == True)):
                     self._selectedSubMode = "Crop"
                 else:
                     self._selectedSubMode = "Stretch"
@@ -2027,7 +2025,7 @@ All notes on events are quantized to this.
             self._subModeLabel.SetLabel("Scroll direction:")
             if(config != None):
                 horMode = config.getValue("HorizontalMode")
-                if(horMode == True):
+                if((horMode == None) or (horMode == True)):
                     self._selectedSubMode = "Horizontal"
                 else:
                     self._selectedSubMode = "Vertical"
@@ -2057,12 +2055,18 @@ All notes on events are quantized to this.
                     self._selectedSubMode = "Normal"
                 self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 confString = self._config.getValue("StartPosition")
-                confVal = textToFloatValues(confString, 2)
-                confValString = floatValuesToString(confVal)
+                if(confString == None):
+                    confValString = "0.5|0.5"
+                else:
+                    confVal = textToFloatValues(confString, 2)
+                    confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
-                confVal = textToFloatValues(confString, 2)
-                confValString = floatValuesToString(confVal)
+                if(confString == None):
+                    confValString = "0.5|0.5"
+                else:
+                    confVal = textToFloatValues(confString, 2)
+                    confValString = floatValuesToString(confVal)
                 self._values2Field.SetValue(confValString)
                 xMod = config.getValue("XModulation")
                 self._subModulationField.SetValue(str(xMod))
@@ -2075,6 +2079,20 @@ All notes on events are quantized to this.
                 self._values2Field.SetValue("0.5|0.5")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
+        elif(self._type == "KinectCamera"):
+            if(config != None):
+                dispMod = config.getValue("DisplayModeModulation")
+                self._subModulationField.SetValue(str(dispMod))
+                confString = self._config.getValue("FilterValues")
+                if(confString == None):
+                    confValString = "0.0|0.0|0.0"
+                else:
+                    confVal = textToFloatValues(confString, 3)
+                    confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+            else:
+                self._subModulationField.SetValue("None")
+                self._values1Field.SetValue("0.0|0.0|0.0")
 
         if(self._type == "KinectCamera"):
             self._subModulationLabel.SetLabel("Display mode:")

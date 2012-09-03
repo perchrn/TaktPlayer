@@ -27,6 +27,7 @@ import shutil
 import sys
 from configurationGui.FileMenu import ConfigOpenDialog, ConfigNewDialog,\
     ConfigGuiDialog, ConfigPlayerDialog
+from video.media.MediaFileModes import forceUnixPath
 
 APP_NAME = "TaktPlayerGui"
 
@@ -1207,6 +1208,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             relativeFileName = self._copyOutputFileName
                         else:
                             return
+                    relativeFileName = forceUnixPath(relativeFileName)
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
                     if(destinationConfig == None):

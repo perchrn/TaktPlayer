@@ -11,9 +11,18 @@ from configurationGui.GuiMainWindow import startGui
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     debugMode = False
+    configDir = ""
+    checkForMoreConfigFileName = False
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1] == "--debug"):
             debugMode = True
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].startswith("--configDir=")):
+            checkForMoreConfigFileName = True
+            configDir = sys.argv[i+1][12:]
+        else:
+            if(checkForMoreConfigFileName == True):
+                configDir += " " + sys.argv[i+1]
     dirOk = True
     scriptDir = os.path.dirname(sys.argv[0])
     if((scriptDir != "") and (scriptDir != os.getcwd())):
@@ -21,8 +30,7 @@ if __name__ == '__main__':
         if(scriptDir != os.getcwd()):
             print "Could not go to correct directory: " + scriptDir + " we are in " + os.getcwd()
             dirOk = False
-#    print "CWD: %s" % os.getcwd()
     if(dirOk):
-        startGui(debugMode)
+        startGui(debugMode, configDir)
     else:
         print "Exiting..."

@@ -5,16 +5,56 @@ Created on 16. feb. 2012
 '''
 from midi.MidiUtilities import noteStringToNoteNumber
 from configuration.ConfigurationHolder import ConfigurationHolder
+import sys
+import os
 
 class PlayerConfiguration(object):
-    def __init__(self, loadAndSave = True):
+    def __init__(self, configDir, loadAndSave = True):
         self._playerConfigurationTree = ConfigurationHolder("TaktPlayer")
         self._playerConfigurationTree.setSelfclosingTags(['startup', 'screen', 'server'])
+
+        taktPackageConfigDir = os.path.join(os.getcwd(), "config")
+        if(sys.platform == "win32"):
+            appDataDir = os.getenv('APPDATA')
+            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+        elif(sys.platform == "darwin"):
+            appDataDir = os.path.join(os.getenv('USERPROFILE') or os.getenv('HOME'), "Library")
+            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+        else:
+            appDataDir = os.getenv('USERPROFILE') or os.getenv('HOME')
+            taktConfigDefaultDir = os.path.join(appDataDir, ".TaktPlayer")
+        if(os.path.isdir(appDataDir) == True):
+            if(os.path.isdir(taktConfigDefaultDir) == False):
+                os.makedirs(taktConfigDefaultDir)
+            if(os.path.isdir(taktConfigDefaultDir) == False):
+                taktConfigDefaultDir = taktPackageConfigDir
+                taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+            else:
+                taktVideoDefaultDir = os.path.join(taktConfigDefaultDir, "Video")
+                if(os.path.isdir(taktVideoDefaultDir) == False):
+                    os.makedirs(taktVideoDefaultDir)
+                if(os.path.isdir(taktVideoDefaultDir) == False):
+                    taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+        else:
+            taktConfigDefaultDir = taktPackageConfigDir
+            taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+        print "*" * 100
+        print "DEBUG pcn: appDataDir: " + str(appDataDir)
+        print "DEBUG pcn: taktConfigDefaultDir: " + str(taktConfigDefaultDir)
+        print "DEBUG pcn: taktVideoDefaultDir: " + str(taktVideoDefaultDir)
+        print "*" * 100
+
+        if((configDir != "") and (configDir != None)):
+            self._configurationFile = os.path.join(configDir, "PlayerConfig.cfg")
+        else:
+            self._configurationFile = os.path.join(taktConfigDefaultDir, "PlayerConfig.cfg")
+
         if(loadAndSave == True):
-            self._playerConfigurationTree.loadConfig("PlayerConfig.cfg")
+            self._playerConfigurationTree.loadConfig(self._configurationFile)
 
         self._startupConfig = self._playerConfigurationTree.addChildUnique("Startup")
-        self._startupConfig.addTextParameter("VideoDir", "video")
+        self._startupConfig.addTextParameter("ConfigDir", taktConfigDefaultDir)
+        self._startupConfig.addTextParameter("VideoDir", taktVideoDefaultDir)
         self._startupConfig.addTextParameter("StartConfig", "Default.cfg")
         self._startupConfig.addTextParameter("StartNote", "0C") #"" "-1D", "0C", "2H" etc.
 
@@ -33,7 +73,7 @@ class PlayerConfiguration(object):
         self._serverConfig.addIntParameter("WebPort", 2021)
 
         if(loadAndSave == True):
-            self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
+            self._playerConfigurationTree.saveConfigFile(self._configurationFile)
 
     def _updateScrrenValues(self):
         self._internalResolutionX =  self._screenConfig.getValue("ResolutionX")
@@ -61,15 +101,16 @@ class PlayerConfiguration(object):
         self._updateScrrenValues()
 
     def saveConfig(self):
-        self._playerConfigurationTree.saveConfigFile("PlayerConfig.cfg")
+        self._playerConfigurationTree.saveConfigFile(self._configurationFile)
 
     def getXmlString(self):
         return self._playerConfigurationTree.getConfigurationXMLString()
 
-    def setStartupConfig(self, startConfig, startNote, videoDir):
+    def setStartupConfig(self, startConfig, startNote, videoDir, configDir):
         self._startupConfig.setValue("StartConfig", startConfig)
         self._startupConfig.setValue("StartNote", startNote)
         self._startupConfig.setValue("VideoDir", videoDir)
+        self._startupConfig.setValue("ConfigDir", configDir)
 
     def setScreenConfig(self, resX, resY, fullscreenMode, isAutoPos, posX, posY):
         self._screenConfig.setValue("ResolutionX", resX)
@@ -121,6 +162,9 @@ class PlayerConfiguration(object):
 
     def getVideoDir(self):
         return self._startupConfig.getValue("VideoDir")
+
+    def getConfigDir(self):
+        return self._startupConfig.getValue("ConfigDir")
 
     def getStartConfig(self):
         return self._startupConfig.getValue("StartConfig")

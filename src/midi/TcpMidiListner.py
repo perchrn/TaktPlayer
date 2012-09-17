@@ -71,10 +71,11 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
 
 
 class TcpMidiListner(object):
-    def __init__(self, midiTimingClass, midiStateHolderClass, multiprocessLogger):
+    def __init__(self, midiTimingClass, midiStateHolderClass, multiprocessLogger, configLoadCallback = None):
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._multiprocessLogger = multiprocessLogger
+        self._configLoadCallback = configLoadCallback
 
         #Daemon variables:
         self._midiListnerProcess = None
@@ -254,7 +255,7 @@ class TcpMidiListner(object):
 #                        data1 = ord(data[9:10])
 #                        data2 = ord(data[10:11])
 #                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
-                if(dataLen > 8): # VST timing over net!
+                if(dataLen > 8): # VST timing or programName over net!
                     if(str(data).startswith("vstTime|")):
                         vstTimeSplit = str(data).split("|")
                         if(len(vstTimeSplit) == 3):
@@ -268,6 +269,11 @@ class TcpMidiListner(object):
                                 else:
                                     if(newSpp < oldSpp): # Looping back (else it is just a jump and we do nothing.)
                                         self._midiStateHolder.fixLoopingNotes(oldSpp, newSpp, self._midiTiming.getTicksPerQuarteNote())
+                    if(str(data).startswith("loadProgram|")):
+                        programSplit = str(data).split("|")
+                        if(len(programSplit) == 2):
+                            programName = programSplit[1]
+                            self._configLoadCallback(programName)
                 else:
                     if(dataLen > 3): # MVP MIDI over net
                         command = ord(data[0:1])

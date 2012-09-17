@@ -348,6 +348,7 @@ class GuiServer(object):
     def __init__(self, configurationTree, playerConfiguration, mediaPool, midiStateHolder):
         self._configurationTree = configurationTree
         self._playerConfiguration = playerConfiguration
+        self._configDir = self._playerConfiguration.getConfigDir()
         self._mediaPool = mediaPool
         self._midiStateHolder = midiStateHolder
 
@@ -492,10 +493,12 @@ class GuiServer(object):
                     reqType = getFromXml(webCommandXml, "type", "list")
                     fileName = getFromXml(webCommandXml, "fileName", "None")
                     if((reqType == "load") and (fileName != "None")):
-                        self._configurationTree.loadConfig(fileName)
+                        filePath = os.path.join(self._configDir, fileName)
+                        self._configurationTree.loadConfig(filePath)
                     if((reqType == "save") and (fileName != "None")):
-                        self._configurationTree.saveConfigFile(fileName)
-                    configFileList = self._configurationTree.getConfigFileList()
+                        filePath = os.path.join(self._configDir, fileName)
+                        self._configurationTree.saveConfigFile(filePath)
+                    configFileList = self._configurationTree.getConfigFileList(self._configDir)
                     currentConfigFile = self._configurationTree.getCurrentFileName()
                     resposeXml = MiniXml("configFileRequest")
                     resposeXml.addAttribute("configFiles", configFileList)

@@ -96,7 +96,7 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
             nameId += 1
 
 class TaktPlayerGui(wx.Frame): #@UndefinedVariable
-    def __init__(self, parent, title):
+    def __init__(self, parent, configDir, title):
         super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
@@ -105,7 +105,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
 
-        self._configuration = Configuration()
+        self._configuration = Configuration(configDir)
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._videoDirectory = self._configuration.getGuiVideoDir()
         self._videoSaveSubDir = ""
@@ -1343,7 +1343,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 wx.Exit() #@UndefinedVariable
 
 
-def startGui(debugMode, commandQueue = None, statusQueue = None):
+def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
     logFileName = APP_NAME + ".log"
     if(debugMode == True):
         redirectValue = 0
@@ -1358,7 +1358,7 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = TaktPlayerGui(None, title="Takt Player GUI")
+    gui = TaktPlayerGui(None, configDir, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()

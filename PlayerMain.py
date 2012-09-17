@@ -43,8 +43,9 @@ launchGUI = True
 applicationHolder = None
 
 class PlayerMain(wx.Frame):
-    def __init__(self, parent, title):
+    def __init__(self, parent, configDir, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
+        self._configDirArgument = configDir
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -62,7 +63,7 @@ class PlayerMain(wx.Frame):
         screenHeight = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
         print "DEBUG screensize: " + str((screenWidth, screenHeight))
 
-        self._playerConfiguration = PlayerConfiguration()
+        self._playerConfiguration = PlayerConfiguration(self._configDirArgument)
         configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
         configResolution = self._playerConfiguration.getResolution()
         configPositionX, configPositionY = self._playerConfiguration.getPosition()
@@ -127,7 +128,7 @@ class PlayerMain(wx.Frame):
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._timeModulationConfiguration, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
-        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
+        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger, self._configLoadCallback)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
 
         self._timingThreshold = 2.0/60
@@ -161,10 +162,20 @@ class PlayerMain(wx.Frame):
         self._ctrlDown = False
         self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
         self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
-        
 
     def _getConfiguration(self):
         pass
+
+    def _configLoadCallback(self, programName):
+        if(programName != ""):
+            activeConfigName = self._configurationTree.getCurrentFileName()
+            if(activeConfigName != programName):
+                #Find config...
+                print "-" * 150
+                print "DEBUG pcn: _configLoadCallback loading: " + str(programName)
+                print "-" * 150
+                filePath = os.path.join(self._playerConfiguration.getConfigDir(), programName)
+                self._configurationTree.loadConfig(filePath)
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
@@ -193,7 +204,7 @@ class PlayerMain(wx.Frame):
             from configurationGui.GuiMainWindow import startGui
             self._commandQueue = Queue(10)
             self._statusQueue = Queue(-1)
-            self._guiProcess = Process(target=startGui, args=(False, self._commandQueue, self._statusQueue))
+            self._guiProcess = Process(target=startGui, args=(False, self._configDirArgument, self._commandQueue, self._statusQueue))
             self._guiProcess.name = "guiProcess"
             self._guiProcess.start()
 
@@ -366,11 +377,20 @@ if __name__ in ('__android__', '__main__'):
 
     launchGUI = True
     debugMode = False
+    checkForMoreConfigFileName = False
+    configDir = ""
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
         if(sys.argv[i+1].lower() == "--debug"):
             debugMode = True
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].startswith("--configDir=")):
+            checkForMoreConfigFileName = True
+            configDir = sys.argv[i+1][12:]
+        else:
+            if(checkForMoreConfigFileName == True):
+                configDir += " " + sys.argv[i+1]
     if(sys.platform == "win32"):
         from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
         import win32process
@@ -397,7 +417,7 @@ if __name__ in ('__android__', '__main__'):
         os.environ["PATH"] += ":."
         launchGUI = False
     applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = PlayerMain(None, title="Takt Player")
+    gui = PlayerMain(None, configDir, title="Takt Player")
     try:
         applicationHolder.MainLoop()
 #    except QuitRequestException, quitRequest:

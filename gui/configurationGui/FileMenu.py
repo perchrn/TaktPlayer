@@ -9,7 +9,7 @@ from midi.MidiUtilities import noteToNoteString
 
 class ConfigOpenDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, sendOpenCommandCallback, configList, lastSelectedConfig):
-        super(ConfigOpenDialog, self).__init__(parent=parent, title=title, size=(300, 120))
+        super(ConfigOpenDialog, self).__init__(parent=parent, title=title, size=(300, 150))
 
         self._sendOpenCommandCallback = sendOpenCommandCallback
         self._configList = configList
@@ -105,7 +105,7 @@ class ConfigNewDialog(wx.Dialog): #@UndefinedVariable
 
 class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, configurationClass):
-        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 420))
+        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 450))
 
         self._configurationClass = configurationClass
 
@@ -190,6 +190,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         guiMidiBroadcastSizer.Add(self._guiMidiBroadcastField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(guiMidiBroadcastSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+
         infoText = wx.StaticText(self, wx.ID_ANY, "Convertion:") #@UndefinedVariable
         infoText.SetFont(boldFont)
         dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -273,7 +274,7 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         super(ConfigPlayerDialog, self).__init__(parent=parent, title=title, size=(440, 540))
 
         self._sendConfigCallback = sendConfigCallback
-        self._configurationClass = PlayerConfiguration(False)
+        self._configurationClass = PlayerConfiguration("", False)
         self._configurationClass.setFromXmlString(configurationXmlString)
 
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
@@ -413,6 +414,14 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         videoDirSizer.Add(self._videoDirField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(videoDirSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        configDir = self._configurationClass.getConfigDir()
+        configDirSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        configDirLabel = wx.StaticText(self, wx.ID_ANY, "Configuration directory:") #@UndefinedVariable
+        self._configDirField = wx.TextCtrl(self, wx.ID_ANY, str(configDir), size=(120, -1)) #@UndefinedVariable
+        configDirSizer.Add(configDirLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        configDirSizer.Add(self._configDirField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(configDirSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
 
         buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         newButton = wx.Button(self, wx.ID_ANY, 'Save', size=(60,-1)) #@UndefinedVariable
@@ -432,7 +441,8 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         startConfig = self._startConfigField.GetValue()
         startNote = noteToNoteString(self._startNoteField.GetValue())
         videoDir = self._videoDirField.GetValue()
-        self._configurationClass.setStartupConfig(startConfig, startNote, videoDir)
+        configDir = self._configDirField.GetValue()
+        self._configurationClass.setStartupConfig(startConfig, startNote, videoDir, configDir)
 
         resX = self._resolutionXField.GetValue()
         resY = self._resolutionYField.GetValue()

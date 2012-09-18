@@ -414,20 +414,14 @@ Replace:\tNo mixing. Just use this image.
                 break
         if(foundTrackId != None):
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
-            print ":" * 120
-            print "DEBUG pcn: _onTrackLvlButton idx: " + str(foundTrackId)
-            print ":" * 120
             self._mainConfig.updateModulationGui(trackConfig.getValue("LevelModulation"), None, None, self._onTrackLvlButtonEditSave, foundTrackId)
             self._showModulationCallback()
 
     def _onTrackLvlButtonEditSave(self, trackId, value):
         trackConfig = self._mainConfig.getTrackConfiguration(trackId)
         if(trackConfig != None):
-            print ":" * 120
             levelMod = self._midiModulation.validateModulationString(value)
             trackConfig.setValue("LevelModulation", levelMod)
-            print "DEBUG pcn: _onTrackLvlButtonEditSave idx: " + str(trackId) + " val: " + levelMod
-            print ":" * 120
 
     def _onLevelModulationEdit(self, event):
         self._showModulationCallback()

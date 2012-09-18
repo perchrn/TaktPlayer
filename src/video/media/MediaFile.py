@@ -112,9 +112,12 @@ def mixImagesAdd(level, image1, image2, mixMat):
 
 def mixImagesReplace(level, image1, image2, mixMat):
     if(level < 0.99):
-        cv.ConvertScaleAbs(image2, image2, level, 0.0)
-        cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
-        cv.Add(image1, image2, mixMat)
+        if(image1 != None):
+            cv.ConvertScaleAbs(image2, image2, level, 0.0)
+            cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
+            cv.Add(image1, image2, mixMat)
+        else:
+            cv.ConvertScaleAbs(image2, mixMat, level, 0.0)
     else:
         return image2
     return mixMat
@@ -130,9 +133,7 @@ def mixImagesMultiply(level, image1, image2, mixMat):
 def mixImages(mode, level, image1, image2, image2mask, mixMat1, mixMask):
     if(level < 0.01):
         return image1
-    if(mode == MixMode.Add):
-        return mixImagesAdd(level, image1, image2, mixMat1)
-    elif(mode == MixMode.Multiply):
+    if(mode == MixMode.Multiply):
         return mixImagesMultiply(level, image1, image2, mixMat1)
     elif(mode == MixMode.LumaKey):
         return mixImageSelfMask(level, image1, image2, mixMask, mixMat1, False)
@@ -522,9 +523,7 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
-#        mixLevel = self._midiModulation.getModlulationValue(mixLevelModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
-        mixLevel = 1.0
+    def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
             return (image, None, None)
         else:

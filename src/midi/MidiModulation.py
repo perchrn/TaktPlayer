@@ -245,6 +245,8 @@ class MidiModulation(object):
         return  self.findModulationId(sourceDescription)
 
     def findModulationId(self, sourceDescription):
+        if(sourceDescription == None):
+            sourceDescription = "None"
         sourceSplit = sourceDescription.split('.', 6)
         if( sourceSplit[0] == "MidiChannel" ):
             if(len(sourceSplit) > 1):

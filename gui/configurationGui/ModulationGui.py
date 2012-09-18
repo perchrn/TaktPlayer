@@ -23,6 +23,8 @@ class ModulationGui(object):
         self._midiModulation = MidiModulation(None, self._midiTiming)
         self._updateWidget = None
         self._closeCallback = None
+        self._saveCallback = None
+        self._saveArgument = None
 
         self._lastSavedModulationString = ""
 
@@ -49,6 +51,9 @@ class ModulationGui(object):
         self._updateButtonPressedBitmap = wx.Bitmap("graphics/updateButtonPressed.png") #@UndefinedVariable
         self._updateRedButtonBitmap = wx.Bitmap("graphics/updateButtonRed.png") #@UndefinedVariable
         self._updateRedButtonPressedBitmap = wx.Bitmap("graphics/updateButtonRedPressed.png") #@UndefinedVariable
+        self._saveBigBitmap = wx.Bitmap("graphics/saveButtonBig.png") #@UndefinedVariable
+        self._saveBigPressedBitmap = wx.Bitmap("graphics/saveButtonBigPressed.png") #@UndefinedVariable
+        self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
 
         self._modulationSorces = ModulationSources()
 
@@ -741,16 +746,25 @@ Constant static value.
         if(self._updateWidget != None):
             self._updateWidget.SetValue(modeString)
         if(self._saveCallback):
-            self._saveCallback(None)
+            if(self._saveArgument != None):
+                self._saveCallback(self._saveArgument, modeString)
+            else:
+                self._saveCallback(None)
         self._lastSavedModulationString = modeString
         self._checkForUpdates()
 
     def _checkForUpdates(self, event = None):
         newModeString = self._getModeString()
         if(self._lastSavedModulationString != newModeString):
-            self._saveButton.setBitmaps(self._updateRedButtonBitmap, self._updateRedButtonPressedBitmap)
+            if(self._saveArgument == None):
+                self._saveButton.setBitmaps(self._updateRedButtonBitmap, self._updateRedButtonPressedBitmap)
+            else:
+                self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
         else:
-            self._saveButton.setBitmaps(self._updateButtonBitmap, self._updateButtonPressedBitmap)
+            if(self._saveArgument == None):
+                self._saveButton.setBitmaps(self._updateButtonBitmap, self._updateButtonPressedBitmap)
+            else:
+                self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -820,10 +834,11 @@ Constant static value.
         bitmap = self.getModulationImageBitmap(imageId)
         widget.setBitmaps(bitmap, bitmap)
        
-    def updateGui(self, modulationString, widget, closeCallback, saveCallback):
+    def updateGui(self, modulationString, widget, closeCallback, saveCallback, saveArgument):
         self._updateWidget = widget
         self._closeCallback = closeCallback
         self._saveCallback = saveCallback
+        self._saveArgument = saveArgument
         self._lastSavedModulationString = modulationString
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
         updatedId = None

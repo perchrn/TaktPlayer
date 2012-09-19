@@ -8,7 +8,8 @@ ln -s /Applications dist/
 ln -s /Library/Audio/Plug-Ins/Components dist/GlobalAudioUnitsFolder
 ln -s /Library/Audio/Plug-Ins/VST dist/GlobalVSTFolder
 
-#Cleanup?
+read -p "Fix folderlayout and press [enter] to continiue... "
 
 mv TaktPlayer.dmg TaktPlayer.dmg.old
 hdiutil create TaktPlayer.dmg -volname "Takt Player" -fs HFS+ -srcfolder "dist"
+

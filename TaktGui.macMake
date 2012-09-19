@@ -19,8 +19,10 @@ else
     mkdir guiThumbs
 fi
 rm guiThumbs/*
-arch -i386 /opt/local/bin/python setup.py py2app --includes ntpath --resources config,graphics,guiThumbs,/opt/local/bin/ffmpeg
+arch -i386 /opt/local/bin/python setup.py py2app --includes ntpath --resources graphics,guiThumbs,/opt/local/bin/ffmpeg
 
+mkdir dist/TaktGui.app/Contents/Resources/config
+chmod 775 dist/TaktGui.app/Contents/Resources/config
 chmod +x dist/TaktGui.app/Contents/Resources/ffmpeg
 
 rm TaktGui.py

@@ -175,14 +175,18 @@ class ConfigurationHolder(object):
                     fileListString += aFile
                     fileListList.append(aFile)
 
+        firstExtraFile = True
         if(dirPath != packageConfigDir):
             fileList = os.listdir(packageConfigDir)
             for aFile in fileList:
                 if(aFile.endswith(".cfg")):
                     if((aFile != "PlayerConfig.cfg") and(aFile != "GuiConfig.cfg")):
-                        if(fileListString != ""):
-                            fileListString += ";"
                         if(fileListList.count(aFile) == 0):
+                            if(firstExtraFile == True):
+                                fileListString += ";-------------------------"
+                                firstExtraFile = False
+                            if(fileListString != ""):
+                                fileListString += ";"
                             fileListString += aFile
 
         return fileListString

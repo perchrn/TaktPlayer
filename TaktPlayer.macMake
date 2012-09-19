@@ -19,6 +19,6 @@ else
     mkdir thumbs
 fi
 rm thumbs/*
-arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config,thumbs,testFiles
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config,thumbs,testFiles,graphics/TaktPlayer.ico
 
 rm TaktPlayer.py

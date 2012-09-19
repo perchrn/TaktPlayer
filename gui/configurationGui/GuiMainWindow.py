@@ -1272,7 +1272,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         dlg = VideoCopyDialog(self, 'Copy file...', self._updateValuesFromCopyDialogCallback,
                                                    self._videoSaveSubDir, self._videoDirectory, fileName)
                         dlg.ShowModal()
-                        dlg.Destroy()
+                        try:
+                            dlg.Destroy()
+                        except:
+                            pass
                         if(self._copyWentOk == True):
                             relativeFileName = self._copyOutputFileName
                         else:

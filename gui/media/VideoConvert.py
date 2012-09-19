@@ -209,8 +209,8 @@ class VideoCopyDialog(wx.Dialog): #@UndefinedVariable
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
 
-        infoText = wx.StaticText(self, wx.ID_ANY, "This file should be copied since it is not in your video directory: \"%s\" is not within \"%s\"" % (inputFile, configVideoDir)) #@UndefinedVariable
-        dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        infoText = wx.StaticText(self, wx.ID_ANY, "This file should be copied since it is not in your video directory: \"%s\" is not within \"%s\"" % (inputFile, configVideoDir), size=(-1, 80)) #@UndefinedVariable
+        dialogSizer.Add(infoText, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         dirSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         dirNameLabel = wx.StaticText(self, wx.ID_ANY, "Dir name:") #@UndefinedVariable

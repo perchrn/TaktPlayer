@@ -1279,6 +1279,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         if(self._copyWentOk == True):
                             relativeFileName = self._copyOutputFileName
                         else:
+                            print "Error copying file!!!"
                             return
                     relativeFileName = forceUnixPath(relativeFileName)
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)

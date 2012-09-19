@@ -18,6 +18,7 @@ ECHO PATH:
 ECHO %PATH%
 ECHO ----------------------------------
 
+copy %taktRoot%PlayerMain.py %taktRoot%PlayerMain.pyw
 set PYTHONPATH=%taktRoot%src;%taktRoot%gui;%PYTHONPATH%
 
 set PYTHONPATH=%takt_portable_root%takt;%PYTHONPATH%
@@ -31,5 +32,6 @@ ECHO ##################################
 :runtakt
 
 
-python.exe  %taktRoot%PlayerMain.py --nogui
+start %taktRoot%PlayerMain.pyw --nogui
 IF %errorlevel% NEQ 0 (PAUSE)
+exit

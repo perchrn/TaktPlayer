@@ -9,13 +9,17 @@ from configurationGui.MediaPoolConfig import MediaPoolConfig
 from configurationGui.MediaMixerConfig import MediaMixerConfig
 from network.SendMidiOverNet import SendMidiOverNet
 import os
+import sys
 
 class Configuration(object):
-    def __init__(self):
+    def __init__(self, configDir):
         self._guiConfigurationTree = ConfigurationHolder("TaktGUI")
         self._guiConfigurationTree.setSelfclosingTags(['video', 'player', 'gui'])
-        self._guiConfigurationTree.loadConfig("GuiConfig.cfg")
         self.setupGuiConfiguration()
+        if((configDir != "") and (configDir != None)):
+            self._configurationDefaultDirectory = configDir
+        self._configurationFile = os.path.join(self._configurationDefaultDirectory, "GuiConfig.cfg")
+        self._guiConfigurationTree.loadConfig(self._configurationFile)
         self.saveConfig()
 
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
@@ -35,13 +39,45 @@ class Configuration(object):
         self._effectStateRequestCallback = None
 
     def setupGuiConfiguration(self):
+        taktPackageConfigDir = os.path.join(os.getcwd(), "config")
+        if(sys.platform == "win32"):
+            appDataDir = os.getenv('APPDATA')
+            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+        elif(sys.platform == "darwin"):
+            appDataDir = os.path.join(os.getenv('USERPROFILE') or os.getenv('HOME'), "Library")
+            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+        else:
+            appDataDir = os.getenv('USERPROFILE') or os.getenv('HOME')
+            taktConfigDefaultDir = os.path.join(appDataDir, ".TaktPlayer")
+        if(os.path.isdir(appDataDir) == True):
+            if(os.path.isdir(taktConfigDefaultDir) == False):
+                os.makedirs(taktConfigDefaultDir)
+            if(os.path.isdir(taktConfigDefaultDir) == False):
+                taktConfigDefaultDir = taktPackageConfigDir
+                taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+            else:
+                taktVideoDefaultDir = os.path.join(taktConfigDefaultDir, "Video")
+                if(os.path.isdir(taktVideoDefaultDir) == False):
+                    os.makedirs(taktVideoDefaultDir)
+                if(os.path.isdir(taktVideoDefaultDir) == False):
+                    taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+        else:
+            taktConfigDefaultDir = taktPackageConfigDir
+            taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+        print "*" * 100
+        print "DEBUG pcn: appDataDir: " + str(appDataDir)
+        print "DEBUG pcn: taktConfigDefaultDir: " + str(taktConfigDefaultDir)
+        print "DEBUG pcn: taktVideoDefaultDir: " + str(taktVideoDefaultDir)
+        print "*" * 100
+        self._configurationDefaultDirectory = taktConfigDefaultDir
+
         self._guiPlayerConfig = self._guiConfigurationTree.addChildUnique("Player")
         self._guiPlayerConfig.addTextParameter("PlayerHost", "127.0.0.1")
         self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
         self._guiPlayerConfig.addIntParameter("WebPort", 2021)
         self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
         self._guiVideoConfig = self._guiConfigurationTree.addChildUnique("Video")
-        self._guiVideoConfig.addTextParameter("VideoDir", "video")
+        self._guiVideoConfig.addTextParameter("VideoDir", taktVideoDefaultDir)
         self._guiVideoConfig.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
         self._guiVideoConfig.addIntParameter("ScaleVideoX", -1)
         self._guiVideoConfig.addIntParameter("ScaleVideoY", -1)
@@ -70,7 +106,7 @@ class Configuration(object):
         self._guiConfig.setValue("MidiPort", midiPort)
 
     def saveConfig(self):
-        self._guiConfigurationTree.saveConfigFile("GuiConfig.cfg")
+        self._guiConfigurationTree.saveConfigFile(self._configurationFile)
 
     def setupMidiSender(self):
         host, port = self.getMidiConfig()
@@ -91,6 +127,9 @@ class Configuration(object):
         host = self._guiConfig.getValue("MidiBindAddress")
         port = self._guiConfig.getValue("MidiPort")
         return (bcast, host, port)
+
+    def getGuiConfigDir(self):
+        return self._guiConfig.getValue("ConfigDir")
 
     def getGuiVideoDir(self):
         return self._guiVideoConfig.getValue("VideoDir")
@@ -330,8 +369,8 @@ class Configuration(object):
         self._mediaPoolConf.renameFadeTemplateUsed(oldName, newName)
         self._mediaMixerConf.renameFadeTemplateUsed(oldName, newName)
 
-    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback):
-        self._globalConf.updateModulationGui(modulationString, widget, closeCallback, saveCallback)
+    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback, saveArgument = None):
+        self._globalConf.updateModulationGui(modulationString, widget, closeCallback, saveCallback, saveArgument)
 
     def updateModulationGuiButton(self, widget, modulationString):
         self._globalConf.updateModulationGuiButton(modulationString, widget)

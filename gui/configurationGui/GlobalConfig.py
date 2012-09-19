@@ -189,8 +189,8 @@ class GlobalConfig(object):
     def getEffectImageFileListString(self):
         return self._effectImagesConfiguration.getFileListString()
 
-    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback):
-        self._modulationGui.updateGui(modulationString, widget, closeCallback, saveCallback)
+    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback, saveArgument = None):
+        self._modulationGui.updateGui(modulationString, widget, closeCallback, saveCallback, saveArgument)
 
     def updateModulationGuiButton(self, modulationString, widget):
         self._modulationGui.updateModulationGuiButton(modulationString, widget)

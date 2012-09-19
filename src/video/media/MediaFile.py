@@ -72,49 +72,81 @@ def fadeImage(image, value, mode, tmpMat):
         cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
     return tmpMat
 
-def mixImageSelfMask(image1, image2, mixMask, mixMat1, whiteMode):
+def mixImageSelfMask(level, image1, image2, mixMask, mixMat1, whiteMode):
     cv.Copy(image2, mixMat1)
     cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
     if(whiteMode == True):
         cv.CmpS(mixMask, 250, mixMask, cv.CV_CMP_LT)
     else:
         cv.CmpS(mixMask, 5, mixMask, cv.CV_CMP_GT)
+    return mixImageAlphaMask(level, image1, mixMat1, mixMask, image2)
+    mixImageAlphaMask(level, mixMat1, image1, mixMask, image2)
     cv.Copy(mixMat1, image1, mixMask)
     return image1
 
-def mixImageAlphaMask(image1, image2, image2mask, mixMat1):
-    cv.Copy(image2, image1, image2mask)
-#    maskMat = createMat(800, 600)
-#    cv.Merge(image2mask, image2mask, image2mask, None, maskMat)
-#    cv.ShowImage("DEBUG mask: ", maskMat)
-#    cv.ShowImage("DEBUG image2: ", image2)
+def mixImageAlphaMask(level, image1, image2, image2mask, mixMat1):
+    if(level < 0.99):
+        valueCalc = int(256 * (1.0 - level))
+        rgbColor = cv.CV_RGB(valueCalc, valueCalc, valueCalc)
+        whiteColor = cv.CV_RGB(255, 255, 255)
+        cv.Set(mixMat1, whiteColor)
+        cv.Set(mixMat1, rgbColor, image2mask)
+        cv.Mul(image1, mixMat1, image1, 0.004)
+        valueCalc = int(256 * level)
+        rgbColor = cv.CV_RGB(valueCalc, valueCalc, valueCalc)
+        cv.Zero(mixMat1)
+        cv.Set(mixMat1, rgbColor, image2mask)
+        cv.Mul(image2, mixMat1, image2, 0.004)
+        cv.Add(image1, image2, image1)
+    else:
+        cv.Copy(image2, image1, image2mask)
     return image1
 
-def mixImagesAdd(image1, image2, mixMat):
-    cv.Add(image1, image2, mixMat)
+def mixImagesAdd(level, image1, image2, mixMat):
+    if(level < 0.99):
+        cv.ConvertScaleAbs(image2, image2, level, 0.0)
+        cv.Add(image1, image2, mixMat)
+    else:
+        cv.Add(image1, image2, mixMat)
     return mixMat
 
-def mixImagesMultiply(image1, image2, mixMat):
+def mixImagesReplace(level, image1, image2, mixMat):
+    if(level < 0.99):
+        if(image1 != None):
+            cv.ConvertScaleAbs(image2, image2, level, 0.0)
+            cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
+            cv.Add(image1, image2, mixMat)
+        else:
+            cv.ConvertScaleAbs(image2, mixMat, level, 0.0)
+    else:
+        return image2
+    return mixMat
+
+def mixImagesMultiply(level, image1, image2, mixMat):
     cv.Mul(image1, image2, mixMat, 0.004)
+    if(level < 0.99):
+        cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
+        cv.ConvertScaleAbs(mixMat, mixMat, level, 0.0)
+        cv.Add(mixMat, image1, mixMat)
     return mixMat
 
-def mixImages(mode, image1, image2, image2mask, mixMat1, mixMask):
-    if(mode == MixMode.Add):
-        return mixImagesAdd(image1, image2, mixMat1)
-    elif(mode == MixMode.Multiply):
-        return mixImagesMultiply(image1, image2, mixMat1)
+def mixImages(mode, level, image1, image2, image2mask, mixMat1, mixMask):
+    if(level < 0.01):
+        return image1
+    if(mode == MixMode.Multiply):
+        return mixImagesMultiply(level, image1, image2, mixMat1)
     elif(mode == MixMode.LumaKey):
-        return mixImageSelfMask(image1, image2, mixMask, mixMat1, False)
+        return mixImageSelfMask(level, image1, image2, mixMask, mixMat1, False)
     elif(mode == MixMode.WhiteLumaKey):
-        return mixImageSelfMask(image1, image2, mixMask, mixMat1, True)
+        return mixImageSelfMask(level, image1, image2, mixMask, mixMat1, True)
     elif(mode == MixMode.AlphaMask):
         if(image2mask != None):
-            return mixImageAlphaMask(image1, image2, image2mask, mixMat1)
+            return mixImageAlphaMask(level, image1, image2, image2mask, mixMat1)
         #Will fall back to Add mode if there is no mask.
     elif(mode == MixMode.Replace):
-        return image2
+        return mixImagesReplace(level, image1, image2, mixMat1)
     #Default is Add!
-    return mixImagesAdd(image1, image2, mixMat1)
+    return mixImagesAdd(level, image1, image2, mixMat1)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -262,6 +294,7 @@ class MediaFile(object):
     def setFileName(self, fileName):
         self._cfgFileName = fileName
         self._fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), os.path.normpath(self._cfgFileName))
+        self._packageFilePath = os.path.join(os.getcwd(), "testFiles", os.path.normpath(self._cfgFileName))
 
     def isFileOk(self):
         return self._fileOk
@@ -397,11 +430,14 @@ class MediaFile(object):
         pass
 
     def openVideoFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
+        filePath = self._fullFilePath
+        if(os.path.isfile(filePath) == False):
+            filePath = self._packageFilePath
+        if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
-        self._videoFile = cv.CaptureFromFile(self._fullFilePath.encode("utf-8"))
+        self._videoFile = cv.CaptureFromFile(filePath.encode("utf-8"))
         try:
             self._captureImage = cv.QueryFrame(self._videoFile)
             self._firstImage = copyImage(self._captureImage)
@@ -487,9 +523,9 @@ class MediaFile(object):
     def openFile(self, midiLength):
         pass
 
-    def mixWithImage(self, image, mixMode, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
-            return image
+            return (image, None, None)
         else:
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
@@ -498,7 +534,7 @@ class MediaFile(object):
             else:
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
             (self._image, currentPreValues, unusedStarts) = self._applyOneEffect(self._image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
-            mixedImage =  mixImages(mixMode, image, self._image, self._imageMask, mixMat1, mixMask)
+            mixedImage =  mixImages(mixMode, mixLevel, image, self._image, self._imageMask, mixMat1, mixMask)
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return (mixedImage, currentPreValues, currentPostValues)
 
@@ -647,11 +683,14 @@ class ImageFile(MediaFile):
         return moveX, moveY
         
     def openFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
+        filePath = self._fullFilePath
+        if(os.path.isfile(filePath) == False):
+            filePath = self._packageFilePath
+        if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            pilImage = Image.open(self._fullFilePath)
+            pilImage = Image.open(filePath)
             pilImage.load()
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
@@ -812,11 +851,14 @@ class ScrollImageFile(MediaFile):
         return False
 
     def openFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
+        filePath = self._fullFilePath
+        if(os.path.isfile(filePath) == False):
+            filePath = self._packageFilePath
+        if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            pilImage = Image.open(self._fullFilePath)
+            pilImage = Image.open(filePath)
             pilImage.load()
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
@@ -1024,11 +1066,14 @@ class SpriteImageFile(MediaFile):
         return False
 
     def openFile(self, midiLength):
-        if (os.path.isfile(self._fullFilePath) == False):
+        filePath = self._fullFilePath
+        if(os.path.isfile(filePath) == False):
+            filePath = self._packageFilePath
+        if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
-            pilImage = Image.open(self._fullFilePath)
+            pilImage = Image.open(filePath)
             pilImage.load()
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))

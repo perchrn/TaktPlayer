@@ -223,6 +223,48 @@ class ZoomEffect(object):
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
 
+class PixelateEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+
+        self._pixelRatio = float(self._internalResolutionY) / self._internalResolutionX
+        self._blockRange = (self._internalResolutionX / 2) - 4
+
+        self._oldAmount = -1.0
+
+        self._blockMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._bigMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "Pixelate"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, amount, mode, unused1, unused2, unused3):
+        return self.blockifyImage(image, amount, mode)
+
+    def blockifyImage(self, image, amount, mode):
+        if(amount < 0.02):
+            return image
+        if(self._oldAmount != amount):
+            miniImageSizeX = 4 + int(self._blockRange * (1.0 - amount))
+            miniImageSizeY = int(miniImageSizeX * self._pixelRatio)
+            self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
+        downScaler = cv.CV_INTER_CUBIC
+        if(mode < 0.33):
+            upScaler = cv.CV_INTER_NN #Clean
+        elif(mode < 0.66):
+            upScaler = cv.CV_INTER_CUBIC #Blobby roundish
+        else:
+            upScaler = cv.CV_INTER_LINEAR #Blobby star
+        cv.Resize(image, self._blockMat, downScaler)
+        cv.Resize(self._blockMat, self._bigMat, upScaler)
+        return self._bigMat
+
 class ScrollEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -1185,13 +1227,6 @@ class ImageAddEffect(object):
         self._maskMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._addMask = createMat(self._internalResolutionX, self._internalResolutionY)
 
-#TODO: This can become useful ;-)    def pilToCvImage(self, pilImage):
-#        cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
-#        cv.SetData(cvImage, pilImage.tostring())
-#        resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-#        cv.Resize(cvImage, resizeMat)
-#        return resizeMat
-
     def loadImage(self, fileName):
         image = None
         imageFileName = os.path.normpath(fileName)
@@ -1254,13 +1289,13 @@ class ImageAddEffect(object):
         return self.mask(image, maskId, imageId, mode)
 
     def mask(self, image, maskId, imageId, mode):
-        maskId = int(maskId * 63.0)
+        maskId = int(maskId * 63)
         self._updateMask(maskId)
         returnImage = image
         if(self._maskImage != None):
             cv.Mul(image, self._maskImage, self._maskMat, 0.004)
             returnImage = self._maskMat
-        imageId = int(imageId * 63.0)
+        imageId = int(imageId * 63)
         self._updateAddImage(imageId)
         if(self._addImage != None):
             cv.Add(returnImage, self._addImage, self._addMask)
@@ -1272,6 +1307,8 @@ class ImageAddEffect(object):
 #class RotateEffect(object):
 #class SliceEffect(object):
 
+#class AnalogTVNoiceEffect(object);
+
 #class StutterEffect(object):
 #class BaerturEffect(object):
 
@@ -1280,11 +1317,5 @@ class ImageAddEffect(object):
 #class CurveEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
-#class BwToRainbowEffect(object): #Or value to hue effect.
-
-#class SpriteImage(MediaFile):
-#class ScrollingImage(MediaFile):
-#replaces:
-    #class InterferenceEffect(object):
-    #class LimboEffectish():
-    #class ParalaxScrolling():
+#Media:
+#class ParalaxScrolling():

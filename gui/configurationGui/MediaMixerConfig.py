@@ -10,6 +10,8 @@ from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
     addTrackButtonFrame, EVT_DOUBLE_CLICK_EVENT, EVT_DRAG_DONE_EVENT,\
     PcnPopupMenu
 import sys
+from midi.MidiModulation import MidiModulation
+from midi.MidiTiming import MidiTiming
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -23,6 +25,7 @@ class MediaMixerConfig(object):
 
     def setupTrackConfig(self, trackConfigHolder):
         trackConfigHolder.addTextParameter("MixMode", "Default")
+        trackConfigHolder.addTextParameter("LevelModulation", "None")
         self._defaultPreEffectSettingsName = "MixPreDefault"
         trackConfigHolder.addTextParameter("PreEffectConfig", self._defaultPreEffectSettingsName)#Default MixPreDefault
         self._defaultPostEffectSettingsName = "MixPostDefault"
@@ -54,6 +57,9 @@ class MediaMixerConfig(object):
         mixMode = xmlConfig.get("mixmode")
         trackConfig.setValue("MixMode", mixMode)
 
+        levelMod = xmlConfig.get("levelmodulation")
+        trackConfig.setValue("LevelModulation", levelMod)
+
         preEffectModulationTemplate = xmlConfig.get("preeffectconfig")
         trackConfig.setValue("PreEffectConfig", preEffectModulationTemplate)
 
@@ -65,6 +71,7 @@ class MediaMixerConfig(object):
     def deafultTrackSettings(self, trackIndex):
         trackConfig = self._mediaTrackConfigs[trackIndex]
         trackConfig.setValue("MixMode", "Default")
+        trackConfig.setValue("LevelModulation", "None")
         trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
 
@@ -137,74 +144,23 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mainConfig = mainConfig
         self._config = None
         self._mixModes = MixMode()
-        self._mixMode = MixMode.Default
         self._latestOverviewMixMode = MixMode.Add
         self._midiNote = -1
         self._selectedEditor = self.EditSelection.Unselected
         self._trackEditorOpen = False
 
+        self._midiTiming = MidiTiming()
+        self._midiModulation = MidiModulation(None, self._midiTiming)
+
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
-
-    class EditSelection():
-        Unselected, PreEffect, PostEffect = range(3)
-
-    def setupTrackOverviewGui(self, overviewPanel, trackOverviewPanel, parentClass):
-        self._mainOverviePlane = overviewPanel
-        self._mainTrackOverviewPlane = trackOverviewPanel
-
-        self.updateMixmodeThumb = parentClass.updateMixmodeThumb
-        self.updateEffectThumb = parentClass.updateEffectThumb
-        self.showEffectList = parentClass.showEffectList
-        self._clearDragCursorCallback = parentClass.clearDragCursor
-        self._mixImages = parentClass._mixImages
-        self._mixLabels = parentClass._mixLabels
-
-        isMac = False
-        if(sys.platform == "darwin"):
-            isMac = True
-            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
-            font.SetPointSize(10)
-
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK MIXER:", pos=(4, 120)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        inBitmap = wx.Bitmap("graphics/gfxInput.png") #@UndefinedVariable
-        PcnImageButton(self._mainTrackOverviewPlane, inBitmap, inBitmap, (44, 134), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Pre FX:", pos=(4, 164)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        self._overviewPreFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 160), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewPreFxButton.enableDoubleClick()
-        self._overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectClick) #@UndefinedVariable
-        self._overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
-        self._overviewPreFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPreFxDone)
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Mix mode:", pos=(3, 186)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (51, 186), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewTrackMixModeButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onTrackMixModeChosen)
-        self._overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Post FX:", pos=(4, 210)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        self._overviewPostFxButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 206), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewPostFxButton.enableDoubleClick()
-        self._overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectClick) #@UndefinedVariable
-        self._overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
-        self._overviewPostFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPostFxDone)
-        outBitmap = wx.Bitmap("graphics/gfxOutput.png") #@UndefinedVariable
-        PcnImageButton(self._mainTrackOverviewPlane, outBitmap, outBitmap, (44, 232), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
 
         self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
         self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
         self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
         self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
-        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
-        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
-        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
 
         self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
         self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
@@ -212,15 +168,73 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._saveBigPressedBitmap = wx.Bitmap("graphics/saveButtonBigPressed.png") #@UndefinedVariable
         self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
 
-        self._overviewTrackSaveButtonDissabled = True
-        self._overviewTrackEditButton = PcnImageButton(self._mainTrackOverviewPlane, self._editBitmap, self._editPressedBitmap, (25, 260), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._overviewTrackEditButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackEditButton) #@UndefinedVariable
-        self._overviewTrackSaveButton = PcnImageButton(self._mainTrackOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (45, 260), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._overviewTrackSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackSaveButton) #@UndefinedVariable
+        self._overviewTrackMixModeButtonPopup = None
+        self._overviewTrackMixModePopupButtonIndex = -1
 
-        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 290)) #@UndefinedVariable
+    class EditSelection():
+        Unselected, PreEffect, PostEffect = range(3)
+
+    def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList):
+        self._midiTracksPlane = plane
+        self._trackGuiSettingsList = trackGuiSettingsList
+
+        self.updateMixmodeThumb = noteGuiClass.updateMixmodeThumb
+        self.updateEffectThumb = noteGuiClass.updateEffectThumb
+        self.showEffectList = noteGuiClass.showEffectList
+        self._clearDragCursorCallback = noteGuiClass.clearDragCursor
+        self._mixImages = noteGuiClass._mixImages
+        self._mixLabels = noteGuiClass._mixLabels
+
+        if(self._overviewTrackMixModeButtonPopup == None):
+            self._overviewTrackMixModeButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onTrackMixModeChosen)
+
+        self._currentTrackEffectEditorIndex = -1
+
+        isMac = False
+        if(sys.platform == "darwin"):
+            isMac = True
+            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+            font.SetPointSize(10)
+
+        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Pre:", pos=(79, 2+36*midiChannel)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        overviewPreFxButton = PcnImageButton(self._midiTracksPlane, self._blankFxBitmap, self._blankFxBitmap, (79, 14+36*midiChannel), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        overviewPreFxButton.enableDoubleClick()
+        overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectClick) #@UndefinedVariable
+        overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
+        overviewPreFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPreFxDone)
+        trackSettings.setPreFxWidget(overviewPreFxButton)
+
+        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Mix:", pos=(113, 2+36*midiChannel)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        overviewTrackClipMixButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (113, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
+        trackSettings.setMixWidget(overviewTrackClipMixButton)
+
+        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Lvl:", pos=(140, 2+36*midiChannel)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        overviewTrackClipLvlButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (140, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        overviewTrackClipLvlButton.Bind(wx.EVT_BUTTON, self._onTrackLvlButton) #@UndefinedVariable
+        trackSettings.setLvlWidget(overviewTrackClipLvlButton)
+
+        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Post:", pos=(167, 2+36*midiChannel)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        overviewPostFxButton = PcnImageButton(self._midiTracksPlane, self._blankFxBitmap, self._blankFxBitmap, (167, 14+36*midiChannel), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        overviewPostFxButton.enableDoubleClick()
+        overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectClick) #@UndefinedVariable
+        overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
+        overviewPostFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPostFxDone)
+        trackSettings.setPostFxWidget(overviewPostFxButton)
+
+    def setupPreviewGui(self, overviewPanel):
+        self._previewPlane = overviewPanel
+        wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 6)) #@UndefinedVariable
         previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
-        self._overviewPreviewButton = PcnKeyboardButton(self._mainOverviePlane, previewBitmap, (3, 304), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
+        self._overviewPreviewButton = PcnKeyboardButton(self._previewPlane, previewBitmap, (20, 20), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
         self._overviewPreviewButton.setFrqameAddingFunction(addTrackButtonFrame)
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):
@@ -268,26 +282,38 @@ class MediaTrackGui(object): #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        levelModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
+        self._levelModulationField = wx.TextCtrl(self._mainTrackPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
+        self._levelModulationField.SetInsertionPoint(0)
+        self._levelModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        levelModulationButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        levelModulationButton.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit) #@UndefinedVariable
+        levelModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        levelModulationSizer.Add(levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
+        tmpText8 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
         self._preEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._preEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._preEffectButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
-        preEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        preEffectSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
         preEffectSizer.Add(self._preEffectField, 2, wx.ALL, 5) #@UndefinedVariable
         preEffectSizer.Add(self._preEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(preEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         postEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
+        tmpText9 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
         self._postEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._postEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._postEffectButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
-        postEffectSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        postEffectSizer.Add(tmpText9, 1, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectField, 2, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(postEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -357,14 +383,49 @@ Replace:\tNo mixing. Just use this image.
             self._postEffectButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onTrackMixButton(self, event):
-        self._mainTrackOverviewPlane.PopupMenu(self._overviewTrackMixModeButtonPopup, (77,183))
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasMixWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            trackSettings = self._trackGuiSettingsList[foundTrackId]
+            self._overviewTrackMixModePopupButtonIndex = foundTrackId
+            trackSettings.getMixWidget().PopupMenu(self._overviewTrackMixModeButtonPopup, (23,0))
 
     def _onTrackMixModeChosen(self, index):
         if((index >= 0) and (index < len(self._mixLabels))):
-            self._mixMode = self._mixLabels[index]
-            self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
-            self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, self._mixMode, True)
+            mixMode = self._mixLabels[index]
+            self._updateChoices(self._mixField, self._mixModes.getChoices, mixMode, "Default")
+            if(self._overviewTrackMixModePopupButtonIndex >= 0):
+                trackSettings = self._trackGuiSettingsList[self._overviewTrackMixModePopupButtonIndex]
+                self.updateMixmodeThumb(trackSettings.getMixWidget(), mixMode, mixMode, True)
+                trackConfig = self._mainConfig.getTrackConfiguration(self._overviewTrackMixModePopupButtonIndex)
+                trackConfig.setValue("MixMode", mixMode)
             self._showOrHideSaveButton()
+
+    def _onTrackLvlButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasLvlWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            self._mainConfig.updateModulationGui(trackConfig.getValue("LevelModulation"), None, None, self._onTrackLvlButtonEditSave, foundTrackId)
+            self._showModulationCallback()
+
+    def _onTrackLvlButtonEditSave(self, trackId, value):
+        trackConfig = self._mainConfig.getTrackConfiguration(trackId)
+        if(trackConfig != None):
+            levelMod = self._midiModulation.validateModulationString(value)
+            trackConfig.setValue("LevelModulation", levelMod)
+
+    def _onLevelModulationEdit(self, event):
+        self._showModulationCallback()
+        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, None, None)
 
     def _onPreEffectEdit(self, event):
         if(self._selectedEditor != self.EditSelection.PreEffect):
@@ -393,26 +454,44 @@ Replace:\tNo mixing. Just use this image.
         self._highlightButton(self._selectedEditor)
 
     def _onPreEffectClick(self, event):
-        if(self._selectedEditor != self.EditSelection.PreEffect):
-            self._hideModulationCallback()
-        selectedEffectConfig = self._preEffectField.GetValue()
-        self._selectedEditor = self.EditSelection.PreEffect
-        self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
-        self._mainConfig.showSliderGuiEditButton()
-        self._showSlidersCallback()
-        self._showOrHideSaveButton()
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasPreFxWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            self._currentTrackEffectEditorIndex = foundTrackId
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            if(self._selectedEditor != self.EditSelection.PreEffect):
+                self._hideModulationCallback()
+            selectedEffectConfig = trackConfig.getValue("PreEffectConfig")
+            self._selectedEditor = self.EditSelection.PreEffect
+            self._highlightButton(self._selectedEditor)
+            self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+            self._mainConfig.showSliderGuiEditButton()
+            self._showSlidersCallback()
+            self._showOrHideSaveButton()
 
     def _onPostEffectClick(self, event):
-        if(self._selectedEditor != self.EditSelection.PostEffect):
-            self._hideModulationCallback()
-        selectedEffectConfig = self._postEffectField.GetValue()
-        self._selectedEditor = self.EditSelection.PostEffect
-        self._highlightButton(self._selectedEditor)
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
-        self._mainConfig.showSliderGuiEditButton()
-        self._showSlidersCallback()
-        self._showOrHideSaveButton()
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasPostFxWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            self._currentTrackEffectEditorIndex = foundTrackId
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            if(self._selectedEditor != self.EditSelection.PostEffect):
+                self._hideModulationCallback()
+            selectedEffectConfig = trackConfig.getValue("PostEffectConfig")
+            self._selectedEditor = self.EditSelection.PostEffect
+            self._highlightButton(self._selectedEditor)
+            self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+            self._mainConfig.showSliderGuiEditButton()
+            self._showSlidersCallback()
+            self._showOrHideSaveButton()
 
     def _onPreFxButtonDouble(self, event):
         selectedEffectConfig = self._preEffectField.GetValue()
@@ -425,48 +504,52 @@ Replace:\tNo mixing. Just use this image.
         self.showEffectList()
 
     def _onDragPreFxDone(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
-        if(fxName != None):
-            if(self._trackId != None):
-                self._updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
-                self.updateEffectThumb(self._overviewPreFxButton, fxName)
-                self._showOrHideSaveButton()
-        self._clearDragCursorCallback()
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasPreFxWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            trackSettings = self._trackGuiSettingsList[foundTrackId]
+            self._currentTrackEffectEditorIndex = foundTrackId
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            fxName = self._mainConfig.getDraggedFxName()
+            if(fxName != None):
+                if(self._trackId != None):
+                    trackConfig.setValue("PreEffectConfig", fxName)
+                    if(foundTrackId == self._trackId):
+                        self._updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
+                    self.updateEffectThumb(trackSettings.getPreFxWidget(), fxName)
+                    self._showOrHideSaveButton()
+            self._clearDragCursorCallback()
 
     def _onDragPostFxDone(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
-        if(fxName != None):
-            if(self._trackId != None):
-                self._updateEffecChoices(self._postEffectField, fxName, "MixPreDefault")
-                self.updateEffectThumb(self._overviewPostFxButton, fxName)
-                self._showOrHideSaveButton()
-        self._clearDragCursorCallback()
-
-    def _onOverviewTrackEditButton(self, event):
-        if(self._trackEditorOpen == False):
-            self._showTrackGuiCallback()
-            self._updateEditButton(True)
-        else:
-            self._hideTrackGuiCallback()
-            self._updateEditButton(False)
-
-    def _updateEditButton(self, isOpen):
-        self._trackEditorOpen = isOpen
-        if(isOpen == True):
-            self._overviewTrackEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
-        else:
-            self._overviewTrackEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-
-    def _onOverviewTrackSaveButton(self, event):
-        if(self._overviewTrackSaveButtonDissabled == False):
-            self._onSaveButton(event)
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasPostFxWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            trackSettings = self._trackGuiSettingsList[foundTrackId]
+            self._currentTrackEffectEditorIndex = foundTrackId
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            fxName = self._mainConfig.getDraggedFxName()
+            if(fxName != None):
+                if(self._trackId != None):
+                    trackConfig.setValue("PostEffectConfig", fxName)
+                    if(foundTrackId == self._trackId):
+                        self._updateEffecChoices(self._postEffectField, fxName, "MixPostDefault")
+                    self.updateEffectThumb(trackSettings.getPostFxWidget(), fxName)
+                    self._showOrHideSaveButton()
+            self._clearDragCursorCallback()
 
     def closeTackGui(self):
         self._onCloseButton(None)
 
     def _onCloseButton(self, event):
         self._hideTrackGuiCallback()
-        self._updateEditButton(False)
         self._hideEffectsCallback()
         self._hideModulationCallback()
         self._hideSlidersCallback()
@@ -475,15 +558,22 @@ Replace:\tNo mixing. Just use this image.
 
     def _onSaveButton(self, event):
         if(self._config != None):
-            self._mixMode = self._mixField.GetValue()
-            self._config.setValue("MixMode", self._mixMode)
-            self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
+            mixMode = self._mixField.GetValue()
+            self._config.setValue("MixMode", mixMode)
+            levelMod = self._midiModulation.validateModulationString(self._levelModulationField.GetValue())
+            self._levelModulationField.SetValue(levelMod)
+            self._config.setValue("LevelModulation", levelMod)
             preEffectConfig = self._preEffectField.GetValue()
             self._config.setValue("PreEffectConfig", preEffectConfig)
-            self.updateEffectThumb(self._overviewPreFxButton, preEffectConfig)
             postEffectConfig = self._postEffectField.GetValue()
             self._config.setValue("PostEffectConfig", postEffectConfig)
-            self.updateEffectThumb(self._overviewPostFxButton, postEffectConfig)
+            if((self._trackId >= 0) and (self._trackId < 16)):
+                trackSettings = self._trackGuiSettingsList[self._trackId]
+                self.updateTrackMixModeThumb(self._trackId, self._config, "None")
+                self.updateTrackLvlModThumb(self._trackId, self._config)
+                self.updateEffectThumb(trackSettings.getPreFxWidget(), preEffectConfig)
+                self.updateEffectThumb(trackSettings.getPostFxWidget(), postEffectConfig)
+                
         self._showOrHideSaveButton()
 
     def _checkIfUpdated(self):
@@ -492,6 +582,10 @@ Replace:\tNo mixing. Just use this image.
         guiMixMode = self._mixField.GetValue()
         configMixMode = self._config.getValue("MixMode")
         if(guiMixMode != configMixMode):
+            return True
+        guiLvlMode = self._levelModulationField.GetValue()
+        configLvlMode = self._config.getValue("LevelModulation")
+        if(guiLvlMode != configLvlMode):
             return True
         guiPreEffect = self._preEffectField.GetValue()
         configPreEffect = self._config.getValue("PreEffectConfig")
@@ -509,16 +603,38 @@ Replace:\tNo mixing. Just use this image.
     def _showOrHideSaveButton(self):
         updated = self._checkIfUpdated()
         if(updated == False):
-            self._overviewTrackSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
             self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
-            self._overviewTrackSaveButtonDissabled = True
         if(updated == True):
-            self._overviewTrackSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
             self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
-            self._overviewTrackSaveButtonDissabled = False
 
-    def updateMixModeOverviewThumb(self, noteMixMode):
-        self.updateMixmodeThumb(self._overviewTrackClipMixButton, self._mixMode, noteMixMode)
+    def updateTrackMixModeThumb(self, index, trackConfig, noteMixMode):
+        widget = self._trackGuiSettingsList[index].getMixWidget()
+        if(trackConfig != None):
+            mixMode = trackConfig.getValue("MixMode")
+        else:
+            mixMode = "Default"
+        self.updateMixmodeThumb(widget, mixMode, noteMixMode)
+        self._showOrHideSaveButton()
+
+    def updateTrackLvlModThumb(self, index, trackConfig):
+        widget = self._trackGuiSettingsList[index].getLvlWidget()
+        if(trackConfig != None):
+            mixMode = trackConfig.getValue("LevelModulation")
+        else:
+            mixMode = "None"
+        self._mainConfig.updateModulationGuiButton(widget, mixMode)
+        self._showOrHideSaveButton()
+
+    def updateTrackEffectsThumb(self, index, trackConfig):
+        trackSettings = self._trackGuiSettingsList[index]
+        if(trackConfig != None):
+            preFxName = trackConfig.getValue("PreEffectConfig")
+            postFxName = trackConfig.getValue("PostEffectConfig")
+        else:
+            preFxName = "MixPreDefault"
+            postFxName = "MixPostDefault"
+        self.updateEffectThumb(trackSettings.getPreFxWidget(), preFxName)
+        self.updateEffectThumb(trackSettings.getPostFxWidget(), postFxName)
         self._showOrHideSaveButton()
 
     def updatePreviewImage(self, fileName):
@@ -533,15 +649,14 @@ Replace:\tNo mixing. Just use this image.
         if(self._config == None):
             return
         self._trackField.SetValue(str(self._trackId + 1))
-        self._mixMode = self._config.getValue("MixMode")
-        self._updateChoices(self._mixField, self._mixModes.getChoices, self._mixMode, "Default")
-        self.updateMixModeOverviewThumb(self._latestOverviewMixMode)
+        mixMode = self._config.getValue("MixMode")
+        self._updateChoices(self._mixField, self._mixModes.getChoices, mixMode, "Default")
+        levelMod = self._config.getValue("LevelModulation")
+        self._levelModulationField.SetValue(levelMod)
         preEffectConfig = self._config.getValue("PreEffectConfig")
         self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
-        self.updateEffectThumb(self._overviewPreFxButton, preEffectConfig)
         postEffectConfig = self._config.getValue("PostEffectConfig")
         self._updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
-        self.updateEffectThumb(self._overviewPostFxButton, postEffectConfig)
 
         if(self._selectedEditor != self.EditSelection.Unselected):
             if(self._selectedEditor == self.EditSelection.PreEffect):

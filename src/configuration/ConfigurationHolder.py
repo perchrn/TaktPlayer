@@ -113,7 +113,15 @@ class ConfigurationHolder(object):
         self._loadedXML = xmlPart
 
     def loadConfig(self, configName):
-        filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        print "DEBUG pcm: loadConfig"
+        if(os.path.isabs(configName) == True):
+            filePath = os.path.normpath(configName)
+        else:
+            filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        if(os.path.isfile(filePath) == False):
+            print "********** Error loading configuration: \"%s\" **********" %(filePath)
+            filePath = os.path.normpath(os.path.join(os.getcwd(), "config", os.path.basename(configName)))
+            print "********** Trying package configuration: \"%s\" **********" %(filePath)
         if(os.path.isfile(filePath) == False):
             print "********** Error loading configuration: \"%s\" **********" %(filePath)
             print "**********          Keeping last configuration.          **********"
@@ -127,7 +135,7 @@ class ConfigurationHolder(object):
                 soup = BeautifulStoneSoup(xmlString)
             self._loadedXML = ElementTree.XML(soup.prettify())
             self._updateFromXml(self._loadedXML)
-            self._loadedFileName = configName
+            self._loadedFileName = os.path.basename(configName)
         except:
             print "********** Error loading configuration: \"%s\" **********" %(filePath)
             raise
@@ -135,25 +143,52 @@ class ConfigurationHolder(object):
     def saveConfigFile(self, configName):
         if(configName.endswith(".cfg") == False):
             configName = configName + ".cfg"
-        filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        if(os.path.isabs(configName) == True):
+            filePath = os.path.normpath(configName)
+        else:
+            filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
         try:
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
             saveFile.write(xmlString)
-            self._loadedFileName = configName
+            self._loadedFileName = os.path.basename(configName)
         except:
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
             raise
 
-    def getConfigFileList(self):
-        fileList = os.listdir(os.path.normpath(os.getcwd() + "/config/"))
+    def getConfigFileList(self, configDir):
+        packageConfigDir = os.path.normpath(os.path.join(os.getcwd(), "config"))
+        if((configDir != "") and (os.path.isabs(configDir) == True)):
+            dirPath = os.path.normpath(configDir)
+        else:
+            dirPath = packageConfigDir
+
+        fileListList = []
         fileListString = ""
+
+        fileList = os.listdir(dirPath)
         for aFile in fileList:
             if(aFile.endswith(".cfg")):
                 if((aFile != "PlayerConfig.cfg") and(aFile != "GuiConfig.cfg")):
                     if(fileListString != ""):
                         fileListString += ";"
                     fileListString += aFile
+                    fileListList.append(aFile)
+
+        firstExtraFile = True
+        if(dirPath != packageConfigDir):
+            fileList = os.listdir(packageConfigDir)
+            for aFile in fileList:
+                if(aFile.endswith(".cfg")):
+                    if((aFile != "PlayerConfig.cfg") and(aFile != "GuiConfig.cfg")):
+                        if(fileListList.count(aFile) == 0):
+                            if(firstExtraFile == True):
+                                fileListString += ";-------------------------"
+                                firstExtraFile = False
+                            if(fileListString != ""):
+                                fileListString += ";"
+                            fileListString += aFile
+
         return fileListString
 
     def getCurrentFileName(self):

@@ -220,9 +220,7 @@ class MediaFile(object):
 
             if(changedToImage == True):
                 self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
-                self._values1Field.SetValue("0.0|0.0|0.0")
                 self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-                self._values2Field.SetValue("0.0|0.0|0.0")
                 self._configurationTree.addBoolParameter("CropMode", True)
         else:
             #Video file
@@ -552,9 +550,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._overviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(168,-1)) #@UndefinedVariable
-        self._trackOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(0,0)) #@UndefinedVariable
-        self._clipOverviewGuiPlane = wx.Panel(self._overviewGuiPlane, wx.ID_ANY, size=(84,288), pos=(84,0)) #@UndefinedVariable
+        self._clipOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(88,288)) #@UndefinedVariable
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._noteSlidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
@@ -569,8 +565,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
 
         self._parentPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._overviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._trackOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
@@ -585,7 +579,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._slidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
 
-        self._configSizer.Add(self._overviewGuiPlane)
+        self._configSizer.Add(self._clipOverviewGuiPlane)
         self._configSizer.Add(self._trackGuiPlane)
         self._configSizer.Add(self._noteConfigPanel)
         self._configSizer.Add(self._noteSlidersPanel)
@@ -612,11 +606,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._slidersPanel)
         self._parentPlane.SetSizer(self._configSizer)
-
-        self._overviewGuiPlane.SetBackgroundColour((180,180,180))
-        self._trackOverviewGuiPlane.SetBackgroundColour((170,170,170))
-        self.setupTrackClipOverviewGui(self._trackOverviewGuiPlane)
-        self._trackGui.setupTrackOverviewGui(self._overviewGuiPlane, self._trackOverviewGuiPlane, self)
 
         self._clipOverviewGuiPlane.SetBackgroundColour((160,160,160))
         self.setupClipOverviewGui(self._clipOverviewGuiPlane)
@@ -908,45 +897,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._type = "VideoLoop"
         self._setupSubConfig(self._config)
 
-    def setupTrackClipOverviewGui(self, overviewPanel):
-        self._mainTrackOverviewPlane = overviewPanel
-
-        isMac = False
-        if(sys.platform == "darwin"):
-            isMac = True
-            font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
-            font.SetPointSize(10)
-
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "TRACK CLIP:", pos=(4, 2)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        self._overviewTrackClipButton = PcnKeyboardButton(self._mainTrackOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
-        self._overviewTrackClipButton.setFrqameAddingFunction(addTrackButtonFrame)
-        self._overviewTrackClipButton.Bind(wx.EVT_BUTTON, self._onOverviewTrackClipButton) #@UndefinedVariable
-        self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
-        self._overviewTrackClipModeButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewTrackClipMixButton = PcnImageButton(self._mainTrackOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        self._overviewTrackClipLengthLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
-        if(isMac == True):
-            self._overviewTrackClipLengthLabel.SetFont(font)
-        self._overviewTrackClipQuantizeLabel = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
-        if(isMac == True):
-            self._overviewTrackClipQuantizeLabel.SetFont(font)
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        txt = wx.StaticText(self._mainTrackOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
-        if(isMac == True):
-            txt.SetFont(font)
-        self._overviewTrackFx1Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewTrackFx2Button = PcnImageButton(self._mainTrackOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
-        self._overviewTrackFx1Button.enableDoubleClick()
-        self._overviewTrackFx2Button.enableDoubleClick()
-        self._overviewTrackFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
-        self._overviewTrackFx2Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
-        self._overviewTrackFx1Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
-        self._overviewTrackFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
-
     def setupClipOverviewGui(self, overviewPanel):
         self._mainClipOverviewPlane = overviewPanel
 
@@ -1024,6 +974,10 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
+
+        sizeText = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, ".", pos=(78, 435)) #@UndefinedVariable
+        if(isMac == True):
+            sizeText.SetFont(font)
 
     def _setupNoteSlidersGui(self, plane, sizer):
         self._mainSliderSizer = sizer
@@ -2005,7 +1959,7 @@ All notes on events are quantized to this.
             self._subModeLabel.SetLabel("Resize mode:")
             if(config != None):
                 cropMode = config.getValue("CropMode")
-                if(cropMode == True):
+                if((cropMode == None) or (cropMode == True)):
                     self._selectedSubMode = "Crop"
                 else:
                     self._selectedSubMode = "Stretch"
@@ -2027,7 +1981,7 @@ All notes on events are quantized to this.
             self._subModeLabel.SetLabel("Scroll direction:")
             if(config != None):
                 horMode = config.getValue("HorizontalMode")
-                if(horMode == True):
+                if((horMode == None) or (horMode == True)):
                     self._selectedSubMode = "Horizontal"
                 else:
                     self._selectedSubMode = "Vertical"
@@ -2057,12 +2011,18 @@ All notes on events are quantized to this.
                     self._selectedSubMode = "Normal"
                 self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 confString = self._config.getValue("StartPosition")
-                confVal = textToFloatValues(confString, 2)
-                confValString = floatValuesToString(confVal)
+                if(confString == None):
+                    confValString = "0.5|0.5"
+                else:
+                    confVal = textToFloatValues(confString, 2)
+                    confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
-                confVal = textToFloatValues(confString, 2)
-                confValString = floatValuesToString(confVal)
+                if(confString == None):
+                    confValString = "0.5|0.5"
+                else:
+                    confVal = textToFloatValues(confString, 2)
+                    confValString = floatValuesToString(confVal)
                 self._values2Field.SetValue(confValString)
                 xMod = config.getValue("XModulation")
                 self._subModulationField.SetValue(str(xMod))
@@ -2075,6 +2035,20 @@ All notes on events are quantized to this.
                 self._values2Field.SetValue("0.5|0.5")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
+        elif(self._type == "KinectCamera"):
+            if(config != None):
+                dispMod = config.getValue("DisplayModeModulation")
+                self._subModulationField.SetValue(str(dispMod))
+                confString = self._config.getValue("FilterValues")
+                if(confString == None):
+                    confValString = "0.0|0.0|0.0"
+                else:
+                    confVal = textToFloatValues(confString, 3)
+                    confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+            else:
+                self._subModulationField.SetValue("None")
+                self._values1Field.SetValue("0.0|0.0|0.0")
 
         if(self._type == "KinectCamera"):
             self._subModulationLabel.SetLabel("Display mode:")
@@ -2641,30 +2615,6 @@ All notes on events are quantized to this.
             self._overviewClipButton.setBitmap(clipBitmap)
         else:
             self._overviewClipButton.setBitmap(self._emptyBitMap)
-
-    def updateTrackOverviewGui(self, noteConfig, noteId):
-        config = noteConfig.getConfig()
-        self._activeTrackClipNoteId = noteId
-        self.updateMediaTypeThumb(self._overviewTrackClipModeButton, config)
-        mixMode = config.getValue("MixMode")
-        self.updateMixmodeThumb(self._overviewTrackClipMixButton, mixMode, mixMode)
-        length = config.getValue("SyncLength")
-        self._overviewTrackClipLengthLabel.SetLabel("L: " + str(length))
-        qLength = config.getValue("QuantizeLength")
-        self._overviewTrackClipQuantizeLabel.SetLabel("Q: " + str(qLength))
-        effect1Config = config.getValue("Effect1Config")
-        self.updateEffectThumb(self._overviewTrackFx1Button, effect1Config)
-        effect2Config = config.getValue("Effect2Config")
-        self.updateEffectThumb(self._overviewTrackFx2Button, effect2Config)
-
-    def clearTrackOverviewGui(self):
-        self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
-        self._overviewTrackClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
-        self._overviewTrackClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
-        self._overviewTrackClipLengthLabel.SetLabel("L: N/A")
-        self._overviewTrackClipQuantizeLabel.SetLabel("Q: N/A")
-        self._overviewTrackFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
-        self._overviewTrackFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
 
     def _checkIfUpdated(self):
         guiFileName = self._fileNameField.GetValue()

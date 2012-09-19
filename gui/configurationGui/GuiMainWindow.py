@@ -27,6 +27,7 @@ import shutil
 import sys
 from configurationGui.FileMenu import ConfigOpenDialog, ConfigNewDialog,\
     ConfigGuiDialog, ConfigPlayerDialog
+from video.media.MediaFileModes import forceUnixPath
 
 APP_NAME = "TaktPlayerGui"
 
@@ -94,8 +95,104 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
             self._callbackFunction(self._widgetId, name, nameId)
             nameId += 1
 
+
+class TrackOverviewSettings(object):
+    def __init__(self, panel, midiChannel, parent):
+        self._midiChannel = midiChannel
+        extraSpace = ""
+        if(self._midiChannel < 9):
+            extraSpace = " "
+        wx.StaticText(panel, wx.ID_ANY, extraSpace + str(self._midiChannel + 1), pos=(2, 4+36*self._midiChannel)) #@UndefinedVariable
+        self._trackButton = PcnKeyboardButton(panel, parent._trackThumbnailBitmap, (16, 4+36*self._midiChannel), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._trackButton.setFrqameAddingFunction(addTrackButtonFrame)
+        self._trackButton.setBitmap(parent._emptyBitMap)
+        self._trackPlayButton = PcnImageButton(panel, parent._trackPlayBitmap, parent._trackPlayPressedBitmap, (60, 4+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
+        self._trackEditButton = PcnImageButton(panel, parent._trackEditBitmap, parent._trackEditPressedBitmap, (60, 15+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
+        self._trackStopButton = PcnImageButton(panel, parent._trackStopBitmap, parent._trackStopPressedBitmap, (60, 26+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
+        self._activeTrackNote = -1
+        self._trackButtonWidgetId = self._trackButton.GetId()
+        self._trackStopWidgetsId = self._trackStopButton.GetId()
+        self._trackEditWidgetsId = self._trackEditButton.GetId()
+        self._trackPlayWidgetsId = self._trackPlayButton.GetId()
+        self._trackButton.Bind(wx.EVT_BUTTON, parent._onTrackButton) #@UndefinedVariable
+        self._trackPlayButton.Bind(wx.EVT_BUTTON, parent._onTrackPlayButton) #@UndefinedVariable
+        self._trackEditButton.Bind(wx.EVT_BUTTON, parent._onTrackEditButton) #@UndefinedVariable
+        self._trackStopButton.Bind(wx.EVT_BUTTON, parent._onTrackStopButton) #@UndefinedVariable
+
+    def hasTrackWidgetId(self, widgetId):
+        return self._trackButtonWidgetId == widgetId
+
+    def hasPlayWidgetId(self, widgetId):
+        return self._trackPlayWidgetsId == widgetId
+
+    def hasEditWidgetId(self, widgetId):
+        return self._trackEditWidgetsId == widgetId
+
+    def hasStopWidgetId(self, widgetId):
+        return self._trackStopWidgetsId == widgetId
+
+    def setPreFxWidget(self, widget):
+        self._trackPreFxWidget = widget
+        self._trackPreFxWidgetId = widget.GetId()
+
+    def hasPreFxWidgetId(self, widgetId):
+        return self._trackPreFxWidgetId == widgetId
+
+    def getPreFxWidget(self):
+        return self._trackPreFxWidget
+
+    def setMixWidget(self, widget):
+        self._trackMixWidget = widget
+        self._trackMixWidgetId = widget.GetId()
+
+    def hasMixWidgetId(self, widgetId):
+        return self._trackMixWidgetId == widgetId
+
+    def getMixWidget(self):
+        return self._trackMixWidget
+
+    def setLvlWidget(self, widget):
+        self._trackLvlWidget = widget
+        self._trackLvlWidgetId = widget.GetId()
+
+    def hasLvlWidgetId(self, widgetId):
+        return self._trackLvlWidgetId == widgetId
+
+    def getLvlWidget(self):
+        return self._trackLvlWidget
+
+    def setPostFxWidget(self, widget):
+        self._trackPostFxWidget = widget
+        self._trackPostFxWidgetId = widget.GetId()
+
+    def hasPostFxWidgetId(self, widgetId):
+        return self._trackPostFxWidgetId == widgetId
+
+    def getPostFxWidget(self):
+        return self._trackPostFxWidget
+
+    def setSelected(self):
+        self._trackButton.setSelected()
+        self._trackPlayButton.setSelected()
+
+    def unsetSelected(self):
+        self._trackButton.unsetSelected()
+        self._trackPlayButton.unsetSelected()
+
+    def clearThumb(self):
+        self._trackButton.clearBitmap()
+
+    def setThumb(self, bitmap):
+        self._trackButton.setBitmap(bitmap)
+
+    def setActiveNoteId(self, note):
+        self._activeTrackNote = note
+
+    def getActiveNoteId(self):
+        return self._activeTrackNote
+
 class TaktPlayerGui(wx.Frame): #@UndefinedVariable
-    def __init__(self, parent, title):
+    def __init__(self, parent, configDir, title):
         super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
@@ -104,7 +201,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
 
-        self._configuration = Configuration()
+        self._configuration = Configuration(configDir)
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
         self._videoDirectory = self._configuration.getGuiVideoDir()
         self._videoSaveSubDir = ""
@@ -134,6 +231,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         menuSeperatorSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._trackAndEditAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         editAreaSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        trackAndPreviewSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         midiTrackSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
@@ -151,23 +249,29 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._scrollingKeyboardPannel.SetBackgroundColour(wx.Colour(0,0,0)) #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
-        self._scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(98,-1)) #@UndefinedVariable
+        self._scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(220,-1)) #@UndefinedVariable
         self._scrollingMidiTrackPanel.SetupScrolling(False, True)
         self._scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(self._scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
         self._scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
+        self._trackGui = MediaTrackGui(self._configuration)
+        self._previewPanel = wx.Panel(self, wx.ID_ANY, size=(250,120)) #@UndefinedVariable
+        self._previewPanel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
+        self._trackGui.setupPreviewGui(self._previewPanel)
+
         self._scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
         self._scrollingEditAreaPanel.SetupScrolling(True, True)
         self._scrollingEditAreaPanel.SetSizer(editAreaSizer)
         self._scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
-        self._trackGui = MediaTrackGui(self._configuration)
         self._configuration.setMixerGui(self._trackGui)
         self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
         self._configuration.setNoteGui(self._noteGui)
-        self._trackAndEditAreaSizer.Add(self._scrollingMidiTrackPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        trackAndPreviewSizer.Add(self._scrollingMidiTrackPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        trackAndPreviewSizer.Add(self._previewPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable        
+        self._trackAndEditAreaSizer.Add(trackAndPreviewSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._trackAndEditAreaSizer.Add(self._scrollingEditAreaPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._mainSizer.Add(self._menuSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
@@ -266,42 +370,19 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._trackEditPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
         self._trackPlayBitmap = wx.Bitmap("graphics/playButton.png") #@UndefinedVariable
         self._trackPlayPressedBitmap = wx.Bitmap("graphics/playButtonPressed.png") #@UndefinedVariable
+        self._trackEditBitmap = wx.Bitmap("graphics/editButtonSquare.png") #@UndefinedVariable
+        self._trackEditPressedBitmap = wx.Bitmap("graphics/editButtonSquarePressed.png") #@UndefinedVariable
         self._trackStopBitmap = wx.Bitmap("graphics/stopButton.png") #@UndefinedVariable
         self._trackStopPressedBitmap = wx.Bitmap("graphics/stopButtonPressed.png") #@UndefinedVariable
-        self._trackWidgets = []
-        self._activeTrackNotes = []
-        self._activeTrackId = -1
-        self._trackWidgetIds = []
-        self._trackEditWidgetsIds = []
-        self._trackPlayWidgets = []
-        self._trackPlayWidgetsIds = []
-        self._trackStopWidgets = []
-        self._trackStopWidgetsIds = []
+        self._trackGuiSettings = []
         for track in range(16):
-            extraSpace = ""
-            if(track < 9):
-                extraSpace = " "
-            wx.StaticText(self._midiTrackPanel, wx.ID_ANY, extraSpace + str(track + 1), pos=(2, 4+36*track)) #@UndefinedVariable
-            trackButton = PcnKeyboardButton(self._midiTrackPanel, self._trackThumbnailBitmap, (16, 4+36*track), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
-            trackButton.setFrqameAddingFunction(addTrackButtonFrame)
-            trackButton.setBitmap(self._emptyBitMap)
-            trackStopButton = PcnImageButton(self._midiTrackPanel, self._trackStopBitmap, self._trackStopPressedBitmap, (60, 4+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
-            trackPlayButton = PcnImageButton(self._midiTrackPanel, self._trackPlayBitmap, self._trackPlayPressedBitmap, (60, 21+36*track), wx.ID_ANY, size=(15, 15)) #@UndefinedVariable
-            self._trackWidgets.append(trackButton)
-            self._activeTrackNotes.append(-1)
-            self._trackStopWidgets.append(trackStopButton)
-            self._trackPlayWidgets.append(trackPlayButton)
-            self._trackWidgetIds.append(trackButton.GetId())
-            self._trackStopWidgetsIds.append(trackStopButton.GetId())
-            self._trackPlayWidgetsIds.append(trackPlayButton.GetId())
-            trackButton.Bind(wx.EVT_BUTTON, self._onTrackButton) #@UndefinedVariable
-            trackStopButton.Bind(wx.EVT_BUTTON, self._onTrackStopButton) #@UndefinedVariable
-            trackPlayButton.Bind(wx.EVT_BUTTON, self._onTrackPlayButton) #@UndefinedVariable
+            self._trackGuiSettings.append(TrackOverviewSettings(self._midiTrackPanel, track, self))
+            settings = self._trackGuiSettings[track]
+            self._trackGui.setupTrackOverviewGui(self._midiTrackPanel, self._noteGui, track, settings, self._trackGuiSettings)
 
         self._selectedMidiChannel = 0
-        self._selectTrackPlayer(self._selectedMidiChannel)
-        self._selectTrackKey(self._selectedMidiChannel)
-        self._trackSelected(self._selectedMidiChannel)
+        self._activeTrackId = -1
+        self._selectTrack(self._selectedMidiChannel)
 
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         logging.basicConfig()
@@ -564,31 +645,29 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     noteList = result[1]
                     for i in range(16):
                         note = int(noteList[i])
-                        widget = self._trackWidgets[i]
+                        trackConfig = self._configuration.getTrackConfiguration(i)
+                        settings = self._trackGuiSettings[i]
                         if((note < 0) or (note > 127)):
-                            widget.clearBitmap()
-                            if((i == self._activeTrackId) and (self._activeTrackNotes[i] != -1)):
-                                self._noteGui.clearTrackOverviewGui()
-                                self._trackGui.updateMixModeOverviewThumb("None")
-                                self._noteGui.updateTrackOverviewClipBitmap(None)
-                            self._activeTrackNotes[i] = -1
+                            settings.clearThumb()
+                            if((settings.getActiveNoteId() == -1)):
+                                self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
+                                self._trackGui.updateTrackEffectsThumb(i, trackConfig)
+                            settings.setActiveNoteId(-1)
                         else:
                             noteWidget = self._noteWidgets[note]
                             noteBitmap = noteWidget.getBitmap()
                             if(noteBitmap != None):
-                                widget.setBitmap(noteBitmap)
+                                settings.setThumb(noteBitmap)
                             else:
-                                widget.clearBitmap()
-                            if(i == self._activeTrackId):
-                                self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                                activeNoteConfig = self._configuration.getNoteConfiguration(note)
-                                if(activeNoteConfig == None):
-                                    self._noteGui.clearTrackOverviewGui()
-                                    self._trackGui.updateMixModeOverviewThumb("None")
-                                else:
-                                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, note)
-                                    self._trackGui.updateMixModeOverviewThumb(activeNoteConfig.getMixMode())
-                            self._activeTrackNotes[i] = note
+                                settings.clearThumb()
+                            activeNoteConfig = self._configuration.getNoteConfiguration(note)
+                            if(activeNoteConfig == None):
+                                self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
+                                self._trackGui.updateTrackEffectsThumb(i, trackConfig)
+                            else:
+                                self._trackGui.updateTrackMixModeThumb(i, trackConfig, activeNoteConfig.getMixMode())
+                                self._trackGui.updateTrackEffectsThumb(i, trackConfig)
+                            settings.setActiveNoteId(note)
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
@@ -659,7 +738,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 noteBitmap = noteWidget.getBitmap()
                                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
                                 self._noteGui.updateGui(noteConfig, self._activeNoteId)
-                            self._selectTrackKey(self._selectedMidiChannel)
+                            self._selectTrack(self._selectedMidiChannel)
                             self._configuration.updateEffectList(None)
                             self._configuration.updateFadeList(None)
                             self._configuration.updateEffectImageList()
@@ -995,21 +1074,13 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(i != keyId):
                 widget.unsetSelected()
 
-    def _selectTrackKey(self, trackId):
+    def _selectTrack(self, trackId):
         if((trackId >= 0) and (trackId < 16)):
-            self._trackWidgets[trackId].setSelected()
+            self._trackGuiSettings[trackId].setSelected()
         for i in range(16):
-            widget = self._trackWidgets[i]
+            settings = self._trackGuiSettings[i]
             if(i != trackId):
-                widget.unsetSelected()
-
-    def _selectTrackPlayer(self, trackId):
-        if((trackId >= 0) and (trackId < 16)):
-            self._trackPlayWidgets[trackId].setSelected()
-        for i in range(16):
-            widget = self._trackPlayWidgets[i]
-            if(i != trackId):
-                widget.unsetSelected()
+                settings.unsetSelected()
 
     def _onKeyboardButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -1082,7 +1153,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         except:
             text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
             text += " from directory: \"" + os.getcwd() + "\"\n"
-            text += "\nPlease check your path or update GuiMain.bat.\n"
+            text += "\nPlease check your path or update GUI config under file menu.\n"
             dlg = wx.MessageDialog(self, text, 'ffmpeg error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
             dlg.ShowModal()
             dlg.Destroy()
@@ -1101,15 +1172,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if((noteId >= 0) and (noteId < 128)):
             self._noteWidgets[noteId].setBitmap(self._newNoteBitmap)
             self._noteGui.updateOverviewClipBitmap(self._newNoteBitmap)
-            if(noteId == self._activeTrackId):
-                self._noteGui.updateTrackOverviewClipBitmap(self._newNoteBitmap)
 
     def clearImageOnNote(self, noteId):
         if((noteId >= 0) and (noteId < 128)):
             self._noteWidgets[noteId].clearBitmap()
             self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
-            if(noteId == self._activeTrackId):
-                self._noteGui.updateTrackOverviewClipBitmap(self._emptyBitMap)
 
     def fileDropped(self, widgetId, fileName, fileNameIndex):
         destNoteId = None
@@ -1207,6 +1274,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             relativeFileName = self._copyOutputFileName
                         else:
                             return
+                    relativeFileName = forceUnixPath(relativeFileName)
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
                     if(destinationConfig == None):
@@ -1247,63 +1315,95 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if(videoSaveSubDir != None):
             self._videoSaveSubDir = videoSaveSubDir
 
+    def _onTrackEditButton(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettings[i].hasEditWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            if(self._activeTrackId == foundTrackId):
+                self._activeTrackId = -1
+                self._noteGui.hideTrackGui()
+            else:
+                self._activeTrackId = foundTrackId
+                destinationConfig = self._configuration.getTrackConfiguration(self._activeTrackId)
+                if(destinationConfig != None):
+                    settings = self._trackGuiSettings[self._activeTrackId]
+                    activeNoteId = settings.getActiveNoteId()
+                    noteMixMode = "Default"
+                    if((activeNoteId >= 0) and (activeNoteId < 128)):
+                        activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                        if(activeNoteConfig != None):
+                            noteMixMode = activeNoteConfig.getMixMode()
+                    else:
+                        noteMixMode = "None"
+                    self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
+                    self._noteGui.showTrackGui()
+
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
         for i in range(16):
-            if(self._trackWidgetIds[i] == buttonId):
+            if(self._trackGuiSettings[i].hasTrackWidgetId(buttonId)):
                 foundTrackId = i
                 break
         if(foundTrackId != None):
-            self._selectTrackKey(foundTrackId)
-            self._trackSelected(foundTrackId)
-            if(True): #TODO make configurable:
+            self._activeTrackId = foundTrackId
+            self._selectTrack(foundTrackId)
+            if(self._configuration.isMidiEnabled()):
                 self._selectedMidiChannel = foundTrackId
-                self._selectTrackPlayer(foundTrackId)
+                self._selectTrack(foundTrackId)
+                destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+                if(destinationConfig != None):
+                    settings = self._trackGuiSettings[foundTrackId]
+                    activeNoteId = settings.getActiveNoteId()
+                    noteMixMode = "Default"
+                    if((activeNoteId >= 0) and (activeNoteId < 128)):
+                        activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                        if(activeNoteConfig != None):
+                            noteMixMode = activeNoteConfig.getMixMode()
+                    else:
+                        noteMixMode = "None"
+                    self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
                 self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
-
-    def _trackSelected(self, selectedTrackId):
-        self._activeTrackId = selectedTrackId
-        destinationConfig = self._configuration.getTrackConfiguration(self._activeTrackId)
-        if(destinationConfig != None):
-            activeNoteId = self._activeTrackNotes[self._activeTrackId]
-            noteMixMode = "Default"
-            if((activeNoteId >= 0) and (activeNoteId < 128)):
-                activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                if(activeNoteConfig != None):
-                    noteWidget = self._noteWidgets[activeNoteId]
-                    noteBitmap = noteWidget.getBitmap()
-                    noteMixMode = activeNoteConfig.getMixMode()
-                    self._noteGui.updateTrackOverviewClipBitmap(noteBitmap)
-                    self._noteGui.updateTrackOverviewGui(activeNoteConfig, activeNoteId)
-                else:
-                    self._noteGui.clearTrackOverviewGui()
-            else:
-                noteMixMode = "None"
-                self._noteGui.clearTrackOverviewGui()
-            self._trackGui.updateGui(destinationConfig, self._activeTrackId, activeNoteId, noteMixMode)
 
     def _onTrackPlayButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
         for i in range(16):
-            if(self._trackPlayWidgetsIds[i] == buttonId):
+            if(self._trackGuiSettings[i].hasPlayWidgetId(buttonId)):
                 foundTrackId = i
                 break
         if(foundTrackId != None):
+            self._activeTrackId = foundTrackId
             if(self._selectedMidiChannel == foundTrackId):
                 self._selectedMidiChannel = -1
-                self._selectTrackPlayer(-1)
+                self._selectTrack(-1)
             else:
-                self._selectedMidiChannel = foundTrackId
-                self._selectTrackPlayer(foundTrackId)
+                if(self._configuration.isMidiEnabled()):
+                    self._selectedMidiChannel = foundTrackId
+                    self._selectTrack(foundTrackId)
+            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+            if(destinationConfig != None):
+                settings = self._trackGuiSettings[foundTrackId]
+                activeNoteId = settings.getActiveNoteId()
+                noteMixMode = "Default"
+                if((activeNoteId >= 0) and (activeNoteId < 128)):
+                    activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                    if(activeNoteConfig != None):
+                        noteMixMode = activeNoteConfig.getMixMode()
+                else:
+                    noteMixMode = "None"
+                self._trackGui.updateGui(destinationConfig, self._activeTrackId, activeNoteId, noteMixMode)
             self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _onTrackStopButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
         for i in range(16):
-            if(self._trackStopWidgetsIds[i] == buttonId):
+            if(self._trackGuiSettings[i].hasStopWidgetId(buttonId)):
                 foundTrackId = i
                 break
         if(foundTrackId != None):
@@ -1341,7 +1441,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 wx.Exit() #@UndefinedVariable
 
 
-def startGui(debugMode, commandQueue = None, statusQueue = None):
+def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
     logFileName = APP_NAME + ".log"
     if(debugMode == True):
         redirectValue = 0
@@ -1356,7 +1456,7 @@ def startGui(debugMode, commandQueue = None, statusQueue = None):
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = TaktPlayerGui(None, title="Takt Player GUI")
+    gui = TaktPlayerGui(None, configDir, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()

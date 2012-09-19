@@ -21,4 +21,6 @@ fi
 rm guiThumbs/*
 arch -i386 /opt/local/bin/python setup.py py2app --includes ntpath --resources config,graphics,guiThumbs,/opt/local/bin/ffmpeg
 
+chmod +x dist/TaktGui.app/Contents/Resources/ffmpeg
+
 rm TaktGui.py

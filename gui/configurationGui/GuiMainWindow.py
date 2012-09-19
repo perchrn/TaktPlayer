@@ -786,7 +786,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if((self._oldServerConfigList != configurationFileListString) or (self._oldServerActiveConfig != activeConfig)):
                         self._configurationFilesList = configurationFileListString.split(';', 128)
                         self._oldServerActiveConfig = activeConfig
-                        self._updateTitle(activeConfig)
+                        if(activeConfig == ""):
+                            self._updateTitle("No configuration loaded.")
+                        else:
+                            self._updateTitle(activeConfig)
                     self._oldServerConfigList = configurationFileListString
                     if(foundTask != None):
                         foundTask.taskDone()

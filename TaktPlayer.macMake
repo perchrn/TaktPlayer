@@ -19,6 +19,9 @@ else
     mkdir thumbs
 fi
 rm thumbs/*
-arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config,thumbs,testFiles,graphics/TaktPlayer.ico
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config/EffectsDemo.cfg,config/PlaybackModesDemo.cfg,thumbs,testFiles,graphics/TaktPlayer.ico
+
+mkdir dist/TaktPlayer.app/Contents/Resources/config
+mv dist/TaktPlayer.app/Contents/Resources/dist/*.cfg dist/TaktPlayer.app/Contents/Resources/config
 
 rm TaktPlayer.py

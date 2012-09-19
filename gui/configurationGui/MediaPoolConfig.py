@@ -453,6 +453,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
+        self._lastDialogDir = self._videoDirectory
         self._trackGui = trackGui
         self._requestThumbCallback = noteRequestCallback
         self._midiTiming = MidiTiming()
@@ -1283,11 +1284,12 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._fileNameField.SetValue(str(self._cameraId))
             dlg.Destroy()
         else:
-            dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
+            dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", self._lastDialogDir, "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
                 self._fileName = forceUnixPath(dlg.GetPath())
 #                print "DEBUG new file: original path: " + str(dlg.GetPath()) + " unix path: " + str(self._fileName)
                 basename = os.path.basename(self._fileName)
+                self._lastDialogDir = os.path.dirname(self._fileName)
                 self._fileNameField.SetValue(basename)
                 lowerName = basename.lower()
                 if(lowerName.endswith(".jpg") or lowerName.endswith(".jpeg") or lowerName.endswith(".gif") or lowerName.endswith(".png")):

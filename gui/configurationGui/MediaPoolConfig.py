@@ -217,6 +217,8 @@ class MediaFile(object):
             elif(oldType == "ImageSequence"):
                 self._configurationTree.removeParameter("SequenceMode")
                 self._configurationTree.removeParameter("PlaybackModulation")
+            elif(oldType == "Group"):
+                pass
 
             if(changedToImage == True):
                 self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
@@ -252,6 +254,8 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("XModulation")
                     self._configurationTree.removeParameter("YModulation")
                     self._configurationTree.removeParameter("InvertFirstFrameMask")
+                elif(oldType == "Group"):
+                    pass
 
     def getMixMode(self):
         return self._configurationTree.getValue("MixMode")
@@ -482,15 +486,16 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPingPongReverse = wx.Bitmap("graphics/modePingPongReverse.png") #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
+        self._modeBitmapGroup = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
 
         self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
                             self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapCamera, self._modeBitmapImage,
                             self._modeBitmapImageScroll, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
-                            self._modeBitmapImageSeqModulation]
+                            self._modeBitmapImageSeqModulation, self._modeBitmapGroup]
         self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
                            "VideoPlayOnce", "VideoPlayOnceReverse", "Camera", "Image",
                            "ScrollingImage", "ImageSeqTime", "ImageSeqReTrigger",
-                           "ImageSeqModulation"]
+                           "ImageSeqModulation", "Group"]
 
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
         self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
@@ -675,13 +680,15 @@ class MediaFileGui(object): #@UndefinedVariable
         headerLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Note configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
         headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        if(sys.platform == "darwin"):
+            headerFont.SetPointSize(12)
         headerLabel.SetFont(headerFont)
         self._noteConfigSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._fileName = ""
         self._cameraId = 0
         fileNameSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._fileNameLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "FileName:") #@UndefinedVariable
+        self._fileNameLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "File name:") #@UndefinedVariable
         self._fileNameField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, self._fileName, size=(200, -1)) #@UndefinedVariable
         self._fileNameField.SetEditable(False)
         self._fileNameField.SetBackgroundColour((232,232,232))
@@ -689,7 +696,7 @@ class MediaFileGui(object): #@UndefinedVariable
         fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         fileOpenButton.Bind(wx.EVT_BUTTON, self._onOpenFile) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
-        fileNameSizer.Add(self._fileNameField, 2, wx.ALL, 5) #@UndefinedVariable
+        fileNameSizer.Add(self._fileNameField, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -700,7 +707,7 @@ class MediaFileGui(object): #@UndefinedVariable
         typeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         typeHelpButton.Bind(wx.EVT_BUTTON, self._onTypeHelp) #@UndefinedVariable
         typeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
-        typeSizer.Add(self._typeField, 2, wx.ALL, 5) #@UndefinedVariable
+        typeSizer.Add(self._typeField, 1, wx.ALL, 5) #@UndefinedVariable
         typeSizer.Add(typeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(typeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onTypeChosen, id=self._typeField.GetId()) #@UndefinedVariable
@@ -712,7 +719,7 @@ class MediaFileGui(object): #@UndefinedVariable
         subModeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         subModeHelpButton.Bind(wx.EVT_BUTTON, self._onSubModeHelp) #@UndefinedVariable
         self._subModeSizer.Add(self._subModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
-        self._subModeSizer.Add(self._subModeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subModeSizer.Add(self._subModeField, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModeSizer.Add(subModeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onSubModeChosen, id=self._subModeField.GetId()) #@UndefinedVariable
@@ -724,7 +731,7 @@ class MediaFileGui(object): #@UndefinedVariable
         subMode2HelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         subMode2HelpButton.Bind(wx.EVT_BUTTON, self._onSubMode2Help) #@UndefinedVariable
         self._subMode2Sizer.Add(self._subMode2Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._subMode2Sizer.Add(self._subMode2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subMode2Sizer.Add(self._subMode2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._subMode2Sizer.Add(subMode2HelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subMode2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onSubMode2Chosen, id=self._subMode2Field.GetId()) #@UndefinedVariable
@@ -737,7 +744,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationEditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._subModulationEditButton.Bind(wx.EVT_BUTTON, self._onSubmodulationEdit) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationLabel, 1, wx.ALL, 5) #@UndefinedVariable
-        self._subModulationSizer.Add(self._subModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationSizer.Add(self._subModulationField, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -749,7 +756,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulation2EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._subModulation2EditButton.Bind(wx.EVT_BUTTON, self._onSubmodulation2Edit) #@UndefinedVariable
         self._subModulation2Sizer.Add(self._subModulation2Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._subModulation2Sizer.Add(self._subModulation2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._subModulation2Sizer.Add(self._subModulation2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulation2Sizer.Add(self._subModulation2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulation2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -761,7 +768,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._values1EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._values1EditButton.Bind(wx.EVT_BUTTON, self._onValues1Edit) #@UndefinedVariable
         self._values1Sizer.Add(self._values1Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._values1Sizer.Add(self._values1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._values1Sizer.Add(self._values1Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._values1Sizer.Add(self._values1EditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._values1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -773,7 +780,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._values2EditButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._values2EditButton.Bind(wx.EVT_BUTTON, self._onValues2Edit) #@UndefinedVariable
         self._values2Sizer.Add(self._values2Label, 1, wx.ALL, 5) #@UndefinedVariable
-        self._values2Sizer.Add(self._values2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._values2Sizer.Add(self._values2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._values2Sizer.Add(self._values2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._values2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -787,7 +794,7 @@ class MediaFileGui(object): #@UndefinedVariable
         noteHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         noteHelpButton.Bind(wx.EVT_BUTTON, self._onNoteHelp) #@UndefinedVariable
         noteSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
-        noteSizer.Add(self._noteField, 2, wx.ALL, 5) #@UndefinedVariable
+        noteSizer.Add(self._noteField, 1, wx.ALL, 5) #@UndefinedVariable
         noteSizer.Add(noteHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(noteSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -799,7 +806,7 @@ class MediaFileGui(object): #@UndefinedVariable
         syncHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         syncHelpButton.Bind(wx.EVT_BUTTON, self._onSyncHelp) #@UndefinedVariable
         self._syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
-        self._syncSizer.Add(self._syncField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._syncSizer.Add(self._syncField, 1, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._syncSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -811,7 +818,7 @@ class MediaFileGui(object): #@UndefinedVariable
         quantizeHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         quantizeHelpButton.Bind(wx.EVT_BUTTON, self._onQuantizeHelp) #@UndefinedVariable
         quantizeSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
-        quantizeSizer.Add(self._quantizeField, 2, wx.ALL, 5) #@UndefinedVariable
+        quantizeSizer.Add(self._quantizeField, 1, wx.ALL, 5) #@UndefinedVariable
         quantizeSizer.Add(quantizeHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(quantizeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -823,7 +830,7 @@ class MediaFileGui(object): #@UndefinedVariable
         mixHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         mixHelpButton.Bind(wx.EVT_BUTTON, self._onMixHelp) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
-        mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
+        mixSizer.Add(self._mixField, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -835,7 +842,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._timeModulationButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._timeModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationEdit) #@UndefinedVariable
         self._timeModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        self._timeModulationSizer.Add(self._timeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationSizer.Add(self._timeModulationField, 1, wx.ALL, 5) #@UndefinedVariable
         self._timeModulationSizer.Add(self._timeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._timeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -847,7 +854,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect1Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect1Button.Bind(wx.EVT_BUTTON, self._onEffect1Edit) #@UndefinedVariable
         effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        effect1Sizer.Add(self._effect1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        effect1Sizer.Add(self._effect1Field, 1, wx.ALL, 5) #@UndefinedVariable
         effect1Sizer.Add(self._effect1Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(effect1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -859,7 +866,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect2Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect2Button.Bind(wx.EVT_BUTTON, self._onEffect2Edit) #@UndefinedVariable
         effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        effect2Sizer.Add(self._effect2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        effect2Sizer.Add(self._effect2Field, 1, wx.ALL, 5) #@UndefinedVariable
         effect2Sizer.Add(self._effect2Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(effect2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -871,7 +878,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fadeButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._fadeButton.Bind(wx.EVT_BUTTON, self._onFadeEdit) #@UndefinedVariable
         fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        fadeSizer.Add(self._fadeField, 2, wx.ALL, 5) #@UndefinedVariable
+        fadeSizer.Add(self._fadeField, 1, wx.ALL, 5) #@UndefinedVariable
         fadeSizer.Add(self._fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -1283,6 +1290,8 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._cameraId = dlg.GetValue()
                 self._fileNameField.SetValue(str(self._cameraId))
             dlg.Destroy()
+        elif(self._type == "Group"):
+            pass # TODO: Fix group GUI
         else:
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", self._lastDialogDir, "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
@@ -1325,6 +1334,7 @@ ScrollImage:\tAn image that scrolls horizontally or vertically.
 Sprite:\t\tAn small image (or GIF anim) that can be moved.
 ImageSequence:\tA sequence of images.
 Camera:\t\tCamera or capture input.
+Group:\t\tGroups together a set of inputs.
 """
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
@@ -2135,10 +2145,16 @@ All notes on events are quantized to this.
                 self._onTimeModulationEdit(None, True)
 
         if(self._type == "Camera"):
+            self._fileNameLabel.SetLabel("Camera ID:")
             self._noteConfigSizer.Hide(self._syncSizer)
         elif(self._type == "KinectCamera"):
+            self._fileNameLabel.SetLabel("Camera ID:")
             self._noteConfigSizer.Hide(self._syncSizer)
+        if(self._type == "Group"):
+            self._fileNameLabel.SetLabel("Group notes:")
+            self._noteConfigSizer.Show(self._syncSizer)
         else:
+            self._fileNameLabel.SetLabel("File name:")
             self._noteConfigSizer.Show(self._syncSizer)
         self._noteConfigPanel.Layout()
         self.refreshLayout()
@@ -2305,6 +2321,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._modeBitmapImageScroll, self._modeBitmapImageScroll)
         elif(mediaType == "Sprite"):
             widget.setBitmaps(self._modeBitmapSprite, self._modeBitmapSprite)
+        elif(mediaType == "Group"):
+            widget.setBitmaps(self._modeBitmapGroup, self._modeBitmapGroup)
         elif(mediaType == "VideoLoop"):
             if(configHolder != None):
                 loopMode = configHolder.getValue("LoopMode")
@@ -2419,6 +2437,8 @@ All notes on events are quantized to this.
                 self._type = "ScrollImage"
             elif(modeText == "Sprite"):
                 self._type = "Sprite"
+            elif(modeText == "Group"):
+                self._type = "Group"
             elif(modeText == "ImageSeqTime"):
                 self._type = "ImageSequence"
                 self._updateSequenceModeChoices(self._subModeField, "Time", "Time")

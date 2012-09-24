@@ -107,10 +107,10 @@ class KinectMode:
         return self.getChoices()[0]
 
 class MediaTypes:
-    VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Camera, KinectCamera = range(7)
+    VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Camera, KinectCamera, Group = range(8)
 
     def getChoices(self):
-        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Camera", "KinectCamera"]
+        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Camera", "KinectCamera", "Group"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

@@ -266,7 +266,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         trackHelpButton = PcnImageButton(self._mainTrackPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         trackHelpButton.Bind(wx.EVT_BUTTON, self._onTrackHelp) #@UndefinedVariable
         trackSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
-        trackSizer.Add(self._trackField, 2, wx.ALL, 5) #@UndefinedVariable
+        trackSizer.Add(self._trackField, 1, wx.ALL, 5) #@UndefinedVariable
         trackSizer.Add(trackHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(trackSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -278,7 +278,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         mixHelpButton = PcnImageButton(self._mainTrackPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         mixHelpButton.Bind(wx.EVT_BUTTON, self._onMixHelp) #@UndefinedVariable
         mixSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
-        mixSizer.Add(self._mixField, 2, wx.ALL, 5) #@UndefinedVariable
+        mixSizer.Add(self._mixField, 1, wx.ALL, 5) #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -290,7 +290,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         levelModulationButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         levelModulationButton.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit) #@UndefinedVariable
         levelModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        levelModulationSizer.Add(self._levelModulationField, 1, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -302,7 +302,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._preEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._preEffectButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
         preEffectSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
-        preEffectSizer.Add(self._preEffectField, 2, wx.ALL, 5) #@UndefinedVariable
+        preEffectSizer.Add(self._preEffectField, 1, wx.ALL, 5) #@UndefinedVariable
         preEffectSizer.Add(self._preEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(preEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -314,7 +314,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._postEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._postEffectButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
         postEffectSizer.Add(tmpText9, 1, wx.ALL, 5) #@UndefinedVariable
-        postEffectSizer.Add(self._postEffectField, 2, wx.ALL, 5) #@UndefinedVariable
+        postEffectSizer.Add(self._postEffectField, 1, wx.ALL, 5) #@UndefinedVariable
         postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(postEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 

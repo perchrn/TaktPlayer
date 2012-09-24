@@ -6,7 +6,8 @@ Created on 21. des. 2011
 import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
-    CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile
+    CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
+    MediaGroup
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
@@ -156,6 +157,11 @@ class MediaPool(object):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = KinectCameraInput(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
+                    elif(mediaType == "Group"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = MediaGroup(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.setGetMediaCallback(self.getMedia)
+                        mediaFile.openFile(midiLength)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = VideoLoopFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
@@ -166,6 +172,9 @@ class MediaPool(object):
 
         self._mediaPool[midiNote] = mediaFile
         return midiNote
+
+    def getMedia(self, noteId):
+        return self._mediaPool[noteId]
 
     def requestNoteList(self):
         noteListString = ""
@@ -210,6 +219,7 @@ class MediaPool(object):
             else:
                 print "Error: Empty request!"
         return None, None
+
     def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):

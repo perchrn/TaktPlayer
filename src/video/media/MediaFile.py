@@ -17,6 +17,7 @@ from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
+from midi.MidiUtilities import noteStringToNoteNumber
 try:
     import freenect
 except:
@@ -331,7 +332,8 @@ class MediaFile(object):
     def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         if(startSpp != self._startSongPosition):
             self._startSongPosition = startSpp
-            self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+            if(midiChannelStateHolder != None):
+                self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
     def restartSequence(self):
         pass
@@ -481,24 +483,28 @@ class MediaFile(object):
 
     def getThumbnailId(self, videoPosition, forceUpdate):
         image = self._firstImage # Default
-        if(videoPosition >= 0.00):
-            if(((self.getType() == "VideoLoop") or (self.getType() == "ImageSequence")) and (videoPosition > 0.12)):
-                if(videoPosition < 0.28):
-                    videoPosition = 0.25
-                elif(videoPosition < 0.41):
-                    videoPosition = 0.33
-                elif(videoPosition < 0.66):
-                    videoPosition = 0.50
-                elif(videoPosition < 0.87):
-                    videoPosition = 0.75
-                else:
-                    videoPosition = 1.00
-                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_AVI_RATIO, videoPosition)
-                image = cv.QueryFrame(self._videoFile)
-        else:
-            #Get current image...
-            #print "DEBUG Using current image for thumb (pos < 0)"
+        ourType = self.getType()
+        if((ourType == "Group") or (ourType == "Camera") or (ourType == "KinectCamera")):
             image = self._captureImage
+        else:
+            if(videoPosition >= 0.00):
+                if(((ourType == "VideoLoop") or (ourType == "ImageSequence")) and (videoPosition > 0.12)):
+                    if(videoPosition < 0.28):
+                        videoPosition = 0.25
+                    elif(videoPosition < 0.41):
+                        videoPosition = 0.33
+                    elif(videoPosition < 0.66):
+                        videoPosition = 0.50
+                    elif(videoPosition < 0.87):
+                        videoPosition = 0.75
+                    else:
+                        videoPosition = 1.00
+                    cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_AVI_RATIO, videoPosition)
+                    image = cv.QueryFrame(self._videoFile)
+            else:
+                #Get current image...
+                #print "DEBUG Using current image for thumb (pos <= 0)"
+                image = self._captureImage
 
         filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()
         if(os.path.exists("thumbs") == False):
@@ -515,7 +521,8 @@ class MediaFile(object):
                 resizeMat = createMat(destWidth, destHeight)
                 if(image == None):
                     print "Error! thumbnail image == None for " + self.getType() + "!"
-                scaleAndSave(image, osFileName, resizeMat)
+                else:
+                    scaleAndSave(image, osFileName, resizeMat)
             else:
                 print "Thumb file already exist. " + thumbnailName
             return thumbnailName
@@ -537,6 +544,85 @@ class MediaFile(object):
             mixedImage =  mixImages(mixMode, mixLevel, image, self._image, self._imageMask, mixMat1, mixMask)
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
             return (mixedImage, currentPreValues, currentPostValues)
+
+class MediaGroup(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._mediaList = []
+        self._getMediaCallback = None
+        self._noteList = fileName.split("|")
+
+        self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        self._captureImage = self._blankImage
+        self._firstImage = self._blankImage
+
+        self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+    def getType(self):
+        return "Group"
+
+    def close(self):
+        pass
+
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        if(startSpp != self._startSongPosition):
+            self._startSongPosition = startSpp
+            self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
+            for media in self._mediaList:
+                media.setStartPosition(startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder)
+
+    def restartSequence(self):
+        for media in self._mediaList:
+            media.restartSequence()
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+            self._image = None
+            return noteDone
+
+        for media in self._mediaList:
+            media.skipFrames(currentSongPosition, midiNoteState, midiChannelState)
+
+        imageMix = None
+        for media in self._mediaList:
+            mixLevel = 1.0
+            mixEffects = None
+            guiCtrlStateHolder = None
+            if(imageMix == None):
+                imageTest = media.getImage()
+                if(imageTest != None):
+                    mixMode = MixMode.Replace
+                    if(imageMix == self._mixMat1):
+                        imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                    else:
+                        imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+            else:
+                mixMode = MixMode.Default
+                if(imageMix == self._mixMat1):
+                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                else:
+                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+
+        if(imageMix == None):
+            imageMix = self._blankImage
+
+        self._captureImage = imageMix
+        self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+
+        return False
+
+    def setGetMediaCallback(self, callback):
+        self._getMediaCallback = callback
+
+    def openFile(self, midiLength):
+        self._mediaList = []
+        for noteString in self._noteList:
+            noteId = noteStringToNoteNumber(noteString)
+            if((noteId >= 0) and (noteId < 128)):
+                self._mediaList.append(self._getMediaCallback(noteId))
 
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -688,6 +774,7 @@ class ImageFile(MediaFile):
             filePath = self._packageFilePath
         if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            print "Error! Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
             pilImage = Image.open(filePath)
@@ -761,7 +848,7 @@ class ScrollImageFile(MediaFile):
             self._image = None
             return noteDone
 
-        #Find scroll langth.
+        #Find scroll length.
         if(self._scrollModulationId == None):
             scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
             if(self._isScrollModeHorizontal == True):

@@ -4,12 +4,13 @@ Created on 24. jan. 2012
 @author: pcn
 '''
 from cv2 import cv
-import numpy #@UnusedImport
+import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
     ScrollModes, ContrastModes, HueSatModes, ValueToHueModes
 import math
 import os
+import time
 
 effectImageList = []
 effectImageFileNameList = []
@@ -223,6 +224,77 @@ class ZoomEffect(object):
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
 
+class TVNoizeEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+
+        self._randomState = numpy.random.RandomState(int(time.time()))
+        self._bigNoizeMat = createMat(self._internalResolutionX * 2, self._internalResolutionY * 2)
+        randomArray = self._randomState.randint(0, 255, size=(self._internalResolutionY * 2, self._internalResolutionX * 2)).astype(numpy.uint8)
+        tmpNoizeMask = cv.fromarray(randomArray)
+        cv.Merge(tmpNoizeMask, tmpNoizeMask, tmpNoizeMask, None, self._bigNoizeMat)
+        randomArray = self._randomState.randint(0, 255, size=(self._internalResolutionY * 2, self._internalResolutionX * 2)).astype(numpy.uint8)
+        self._bigNoizeMask = cv.fromarray(randomArray)
+        self._noizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._noizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "TVNoize"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, amount, scale, mode, unused1, unused2):
+        return self.noizeifyImage(image, amount, scale, mode)
+
+    def noizeifyImage(self, image, amount, scale, mode):
+        if(amount < 0.02):
+            return image
+        srcWidth = self._internalResolutionX
+        srcHeight = self._internalResolutionY
+        useResize = False
+        if(scale > 0.75):
+            useResize = True
+            srcWidth = int(srcWidth / 4)
+            srcHeight = int(srcHeight / 4)
+        elif(scale > 0.50):
+            useResize = True
+            srcWidth = int(srcWidth / 3)
+            srcHeight = int(srcHeight / 3)
+        elif(scale > 0.25):
+            useResize = True
+            srcWidth = int(srcWidth / 2)
+            srcHeight = int(srcHeight / 2)
+        posX = self._randomState.randint(0, self._internalResolutionX)
+        posY = self._randomState.randint(0, self._internalResolutionY)
+        src_region = cv.GetSubRect(self._bigNoizeMask, (posX, posY, srcWidth, srcHeight))
+        if(useResize == True):
+            if(mode < 0.33):
+                upScaler = cv.CV_INTER_LINEAR #Blobby star
+            elif(mode < 0.66):
+                upScaler = cv.CV_INTER_CUBIC #Blobby roundish
+            else:
+                upScaler = cv.CV_INTER_NN #Clean
+            cv.Resize(src_region, self._noizeMask, upScaler)
+        else:
+            cv.Copy(src_region, self._noizeMask)
+        threshold = int(255 * amount)
+        cv.CmpS(self._noizeMask, threshold, self._noizeMask, cv.CV_CMP_LT)
+        posX = self._randomState.randint(0, self._internalResolutionX)
+        posY = self._randomState.randint(0, self._internalResolutionY)
+        src_region = cv.GetSubRect(self._bigNoizeMat, (posX, posY, srcWidth, srcHeight))
+        cv.Copy(image, self._noizeMat)
+        if(useResize == True):
+            cv.Resize(src_region, self._resizeMat, upScaler)
+            cv.Copy(self._resizeMat, self._noizeMat, self._noizeMask)
+        else:
+            cv.Copy(src_region, self._noizeMat, self._noizeMask)
+        return self._noizeMat
+
 class PixelateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -230,8 +302,7 @@ class PixelateEffect(object):
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
 
-        self._pixelRatio = float(self._internalResolutionY) / self._internalResolutionX
-        self._blockRange = (self._internalResolutionX / 2) - 4
+        self._blockRange = math.sqrt(self._internalResolutionX) / 2.0
 
         self._oldAmount = -1.0
 
@@ -251,8 +322,12 @@ class PixelateEffect(object):
         if(amount < 0.02):
             return image
         if(self._oldAmount != amount):
-            miniImageSizeX = 4 + int(self._blockRange * (1.0 - amount))
-            miniImageSizeY = int(miniImageSizeX * self._pixelRatio)
+            sizeScale = 1.0 / (math.pow((self._blockRange * amount), 2))
+            miniImageSizeX = int(self._internalResolutionX * sizeScale)
+            miniImageSizeY = int(self._internalResolutionY * sizeScale)
+            miniImageSizeX = min(max(1, miniImageSizeX), self._internalResolutionX)
+            miniImageSizeY = min(max(1, miniImageSizeY), self._internalResolutionY)
+            print "DEBUG pcn: amount: " + str(amount) + " range: " + str(self._blockRange) + " scale: " + str(sizeScale) + " X: " + str(miniImageSizeX) + " Y: " + str(miniImageSizeY)
             self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
         downScaler = cv.CV_INTER_CUBIC
         if(mode < 0.33):
@@ -1306,8 +1381,6 @@ class ImageAddEffect(object):
 #class MirrorEffect(object):
 #class RotateEffect(object):
 #class SliceEffect(object):
-
-#class AnalogTVNoiceEffect(object);
 
 #class StutterEffect(object):
 #class BaerturEffect(object):

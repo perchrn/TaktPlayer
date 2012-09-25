@@ -2177,6 +2177,8 @@ TriggerdJump:\tRepress note to make a jump.
 TriggeredJump:\tRepress note and hold it to loop clip.
 \t\t Loop length is set by modulation.
 \t\t This needs MIDI input to work.
+
+OBS! Group type can only use SpeedModulation.
 """
         dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Time Modulation mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()

@@ -185,6 +185,11 @@ class MediaFile(object):
         self._currentFrame = 0;
         self._startSongPosition = 0.0
 
+        self._loopModulationMode = TimeModulationMode.Off
+        self._lastFramePos = 0.0
+        self._lastFramePosSongPosition = 0.0
+        self._isLastFrameSpeedModified = False
+
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._log.setLevel(logging.WARNING)
 
@@ -426,7 +431,121 @@ class MediaFile(object):
 
         if(fadeValue < 0.99):
             self._image = fadeImage(self._image, fadeValue, fadeMode, self._fadeMat)
-        
+
+    def _timeModulatePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState, syncLength):
+        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[4] != None):
+            if(guiStates[4] > -0.5):
+                modulation = guiStates[4]
+
+        if(syncLength != None):
+            jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
+            jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / syncLength) * self._numberOfFrames
+            jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
+
+#        timeMod = TimeModulationMode() #DEBUG
+#        print "DEBUG _timeModulateFramePos: val: " + str(modulation) + " mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
+
+        if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
+            speedMod = (2.0 * modulation) - 1.0
+            if(speedRange < 0.0):
+                #Invert
+                speedRange = -speedRange
+                speedMod = -speedMod
+            if(self._startSongPosition > self._lastFramePosSongPosition):
+                self._lastFramePosSongPosition = self._startSongPosition
+            if(speedQuantize > 0.02):
+                steps = int(speedRange / speedQuantize)
+                if(steps < 1):
+                    steps = 1
+                currentStep = int((steps + 0.5) * speedMod)
+                speedMod = float(currentStep) / steps
+#                print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep)
+            if((speedMod < -0.01) or (speedMod > 0.01)):
+                twoTimesPosition = 2.0 / speedRange
+                absSpeedMod = abs(speedMod)
+                if(absSpeedMod > twoTimesPosition):
+                    speedMultiplyer = 2.0 * (absSpeedMod / twoTimesPosition)
+                else:
+                    speedMultiplyer = 1.0 + (absSpeedMod / twoTimesPosition)
+                if(speedMod < 0):
+                    speedMultiplyer = 1.0 / speedMultiplyer
+#                print "DEBUG speedMod: " + str(speedMod) + " -> " + str(speedMultiplyer)
+                if(syncLength == None):
+                    return speedMultiplyer
+                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / syncLength)
+                self._isLastFrameSpeedModified = True
+            else:
+                if(syncLength == None):
+                    return 1.0
+                if(self._isLastFrameSpeedModified == True):
+                    framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
+                    framesSpeed = float(self._numberOfFrames) / syncLength
+                    if(framesDiff > (2.0 * framesSpeed)):
+                        if(framesDiff < self._numberOfFrames):
+                            framePosFloat = self._lastFramePos + 2.0 * framesSpeed
+                        else:
+                            framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
+    #                    print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
+                    else:
+                        framePosFloat = unmodifiedFramePos
+                        self._isLastFrameSpeedModified = False
+                else:
+                    framePosFloat = unmodifiedFramePos
+            self._lastFramePos = framePosFloat
+            self._lastFramePosSongPosition = currentSongPosition
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredJump):
+            if(self._noteTriggerCounter != self._lastTriggerCount):
+                speedMod = (2.0 * modulation) - 1.0
+                if(jumpRange < 0.0):
+                    #Invert
+                    jumpRange = -jumpRange
+                    speedMod = -speedMod
+                if(jumpQuantize > 0.02):
+                    steps = int(jumpRange / jumpQuantize)
+                    if(steps < 1):
+                        steps = 1
+                    currentStep = int((steps + 0.5) * speedMod)
+                    speedMod = float(currentStep) / steps
+                if((speedMod < -0.01) or (speedMod > 0.01)):
+                    jumpLength = jumpRange * speedMod
+                    self._triggerModificationSum += jumpLength
+#                    print "Adding " + str(jumpLength) + " sum: " + str(self._triggerModificationSum)
+#                else:
+#                    print "SpeedMod == 0.0 :-(  ->  No jump!"
+                self._lastTriggerCount = self._noteTriggerCounter
+            framePosFloat = unmodifiedFramePos + self._triggerModificationSum
+        elif(self._loopModulationMode == TimeModulationMode.TriggeredLoop):
+            trigger = self._noteTriggerCounter != self._lastTriggerCount
+            if((trigger == True) and (self._loopEndSongPosition < 0.0)):
+                self._loopEndSongPosition = currentSongPosition
+            if(currentSongPosition >= self._loopEndSongPosition):
+                loopLength = modulation
+                if(trigger == True):
+                    if(jumpQuantize > 0.02):
+                        steps = int(jumpRange / jumpQuantize)
+                        if(steps < 1):
+                            steps = 1
+                        currentStep = int((steps + 0.5) * loopLength)
+                        loopLength = float(currentStep) / steps
+                    if(loopLength > 0.01):
+                        jumpLength = jumpRange * loopLength
+                        self._triggerModificationSum += jumpLength
+                        self._loopEndSongPosition += loopLength * jumpSppStep
+#                        print "Subtracting " + str(jumpLength) + " sum: " + str(self._triggerModificationSum) + " unmod: " + str(unmodifiedFramePos) + " loopEnd: " + str(self._loopEndSongPosition) + " calc: " + str(currentSongPosition - self._triggerModificationSum) + " calc2: " + str(unmodifiedFramePos - self._triggerModificationSum)
+                    else:
+#                        print "loopLength == 0.0 ->  Freeze frame!"
+                        jumpLength = ((currentSongPosition - self._loopEndSongPosition) / syncLength) * self._numberOfFrames
+                        self._triggerModificationSum += jumpLength
+                        self._loopEndSongPosition = currentSongPosition
+                else:
+                    self._loopEndSongPosition = -1.0
+            framePosFloat = unmodifiedFramePos - self._triggerModificationSum
+        else:
+            framePosFloat = unmodifiedFramePos
+        return framePosFloat
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
         pass
@@ -550,7 +669,7 @@ class MediaGroup(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._mediaList = []
         self._getMediaCallback = None
-        self._noteList = fileName.split("|")
+        self._noteList = fileName.split(",")
 
         self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._captureImage = self._blankImage
@@ -559,6 +678,12 @@ class MediaGroup(MediaFile):
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._timeMultiplyer = self._configurationTree.getValue("SyncLength")
 
     def getType(self):
         return "Group"
@@ -577,14 +702,21 @@ class MediaGroup(MediaFile):
         for media in self._mediaList:
             media.restartSequence()
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+        if(timeMultiplyer == None):
+            timeMultiplyer = self._timeMultiplyer
+        loopModulationMode, _, _, _ = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+        if(loopModulationMode == TimeModulationMode.SpeedModulation):
+            modifiedMultiplyer = self._timeModulatePos(timeMultiplyer, currentSongPosition, midiNoteState, midiChannelState, None)
+            timeMultiplyer = modifiedMultiplyer * timeMultiplyer
+
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
 
         for media in self._mediaList:
-            media.skipFrames(currentSongPosition, midiNoteState, midiChannelState)
+            media.skipFrames(currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer)
 
         imageMix = None
         for media in self._mediaList:
@@ -663,29 +795,36 @@ class ImageFile(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
+
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
+
         zoom = self._startZoom
         moveX = self._startX
         moveY = self._startY
         angle = self._startAngle
         move = self._startMove
         guiMove = False
-        if((self._startSongPosition + self._syncLength) < currentSongPosition):
+        unmodifiedPos = (currentSongPosition - self._startSongPosition) / syncLength
+        modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, midiNoteState, midiChannelState, syncLength)
+        if(modifiedPos >= 1.0):
             zoom = self._endZoom
             moveX = self._endX
             moveY = self._endY
         elif(self._startSongPosition < currentSongPosition):
-#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(self._syncLength)
+#            print "DEBUG middle: currentSPP: " + str(currentSongPosition) + " startSPP: " + str(self._startSongPosition) + " zoomTime: " + str(syncLength)
             if(self._endZoom != self._startZoom):
-                zoom = self._startZoom + (((self._endZoom - self._startZoom) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                zoom = self._startZoom + (((self._endZoom - self._startZoom)) * (modifiedPos))
             if(self._endX != self._startX):
-                moveX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                moveX = self._startX + (((self._endX - self._startX)) * (modifiedPos))
             if(self._endY != self._startY):
-                moveY = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                moveY = self._startY + (((self._endY - self._startY)) * (modifiedPos))
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[0] != None):
             if(guiStates[0] > -0.5):
@@ -842,15 +981,21 @@ class ScrollImageFile(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
 
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
+
         #Find scroll length.
         if(self._scrollModulationId == None):
-            scrollLength = ((currentSongPosition - self._startSongPosition) / self._syncLength) % 1.0
+            unmodifiedPos = (currentSongPosition - self._startSongPosition) / syncLength
+            modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, midiNoteState, midiChannelState, syncLength)
+            scrollLength = modifiedPos % 1.0
             if(self._isScrollModeHorizontal == True):
                 scrollLength = 1.0 - scrollLength
             if(self._isScrollModeReverse == False):
@@ -1042,11 +1187,15 @@ class SpriteImageFile(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
+
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
 
         #Find pos.
         posX = 0.5
@@ -1062,14 +1211,16 @@ class SpriteImageFile(MediaFile):
         if(modulationIsActive == False):
             posX = self._startX
             posY = self._startY
-            if((self._startSongPosition + self._syncLength) < currentSongPosition):
+            unmodifiedPos = (currentSongPosition - self._startSongPosition) / syncLength
+            modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, midiNoteState, midiChannelState, syncLength)
+            if(modifiedPos >= 1.0):
                 posX = self._endX
                 posY = self._endY
             elif(self._startSongPosition < currentSongPosition):
                 if(self._endX != self._startX):
-                    posX = self._startX + (((self._endX - self._startX) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                    posX = self._startX + ((self._endX - self._startX) * modifiedPos)
                 if(self._endY != self._startY):
-                    posY = self._startY + (((self._endY - self._startY) / self._syncLength) * (currentSongPosition-self._startSongPosition))
+                    posY = self._startY + ((self._endY - self._startY) * modifiedPos)
 
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[0] != None):
@@ -1083,7 +1234,7 @@ class SpriteImageFile(MediaFile):
         if(self._numberOfFrames == 1):
             self._currentFrame = 0
         else:
-            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
+            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / syncLength) * self._numberOfFrames
             self._currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
 
         #Scroll image + mask
@@ -1644,19 +1795,25 @@ class ImageSequenceFile(MediaFile):
 #            print "TriggerCount: " + str(self._triggerCounter) + " startSPP: " + str(startSpp)
         self._startSongPosition = startSpp
 
-    def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+    def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, timeMultiplyer = None):
         return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
 
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
 
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
+
         lastFrame = self._currentFrame
         
         if(self._sequenceMode == ImageSequenceMode.Time):
-            self._currentFrame = (int((currentSongPosition - self._startSongPosition) / self._syncLength) % self._numberOfFrames)
+            unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / syncLength) * self._numberOfFrames
+            modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState, syncLength)
+            self._currentFrame = int(modifiedFramePos / self._numberOfFrames) % self._numberOfFrames
         elif(self._sequenceMode == ImageSequenceMode.ReTrigger):
             self._currentFrame =  (self._triggerCounter % self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceMode.Modulation):
@@ -1695,12 +1852,6 @@ class VideoLoopFile(MediaFile):
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
-
-        self._loopModulationMode = TimeModulationMode.Off
-
-        self._lastFramePos = 0.0
-        self._lastFramePosSongPosition = 0.0
-        self._isLastFrameSpeedModified = False
 
         self._noteTriggerCounter = 0
         self._lastTriggerCount = 0
@@ -1759,125 +1910,19 @@ class VideoLoopFile(MediaFile):
                 self._startSongPosition = startSpp
                 self._resetEffects(songPosition, midiNoteStateHolder, midiChannelStateHolder)
 
-    def _timeModulateFramePos(self, unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState):
-        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
-
-        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[4] != None):
-            if(guiStates[4] > -0.5):
-                modulation = guiStates[4]
-
-        jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
-        jumpRange = ((speedRange * self._midiTiming.getTicksPerQuarteNote()) / self._syncLength) * self._numberOfFrames
-        jumpSppStep = speedRange * self._midiTiming.getTicksPerQuarteNote()
-
-#        timeMod = TimeModulationMode() #DEBUG
-#        print "DEBUG _timeModulateFramePos: val: " + str(modulation) + " mode: " + timeMod.getNames(self._loopModulationMode) + " speedRange: " + str(speedRange) + " speedQuantize: " + str(speedQuantize) + " jump (r,q,step): " + str((jumpRange, jumpQuantize, jumpSppStep))
-
-        if(self._loopModulationMode == TimeModulationMode.SpeedModulation):
-            speedMod = (2.0 * modulation) - 1.0
-            if(speedRange < 0.0):
-                #Invert
-                speedRange = -speedRange
-                speedMod = -speedMod
-            if(self._startSongPosition > self._lastFramePosSongPosition):
-                self._lastFramePosSongPosition = self._startSongPosition
-            if(speedQuantize > 0.02):
-                steps = int(speedRange / speedQuantize)
-                if(steps < 1):
-                    steps = 1
-                currentStep = int((steps + 0.5) * speedMod)
-                speedMod = float(currentStep) / steps
-#                print "DEBUG steps: " + str(steps) + " currentStep: " + str(currentStep)
-            if((speedMod < -0.01) or (speedMod > 0.01)):
-                twoTimesPosition = 2.0 / speedRange
-                absSpeedMod = abs(speedMod)
-                if(absSpeedMod > twoTimesPosition):
-                    speedMultiplyer = 2.0 * (absSpeedMod / twoTimesPosition)
-                else:
-                    speedMultiplyer = 1.0 + (absSpeedMod / twoTimesPosition)
-                if(speedMod < 0):
-                    speedMultiplyer = 1.0 / speedMultiplyer
-#                print "DEBUG speedMod: " + str(speedMod) + " -> " + str(speedMultiplyer)
-                framePosFloat = self._lastFramePos + ((self._numberOfFrames * speedMultiplyer) / self._syncLength)
-                self._isLastFrameSpeedModified = True
-            else:
-                if(self._isLastFrameSpeedModified == True):
-                    framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (self._lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
-                    framesSpeed = float(self._numberOfFrames) / self._syncLength
-                    if(framesDiff > (2.0 * framesSpeed)):
-                        if(framesDiff < self._numberOfFrames):
-                            framePosFloat = self._lastFramePos + 2.0 * framesSpeed
-                        else:
-                            framePosFloat = self._lastFramePos + 0.25 * framesSpeed                    
-    #                    print "DEBUG diff: " + str(framesDiff) + " speed: " + str(framesSpeed) + " maxframe x 2: " + str(2* self._numberOfFrames)
-                    else:
-                        framePosFloat = unmodifiedFramePos
-                        self._isLastFrameSpeedModified = False
-                else:
-                    framePosFloat = unmodifiedFramePos
-            self._lastFramePos = framePosFloat
-            self._lastFramePosSongPosition = currentSongPosition
-        elif(self._loopModulationMode == TimeModulationMode.TriggeredJump):
-            if(self._noteTriggerCounter != self._lastTriggerCount):
-                speedMod = (2.0 * modulation) - 1.0
-                if(jumpRange < 0.0):
-                    #Invert
-                    jumpRange = -jumpRange
-                    speedMod = -speedMod
-                if(jumpQuantize > 0.02):
-                    steps = int(jumpRange / jumpQuantize)
-                    if(steps < 1):
-                        steps = 1
-                    currentStep = int((steps + 0.5) * speedMod)
-                    speedMod = float(currentStep) / steps
-                if((speedMod < -0.01) or (speedMod > 0.01)):
-                    jumpLength = jumpRange * speedMod
-                    self._triggerModificationSum += jumpLength
-#                    print "Adding " + str(jumpLength) + " sum: " + str(self._triggerModificationSum)
-#                else:
-#                    print "SpeedMod == 0.0 :-(  ->  No jump!"
-                self._lastTriggerCount = self._noteTriggerCounter
-            framePosFloat = unmodifiedFramePos + self._triggerModificationSum
-        elif(self._loopModulationMode == TimeModulationMode.TriggeredLoop):
-            trigger = self._noteTriggerCounter != self._lastTriggerCount
-            if((trigger == True) and (self._loopEndSongPosition < 0.0)):
-                self._loopEndSongPosition = currentSongPosition
-            if(currentSongPosition >= self._loopEndSongPosition):
-                loopLength = modulation
-                if(trigger == True):
-                    if(jumpQuantize > 0.02):
-                        steps = int(jumpRange / jumpQuantize)
-                        if(steps < 1):
-                            steps = 1
-                        currentStep = int((steps + 0.5) * loopLength)
-                        loopLength = float(currentStep) / steps
-                    if(loopLength > 0.01):
-                        jumpLength = jumpRange * loopLength
-                        self._triggerModificationSum += jumpLength
-                        self._loopEndSongPosition += loopLength * jumpSppStep
-#                        print "Subtracting " + str(jumpLength) + " sum: " + str(self._triggerModificationSum) + " unmod: " + str(unmodifiedFramePos) + " loopEnd: " + str(self._loopEndSongPosition) + " calc: " + str(currentSongPosition - self._triggerModificationSum) + " calc2: " + str(unmodifiedFramePos - self._triggerModificationSum)
-                    else:
-#                        print "loopLength == 0.0 ->  Freeze frame!"
-                        jumpLength = ((currentSongPosition - self._loopEndSongPosition) / self._syncLength) * self._numberOfFrames
-                        self._triggerModificationSum += jumpLength
-                        self._loopEndSongPosition = currentSongPosition
-                else:
-                    self._loopEndSongPosition = -1.0
-            framePosFloat = unmodifiedFramePos - self._triggerModificationSum
-        else:
-            framePosFloat = unmodifiedFramePos
-        return framePosFloat
-
-    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             self._image = None
             return noteDone
         lastFrame = self._currentFrame
 
-        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / self._syncLength) * self._numberOfFrames
-        modifiedFramePos = self._timeModulateFramePos(unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState)
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
+
+        unmodifiedFramePos = ((currentSongPosition - self._startSongPosition) / syncLength) * self._numberOfFrames
+        modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, midiNoteState, midiChannelState, syncLength)
 
         framePos = int(modifiedFramePos)
         if(self._loopMode == VideoLoopMode.Normal):

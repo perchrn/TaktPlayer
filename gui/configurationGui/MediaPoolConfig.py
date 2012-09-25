@@ -799,13 +799,13 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer.Add(noteSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._syncSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText4 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Synchronization length:") #@UndefinedVariable
+        self._syncFieldLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Synchronization length:") #@UndefinedVariable
         self._syncField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "4.0", size=(200, -1)) #@UndefinedVariable
         self._syncField.SetInsertionPoint(0)
         self._syncField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         syncHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         syncHelpButton.Bind(wx.EVT_BUTTON, self._onSyncHelp) #@UndefinedVariable
-        self._syncSizer.Add(tmpText4, 1, wx.ALL, 5) #@UndefinedVariable
+        self._syncSizer.Add(self._syncFieldLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(self._syncField, 1, wx.ALL, 5) #@UndefinedVariable
         self._syncSizer.Add(syncHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._syncSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -1530,7 +1530,15 @@ This is the note assigned to this configuration.
         self._syncField.SetValue(valueString)
 
     def _onSyncHelp(self, event):
-        text = """
+        if(self._type == "Group"):
+            text = """
+Decides how fast the clips in this groups should play.
+
+\t0.5 -> is double speed.
+\t2.0 -> is half speed.
+"""
+        else:
+            text = """
 Decides how long the video takes to loop
 or how long the images are displayed.
 
@@ -1772,6 +1780,19 @@ All notes on events are quantized to this.
     def _onSaveButton(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
             noteFileName = str(self._cameraId)
+        elif(self._type == "Group"):
+            validatedGroupString = ""
+            groupString = self._fileNameField.GetValue()
+            groupNoteStrings = groupString.split(",")
+            for noteString in groupNoteStrings:
+                noteId = noteStringToNoteNumber(noteString)
+                if((noteId >= 0) and (noteId < 128)):
+                    if(validatedGroupString != ""):
+                        validatedGroupString += ","
+                    validatedGroupString += noteToNoteString(noteId)
+            noteFileName = validatedGroupString
+            self._fileName = noteFileName
+            self._fileNameField.SetValue(noteFileName)
         else:
             noteFileName = self._fileName
             if((self._videoDirectory != "") and (self._fileName != "")):
@@ -2137,24 +2158,38 @@ All notes on events are quantized to this.
             if(self._selectedEditor == self.EditSelection.Values2):
                 self._onValues2Edit(None, True)
 
-        if(self._type == "VideoLoop"):
-            self._noteConfigSizer.Show(self._timeModulationSizer)
-        else:
+        if((self._type == "Camera") or (self._type == "KinectCamera")):
             self._noteConfigSizer.Hide(self._timeModulationSizer)
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, True)
+        else:
+            self._noteConfigSizer.Show(self._timeModulationSizer)
+
+        if(self._type == "Group"):
+            self._syncFieldLabel.SetLabel("Time multiplyer:")
+        else:
+            self._syncFieldLabel.SetLabel("Synchronization length:")
+            
 
         if(self._type == "Camera"):
             self._fileNameLabel.SetLabel("Camera ID:")
+            self._fileNameField.SetEditable(False)
+            self._fileNameField.SetBackgroundColour((232,232,232))
             self._noteConfigSizer.Hide(self._syncSizer)
         elif(self._type == "KinectCamera"):
             self._fileNameLabel.SetLabel("Camera ID:")
+            self._fileNameField.SetEditable(False)
+            self._fileNameField.SetBackgroundColour((232,232,232))
             self._noteConfigSizer.Hide(self._syncSizer)
-        if(self._type == "Group"):
+        elif(self._type == "Group"):
             self._fileNameLabel.SetLabel("Group notes:")
+            self._fileNameField.SetEditable(True)
+            self._fileNameField.SetBackgroundColour((255,255,255))
             self._noteConfigSizer.Show(self._syncSizer)
         else:
             self._fileNameLabel.SetLabel("File name:")
+            self._fileNameField.SetEditable(False)
+            self._fileNameField.SetBackgroundColour((232,232,232))
             self._noteConfigSizer.Show(self._syncSizer)
         self._noteConfigPanel.Layout()
         self.refreshLayout()

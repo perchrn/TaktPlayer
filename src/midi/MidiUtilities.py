@@ -80,10 +80,10 @@ def noteStringToNoteNumber(string):
         octav = int(string[0:split])
     except:
         return -1
-    note = letterToNote(string[split:])
-    if(note == -1):
+    note = letterToNote(string[split:].upper())
+    if(note == None):
         return -1
-    noteValue = (((octav + 2) * 12) + note) % 128
+    noteValue = (((octav + 2) * 12) + note)
     return noteValue
 
 

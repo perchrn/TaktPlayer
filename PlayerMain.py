@@ -43,7 +43,7 @@ launchGUI = True
 applicationHolder = None
 
 class PlayerMain(wx.Frame):
-    def __init__(self, parent, configDir, title):
+    def __init__(self, parent, configDir, configFile, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
         self._configDirArgument = configDir
 
@@ -103,7 +103,14 @@ class PlayerMain(wx.Frame):
                 self.SetPosition((configPositionX, configPositionY))
 
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
+        if(configFile != ""):
+            filePath = os.path.join(self._playerConfiguration.getConfigDir(), configFile)
+            if(os.path.isfile(filePath)):
+                self._configurationTree.loadConfig(filePath)
+            else:
+                self._configurationTree.loadConfig(configFile)
+        else:
+            self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
 
@@ -201,12 +208,12 @@ class PlayerMain(wx.Frame):
     def _startGUIProcess(self):
         if(sys.platform != "darwin"):
             self._log.debug("Starting GUI Process")
-            from configurationGui.GuiMainWindow import startGui
-            self._commandQueue = Queue(10)
-            self._statusQueue = Queue(-1)
-            self._guiProcess = Process(target=startGui, args=(False, self._configDirArgument, self._commandQueue, self._statusQueue))
-            self._guiProcess.name = "guiProcess"
-            self._guiProcess.start()
+#            from configurationGui.GuiMainWindow import startGui
+#            self._commandQueue = Queue(10)
+#            self._statusQueue = Queue(-1)
+#            self._guiProcess = Process(target=startGui, args=(False, self._configDirArgument, self._commandQueue, self._statusQueue))
+#            self._guiProcess.name = "guiProcess"
+#            self._guiProcess.start()
 
     def _checkStatusQueue(self):
         if(self._guiProcess != None):
@@ -378,19 +385,31 @@ if __name__ in ('__android__', '__main__'):
     launchGUI = True
     debugMode = False
     checkForMoreConfigFileName = False
+    checkForMoreConfigDirName = False
     configDir = ""
+    configFile = ""
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
-        if(sys.argv[i+1].lower() == "--debug"):
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].lower() == "--debug"):
             debugMode = True
+            checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
         elif(sys.argv[i+1].startswith("--configDir=")):
-            checkForMoreConfigFileName = True
+            checkForMoreConfigDirName = True
+            checkForMoreConfigFileName = False
             configDir = sys.argv[i+1][12:]
+        elif(sys.argv[i+1].startswith("--configFile=")):
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = True
+            configFile = sys.argv[i+1][13:]
         else:
-            if(checkForMoreConfigFileName == True):
+            if(checkForMoreConfigDirName == True):
                 configDir += " " + sys.argv[i+1]
+            if(checkForMoreConfigFileName == True):
+                configFile += " " + sys.argv[i+1]
     if(sys.platform == "win32"):
         from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
         import win32process
@@ -417,7 +436,7 @@ if __name__ in ('__android__', '__main__'):
         os.environ["PATH"] += ":."
         launchGUI = False
     applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = PlayerMain(None, configDir, title="Takt Player")
+    gui = PlayerMain(None, configDir, configFile, title="Takt Player")
     try:
         applicationHolder.MainLoop()
 #    except QuitRequestException, quitRequest:

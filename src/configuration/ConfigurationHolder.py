@@ -113,7 +113,7 @@ class ConfigurationHolder(object):
         self._loadedXML = xmlPart
 
     def loadConfig(self, configName):
-        print "DEBUG pcm: loadConfig"
+        print "DEBUG pcn: loadConfig: " + configName
         if(os.path.isabs(configName) == True):
             filePath = os.path.normpath(configName)
         else:

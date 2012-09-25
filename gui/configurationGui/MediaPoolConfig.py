@@ -470,7 +470,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._sequenceModes = ImageSequenceMode()
         self._typeModes = MediaTypes()
 
-        self._trackThumbnailBitmap = wx.Bitmap("graphics/blackClip.png") #@UndefinedVariable
+        self._trackThumbnailBitmap = wx.EmptyBitmap (42, 32, depth=3) #@UndefinedVariable
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._modeBitmapCamera = wx.Bitmap("graphics/modeCamera.png") #@UndefinedVariable
@@ -921,6 +921,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipButton.setBitmap(self._emptyBitMap)
+
         self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable

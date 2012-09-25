@@ -79,7 +79,7 @@ def addTrackButtonFrame(bitmap, isPressed, baseBitmap, isBlack):
         dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
     dc.DrawLine(1, oldY-1, oldX-1, oldY-1)
     dc.DrawLine(oldX-1, 1, oldX-1, oldY-1)
-    dc.DrawLine(1, 0, oldX-1, 0)
+    dc.DrawLine(0, 0, oldX-1, 0)
     dc.DrawLine(0, 1, 0, oldY-1)
     dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
     return framedBitmap
@@ -122,10 +122,11 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
             self.Refresh()
 
     def clearBitmap(self):
-        self._bitmap = None
-        self._normal = self._baseBitmap
-        self._pressed = self._baseBitmap
-        self.Refresh()
+        if(self._bitmap != None):
+            self._bitmap = None
+            self._normal = self.addButtonFrame(self._baseBitmap, False)
+            self._pressed = self.addButtonFrame(self._baseBitmap, True)
+            self.Refresh()
 
     def setBitmapFile(self, fileName):
         try:

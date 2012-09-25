@@ -13,3 +13,5 @@ setup.py
 TaktPlayer.dmg
 TaktPlayer.dmg.old
 *.pyc
+TaktPlayer.log.old
+TaktPlayer.log.old

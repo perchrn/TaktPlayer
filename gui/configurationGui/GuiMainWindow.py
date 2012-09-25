@@ -203,6 +203,15 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._configuration = Configuration(configDir)
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
+
+        windowSizeX, windowSizeY = self._configuration.getWindowSize()
+        configPositionX, configPositionY = self._configuration.getWindowPosition()
+        if((windowSizeX >= 500) and (windowSizeX >= 400)):
+            self.SetSize((windowSizeX, windowSizeY))
+        if((configPositionX >= 0) and (configPositionY >= 0)):
+            print "DEBUG pcn: cfgPos!!!!!!!!!!!!!!!!!!!!!!"
+            self.SetPosition((configPositionX, configPositionY))
+
         self._videoDirectory = self._configuration.getGuiVideoDir()
         self._videoSaveSubDir = ""
         self._videoScaleX = self._configuration.getVideoScaleX()

@@ -86,6 +86,8 @@ class Configuration(object):
         self._guiConfig.addBoolParameter("MidiBroadcast", True)
         self._guiConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._guiConfig.addIntParameter("MidiPort", 2022)
+        self._guiConfig.addTextParameter("WindowSize", "800,600") #default, xpos,ypos, 0,0 etc.
+        self._guiConfig.addTextParameter("WindowPosition", "-1,-1") #auto, xpos,ypos, 0,0 etc.
 
     def setPlayerConfig(self, playerHost, midiPort, webPort, midiOn):
         self._guiPlayerConfig.setValue("PlayerHost", playerHost)
@@ -99,11 +101,13 @@ class Configuration(object):
         self._guiVideoConfig.setValue("ScaleVideoX", scaleX)
         self._guiVideoConfig.setValue("ScaleVideoY", scaleY)
 
-    def setGuiConfig(self, autoSend, midiBcast, midiBindAddress, midiPort):
+    def setGuiConfig(self, autoSend, midiBcast, midiBindAddress, midiPort, winSize, winPos):
         self._guiConfig.setValue("AutoSend", autoSend)
         self._guiConfig.setValue("MidiBroadcast", midiBcast)
         self._guiConfig.setValue("MidiBindAddress", midiBindAddress)
         self._guiConfig.setValue("MidiPort", midiPort)
+        self._guiConfig.setValue("WindowSize", winSize)
+        self._guiConfig.setValue("WindowPosition", winPos)
 
     def saveConfig(self):
         self._guiConfigurationTree.saveConfigFile(self._configurationFile)
@@ -142,6 +146,38 @@ class Configuration(object):
 
     def getVideoScaleY(self):
         return self._guiVideoConfig.getValue("ScaleVideoY")
+
+    def getWindowSize(self):
+        positionTuplet = (-1, -1)
+        positionString = self._guiConfig.getValue("WindowSize")
+        positionList = positionString.split(',')
+        if(len(positionList) < 2):
+            positionList = positionString.split('.')
+        if(len(positionList) < 2):
+            positionList = positionString.split(':')
+        if(len(positionList) < 2):
+            positionList = positionString.split('x')
+        if(len(positionList) < 2):
+            positionList = positionString.split('X')
+        if(len(positionList) == 2):
+            positionTuplet = (int(positionList[0]), int(positionList[1]))
+        return positionTuplet
+
+    def getWindowPosition(self):
+        positionTuplet = (-1, -1)
+        positionString = self._guiConfig.getValue("WindowPosition")
+        positionList = positionString.split(',')
+        if(len(positionList) < 2):
+            positionList = positionString.split('.')
+        if(len(positionList) < 2):
+            positionList = positionString.split(':')
+        if(len(positionList) < 2):
+            positionList = positionString.split('x')
+        if(len(positionList) < 2):
+            positionList = positionString.split('X')
+        if(len(positionList) == 2):
+            positionTuplet = (int(positionList[0]), int(positionList[1]))
+        return positionTuplet
 
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback

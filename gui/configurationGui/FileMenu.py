@@ -105,7 +105,7 @@ class ConfigNewDialog(wx.Dialog): #@UndefinedVariable
 
 class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, configurationClass):
-        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 450))
+        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 520))
 
         self._configurationClass = configurationClass
 
@@ -190,6 +190,23 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         guiMidiBroadcastSizer.Add(self._guiMidiBroadcastField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(guiMidiBroadcastSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        sizeX, sizeY = self._configurationClass.getWindowSize()
+        windowSizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        windowSizeLabel = wx.StaticText(self, wx.ID_ANY, "Input address:") #@UndefinedVariable
+        self._windowSizeField = wx.TextCtrl(self, wx.ID_ANY, str(sizeX) + "," + str(sizeY), size=(120, -1)) #@UndefinedVariable
+        windowSizeSizer.Add(windowSizeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        windowSizeSizer.Add(self._windowSizeField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(windowSizeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        posX, posY = self._configurationClass.getWindowPosition()
+        windowPosSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        windowPosLabel = wx.StaticText(self, wx.ID_ANY, "Input address:") #@UndefinedVariable
+        self._windowPosField = wx.TextCtrl(self, wx.ID_ANY, str(posX) + "," + str(posY), size=(120, -1)) #@UndefinedVariable
+        windowPosSizer.Add(windowPosLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        windowPosSizer.Add(self._windowPosField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(windowPosSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+
 
         infoText = wx.StaticText(self, wx.ID_ANY, "Convertion:") #@UndefinedVariable
         infoText.SetFont(boldFont)
@@ -260,7 +277,9 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         midiBcast = self._guiMidiBroadcastField.GetValue()
         midiBindAddress = self._guiMidiBindAddressField.GetValue()
         midiPort2 = self._guiMidiPortField.GetValue()
-        self._configurationClass.setGuiConfig(autoSend, midiBcast, midiBindAddress, midiPort2)
+        winSize = self._windowSizeField.GetValue()
+        winPos = self._windowPosField.GetValue()
+        self._configurationClass.setGuiConfig(autoSend, midiBcast, midiBindAddress, midiPort2, winSize, winPos)
 
         self._configurationClass.saveConfig()
         wx.MessageBox('You must restart GUI to make sure all changes to take effect!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable

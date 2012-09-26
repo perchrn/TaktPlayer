@@ -97,7 +97,7 @@ def getEffectByName(name, configurationTree, effectImagesConfiguration, internal
     return getEffectById(fxid, configurationTree, effectImagesConfiguration, internalResX, internalResY)
 
 
-class ZoomEffect(object):
+class ZoomEffect_rename(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
 
@@ -223,6 +223,102 @@ class ZoomEffect(object):
             return self._zoomMat
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
+
+class ZoomEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._radians360 = math.radians(360)
+
+        self._rotateMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._rotateMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "Mirror"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, amount, rotate, move, direction, unused1):
+        return self.mirrorImage(image, amount, rotate, move, direction)
+
+    def mirrorImage(self, image, mode, rotate, move, direction):
+        rotateMatrix1 = cv.CreateMat(2,3,cv.CV_32F)
+        rotateMatrix2 = cv.CreateMat(2,3,cv.CV_32F)
+
+        halfResX = int(self._internalResolutionX / 2)
+        halfResY = int(self._internalResolutionY / 2)
+        if(rotate >= 0.01):
+            xCenter = halfResX
+            yCenter = halfResY
+            if(move > 0.02):
+                xCenter -= halfResX * move * math.cos(self._radians360 * -direction)
+                yCenter += halfResY * move * math.sin(self._radians360 * -direction)
+            angle = rotate * 360
+    #        print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
+            cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix1)
+            cv.SetZero(self._rotateMat1)
+            cv.WarpAffine(image, self._rotateMat1, rotateMatrix1)
+            cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix2)
+            cv.SetZero(self._rotateMat2)
+            cv.WarpAffine(image, self._rotateMat2, rotateMatrix2)
+            if(mode < 0.5):
+                cv.Flip(self._rotateMat2, self._rotateMat2, 1)
+            else:
+                cv.Flip(self._rotateMat2, self._rotateMat2, 0)
+            image1 = self._rotateMat1
+        else:
+            if(mode < 0.5):
+                cv.Flip(image, self._rotateMat2, 1)
+            else:
+                cv.Flip(image, self._rotateMat2, 0)
+            image1 = image            
+        if(mode < 0.5):
+            src_region = cv.GetSubRect(image1, (0, 0, halfResX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._rotateMat2, (0, 0, halfResX, self._internalResolutionY))
+        else:
+            src_region = cv.GetSubRect(image1, (0, 0, self._internalResolutionX, halfResY))
+            dst_region = cv.GetSubRect(self._rotateMat2, (0, 0, self._internalResolutionX, halfResY))
+        cv.Copy(src_region, dst_region)
+
+        return self._rotateMat2
+
+class RotateEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._radians360 = math.radians(360)
+
+        self._rotateMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "Rotate"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, amount, move, direction, unused1, unused2):
+        return self.rotateImage(image, amount, move, direction)
+
+    def rotateImage(self, image, amount, move, direction):
+        if((amount < 0.02) or (amount > 0.99)):
+            return image
+        xCenter = int(self._internalResolutionX / 2)
+        yCenter = int(self._internalResolutionY / 2)
+        if(move > 0.02):
+            xCenter -= self._internalResolutionX *  0.5 * move * math.cos(self._radians360 * -direction)
+            yCenter -= self._internalResolutionY * -0.5 * move * math.sin(self._radians360 * -direction)
+        angle = amount * 360
+#        print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
+        rotateMatrix = cv.CreateMat(2,3,cv.CV_32F)
+        cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix)
+        cv.SetZero(self._rotateMat)
+        cv.WarpAffine(image, self._rotateMat, rotateMatrix)
+        return self._rotateMat
 
 class TVNoizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -1378,8 +1474,6 @@ class ImageAddEffect(object):
         return returnImage
 
 #TODO: add effects
-#class MirrorEffect(object):
-#class RotateEffect(object):
 #class SliceEffect(object):
 
 #class StutterEffect(object):
@@ -1390,5 +1484,9 @@ class ImageAddEffect(object):
 #class CurveEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
+#??? TODO ???
+#get coordinates from image blob
+#fix loading delay!!!
+#camera perspective
+
 #Media:
-#class ParalaxScrolling():

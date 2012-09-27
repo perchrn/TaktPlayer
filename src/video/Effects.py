@@ -1486,8 +1486,9 @@ class ImageAddEffect(object):
 
 #??? TODO ???
 #get coordinates from image blob
-#fix loading delay!!!
-#camera ratio
 #Recording / resampler
+#Redo clip overview (use more space)
+#Showoff DEMO
 
 #Media:
+#text media (sprite based?)

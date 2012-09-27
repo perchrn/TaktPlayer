@@ -188,6 +188,8 @@ class MediaFile(object):
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlaybackModulation", "None")
+        elif(mediaType == "Camera"):
+            self._configurationTree.addTextParameter("DisplayMode", "Crop")
         elif(mediaType == "KinectCamera"):
             self._configurationTree.addTextParameter("DisplayModeModulation", "None")
             self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
@@ -210,7 +212,7 @@ class MediaFile(object):
             if(oldType == "VideoLoop"):
                 self._configurationTree.removeParameter("LoopMode")
             elif(oldType == "Camera"):
-                pass
+                self._configurationTree.removeParameter("DisplayMode")
             elif(oldType == "KinectCamera"):
                 self._configurationTree.removeParameter("DisplayModeModulation")
                 self._configurationTree.removeParameter("FilterValues")
@@ -236,7 +238,7 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("DisplayModeModulation")
                     self._configurationTree.removeParameter("FilterValues")
                 elif(oldType == "Camera"):
-                    pass
+                    self._configurationTree.removeParameter("DisplayMode")
                 elif(oldType == "ImageSequence"):
                     self._configurationTree.removeParameter("SequenceMode")
                     self._configurationTree.removeParameter("PlaybackModulation")
@@ -285,19 +287,22 @@ class MediaFile(object):
         if(mediaType == "Image"):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-            self._configurationTree.addTextParameter("DisplayMode", "Crop")
             startVal = sourceConfigTree.getValue("StartValues")
             if(startVal != None):
                 self._configurationTree.setValue("StartValues", startVal)
             endVal = sourceConfigTree.getValue("EndValues")
             if(endVal != None):
                 self._configurationTree.setValue("EndValues", endVal)
+        else:
+            self._configurationTree.removeParameter("StartValues")
+            self._configurationTree.removeParameter("EndValues")
+
+        if((mediaType == "Image") or (mediaType == "Camera")):
+            self._configurationTree.addTextParameter("DisplayMode", "Crop")
             cropMode = sourceConfigTree.getValue("DisplayMode")
             if(cropMode != None):
                 self._configurationTree.setValue("DisplayMode", cropMode)
         else:
-            self._configurationTree.removeParameter("StartValues")
-            self._configurationTree.removeParameter("EndValues")
             self._configurationTree.removeParameter("DisplayMode")
 
         if(mediaType == "ScrollImage"):
@@ -1855,12 +1860,15 @@ All notes on events are quantized to this.
                     self._values2Field.SetValue(endValString)
                     self._config.addTextParameter("EndValues", "0.0|0.0|0.0")
                     self._config.setValue("EndValues", endValString)
+                else:
+                    self._config.removeParameter("StartValues")
+                    self._config.removeParameter("EndValues")
+
+                if((self._type == "Image") or (self._type == "Camera")):
                     resizeMode = self._subModeField.GetValue()
                     self._config.addBoolParameter("DisplayMode", "Crop")
                     self._config.setValue("DisplayMode", resizeMode)
                 else:
-                    self._config.removeParameter("StartValues")
-                    self._config.removeParameter("EndValues")
                     self._config.removeParameter("DisplayMode")
 
                 if(self._type == "ImageSequence"):
@@ -2074,6 +2082,18 @@ All notes on events are quantized to this.
                 self._values2Field.SetValue("0.5|0.5")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
+        elif(self._type == "Camera"):
+            self._subModeLabel.SetLabel("Resize mode:")
+            if(config != None):
+                cropMode = config.getValue("DisplayMode")
+                if(cropMode == None):
+                    self._selectedSubMode = "Crop"
+                else:
+                    self._selectedSubMode = cropMode
+                self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
+            else:
+                self._selectedSubMode = self._subModeField.GetValue()
+                self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
         elif(self._type == "KinectCamera"):
             if(config != None):
                 dispMod = config.getValue("DisplayModeModulation")
@@ -2098,24 +2118,22 @@ All notes on events are quantized to this.
 
         if(self._type == "VideoLoop"):
             self._noteConfigSizer.Show(self._subModeSizer)
-            self._noteConfigSizer.Hide(self._subMode2Sizer)
         elif(self._type == "Image"):
             self._noteConfigSizer.Show(self._subModeSizer)
-            self._noteConfigSizer.Hide(self._subMode2Sizer)
         elif(self._type == "ScrollImage"):
             self._noteConfigSizer.Show(self._subModeSizer)
-            self._noteConfigSizer.Show(self._subMode2Sizer)
         elif(self._type == "Sprite"):
             self._noteConfigSizer.Show(self._subModeSizer)
-            self._noteConfigSizer.Hide(self._subMode2Sizer)
         elif(self._type == "ImageSequence"):
             self._noteConfigSizer.Show(self._subModeSizer)
-            self._noteConfigSizer.Hide(self._subMode2Sizer)
-        elif(self._type == "KinectCamera"):
-            self._noteConfigSizer.Hide(self._subModeSizer)
-            self._noteConfigSizer.Hide(self._subMode2Sizer)
+        elif(self._type == "Camera"):
+            self._noteConfigSizer.Show(self._subModeSizer)
         else:
             self._noteConfigSizer.Hide(self._subModeSizer)
+
+        if(self._type == "ScrollImage"):
+            self._noteConfigSizer.Show(self._subMode2Sizer)
+        else:
             self._noteConfigSizer.Hide(self._subMode2Sizer)
 
         if(self._type == "ScrollImage"):
@@ -2766,6 +2784,11 @@ All notes on events are quantized to this.
                 return True
             guiSubMode = self._subModulationField.GetValue()
             configSubMode = self._config.getValue("PlaybackModulation")
+            if(guiSubMode != configSubMode):
+                return True
+        if(self._type == "Camera"):
+            guiSubMode = self._subModeField.GetValue()
+            configSubMode = self._config.getValue("DisplayMode")
             if(guiSubMode != configSubMode):
                 return True
         if(self._type == "KinectCamera"):

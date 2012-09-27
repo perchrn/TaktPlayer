@@ -776,7 +776,7 @@ class ImageFile(MediaFile):
         self._oldZoom = -1.0
         self._oldMoveX = -1.0
         self._oldMoveY = -1.0
-        self._oldCrop = False
+        self._oldCrop = "-1"
         self._getConfiguration()
 
     def _getConfiguration(self):
@@ -1535,6 +1535,14 @@ class CameraInput(MediaFile):
         self._getConfiguration()
         self._cameraMode = self.CameraModes.OpenCV
         self._firstTrigger = True
+        self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._cropMode = "Crop"
+        self._configurationTree.addTextParameter("DisplayMode", "Crop")
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._cropMode = self._configurationTree.getValue("DisplayMode")
 
     class CameraModes():
         OpenCV, VideoCapture = range(2)
@@ -1554,6 +1562,45 @@ class CameraInput(MediaFile):
             self._captureImage = openCvCameras.getCameraImage(self._cameraId, currentSongPosition)
         else:
             self._captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
+
+        if(self._cropMode != "Stretch"):
+            imageSize = cv.GetSize(self._captureImage)
+            xRatio = float(imageSize[0]) / self._internalResolutionX
+            yRatio = float(imageSize[1]) / self._internalResolutionY
+            if(self._cropMode == "Crop"):
+                left = 0
+                top = 0
+                if(xRatio > yRatio):
+                    xSize = int(imageSize[0] / xRatio * yRatio)
+                    ySize = imageSize[1]
+                else:
+                    xSize = imageSize[0]
+                    ySize = int(imageSize[1] / yRatio * xRatio)
+                if(xSize < imageSize[0]):
+                    left = int((imageSize[0] - xSize) / 2)
+                if(ySize < imageSize[1]):
+                    top = int((imageSize[1] - ySize) / 2)
+                src_region = cv.GetSubRect(self._captureImage, (left, top, xSize, ySize) )
+                cv.Resize(src_region, self._resizeMat)
+                self._captureImage = self._resizeMat
+            elif(self._cropMode == "Scale"):
+                left = 0
+                top = 0
+                if(xRatio > yRatio):
+                    xSize = self._internalResolutionX
+                    ySize = int(self._internalResolutionY / xRatio * yRatio)
+                else:
+                    xSize = int(self._internalResolutionX / yRatio * xRatio)
+                    ySize = self._internalResolutionY
+                if(xSize < self._internalResolutionX):
+                    left = int((self._internalResolutionX - xSize) / 2)
+                if(ySize < self._internalResolutionY):
+                    top = int((self._internalResolutionY - ySize) / 2)
+                dst_region = cv.GetSubRect(self._resizeMat, (left, top, xSize, ySize) )
+                cv.SetZero(self._resizeMat)
+                cv.Resize(self._captureImage, dst_region)
+                self._captureImage = self._resizeMat
+
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 

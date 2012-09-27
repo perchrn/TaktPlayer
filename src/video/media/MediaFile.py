@@ -764,13 +764,13 @@ class ImageFile(MediaFile):
 
         self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
         self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-        self._configurationTree.addBoolParameter("CropMode", True)
+        self._configurationTree.addTextParameter("DisplayMode", "Crop")
 
         self._startZoom, self._startMove, self._startAngle = textToFloatValues("0.0|0.0|0.0", 3)
         self._endZoom, self._endMove, self._endAngle = textToFloatValues("0.0|0.0|0.0", 3)
         self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
         self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
-        self._cropMode = True
+        self._cropMode = "Crop"
 
         self.debugCount = 0
         self._oldZoom = -1.0
@@ -787,7 +787,7 @@ class ImageFile(MediaFile):
         self._endZoom, self._endMove, self._endAngle = textToFloatValues(endValuesString, 3)
         self._startX, self._startY = self._angleAndMoveToXY(self._startAngle, self._startMove)
         self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
-        self._cropMode = self._configurationTree.getValue("CropMode")
+        self._cropMode = self._configurationTree.getValue("DisplayMode")
 
     def getType(self):
         return "Image"
@@ -849,11 +849,35 @@ class ImageFile(MediaFile):
             elif(zoom <= 0.75):
                 multiplicator = 0.5 - (0.1666666 * ((zoom - 0.5) * 4))
             else:
-                multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) *4))
+                multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) * 4))
 #            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
-            if(self._cropMode == True):
+            dst_region = cv.GetSubRect(self._zoomResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY))
+            if(self._cropMode == "Crop"):
                 sourceRectangleX = int(self._source100percentCropX * multiplicator)
                 sourceRectangleY = int(self._source100percentCropY * multiplicator)
+            elif(self._cropMode == "Scale"):
+                destRectangleX = int(self._dest100percentScaleX / multiplicator)
+                destRectangleY = int(self._dest100percentScaleY / multiplicator)
+                sourceRectangleX = self._sourceX
+                sourceRectangleY = self._sourceY
+                if(destRectangleX > self._internalResolutionX):
+                    destScaleX = float(self._internalResolutionX) / destRectangleX
+                    destRectangleX = min(destRectangleX, self._internalResolutionX)
+                    sourceRectangleX = int(self._sourceX * destScaleX)
+                if(destRectangleY > self._internalResolutionY):
+                    destScaleY = float(self._internalResolutionY) / destRectangleY
+                    destRectangleY = min(destRectangleY, self._internalResolutionY)
+                    sourceRectangleY = int(self._sourceY * destScaleY)
+#                print "DEBUG pcn: scale: mul: " + str(multiplicator) + " x: " + str(destRectangleX) + " y: " + str(destRectangleY)
+                destLeft = 0
+                destTop = 0
+                if(destRectangleX < self._internalResolutionX):
+                    destLeft = (self._internalResolutionX - destRectangleX) / 2
+                if(destRectangleY < self._internalResolutionY):
+                    destTop = (self._internalResolutionY - destRectangleY) / 2
+                cv.SetZero(self._zoomResizeMat)
+#                print "DEBUG pcn: scale: left: " + str(destLeft) + " top: " + str(destTop)
+                dst_region = cv.GetSubRect(self._zoomResizeMat, (destLeft, destTop, destRectangleX, destRectangleY))
             else:
                 sourceRectangleX = int(self._sourceX * multiplicator)
                 sourceRectangleY = int(self._sourceY * multiplicator)                
@@ -881,9 +905,9 @@ class ImageFile(MediaFile):
             elif((top + sourceRectangleY) > self._sourceY):
                 top = self._sourceY - sourceRectangleY
 #            print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
-#            print "DEBUG source %d:%d dest %d:%d rect: %d:%d:%d:%d" %(self._sourceX, self._sourceY, self._internalResolutionX, self._internalResolutionY, left, top, sourceRectangleX, sourceRectangleY)
+#            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
-            cv.Resize(src_region, self._zoomResizeMat)
+            cv.Resize(src_region, dst_region)
             self._captureImage = self._zoomResizeMat
         self._applyEffects(currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
@@ -947,9 +971,15 @@ class ImageFile(MediaFile):
         if(self._sourceAspect > self._destinationAspect):
             self._source100percentCropX = int(self._sourceY * self._destinationAspect)
             self._source100percentCropY = self._sourceY
+            self._dest100percentScaleX = self._internalResolutionX
+            self._dest100percentScaleY = int(self._internalResolutionX / self._sourceAspect)
+            print "DEBUG pcn: scale1 x: " + str(self._dest100percentScaleX) + " y: " + str(self._dest100percentScaleY)
         else:
             self._source100percentCropX = self._sourceX
             self._source100percentCropY = int(self._sourceX / self._destinationAspect)
+            self._dest100percentScaleX = int(self._internalResolutionY / self._sourceAspect)
+            self._dest100percentScaleY = self._internalResolutionY
+            print "DEBUG pcn: scale2 x: " + str(self._dest100percentScaleX) + " y: " + str(self._dest100percentScaleY)
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 

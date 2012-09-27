@@ -97,7 +97,7 @@ def getEffectByName(name, configurationTree, effectImagesConfiguration, internal
     return getEffectById(fxid, configurationTree, effectImagesConfiguration, internalResX, internalResY)
 
 
-class ZoomEffect_rename(object):
+class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
 
@@ -224,7 +224,7 @@ class ZoomEffect_rename(object):
         cv.Resize(src_region, self._zoomMat)
         return self._zoomMat
 
-class ZoomEffect(object):
+class MirrorEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
 
@@ -1487,6 +1487,7 @@ class ImageAddEffect(object):
 #??? TODO ???
 #get coordinates from image blob
 #fix loading delay!!!
-#camera perspective
+#camera ratio
+#Recording / resampler
 
 #Media:

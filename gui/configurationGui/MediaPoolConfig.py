@@ -174,7 +174,7 @@ class MediaFile(object):
         elif(mediaType == "Image"):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-            self._configurationTree.addBoolParameter("CropMode", True)
+            self._configurationTree.addTextParameter("DisplayMode", "Crop")
         elif(mediaType == "ScrollImage"):
             self._configurationTree.addTextParameter("ScrollModulation", "None")
             self._configurationTree.addBoolParameter("HorizontalMode", True)
@@ -223,7 +223,7 @@ class MediaFile(object):
             if(changedToImage == True):
                 self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
                 self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-                self._configurationTree.addBoolParameter("CropMode", True)
+                self._configurationTree.addBoolParameter("DisplayMode", "Crop")
         else:
             #Video file
             oldType = self._configurationTree.getValue("Type")
@@ -243,7 +243,7 @@ class MediaFile(object):
                 elif(oldType == "Image"):
                     self._configurationTree.removeParameter("StartValues")
                     self._configurationTree.removeParameter("EndValues")
-                    self._configurationTree.removeParameter("CropMode")
+                    self._configurationTree.removeParameter("DisplayMode")
                 elif(oldType == "ScrollImage"):
                     self._configurationTree.removeParameter("ScrollModulation")
                     self._configurationTree.removeParameter("HorizontalMode")
@@ -285,20 +285,20 @@ class MediaFile(object):
         if(mediaType == "Image"):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
-            self._configurationTree.addBoolParameter("CropMode", True)
+            self._configurationTree.addTextParameter("DisplayMode", "Crop")
             startVal = sourceConfigTree.getValue("StartValues")
             if(startVal != None):
                 self._configurationTree.setValue("StartValues", startVal)
             endVal = sourceConfigTree.getValue("EndValues")
             if(endVal != None):
                 self._configurationTree.setValue("EndValues", endVal)
-            cropMode = sourceConfigTree.getValue("CropMode")
+            cropMode = sourceConfigTree.getValue("DisplayMode")
             if(cropMode != None):
-                self._configurationTree.setValue("CropMode", cropMode)
+                self._configurationTree.setValue("DisplayMode", cropMode)
         else:
             self._configurationTree.removeParameter("StartValues")
             self._configurationTree.removeParameter("EndValues")
-            self._configurationTree.removeParameter("CropMode")
+            self._configurationTree.removeParameter("DisplayMode")
 
         if(mediaType == "ScrollImage"):
             self._configurationTree.addTextParameter("ScrollModulation", "None")
@@ -1847,16 +1847,12 @@ All notes on events are quantized to this.
                     self._config.addTextParameter("EndValues", "0.0|0.0|0.0")
                     self._config.setValue("EndValues", endValString)
                     resizeMode = self._subModeField.GetValue()
-                    if(resizeMode == "Crop"):
-                        cropMode = True
-                    else:
-                        cropMode = False
-                    self._config.addBoolParameter("CropMode", True)
-                    self._config.setValue("CropMode", cropMode)
+                    self._config.addBoolParameter("DisplayMode", "Crop")
+                    self._config.setValue("DisplayMode", resizeMode)
                 else:
                     self._config.removeParameter("StartValues")
                     self._config.removeParameter("EndValues")
-                    self._config.removeParameter("CropMode")
+                    self._config.removeParameter("DisplayMode")
 
                 if(self._type == "ImageSequence"):
                     sequenceMode = self._subModeField.GetValue()
@@ -1992,11 +1988,11 @@ All notes on events are quantized to this.
         elif(self._type == "Image"):
             self._subModeLabel.SetLabel("Resize mode:")
             if(config != None):
-                cropMode = config.getValue("CropMode")
-                if((cropMode == None) or (cropMode == True)):
+                cropMode = config.getValue("DisplayMode")
+                if(cropMode == None):
                     self._selectedSubMode = "Crop"
                 else:
-                    self._selectedSubMode = "Stretch"
+                    self._selectedSubMode = cropMode
                 self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
                 confString = self._config.getValue("StartValues")
                 confVal = textToFloatValues(confString, 3)
@@ -2231,7 +2227,7 @@ All notes on events are quantized to this.
         self._updateChoices(widget, self._sequenceModes.getChoices, value, defaultValue)
 
     def _getCropChoises(self):
-        return ["Crop", "Stretch"]
+        return ["Crop", "Stretch", "Scale"]
 
     def _updateCropModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCropChoises, value, defaultValue)
@@ -2705,12 +2701,8 @@ All notes on events are quantized to this.
             if(guiSubMode != configSubMode):
                 return True
             guiSubMode = self._subModeField.GetValue()
-            if(guiSubMode == "Crop"):
-                guiSubModeVal = True
-            else:
-                guiSubModeVal = False
-            configSubMode = self._config.getValue("CropMode")
-            if(guiSubModeVal != configSubMode):
+            configSubMode = self._config.getValue("DisplayMode")
+            if(guiSubMode != configSubMode):
                 return True
         if(self._type == "ScrollImage"):
             guiSubMode = self._subModulationField.GetValue()

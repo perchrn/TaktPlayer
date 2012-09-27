@@ -725,7 +725,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onSubModeChosen, id=self._subModeField.GetId()) #@UndefinedVariable
 
         self._subMode2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._subMode2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Reverse scrollin:") #@UndefinedVariable
+        self._subMode2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Reverse scrolling:") #@UndefinedVariable
         self._subMode2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Off"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateReverseModeChoices(self._subMode2Field, "Off", "Off")
         subMode2HelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
@@ -1361,6 +1361,15 @@ DontLoop:\tPlay video once.
 DontLoopReverse:\tPlay video onve in reverse.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Loop mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        elif(self._type == "Image"):
+            text = """
+Decides fit the image to screen.
+
+Crop:\tCuts away what does not fit.
+Stretch:\tStretches the image to fit.
+Scale:\tAdds black borders to keep aspect ratio.
+"""
+            dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Sequence mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "ImageSequence"):
             text = """
 Decides how we decide which image to show.
@@ -1372,18 +1381,18 @@ Modulation:\tUses modulation source to select image.
 ReTrigger Will be restarted when another note is activated on the same track.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Sequence mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
-        if(self._type == "ScrollImage"):
+        elif(self._type == "ScrollImage"):
             text = """
 Decides which direction the image scrolls when not modulated.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Scroll direction help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
-        if(self._type == "Sprite"):
+        elif(self._type == "Sprite"):
             text = """
 Sometimes you may need to invert the mask on the first image.
 """
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mask invertion help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         else:
-            text = "\nMissing help text for " + str(self._type) + " (subMode1)"
+            text = "\nMissing help text for \"" + str(self._type) + "\" (subMode1)"
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Unknown help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()

@@ -178,17 +178,19 @@ class PlayerMain(wx.Frame):
             activeConfigName = self._configurationTree.getCurrentFileName()
             if(activeConfigName != programName):
                 #Find config...
-                print "-" * 150
+                print "-" * 120
                 print "DEBUG pcn: _configLoadCallback loading: " + str(programName)
-                print "-" * 150
+                print "-" * 120
                 filePath = os.path.join(self._playerConfiguration.getConfigDir(), programName)
                 self._configurationTree.loadConfig(filePath)
+                self._configCheckCounter = self._configCheckEveryNRound + 1
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
             if(self._configurationTree.isConfigurationUpdated()):
-                print "**********" * 10
+                print "*" * 120
                 print "config is updated..."
+                print "*" * 120
                 self._getConfiguration()
                 self._timeModulationConfiguration.checkAndUpdateFromConfiguration()
                 self._effectsConfiguration.checkAndUpdateFromConfiguration()

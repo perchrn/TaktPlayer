@@ -476,7 +476,7 @@ class GuiServer(object):
                         self._webOutputQueue.put(resposeXml.getXmlString())
 #                    print "XML: " + xmlTree.getConfigurationXMLString()
                 elif(webCommandXml.tag == "configuration"):
-                    print "Updating configuration..."
+                    print "Updating configuration from GUI..."
                     self._configurationTree.setFromXml(webCommandXml)
                     return True
                 elif(webCommandXml.tag == "playerConfigFileTransfer"):
@@ -490,11 +490,13 @@ class GuiServer(object):
                             self._playerConfiguration.saveConfig()
                     return True
                 elif(webCommandXml.tag == "configFileRequest"):
+                    retVal = False
                     reqType = getFromXml(webCommandXml, "type", "list")
                     fileName = getFromXml(webCommandXml, "fileName", "None")
                     if((reqType == "load") and (fileName != "None")):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.loadConfig(filePath)
+                        retVal = True
                     if((reqType == "save") and (fileName != "None")):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.saveConfigFile(filePath)
@@ -505,6 +507,7 @@ class GuiServer(object):
                     resposeXml.addAttribute("activeConfig", currentConfigFile)
 #                    print "GuiServer client request for configuration file names. List: " + configFileList
                     self._webOutputQueue.put(resposeXml.getXmlString())
+                    return retVal
                 elif(webCommandXml.tag == "playerConfigurationRequest"):
                     resposeXml = MiniXml("playerConfiguration")
                     xmlString = self._playerConfiguration.getXmlString()

@@ -17,6 +17,8 @@ from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
+import PIL.ImageFont as ImageFont
+import PIL.ImageDraw as ImageDraw
 from midi.MidiUtilities import noteStringToNoteNumber
 try:
     import freenect
@@ -1174,7 +1176,7 @@ class ScrollImageFile(MediaFile):
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
         self._fileOk = True
 
-class SpriteImageFile(MediaFile):
+class SpriteMediaBase(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1185,8 +1187,6 @@ class SpriteImageFile(MediaFile):
         self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
         self._midiModulation.setModulationReceiver("XModulation", "None")
         self._midiModulation.setModulationReceiver("YModulation", "None")
-        self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
-        self._invertFirstImageMask = False
         self._startX, self._startY = textToFloatValues("0.5|0.5", 2)
         self._endX, self._endY = textToFloatValues("0.5|0.5", 2)
         self._xModulationId = None
@@ -1209,10 +1209,9 @@ class SpriteImageFile(MediaFile):
         self._endX, self._endY = textToFloatValues(endValuesString, 2)
         self._xModulationId = self._midiModulation.connectModulation("XModulation")
         self._yModulationId = self._midiModulation.connectModulation("YModulation")
-        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
 
     def getType(self):
-        return "Sprite"
+        return "SpriteMediaBase"
 
     def close(self):
         pass
@@ -1334,11 +1333,29 @@ class SpriteImageFile(MediaFile):
         return False
 
     def openFile(self, midiLength):
+        pass
+
+class SpriteImageFile(SpriteMediaBase):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
+        self._invertFirstImageMask = False
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        SpriteMediaBase._getConfiguration(self)
+        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
+
+    def getType(self):
+        return "Sprite"
+
+    def openFile(self, midiLength):
         filePath = self._fullFilePath
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
         if (os.path.isfile(filePath) == False):
             self._log.warning("Could not find file: %s in directory: %s", self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
             pilImage = Image.open(filePath)
@@ -1426,6 +1443,70 @@ class SpriteImageFile(MediaFile):
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+        self._fileOk = True
+
+class TextMedia(SpriteMediaBase):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
+        self._font = "Arial;32;#FFFFFF"
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        SpriteMediaBase._getConfiguration(self)
+        self._font = self._configurationTree.getValue("Font")
+
+    def getType(self):
+        return "Text"
+
+    def openFile(self, midiLength):
+        text = self._cfgFileName
+        fontString = self._font
+        fontStringSplit = fontString.split(";")
+        startFont = fontStringSplit[0]
+        try:
+            startSize = int(fontStringSplit[1])
+        except:
+            startSize = 32
+        try:
+            startColour = fontStringSplit[2]
+        except:
+            startColour = "#FFFFFF"
+        startPos = 0
+        if(startColour.startswith("#")):
+            startPos = 1
+        startRed = int(startColour[startPos:startPos+2], 16)
+        startGreen = int(startColour[startPos+2:startPos+4], 16)
+        startBlue = int(startColour[startPos+4:startPos+6], 16)
+
+        size = startSize
+        colour = (startRed, startGreen, startBlue)
+        fontPath = "/Library/Fonts/" + startFont + ".ttf"
+        if(os.path.isfile(fontPath) != True):
+            fontPath = "/Library/Fonts/" + self._font + ".otf"
+        if (os.path.isfile(fontPath) == False):
+            self._log.warning("Could not find font: %s (%s)", self._cfgFileName, fontPath)
+            print "Could not find font: %s (%s)" % (self._cfgFileName, fontPath)
+            raise MediaError("File does not exist!")
+        font = ImageFont.truetype(fontPath, size)
+        textSize = font.getsize(text)
+        print "DEBUG pcn: textSize " + str(textSize) + " for: " + text 
+        fontPILImage = Image.new('RGB', textSize, (0, 0, 0))
+        drawArea = ImageDraw.Draw(fontPILImage)
+        drawArea.text((0, 0), text, font=font, fill=colour)
+
+        textPILMask = fontPILImage.convert('L')
+
+        self._captureImage = pilToCvImage(fontPILImage)
+        self._captureMask = pilToCvMask(textPILMask, 2)
+        self._firstImage = self._captureImage
+        self._firstImageMask = self._captureMask
+        self._bufferedImageList.append(self._captureImage)
+        self._bufferedImageMasks.append(self._captureMask)
+        self._numberOfFrames = len(self._bufferedImageList)
+        self._originalTime = 1.0
+
+        self._log.warning("Generated text media: %s", self._cfgFileName)
         self._fileOk = True
 
 class VideoCaptureCameras(object):

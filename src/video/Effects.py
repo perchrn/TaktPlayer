@@ -1489,6 +1489,6 @@ class ImageAddEffect(object):
 #Recording / resampler
 #Redo clip overview (use more space)
 #Showoff DEMO
+#Scroll area fix
 
 #Media:
-#text media (sprite based?)

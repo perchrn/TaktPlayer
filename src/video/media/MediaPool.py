@@ -7,7 +7,7 @@ import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
-    MediaGroup
+    MediaGroup, TextMedia
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
@@ -116,7 +116,7 @@ class MediaPool(object):
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
                     print "FileName OK"
-                    if((oldMedia.getType() == mediaType) and (mediaType != "Sprite")):
+                    if((oldMedia.getType() == mediaType) and (mediaType != "Sprite") and (mediaType != "Text")):
                         print "MediaType OK"
                         keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
@@ -148,6 +148,10 @@ class MediaPool(object):
                     elif(mediaType == "Sprite"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = SpriteImageFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "Text"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = TextMedia(fileName, self._midiTiming,  self._timeModulationConfiguration, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)

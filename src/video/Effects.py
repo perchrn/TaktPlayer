@@ -320,6 +320,48 @@ class RotateEffect(object):
         cv.WarpAffine(image, self._rotateMat, rotateMatrix)
         return self._rotateMat
 
+class BlobDetectEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+
+        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._splitMat = createMask(self._internalResolutionX, self._internalResolutionY)
+
+    def getName(self):
+        return "BlobDetect"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, blobFilter, unused1, unused2, unused3, unused4):
+        return self.detectBlobsImage(image, blobFilter)
+
+    def detectBlobsImage(self, image, blobFilter):
+        threshold = 100 + (self._internalResolutionX * self._internalResolutionY / 2 * blobFilter)
+        cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
+        cv.Split(self._colorMat, None, None, self._splitMat, None)
+        storage = cv.CreateMemStorage(0)
+        contours = cv.FindContours(self._splitMat, storage,  cv.CV_RETR_LIST, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
+        detectedBlobs = []
+        while contours:
+            blobSize = cv.ContourArea(contours)
+            if(blobSize > threshold):
+                result = cv.ApproxPoly(contours, storage, cv.CV_POLY_APPROX_DP)
+                _, center, _ = cv.MinEnclosingCircle(result)
+                xAmount = center[0] / self._internalResolutionX
+                yAmount = center[1] / self._internalResolutionY
+                detectedBlobs.append((xAmount, yAmount, blobSize))
+            contours = contours.h_next()
+        sortedBlobs = sorted(detectedBlobs, key=lambda blobInfo: blobInfo[2], reverse=True)
+        print "DEBUG pcn: Sorted blobs:"
+        for i in range(len(sortedBlobs)):
+            blob = sortedBlobs[i]
+            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
+        return image
+
 class TVNoizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -1477,7 +1519,7 @@ class ImageAddEffect(object):
 #class SliceEffect(object):
 
 #class StutterEffect(object):
-#class BaerturEffect(object):
+#class BaerturEffect(object): #Sigle frame feedback ish ;-)
 
 #class EchoEffect2(object):
 
@@ -1485,10 +1527,12 @@ class ImageAddEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
 #??? TODO ???
-#get coordinates from image blob
-#Recording / resampler
+#get coordinates from image blob (consept is done...)
 #Redo clip overview (use more space)
 #Showoff DEMO
 #Scroll area fix
+#More complex modulation.
 
 #Media:
+#TextMedia font directory config.
+#Recording / resampler

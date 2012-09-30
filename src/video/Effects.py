@@ -327,8 +327,12 @@ class BlobDetectEffect(object):
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
 
+        self._thresholdRange = math.sqrt((self._internalResolutionX * self._internalResolutionY) - 10)
+
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._splitMat = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._blankMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._splitMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._thersholdMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
     def getName(self):
         return "BlobDetect"
@@ -336,30 +340,56 @@ class BlobDetectEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, blobFilter, unused1, unused2, unused3, unused4):
-        return self.detectBlobsImage(image, blobFilter)
+    def applyEffect(self, image, blobFilter, mode, colour, saturation, thikness):
+        return self.detectBlobsImage(image, blobFilter, mode)
 
-    def detectBlobsImage(self, image, blobFilter):
-        threshold = 100 + (self._internalResolutionX * self._internalResolutionY / 2 * blobFilter)
+    def detectBlobsImage(self, image, blobFilter, mode):
+        if(blobFilter < 0.01):
+            #TODO: clear modulation values.
+            return image
+        threshold = int(10 + pow((self._thresholdRange * (1.0 - blobFilter)), 2))
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
-        cv.Split(self._colorMat, None, None, self._splitMat, None)
+        cv.Split(self._colorMat, None, None, self._splitMask, None)
+        cv.CmpS(self._splitMask, 200, self._thersholdMask, cv.CV_CMP_GT)
         storage = cv.CreateMemStorage(0)
-        contours = cv.FindContours(self._splitMat, storage,  cv.CV_RETR_LIST, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
+        contours = cv.FindContours(self._thersholdMask, storage,  cv.CV_RETR_LIST, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
         detectedBlobs = []
         while contours:
             blobSize = cv.ContourArea(contours)
             if(blobSize > threshold):
                 result = cv.ApproxPoly(contours, storage, cv.CV_POLY_APPROX_DP)
-                _, center, _ = cv.MinEnclosingCircle(result)
-                xAmount = center[0] / self._internalResolutionX
-                yAmount = center[1] / self._internalResolutionY
-                detectedBlobs.append((xAmount, yAmount, blobSize))
+                if(mode < 0.5):
+                    _, center, radius = cv.MinEnclosingCircle(result)
+                    xAmount = center[0] / self._internalResolutionX
+                    yAmount = center[1] / self._internalResolutionY
+                    detectedBlobs.append((xAmount, yAmount, blobSize, radius))
+                else:
+                    blobBox = cv.MinAreaRect2(result)
+                    xAmount = blobBox[0][0] / self._internalResolutionX
+                    yAmount = blobBox[0][1] / self._internalResolutionY
+                    detectedBlobs.append((xAmount, yAmount, blobSize, blobBox))
             contours = contours.h_next()
         sortedBlobs = sorted(detectedBlobs, key=lambda blobInfo: blobInfo[2], reverse=True)
-        print "DEBUG pcn: Sorted blobs:"
-        for i in range(len(sortedBlobs)):
+        if(mode < .5):
+            if(mode > 0.25):
+                cv.SetZero(image)
+        else:
+            if(mode > 0.75):
+                cv.SetZero(image)
+        for i in range(min(len(sortedBlobs), 32)):
             blob = sortedBlobs[i]
-            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
+            if(mode < .5):
+                intX = int(blob[0] * self._internalResolutionX)
+                intY = int(blob[1] * self._internalResolutionY)
+                intRad = int(blob[3])
+                cv.Circle(image, (intX, intY), intRad, (0,0,255 - (i * 20)), thickness=2, lineType=8, shift=0)
+            else:
+                intX = int(blob[0] * self._internalResolutionX)
+                intY = int(blob[1] * self._internalResolutionY)
+                boxVectors = [(int(point[0]), int(point[1])) for point in cv.BoxPoints(blob[3])]
+                cv.PolyLine(image, [boxVectors], 1, (0, 0, 255 - (i * 20)), thickness=2, lineType=8, shift=0)
+            #TODO: set modulation values...
+#            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
         return image
 
 class TVNoizeEffect(object):

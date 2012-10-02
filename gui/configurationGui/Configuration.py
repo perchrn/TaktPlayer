@@ -179,6 +179,9 @@ class Configuration(object):
             positionTuplet = (int(positionList[0]), int(positionList[1]))
         return positionTuplet
 
+    def getSpecialModulationHolder(self):
+        return self._globalConf.getSpecialModulationHolder()
+
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback
 

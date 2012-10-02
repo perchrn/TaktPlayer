@@ -4,12 +4,14 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Edge, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(18)
+    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(23)
 
     def getChoices(self):
         return ["None",
                 "Zoom",
                 "Flip",
+                "Mirror",
+                "Rotate",
                 "Scroll",
                 "Blur",
                 "BlurContrast",
@@ -17,7 +19,10 @@ class EffectTypes():
                 "Delay",
                 "SelfDifference",
                 "Distortion",
+                "Pixelate",
+                "TVNoize",
                 "Edge",
+                "BlobDetect",
                 "Desaturate",
                 "Contrast",
                 "HueSaturation",
@@ -30,6 +35,8 @@ class EffectTypes():
         return ["None",
                 "Zoom inn/out and even crop video.",
                 "Flip video horizontal/vertical.",
+                "Mirror effect.",
+                "Rotate image around a poit.",
                 "Scroll image.",
                 "Blur video.",
                 "Blur and multiply with self.",
@@ -37,7 +44,10 @@ class EffectTypes():
                 "Video delay effect.",
                 "Delaying video and subtracting it with self.",
                 "Distort image to black or white.",
+                "Pixelate image",
+                "TVNoize adder.",
                 "Edge detection effects.",
+                "Blob detection effects.",
                 "Selective desaturation effects.",
                 "Adjust brightness and contrast",
                 "Rotate colors and adjust saturation.",
@@ -53,6 +63,10 @@ def getEffectId(name):
         return EffectTypes.Zoom
     elif(lowername == "flip"):
         return EffectTypes.Flip
+    elif(lowername == "mirror"):
+        return EffectTypes.Mirror
+    elif(lowername == "rotate"):
+        return EffectTypes.Rotate
     elif(lowername == "scroll"):
         return EffectTypes.Scroll
     elif(lowername == "blur"):
@@ -67,8 +81,14 @@ def getEffectId(name):
         return EffectTypes.SelfDifference
     elif(lowername == "distortion"):
         return EffectTypes.Distortion
+    elif(lowername == "pixelate"):
+        return EffectTypes.Pixelate
+    elif(lowername == "tvnoize"):
+        return EffectTypes.TVNoize
     elif(lowername == "edge"):
         return EffectTypes.Edge
+    elif(lowername == "blobdetect"):
+        return EffectTypes.BlobDetect
     elif(lowername == "desaturate"):
         return EffectTypes.Desaturate
     elif(lowername == "contrast"):
@@ -93,6 +113,10 @@ def getEffectName(effectId):
         return "Zoom"
     elif(effectId == EffectTypes.Flip):
         return "Flip"
+    elif(effectId == EffectTypes.Mirror):
+        return "Mirror"
+    elif(effectId == EffectTypes.Rotate):
+        return "Rotate"
     elif(effectId == EffectTypes.Scroll):
         return "Scroll"
     elif(effectId == EffectTypes.Blur):
@@ -107,8 +131,14 @@ def getEffectName(effectId):
         return "SelfDifference"
     elif(effectId == EffectTypes.Distortion):
         return "Distortion"
+    elif(effectId == EffectTypes.Pixelate):
+        return "Pixelate"
+    elif(effectId == EffectTypes.TVNoize):
+        return "TVNoize"
     elif(effectId == EffectTypes.Edge):
         return "Edge"
+    elif(effectId == EffectTypes.BlobDetect):
+        return "BlobDetect"
     elif(effectId == EffectTypes.Desaturate):
         return "Desaturate"
     elif(effectId == EffectTypes.Contrast):
@@ -193,4 +223,28 @@ class ValueToHueModes():
 
     def getChoices(self):
         return ["Off", "Value", "Saturation", "Hue"]
+
+class MirrorModes():
+    Vertical, Horisontal = range(2)
+
+    def getChoices(self):
+        return ["Vertical", "Horisontal"]
+
+class BlobDetectModes():
+    CircleAdd, CircleOnly, RectangleAdd, RectangleOnly = range(4)
+
+    def getChoices(self):
+        return ["CircleAdd", "CircleOnly", "RectangleAdd", "RectangleOnly"]
+
+class PixelateModes():
+    Clean, Round, Star = range(3)
+
+    def getChoices(self):
+        return ["Clean", "Round", "Star"]
+
+class TVNoizeModes():
+    Star, Round, Clean = range(3)
+
+    def getChoices(self):
+        return ["Star", "Round", "Clean"]
 

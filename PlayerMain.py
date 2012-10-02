@@ -27,7 +27,7 @@ from video.media.MediaPool import MediaPool
 
 from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
-from midi.MidiStateHolder import MidiStateHolder
+from midi.MidiStateHolder import MidiStateHolder, SpecialModulationHolder
 
 from utilities import MultiprocessLogger
 
@@ -123,17 +123,24 @@ class PlayerMain(wx.Frame):
 
         self._midiTiming = MidiTiming()
         self._midiStateHolder = MidiStateHolder()
+        self._specialModulationHolder = SpecialModulationHolder()
 
 
-        self._timeModulationConfiguration = TimeModulationTemplates(self._globalConfig, self._midiTiming)
-        self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._internalResolutionX, self._internalResolutionY)
-        self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming)
+        self._timeModulationConfiguration = TimeModulationTemplates(self._globalConfig, self._midiTiming, self._specialModulationHolder)
+        self._effectsConfiguration = EffectTemplates(self._globalConfig, self._midiTiming, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+        self._mediaFadeConfiguration = FadeTemplates(self._globalConfig, self._midiTiming, self._specialModulationHolder)
         self._effectImagesConfiguration = EffectImageList(self._globalConfig, self._midiTiming, self._playerConfiguration.getVideoDir())
 
         confChild = self._configurationTree.addChildUnique("MediaMixer")
-        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._effectsConfiguration, self._effectImagesConfiguration, self._internalResolutionX, self._internalResolutionY)
+        self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._specialModulationHolder,
+                                      self._effectsConfiguration, self._effectImagesConfiguration,
+                                      self._internalResolutionX, self._internalResolutionY)
         confChild = self._configurationTree.addChildUnique("MediaPool")
-        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._mediaMixer, self._timeModulationConfiguration, self._effectsConfiguration, self._effectImagesConfiguration, self._mediaFadeConfiguration, confChild, self._internalResolutionX, self._internalResolutionY, self._playerConfiguration.getVideoDir())
+        self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._specialModulationHolder,
+                                    self._mediaMixer, self._timeModulationConfiguration,
+                                    self._effectsConfiguration, self._effectImagesConfiguration,
+                                    self._mediaFadeConfiguration, confChild, self._internalResolutionX,
+                                    self._internalResolutionY, self._playerConfiguration.getVideoDir())
 
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger, self._configLoadCallback)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())

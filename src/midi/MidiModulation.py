@@ -178,10 +178,10 @@ class AttackDecaySustainRelease(object):
         return False
 
 class ModulationSources():
-    NoModulation, MidiChannel, MidiNote, LFO, ADSR, Value = range(6)
+    NoModulation, MidiChannel, MidiNote, LFO, ADSR, Value, Special = range(7)
 
     def getChoices(self):
-        return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value"]
+        return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value", "Special"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
@@ -199,12 +199,13 @@ class ModulatiobReceiver(object):
         return self._name
 
 class MidiModulation(object):
-    def __init__(self, configurationTree, midiTiming):
+    def __init__(self, configurationTree, midiTiming, specialHolder):
         self._tmpMidiChClass = MidiChannelStateHolder(0, None)
         self._tmpMidiNoteClass = NoteState()
 
         self._configurationTree = configurationTree
         self._midiTiming = midiTiming
+        self._specialModulationHolder = specialHolder
 
         self._modulationReceivers = []
         self._activeLfos = []
@@ -359,6 +360,9 @@ class MidiModulation(object):
                                         pass #Keep default
                     #print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
                     return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release))
+        elif( sourceSplit[0] == "Special" ):
+            restId = sourceDescription.split("Special.")[1]
+            return (ModulationSources.Special, self._specialModulationHolder.getModulationId(restId))
         if(sourceDescription != "None"):
             print "Invalid modulation description: \"%s\"" % sourceDescription
         return None
@@ -444,6 +448,9 @@ class MidiModulation(object):
             if(isFloat != True):
                 subModId = subModId[0]
             returnString += "." + str(subModId)
+        elif(modulationSource == ModulationSources.Special):
+            returnString = "Special"
+            returnString += "." + self._specialModulationHolder.getSubModString(subModId)
         else:
             returnString = "None"
         return returnString
@@ -494,7 +501,7 @@ class MidiModulation(object):
     def _getAdsrId(self, mode, attack, decay, sustain, release):
         return (mode, attack, decay, sustain, release)
 
-    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, argument = 0.0, plussMinus = False):
+    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, argument = 0.0, plussMinus = False):
         if(combinedId != None):
             sourceId, subId = combinedId
             if(sourceId == ModulationSources.MidiChannel):
@@ -507,6 +514,9 @@ class MidiModulation(object):
                 return self._getAdsr(subId).getValue(songPosition, (midiNoteStateHolder.getStartPosition(), midiNoteStateHolder.getStopPosition(), midiNoteStateHolder.getNoteLength()))
             elif(sourceId == ModulationSources.Value):
                 return subId
+            elif(sourceId == ModulationSources.Special):
+                #print "DEBUG pcn: getModulationValue(Special, " + str(subId) + ") " + str(specialModulationHolder.getValue(subId))
+                return specialModulationHolder.getValue(subId)
         #Return "0.0", if we don't find it.
         if(plussMinus == True):
             return 0.5

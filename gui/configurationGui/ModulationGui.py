@@ -17,10 +17,11 @@ from midi.MidiController import MidiControllers
 from widgets.PcnImageButton import PcnImageButton
 
 class ModulationGui(object):
-    def __init__(self, mainConfing, midiTiming):
+    def __init__(self, mainConfing, midiTiming, specialModulationHolder):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._specialModulationHolder = specialModulationHolder
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._updateWidget = None
         self._closeCallback = None
         self._saveCallback = None
@@ -313,6 +314,19 @@ class ModulationGui(object):
         self._valueSliderId = self._valueSlider.GetId()
         self._mainModulationGuiPlane.Bind(wx.EVT_SLIDER, self._onSlide) #@UndefinedVariable
 
+        """Special"""
+
+        self._specialTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
+        self._specialTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Effect"], style=wx.CB_READONLY) #@UndefinedVariable
+        specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
+        self._specialTypeSizer.Add(self._specialTypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._specialTypeSizer.Add(self._specialTypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._specialTypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._specialTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+
         """Buttons"""
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -366,6 +380,10 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Show(self._valueSliderSizer)
         else:
             self._mainModulationGuiSizer.Hide(self._valueSliderSizer)
+        if(choice == "Special"):
+            self._mainModulationGuiSizer.Show(self._specialTypeSizer)
+        else:
+            self._mainModulationGuiSizer.Hide(self._specialTypeSizer)
 
         self._fixModulationGuiLayout()
         self._checkForUpdates()
@@ -814,6 +832,10 @@ Constant static value.
             return self._modBitmatAdsr
         elif(index == ModulationSources.Value):
             return self._modBitmatValue
+        elif(index == ModulationSources.Special):
+            return self._modBitmatValue
+        else:
+            return self._blankModBitmap
 
     def getBigModulationImageBitmap(self, index):
         if(index == ModulationSources.NoModulation):
@@ -828,6 +850,10 @@ Constant static value.
             return self._modBitmatAdsrBig
         elif(index == ModulationSources.Value):
             return self._modBitmatValueBig
+        elif(index == ModulationSources.Special):
+            return self._modBitmatValueBig
+        else:
+            return self._modBitmatBlankBig
 
     def updateModulationGuiButton(self, modulationString, widget):
         imageId = self.getModulationImageId(modulationString)

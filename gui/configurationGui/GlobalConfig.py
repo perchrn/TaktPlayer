@@ -13,13 +13,16 @@ from midi.MidiController import MidiControllers
 from video.media.MediaFileModes import FadeMode, TimeModulationMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
-    EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes
+    EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
+    MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
 import re
+from midi.MidiStateHolder import SpecialModulationHolder,\
+    GenericModulationHolder
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig):
@@ -28,20 +31,26 @@ class GlobalConfig(object):
 
         self._midiTiming = MidiTiming()
 
-        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming)
+        self._specialModulationHolder = SpecialModulationHolder()
+        self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
+        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming, self._specialModulationHolder)
 
-        self._timeModulationConfiguration = TimeModulationTemplates(self._configurationTree, self._midiTiming)
-        self._timeModulationGui = TimeModulationGui(self._mainConfig, self._midiTiming, self._modulationGui)
+        self._timeModulationConfiguration = TimeModulationTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._timeModulationGui = TimeModulationGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
 
-        self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, 800, 600)
-        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui)
-        self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming)
-        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui)
+        self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder, 800, 600)
+        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
+        self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
         self._effectImagesConfiguration = EffectImageList(self._configurationTree, self._midiTiming)
         self._effectImagesGui = EffectImagesListGui(self._mainConfig, self._effectImagesConfiguration)
 
+    def getSpecialModulationHolder(self):
+        return self._specialModulationHolder
+
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
+        self._effectsConfiguration.setupEffectModulations(self._effectsModulation)
         self._effectImagesConfiguration._getConfiguration()
         self._fadeConfiguration._getConfiguration()
 
@@ -232,16 +241,18 @@ class GlobalConfig(object):
         return self._fadeConfiguration.checkIfNameIsDefaultName(configName)
 
 class EffectsGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
         self._modulationGui = modulationGui
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._specialModulationHolder = specialModulationHolder
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._startConfigName = ""
         self._selectedEditor = self.EditSelection.Unselected
         self._effectListSelectedIndex = -1
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
+        self._fxBitmapBlobDetect = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
         self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
         self._fxBitmapBlurMul = wx.Bitmap("graphics/fxBlurMultiply.png") #@UndefinedVariable
         self._fxBitmapFeedback = wx.Bitmap("graphics/fxFeedback.png") #@UndefinedVariable
@@ -257,10 +268,12 @@ class EffectsGui(object):
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
+        self._fxBitmapPixelate = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapTVNoize = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
@@ -449,11 +462,15 @@ class EffectsGui(object):
         self._mainEffectsGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._flipModes = FlipModes()
+        self._mirrorMode = MirrorModes()
         self._zoomModes = ZoomModes()
         self._scrollModes = ScrollModes()
         self._distortionModes = DistortionModes()
+        self._pixelateModes = PixelateModes()
+        self._tvNoizeModes = TVNoizeModes()
         self._edgeModes = EdgeModes()
         self._edgeColourModes = EdgeColourModes()
+        self._blobDetectModes = BlobDetectModes()
         self._desaturateModes = DesaturateModes()
         self._contrastModes = ContrastModes()
         self._hueSatModes = HueSatModes()
@@ -474,6 +491,10 @@ class EffectsGui(object):
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapFlip)
         self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapMirror)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapRotate)
+        self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapScroll)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapBlur)
@@ -488,7 +509,13 @@ class EffectsGui(object):
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapDist)
         self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapPixelate)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapTVNoize)
+        self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapEdge)
+        self._fxIdImageIndex.append(index)
+        index = self._effectImageList.Add(self._fxBitmapTVNoize)
         self._fxIdImageIndex.append(index)
         index = self._effectImageList.Add(self._fxBitmapDeSat)
         self._fxIdImageIndex.append(index)
@@ -1233,7 +1260,12 @@ A list of start values for the effect modulation.
             self._setupValueLabels(None, None, self._scrollModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Flip):
             self._setLabels("Flip mode:", None, None, None, None)
-            self._setupValueLabels(self._flipModes.getChoices(), None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Mirror):
+            self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
+            self._setupValueLabels(self._mirrorMode.getChoices(), None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Rotate):
+            self._setLabels("Angle", "Move center", "Move angle", None, None)
+            self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Blur):
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
@@ -1251,9 +1283,18 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Distortion):
             self._setLabels("Distortion amount:", "Distortion mode", None, None, None)
             self._setupValueLabels(None, self._distortionModes.getChoices(), None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Pixelate):
+            self._setLabels("Pixel size:", "Pixel mode", None, None, None)
+            self._setupValueLabels(None, self._pixelateModes.getChoices(), None, None, None)
+        elif(self._chosenEffectId == EffectTypes.TVNoize):
+            self._setLabels("Noize amount:", "Noize scale", "Scale mode", None, None)
+            self._setupValueLabels(None, None, self._tvNoizeModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Edge):
             self._setLabels("Amount:", "Edge mode", "Value/Hue/Saturation", "Line color:", "Line saturation")
             self._setupValueLabels(None, self._edgeModes.getChoices(), self._edgeColourModes.getChoices(), None, None)
+        elif(self._chosenEffectId == EffectTypes.BlobDetect):
+            self._setLabels("Amount:", "Mode", "Line color:", "Line saturation", "LineWeight")
+            self._setupValueLabels(None, self._blobDetectModes.getChoices(), None, None, None)
         elif(self._chosenEffectId == EffectTypes.Desaturate):
             self._setLabels("Colour:", "Range", "Mode", None, None)
             self._setupValueLabels(None, None, self._desaturateModes.getChoices(), None, None)
@@ -1428,11 +1469,12 @@ A list of start values for the effect modulation.
         self._sliderButtonsSizer.Layout()
 
 class FadeGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
+        self._specialModulationHolder = specialModulationHolder
         self._modulationGui = modulationGui
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._selectedEditor = self.EditSelected.Unselected
         self._fadeModes = FadeMode()
         self._fadeListSelectedIndex = -1
@@ -1906,11 +1948,12 @@ Decides if this image fades to black or white.
         self._showOrHideSaveButton()
 
 class TimeModulationGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
         self._mainConfig = mainConfing
         self._midiTiming = midiTiming
+        self._specialModulationHolder = specialModulationHolder
         self._modulationGui = modulationGui
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._selectedEditor = self.EditSelected.Unselected
         self._timeModes = TimeModulationMode()
         self._timeModListSelectedIndex = -1

@@ -158,9 +158,10 @@ def imageFromArray(array):
     return cv.fromarray(array)
 
 class MediaFile(object):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._configurationTree = configurationTree
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._specialModulationHolder = specialModulationHolder
         self._timeModulationConfigurationTemplates = timeModulationConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfig
         self._guiCtrlStateHolder = guiCtrlStateHolder
@@ -246,7 +247,7 @@ class MediaFile(object):
         self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(effect1ModulationTemplate)
         if(self._effect1Settings == None):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
-        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
+        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), effect1ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
             self._effect1StartValues = self._effect1Settings.getStartValues()
             self._effect1OldValues = self._effect1StartValues
@@ -260,7 +261,7 @@ class MediaFile(object):
         self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(effect2ModulationTemplate)
         if(self._effect2Settings == None):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
-        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
+        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), effect2ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
         if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
             self._effect2StartValues = self._effect2Settings.getStartValues()
             self._effect2OldValues = self._effect2StartValues
@@ -351,8 +352,8 @@ class MediaFile(object):
     def _resetEffects(self, songPosition, midiNoteStateHolder, midiChannelStateHolder):
         self._guiCtrlStateHolder.resetState()
         if(self._modulationRestartMode != ModulationValueMode.RawInput):
-            self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
-            self._effect2StartControllerValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            self._effect1StartControllerValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
+            self._effect2StartControllerValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
         else:
             self._effect1StartControllerValues = (None, None, None, None, None)
             self._effect2StartControllerValues = (None, None, None, None, None)
@@ -385,7 +386,7 @@ class MediaFile(object):
 
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
-            midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder)
+            midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
             effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
             #print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
@@ -667,8 +668,8 @@ class MediaFile(object):
             return (mixedImage, currentPreValues, currentPostValues)
 
 class MediaGroup(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._mediaList = []
         self._getMediaCallback = None
         self._noteList = fileName.split(",")
@@ -759,8 +760,8 @@ class MediaGroup(MediaFile):
                 self._mediaList.append(self._getMediaCallback(noteId))
 
 class ImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._radians360 = math.radians(360)
 
@@ -986,12 +987,12 @@ class ImageFile(MediaFile):
         self._fileOk = True
 
 class ScrollImageFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._configurationTree.addBoolParameter("HorizontalMode", True)
         self._configurationTree.addBoolParameter("ReverseMode", False)
         self._midiModulation.setModulationReceiver("ScrollModulation", "None")
@@ -1033,7 +1034,7 @@ class ScrollImageFile(MediaFile):
             if(self._isScrollModeReverse == False):
                 scrollLength = 1.0 - scrollLength
         else:
-            scrollLength = self._midiModulation.getModlulationValue(self._scrollModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            scrollLength = self._midiModulation.getModlulationValue(self._scrollModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[0] != None):
             if(guiStates[0] > -0.5):
@@ -1177,12 +1178,12 @@ class ScrollImageFile(MediaFile):
         self._fileOk = True
 
 class SpriteMediaBase(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
         self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
         self._midiModulation.setModulationReceiver("XModulation", "None")
@@ -1231,10 +1232,10 @@ class SpriteMediaBase(MediaFile):
         posY = 0.5
         modulationIsActive = False
         if((self._xModulationId != None)):
-            posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
             modulationIsActive = True
         if((self._yModulationId != None)):
-            posY = self._midiModulation.getModlulationValue(self._yModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+            posY = self._midiModulation.getModlulationValue(self._yModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
             modulationIsActive = True
 
         if(modulationIsActive == False):
@@ -1336,8 +1337,8 @@ class SpriteMediaBase(MediaFile):
         pass
 
 class SpriteImageFile(SpriteMediaBase):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
         self._invertFirstImageMask = False
         self._getConfiguration()
@@ -1446,8 +1447,8 @@ class SpriteImageFile(SpriteMediaBase):
         self._fileOk = True
 
 class TextMedia(SpriteMediaBase):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
         self._font = "Arial;32;#FFFFFF"
         self._getConfiguration()
@@ -1480,7 +1481,7 @@ class TextMedia(SpriteMediaBase):
         startBlue = int(startColour[startPos+4:startPos+6], 16)
 
         size = startSize
-        colour = (startRed, startGreen, startBlue)
+        colour = (startBlue, startGreen, startRed) #BGR (to skip transforming later.)
         fontPath = "/Library/Fonts/" + startFont + ".ttf"
         if(os.path.isfile(fontPath) != True):
             fontPath = "/Library/Fonts/" + self._font + ".otf"
@@ -1490,7 +1491,7 @@ class TextMedia(SpriteMediaBase):
             raise MediaError("File does not exist!")
         font = ImageFont.truetype(fontPath, size)
         textSize = font.getsize(text)
-        print "DEBUG pcn: textSize " + str(textSize) + " for: " + text 
+        #print "DEBUG pcn: textSize " + str(textSize) + " for: " + text 
         fontPILImage = Image.new('RGB', textSize, (0, 0, 0))
         drawArea = ImageDraw.Draw(fontPILImage)
         drawArea.text((0, 0), text, font=font, fill=colour)
@@ -1610,8 +1611,8 @@ videoCaptureCameras = VideoCaptureCameras()
 openCvCameras = OpenCvCameras()
 
 class CameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._getConfiguration()
         self._cameraMode = self.CameraModes.OpenCV
@@ -1782,13 +1783,13 @@ class KinectCameras(object):
 kinectCameras = KinectCameras()
     
 class KinectCameraInput(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._cameraId = int(fileName)
         self._blackFilterModulationId = -1
         self._diffFilterModulationId = -1
         self._erodeFilterModulationId = -1
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
         self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
         self._firstTrigger = True
@@ -1813,7 +1814,7 @@ class KinectCameraInput(MediaFile):
         self._firstTrigger = True
 
     def findKinectMode(self, currentSongPosition, midiNoteState, midiChannelState):
-        value = self._midiModulation.getModlulationValue(self._modeModulationId, midiChannelState, midiNoteState, currentSongPosition, 0.0)
+        value = self._midiModulation.getModlulationValue(self._modeModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
         maxValue = len(self._kinectModesHolder.getChoices()) * 0.99999999
         modeSelected = int(value*maxValue)
         return modeSelected
@@ -1909,12 +1910,12 @@ class KinectCameraInput(MediaFile):
         self._fileOk = True
 
 class ImageSequenceFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._triggerCounter = 0
         self._firstTrigger = True
         self._sequenceMode = ImageSequenceMode.Time
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._configurationTree.addTextParameter("SequenceMode", "Time")
         self._midiModulation.setModulationReceiver("PlaybackModulation", "None")
         self._playbackModulationId = None
@@ -1954,7 +1955,7 @@ class ImageSequenceFile(MediaFile):
         self._startSongPosition = startSpp
 
     def getPlaybackModulation(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, timeMultiplyer = None):
-        return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
+        return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, self._specialModulationHolder)
 
     def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
@@ -2005,8 +2006,8 @@ class ImageSequenceFile(MediaFile):
 
 
 class VideoLoopFile(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()

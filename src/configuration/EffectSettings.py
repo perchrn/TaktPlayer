@@ -141,9 +141,10 @@ class ConfigurationTemplates(object):
             print "Config child removed OK"
 
 class EffectTemplates(ConfigurationTemplates):
-    def __init__(self, configurationTree, midiTiming, internalResolutionX, internalResolutionY):
+    def __init__(self, configurationTree, midiTiming, specialHolder, internalResolutionX, internalResolutionY):
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY = internalResolutionY
+        self._specialModulationHolder = specialHolder
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "EffectModulation")
         self._templateTypeName = "Effect templates"
 
@@ -156,18 +157,18 @@ class EffectTemplates(ConfigurationTemplates):
             foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
             if(foundConfig == None):
                 effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-                self._defaultModulationConfig = EffectSettings(self._templateName, name, self, effectConfigTree, self._templateConfig, self._templateId)
+                self._defaultModulationConfig = EffectSettings(self._templateName, self._specialModulationHolder, name, self, effectConfigTree, self._templateConfig, self._templateId)
                 self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = EffectSettings(self._templateName, name, self, effectConfigTree, self._templateConfig, self._templateId)
+        newTemplate = EffectSettings(self._templateName, self._specialModulationHolder, name, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = EffectSettings(self._templateName, saveName, self, effectConfigTree, self._templateConfig, self._templateId)
+        newTemplate = EffectSettings(self._templateName, self._specialModulationHolder, saveName, self, effectConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -177,18 +178,27 @@ class EffectTemplates(ConfigurationTemplates):
             if(configName == name):
                 return True
         return False
-        
+
+    def setupEffectModulations(self, effectModulations):
+        for effect in self.getList():
+            if(effect.getEffectName() == "BlobDetect"):
+                for i in range(10):
+                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".X." + str(i+1))
+                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".Y." + str(i+1))
+                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".Z." + str(i+1))
+
 class EffectSettings(object):
-    def __init__(self, templateName, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
+    def __init__(self, templateName, specialModulationHolder, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
         self._effectTemplates = effectTemplates
         self._templateName = templateName
+        self._specialModulationHolder = specialModulationHolder
         self._name = name
         self._midiTiming = self._effectTemplates.getMidiTiming()
         self._configurationTree = effectConfigTree
         self._parentConfigurationTree = parentConfigurationTree
         self._templateId = templateId
         self._internalResolutionX, self._internalResolutionY = self._effectTemplates.getInternalResolution()
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._setupConfiguration()
         self._getConfiguration()
 
@@ -273,7 +283,7 @@ class EffectSettings(object):
     def updateFromXml(self, xmlFile):
         self._configurationTree._updateFromXml(xmlFile)
 
-    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder):
+    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
         amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         arg1 =  self._midiModulation.getModlulationValue(self._effectArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
         arg2 =  self._midiModulation.getModlulationValue(self._effectArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, 0.0)
@@ -303,7 +313,8 @@ class EffectSettings(object):
         return valueString
 
 class FadeTemplates(ConfigurationTemplates):
-    def __init__(self, configurationTree, midiTiming):
+    def __init__(self, configurationTree, midiTiming, specialModulationHolder):
+        self._specialModulationHolder = specialModulationHolder
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "FadeAndLevelTemplates")
         self._templateTypeName = "Fade templates"
 
@@ -312,18 +323,18 @@ class FadeTemplates(ConfigurationTemplates):
         foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
         if(foundConfig == None):
             fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-            self._defaultModulationConfig = FadeSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+            self._defaultModulationConfig = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
             self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = FadeSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, fadeMode, fadeMod, levelMod):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = FadeSettings(self._templateName, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = FadeSettings(self._templateName, self._specialModulationHolder, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(fadeMode, fadeMod, levelMod)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -335,15 +346,16 @@ class FadeTemplates(ConfigurationTemplates):
         return False
         
 class FadeSettings(object):
-    def __init__(self, templateName, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
+    def __init__(self, templateName, specialModulationHolder, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
         self._templateName = templateName
+        self._specialModulationHolder = specialModulationHolder
         self._name = name
         self._midiTiming = self._fadeTemplates.getMidiTiming()
         self._configurationTree = fadeConfigTree
         self._parentConfigurationTree = parentConfigurationTree
         self._templateId = templateId
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._setupConfiguration()
         self._getConfiguration()
 
@@ -411,7 +423,8 @@ class FadeSettings(object):
         return (self._fadeMode, fadeVal, levelVal)
 
 class TimeModulationTemplates(ConfigurationTemplates):
-    def __init__(self, configurationTree, midiTiming):
+    def __init__(self, configurationTree, midiTiming, specialModulationHolder):
+        self._specialModulationHolder = specialModulationHolder
         ConfigurationTemplates.__init__(self, configurationTree, midiTiming, "TimeModulationTemplates")
         self._templateTypeName = "Time modulation templates"
 
@@ -420,18 +433,18 @@ class TimeModulationTemplates(ConfigurationTemplates):
         foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
         if(foundConfig == None):
             fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-            self._defaultModulationConfig = TimeModulationSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+            self._defaultModulationConfig = TimeModulationSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
             self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-        newTemplate = TimeModulationSettings(self._templateName, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = TimeModulationSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
     def createTemplate(self, saveName, fadeMode, fadeMod, rangeVal, rangeQuantize):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
-        newTemplate = TimeModulationSettings(self._templateName, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
+        newTemplate = TimeModulationSettings(self._templateName, self._specialModulationHolder, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
         newTemplate.update(fadeMode, fadeMod, rangeVal, rangeQuantize)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
@@ -443,15 +456,16 @@ class TimeModulationTemplates(ConfigurationTemplates):
         return False
         
 class TimeModulationSettings(object):
-    def __init__(self, templateName, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
+    def __init__(self, templateName, specialHolder, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
         self._templateName = templateName
+        self._specialModulationHolder = specialHolder
         self._name = name
         self._midiTiming = self._fadeTemplates.getMidiTiming()
         self._configurationTree = fadeConfigTree
         self._parentConfigurationTree = parentConfigurationTree
         self._templateId = templateId
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming)
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
         self._setupConfiguration()
         self._getConfiguration()
 

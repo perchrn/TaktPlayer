@@ -52,11 +52,56 @@ def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
 
-def getEffectById(effectType, configurationTree, effectImagesConfiguration, internalResX, internalResY):
+def getHueColor(hue):
+    phase = int(hue * 5.99)
+    subPhase = (hue * 5.99) % 1.0
+    if(phase == 0):
+        red = 256
+        green = 256.0 * subPhase
+        blue = 0
+    elif(phase == 1):
+        red = 256.0 * (1.0 - subPhase)
+        green = 256
+        blue = 0
+    elif(phase == 2):
+        red = 0
+        green = 256
+        blue = 256.0 * subPhase
+    elif(phase == 3):
+        red = 0
+        green = 256.0 * (1.0 - subPhase)
+        blue = 256
+    elif(phase == 4):
+        red = 256.0 * subPhase
+        green = 0
+        blue = 256
+    else:
+        red = 256
+        green = 0
+        blue = 256.0 * (1.0 - subPhase)
+    return (int(red), int(green), int(blue))
+
+def modifyHue(rgb, sat):
+    red, green, blue = rgb
+    if(sat < 0.5):
+        red = int(red + ((256-red) * (1.0 - (2.0*sat))))
+        green = int(green + ((256-green) * (1.0 - (2.0*sat))))
+        blue = int(blue + ((256-blue) * (1.0 - (2.0*sat))))
+    elif(sat > 0.5):
+        red = int(red * (1.0 - (2.0*(sat - 0.5))))
+        blue = int(blue * (1.0 - (2.0*(sat - 0.5))))
+        green = int(green * (1.0 - (2.0*(sat - 0.5))))
+    return (red, green, blue)
+
+def getEffectById(effectType, templateName, configurationTree, effectImagesConfiguration, specialModulationHolder, internalResX, internalResY):
     if(effectType == EffectTypes.Zoom):
         return ZoomEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Flip):
         return FlipEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Mirror):
+        return MirrorEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Rotate):
+        return RotateEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Scroll):
         return ScrollEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Blur):
@@ -71,8 +116,14 @@ def getEffectById(effectType, configurationTree, effectImagesConfiguration, inte
         return SelfDifferenceEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
         return DistortionEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Pixelate):
+        return PixelateEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.TVNoize):
+        return TVNoizeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Edge):
         return EdgeEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.BlobDetect):
+        return BlobDetectEffect(configurationTree, specialModulationHolder, templateName, internalResX, internalResY)
     elif(effectType == EffectTypes.Desaturate):
         return DesaturateEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Contrast):
@@ -92,10 +143,9 @@ def getEffectById(effectType, configurationTree, effectImagesConfiguration, inte
     else:
         return None
 
-def getEffectByName(name, configurationTree, effectImagesConfiguration, internalResX, internalResY):
+def getEffectByName(name, templateName, configurationTree, effectImagesConfiguration, specialModulationHolder, internalResX, internalResY):
     fxid = getEffectId(name)
-    return getEffectById(fxid, configurationTree, effectImagesConfiguration, internalResX, internalResY)
-
+    return getEffectById(fxid, templateName, configurationTree, effectImagesConfiguration, specialModulationHolder, internalResX, internalResY)
 
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -241,8 +291,8 @@ class MirrorEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, rotate, move, direction, unused1):
-        return self.mirrorImage(image, amount, rotate, move, direction)
+    def applyEffect(self, image, mode, rotate, move, direction, unused1):
+        return self.mirrorImage(image, mode, rotate, move, direction)
 
     def mirrorImage(self, image, mode, rotate, move, direction):
         rotateMatrix1 = cv.CreateMat(2,3,cv.CV_32F)
@@ -321,8 +371,25 @@ class RotateEffect(object):
         return self._rotateMat
 
 class BlobDetectEffect(object):
-    def __init__(self, configurationTree, internalResX, internalResY):
+    def __init__(self, configurationTree, specialModulationHolder, templateName, internalResX, internalResY):
         self._configurationTree = configurationTree
+        self._specialModulationHolder = specialModulationHolder
+        self._effectTemplateName = templateName
+        self._effectModulationHolder = None
+        if(self._specialModulationHolder != None):
+            self._effectModulationHolder = self._specialModulationHolder.getSubHolder("Effect")
+
+        self._xValModulationIds = []
+        self._yValModulationIds = []
+        self._zValModulationIds = []
+        if(self._effectModulationHolder != None):
+            for i in range(10):
+                descX = self._effectTemplateName + ".BlobDetect.X." + str(i)
+                descY = self._effectTemplateName + ".BlobDetect.Y." + str(i)
+                descZ = self._effectTemplateName + ".BlobDetect.Z." + str(i)
+                self._xValModulationIds.append(self._effectModulationHolder.addModulation(descX))
+                self._yValModulationIds.append(self._effectModulationHolder.addModulation(descY))
+                self._zValModulationIds.append(self._effectModulationHolder.addModulation(descZ))
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
@@ -340,11 +407,16 @@ class BlobDetectEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, blobFilter, mode, colour, saturation, thikness):
-        return self.detectBlobsImage(image, blobFilter, mode)
+    def applyEffect(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
+        return self.detectBlobsImage(image, blobFilter, mode, lineHue, lineSat, lineWeight)
 
-    def detectBlobsImage(self, image, blobFilter, mode):
+    def detectBlobsImage(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
         if(blobFilter < 0.01):
+            if(self._effectModulationHolder != None):
+                for i in range(10):
+                    self._effectModulationHolder.setValue(self._xValModulationIds[i], 0.0)
+                    self._effectModulationHolder.setValue(self._yValModulationIds[i], 0.0)
+                    self._effectModulationHolder.setValue(self._zValModulationIds[i], 0.0)
             #TODO: clear modulation values.
             return image
         threshold = int(10 + pow((self._thresholdRange * (1.0 - blobFilter)), 2))
@@ -376,20 +448,29 @@ class BlobDetectEffect(object):
         else:
             if(mode > 0.75):
                 cv.SetZero(image)
+        red, green, blue = modifyHue(getHueColor(lineHue), lineSat)
+        lineWidth = 1 + int(5.99 * lineWeight)
         for i in range(min(len(sortedBlobs), 32)):
             blob = sortedBlobs[i]
             if(mode < .5):
                 intX = int(blob[0] * self._internalResolutionX)
                 intY = int(blob[1] * self._internalResolutionY)
                 intRad = int(blob[3])
-                cv.Circle(image, (intX, intY), intRad, (0,0,255 - (i * 20)), thickness=2, lineType=8, shift=0)
+                cv.Circle(image, (intX, intY), intRad, (blue,green,red), thickness=lineWidth, lineType=8, shift=0)
             else:
                 intX = int(blob[0] * self._internalResolutionX)
                 intY = int(blob[1] * self._internalResolutionY)
                 boxVectors = [(int(point[0]), int(point[1])) for point in cv.BoxPoints(blob[3])]
-                cv.PolyLine(image, [boxVectors], 1, (0, 0, 255 - (i * 20)), thickness=2, lineType=8, shift=0)
+                cv.PolyLine(image, [boxVectors], 1, (blue,green,red), thickness=lineWidth, lineType=8, shift=0)
             #TODO: set modulation values...
-#            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
+            if(self._effectModulationHolder != None):
+                if(i < 10):
+                    self._effectModulationHolder.setValue(self._xValModulationIds[i], blob[0])
+                    self._effectModulationHolder.setValue(self._yValModulationIds[i], blob[1])
+                    self._effectModulationHolder.setValue(self._zValModulationIds[i], blob[2])
+                    print "DEBUG pcn: xID: " + str(self._xValModulationIds[i])
+                    print "DEBUG pcn: yID: " + str(self._yValModulationIds[i])
+            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
         return image
 
 class TVNoizeEffect(object):
@@ -1038,52 +1119,12 @@ class EdgeEffect(object):
         else:
             return EdgeColourModes.Hue
 
-    def getHueColor(self, hue):
-        phase = int(hue * 5.99)
-        subPhase = (hue * 5.99) % 1.0
-        if(phase == 0):
-            red = 256
-            green = 256.0 * subPhase
-            blue = 0
-        elif(phase == 1):
-            red = 256.0 * (1.0 - subPhase)
-            green = 256
-            blue = 0
-        elif(phase == 2):
-            red = 0
-            green = 256
-            blue = 256.0 * subPhase
-        elif(phase == 3):
-            red = 0
-            green = 256.0 * (1.0 - subPhase)
-            blue = 256
-        elif(phase == 4):
-            red = 256.0 * subPhase
-            green = 0
-            blue = 256
-        else:
-            red = 256
-            green = 0
-            blue = 256.0 * (1.0 - subPhase)
-        return (int(red), int(green), int(blue))
-
-    def modifyHue(self, rgb, sat):
-        red, green, blue = rgb
-        if(sat < 0.5):
-            red = int(red + ((256-red) * (1.0 - (2.0*sat))))
-            green = int(green + ((256-green) * (1.0 - (2.0*sat))))
-            blue = int(blue + ((256-blue) * (1.0 - (2.0*sat))))
-        elif(sat > 0.5):
-            red = int(red * (1.0 - (2.0*(sat - 0.5))))
-            blue = int(blue * (1.0 - (2.0*(sat - 0.5))))
-            green = int(green * (1.0 - (2.0*(sat - 0.5))))
-        return (red, green, blue)
 
     def reset(self):
         pass
 
     def applyEffect(self, image, amount, mode, hsv, lineHue, lineSat):
-        red, green, blue = self.modifyHue(self.getHueColor(lineHue), lineSat)
+        red, green, blue = modifyHue(getHueColor(lineHue), lineSat)
         edgeMode = self.findMode(mode)
         return self.drawEdges(image, amount, edgeMode, hsv, red, green, blue)
 
@@ -1110,7 +1151,7 @@ class EdgeEffect(object):
             if(edgeMode == EdgeModes.Canny):
                 cv.SetZero(image)
             contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
-            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, 6)
+            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, thikness=2)
             return image
 #            else: # Canny
 #                cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)

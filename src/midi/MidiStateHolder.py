@@ -284,17 +284,17 @@ class MidiChannelStateHolder(object):
         self._midiChannel = channelId
 
         self._activeNotes = []
-        for i in range(128): #@UnusedVariable
+        for _ in range(128):
             self._activeNotes.append(NoteState())
         self._numberOfWaitingActiveNotes = 0
         self._nextNotes = []
-        for i in range(128): #@UnusedVariable
+        for _ in range(128):
             self._nextNotes.append(NoteState())
         self._numberOfWaitingNextNotes = 0
         self._activeNote = self._activeNotes[0]
 
         self._controllerValues = []
-        for i in range(128): #@UnusedVariable
+        for _ in range(128):
             self._controllerValues.append(0.0)
 
         self._pitchBendValue = 0.5 #No pitch bend
@@ -556,7 +556,99 @@ class GuiControllerValues(object):
             else:
                 effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-        
+
+class SpecialModulationHolder(object):
+    def __init__(self):
+        self._modulations = []
+
+    def addSource(self, modulationSource):
+        modName = modulationSource.getName()
+        for modulation in self._modulations:
+            if(modulation.getName() == modName):
+                return
+        self._modulations.append(modulationSource)
+
+    def getSubHolder(self, name):
+        for i in range(len(self._modulations)):
+            specialModulation = self._modulations[i]
+            if(specialModulation.getName() == name):
+                return specialModulation
+        return None
+
+    def getSubModString(self, modId):
+        if(modId == None):
+            return "None"
+        mainId, subId = modId
+        if((mainId < 0) or (mainId >= len(self._modulations))):
+            return "None"
+        modulationHolder = self._modulations[mainId]
+        return modulationHolder.getSubModString(subId)
+
+    def getModulationId(self, description):
+        mainDescription = description.split(".")[0]
+        for i in range(len(self._modulations)):
+            specialModulation = self._modulations[i]
+            if(specialModulation.getName() == mainDescription):
+                if(description.startswith(mainDescription + ".")):
+                    restDescription = description.split(mainDescription + ".")[1]
+                else:
+                    restDescription = None
+                subId = specialModulation.getSubId(restDescription)
+                return (i, subId)
+        return None
+
+    def getValue(self, comboId):
+        if(comboId == None):
+            return 0.0
+        modId, subId = comboId
+        if((modId < 0) or (modId >= len(self._modulations))):
+            return 0.0
+        modulationHolder = self._modulations[modId]
+        return modulationHolder.getValue(subId)
+
+class GenericModulationHolder(object):
+    def __init__(self, name, specialModulation):
+        self._name = name
+        self._specialModulation = specialModulation
+        self._specialModulation.addSource(self)
+        self._descriptions = []
+        self._values = []
+
+    def getName(self):
+        return self._name
+
+    def addModulation(self, description):
+        for i in range(len(self._descriptions)):
+            desc = self._descriptions[i]
+            if(desc == description):
+                return i
+        subId = len(self._descriptions)
+        self._descriptions.append(description)
+        self._values.append(0.0)
+        return subId
+
+    def getSubId(self, description):
+        for i in range(len(self._descriptions)):
+            desc = self._descriptions[i]
+            if(desc == description):
+                return i
+        return None
+
+    def getSubModString(self, subId):
+        if((subId < 0) or (subId >= len(self._values))):
+            return self._name + ".None"
+        return self._name + "." + self._descriptions[subId]
+
+    def getValue(self, subId):
+        if((subId < 0) or (subId >= len(self._values))):
+            return 0.0
+        return self._values[subId]
+
+    def setValue(self, subId, value):
+        if((subId < 0) or (subId >= len(self._values))):
+            return
+        self._values[subId] = value
+
 class MidiStateHolder(object):
     def __init__(self):
         self._midiChannelStateHolder = []

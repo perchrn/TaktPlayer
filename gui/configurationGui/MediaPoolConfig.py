@@ -491,12 +491,13 @@ class MediaFileGui(object): #@UndefinedVariable
     def __init__(self, parentPlane, mainConfig, trackGui, noteRequestCallback):
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
+        self._specialModulationHolder = self._mainConfig.getSpecialModulationHolder()
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._lastDialogDir = self._videoDirectory
         self._trackGui = trackGui
         self._requestThumbCallback = noteRequestCallback
         self._midiTiming = MidiTiming()
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
 
         self._config = None

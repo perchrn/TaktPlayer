@@ -142,6 +142,7 @@ class MediaMixerConfig(object):
 class MediaTrackGui(object): #@UndefinedVariable
     def __init__(self, mainConfig):
         self._mainConfig = mainConfig
+        self._specialModulationHolder = self._mainConfig.getSpecialModulationHolder()
         self._config = None
         self._mixModes = MixMode()
         self._latestOverviewMixMode = MixMode.Add
@@ -150,7 +151,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._trackEditorOpen = False
 
         self._midiTiming = MidiTiming()
-        self._midiModulation = MidiModulation(None, self._midiTiming)
+        self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
 
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable

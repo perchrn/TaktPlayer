@@ -1624,8 +1624,15 @@ class ImageAddEffect(object):
 #Showoff DEMO
 #Scroll area fix
 #More complex modulation.
+#    midi modulation note (media) ?
+#        3 sources (added, subtrected, multiplyed)
+#        end limiter (max/min or list of values)
+#        2 modulators (6 * 2 fields)
+#        no midi channel?
+#        used by special modulation (publiched via)
 
 #Media:
-#Sprite size / zoom
+#Sprite size / zoom (Text media also)
 #TextMedia font directory config.
 #Recording / resampler
+#Bypass media or (FX media.)

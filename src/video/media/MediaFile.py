@@ -2130,6 +2130,58 @@ class VideoLoopFile(MediaFile):
     def openFile(self, midiLength):
         self.openVideoFile(midiLength)
 
+class VideoRecorderMedia(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._videoWriter = None
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._midiModulation.setModulationReceiver("RecordingOnModulation", "None")
+        self._autoLoadStartNote = "C1"
+        self._saveSubDir = "Recorder"
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._recOnModulationId = self._midiModulation.connectModulation("RecordingOnModulation")
+
+    def close(self):
+        pass
+
+    def getType(self):
+        return "VideoRecorder"
+
+    def restartSequence(self):
+        pass
+
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+        recOnValue = self._midiModulation.getModlulationValue(self._recOnModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+        if(recOnValue > 0.5):
+            recOn = True
+        else:
+            recOn = False
+        if((recOn) and (self._videoWriter != None) and (self._currentFrame != None)):
+            cv.WriteFrame(self._videoWriter, self._currentFrame)
+
+        self._currentFrame = None
+        return False
+
+    def openFile(self, midiLength):
+        self._videoWriter = cv.CreateVideoWriter(filename, fourcc, fps, frame_size)
+
+    def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+        if(mixMode == MixMode.Default):
+            mixMode = self._mixMode
+        if(effects != None):
+            preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
+        else:
+            preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
+        (self._captureImage, currentPreValues, unusedStarts) = self._applyOneEffect(image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
+        (self._captureImage, currentPostValues, unusedStarts) = self._applyOneEffect(image, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
+        return (self._captureImage, currentPreValues, currentPostValues)
+
 class MediaError(Exception):
     def __init__(self, value):
         self.value = value.encode("utf-8")

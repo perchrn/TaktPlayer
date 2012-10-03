@@ -323,7 +323,7 @@ class ModulationGui(object):
         self._specialTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Effect"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Effect", "Effect")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
+        specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialTypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -333,9 +333,8 @@ class ModulationGui(object):
         self._specialSub1TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._specialSub1TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
         self._specialSub1TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
-        #self._updateChoices(self._specialSub1TypeField, self._specialTypes.getSubTypes(specialId), "None")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub1TypeHelp) #@UndefinedVariable
+        specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialSub1TypeHelp) #@UndefinedVariable
         self._specialSub1TypeSizer.Add(self._specialSub1TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialSub1TypeSizer.Add(self._specialSub1TypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialSub1TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -345,9 +344,8 @@ class ModulationGui(object):
         self._specialSub2TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._specialSub2TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
         self._specialSub2TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
-        #self._updateChoices(self._specialSub2TypeField, self._specialTypes.getSubTypes(specialId), "None")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub2TypeHelp) #@UndefinedVariable
+        specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialSub2TypeHelp) #@UndefinedVariable
         self._specialSub2TypeSizer.Add(self._specialSub2TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialSub2TypeSizer.Add(self._specialSub2TypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialSub2TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -357,7 +355,7 @@ class ModulationGui(object):
         self._specialSub3TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
         self._specialSub3TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub3TypeHelp) #@UndefinedVariable
+        specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialSub3TypeHelp) #@UndefinedVariable
         self._specialSub3TypeSizer.Add(self._specialSub3TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialSub3TypeSizer.Add(self._specialSub3TypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialSub3TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -367,7 +365,7 @@ class ModulationGui(object):
         self._specialSub4TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
         self._specialSub4TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub4TypeHelp) #@UndefinedVariable
+        specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialSub4TypeHelp) #@UndefinedVariable
         self._specialSub4TypeSizer.Add(self._specialSub4TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialSub4TypeSizer.Add(self._specialSub4TypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialSub4TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -784,6 +782,64 @@ This graph auto adjusts to the length of the ADSR.
 Constant static value.
 """
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Value help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSpecialTypeHelp(self, event):
+        text = """
+Choose which special type to use.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Special type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSpecialSub1TypeHelp(self, event):
+        typeText = self._specialTypeField.GetValue()
+        if(typeText == "Effect"):
+            text = """
+Choose which type of effect modulation to use.
+"""
+        else:
+            text = "Undefined help text for _onSpecialSub1TypeHelp type: " + typeText
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Special sub type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSpecialSub2TypeHelp(self, event):
+        typeText = self._specialTypeField.GetValue()
+        if(typeText == "Effect"):
+            text = """
+Choose which type of effect template to use.
+"""
+        else:
+            text = "Undefined help text for _onSpecialSub2TypeHelp type: " + typeText
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Special sub type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSpecialSub3TypeHelp(self, event):
+        typeText = self._specialTypeField.GetValue()
+        subTypeText = self._specialSub1TypeField.GetValue()
+        if((typeText == "Effect") and (subTypeText == "BlobDetect")):
+            text = """
+Choose which blob to use (sorted from big to small).
+"""
+        else:
+            text = "Undefined help text for _onSpecialSub3TypeHelp type: " + typeText
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Special sub type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onSpecialSub4TypeHelp(self, event):
+        typeText = self._specialTypeField.GetValue()
+        subTypeText = self._specialSub1TypeField.GetValue()
+        if((typeText == "Effect") and (subTypeText == "BlobDetect")):
+            text = """
+Choose which blob modulation value to use.
+"""
+        else:
+            text = "Undefined help text for _onSpecialSub4TypeHelp type: " + typeText
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'Special sub type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 

@@ -185,7 +185,7 @@ class EffectTemplates(ConfigurationTemplates):
                 for i in range(10):
                     effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";X")
                     effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Y")
-                    effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Z")
+                    effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Size")
 
 class EffectSettings(object):
     def __init__(self, templateName, specialModulationHolder, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):

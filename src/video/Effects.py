@@ -386,7 +386,7 @@ class BlobDetectEffect(object):
             for i in range(10):
                 descX = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";X"
                 descY = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";Y"
-                descZ = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";Z"
+                descZ = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";Size"
                 self._xValModulationIds.append(self._effectModulationHolder.addModulation(descX))
                 self._yValModulationIds.append(self._effectModulationHolder.addModulation(descY))
                 self._zValModulationIds.append(self._effectModulationHolder.addModulation(descZ))
@@ -394,7 +394,8 @@ class BlobDetectEffect(object):
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
 
-        self._thresholdRange = math.sqrt((self._internalResolutionX * self._internalResolutionY) - 10)
+        self._maxSizeRoot = math.sqrt(self._internalResolutionX * self._internalResolutionY)
+        self._thresholdRootSize = math.sqrt((self._internalResolutionX * self._internalResolutionY) / 2)
 
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._blankMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -433,12 +434,11 @@ class BlobDetectEffect(object):
                     self._effectModulationHolder.setValue(self._xValModulationIds[i], 0.0)
                     self._effectModulationHolder.setValue(self._yValModulationIds[i], 0.0)
                     self._effectModulationHolder.setValue(self._zValModulationIds[i], 0.0)
-            #TODO: clear modulation values.
             return image
-        threshold = int(10 + pow((self._thresholdRange * (1.0 - blobFilter)), 2))
+        threshold = int(10 + pow((self._thresholdRootSize * (1.0 - blobFilter)), 2))
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
         cv.Split(self._colorMat, None, None, self._splitMask, None)
-        cv.CmpS(self._splitMask, 200, self._thersholdMask, cv.CV_CMP_GT)
+        cv.CmpS(self._splitMask, 127, self._thersholdMask, cv.CV_CMP_GT)
         storage = cv.CreateMemStorage(0)
         contours = cv.FindContours(self._thersholdMask, storage,  cv.CV_RETR_LIST, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
         detectedBlobs = []
@@ -481,7 +481,8 @@ class BlobDetectEffect(object):
                 if(i < 10):
                     self._effectModulationHolder.setValue(self._xValModulationIds[i], blob[0])
                     self._effectModulationHolder.setValue(self._yValModulationIds[i], blob[1])
-                    self._effectModulationHolder.setValue(self._zValModulationIds[i], blob[2])
+                    sizeVal = min(1.0, math.sqrt(blob[2]) / self._thresholdRootSize)
+                    self._effectModulationHolder.setValue(self._zValModulationIds[i], sizeVal)
 #                    print "DEBUG pcn: xID: " + str(self._xValModulationIds[i])
 #                    print "DEBUG pcn: yID: " + str(self._yValModulationIds[i])
 #            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
@@ -1617,12 +1618,14 @@ class ImageAddEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
 #??? TODO ???
-#get coordinates from image blob (consept is done...)
+#get coordinates from image blob (I want better tracking (or sorting if you like))
+#kinect blob detection with xyz values
 #Redo clip overview (use more space)
 #Showoff DEMO
 #Scroll area fix
 #More complex modulation.
 
 #Media:
+#Sprite size / zoom
 #TextMedia font directory config.
 #Recording / resampler

@@ -591,7 +591,7 @@ class SpecialTypes():
             if(level == 1):
                 return ["1","2","3","4","5","6","7","8","9","10"]
             if(level == 2):
-                return ["X", "Y", "Z"]
+                return ["X", "Y", "Size"]
 
     def getTypeStrings(self):
         return ["Effect"]

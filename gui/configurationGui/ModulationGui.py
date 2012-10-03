@@ -12,7 +12,7 @@ from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
     MidiModulation, AttackDecaySustainRelease, getLfoShapeId,\
     LowFrequencyOscilator, getAdsrShapeId
 from midi.MidiStateHolder import MidiChannelModulationSources,\
-    NoteModulationSources
+    NoteModulationSources, SpecialTypes
 from midi.MidiController import MidiControllers
 from widgets.PcnImageButton import PcnImageButton
 
@@ -316,15 +316,62 @@ class ModulationGui(object):
 
         """Special"""
 
+        self._specialTypes = SpecialTypes(self._mainConfig.getEffectConfiguration())
+
         self._specialTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Value:") #@UndefinedVariable
+        self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Type:") #@UndefinedVariable
         self._specialTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Effect"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Effect", "Effect")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         #specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeField, 2, wx.ALL, 5) #@UndefinedVariable
         self._specialTypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._specialTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._specialTypeField.Bind(wx.EVT_COMBOBOX, self._onSpecialTypeChosen) #@UndefinedVariable
+
+        self._specialSub1TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._specialSub1TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
+        self._specialSub1TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        #self._updateChoices(self._specialSub1TypeField, self._specialTypes.getSubTypes(specialId), "None")
+        specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub1TypeHelp) #@UndefinedVariable
+        self._specialSub1TypeSizer.Add(self._specialSub1TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub1TypeSizer.Add(self._specialSub1TypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub1TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._specialSub1TypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._specialSub1TypeField.Bind(wx.EVT_COMBOBOX, self._onSpecialSubTypeChosen) #@UndefinedVariable
+
+        self._specialSub2TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._specialSub2TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
+        self._specialSub2TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        #self._updateChoices(self._specialSub2TypeField, self._specialTypes.getSubTypes(specialId), "None")
+        specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub2TypeHelp) #@UndefinedVariable
+        self._specialSub2TypeSizer.Add(self._specialSub2TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub2TypeSizer.Add(self._specialSub2TypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub2TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._specialSub2TypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._specialSub3TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._specialSub3TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
+        self._specialSub3TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub3TypeHelp) #@UndefinedVariable
+        self._specialSub3TypeSizer.Add(self._specialSub3TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub3TypeSizer.Add(self._specialSub3TypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub3TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._specialSub3TypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._specialSub4TypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._specialSub4TypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Sub type:") #@UndefinedVariable
+        self._specialSub4TypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        #specialHelpButton.Bind(wx.EVT_BUTTON, self._onspecialSub4TypeHelp) #@UndefinedVariable
+        self._specialSub4TypeSizer.Add(self._specialSub4TypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub4TypeSizer.Add(self._specialSub4TypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._specialSub4TypeSizer.Add(specialHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._specialSub4TypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
 
         """Buttons"""
@@ -382,8 +429,17 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Hide(self._valueSliderSizer)
         if(choice == "Special"):
             self._mainModulationGuiSizer.Show(self._specialTypeSizer)
+            self._mainModulationGuiSizer.Show(self._specialSub1TypeSizer)
+            self._mainModulationGuiSizer.Show(self._specialSub2TypeSizer)
+            self._mainModulationGuiSizer.Show(self._specialSub3TypeSizer)
+            self._mainModulationGuiSizer.Show(self._specialSub4TypeSizer)
+            self._onSpecialTypeChosen(None)
         else:
             self._mainModulationGuiSizer.Hide(self._specialTypeSizer)
+            self._mainModulationGuiSizer.Hide(self._specialSub1TypeSizer)
+            self._mainModulationGuiSizer.Hide(self._specialSub2TypeSizer)
+            self._mainModulationGuiSizer.Hide(self._specialSub3TypeSizer)
+            self._mainModulationGuiSizer.Hide(self._specialSub4TypeSizer)
 
         self._fixModulationGuiLayout()
         self._checkForUpdates()
@@ -645,6 +701,23 @@ This graph auto adjusts to the length of the ADSR.
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _onSpecialTypeChosen(self, event):
+        specialType = self._specialTypeField.GetValue()
+        specialTypeId = self._specialTypes.getTypeId(specialType)
+        print "DEBUG pcn: _onSpecialTypeChosen: " + str(specialType) + " -> " + str(specialTypeId) + " => " + str(self._specialTypes.getSubTypes(specialTypeId))
+        self._updateChoices(self._specialSub1TypeField, None, self._specialSub1TypeField.GetValue(), None, self._specialTypes.getSubTypes(specialTypeId))
+        self._onSpecialSubTypeChosen(event)
+
+    def _onSpecialSubTypeChosen(self, event):
+        specialType = self._specialTypeField.GetValue()
+        specialTypeId = self._specialTypes.getTypeId(specialType)
+        subTypeString = self._specialSub1TypeField.GetValue()
+        print "DEBUG pcn: _onSpecialTypeChosen: a " + str(specialType) + " -> " + str(specialTypeId)
+        print "DEBUG pcn: _onSpecialTypeChosen: b " + str(subTypeString) + " -> " + str(self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
+        self._updateChoices(self._specialSub2TypeField, None, self._specialSub2TypeField.GetValue(), None, self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
+        self._updateChoices(self._specialSub3TypeField, None, self._specialSub3TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 1))
+        self._updateChoices(self._specialSub4TypeField, None, self._specialSub4TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 2))
+
     def _updateLfoGraph(self, lfoTypeString, length, phase, minLevel, maxLevel):
         lfoType = getLfoShapeId(lfoTypeString)
         self._lfoGraphicsDisplay.drawLfo(LowFrequencyOscilator(self._midiTiming, lfoType, length, phase, minLevel, maxLevel))
@@ -757,6 +830,18 @@ Constant static value.
         if(modType == "Value"):
             valueString = "%.2f" % (float(self._valueSlider.GetValue()) / 101.0)
             modeString += "." + valueString
+        if(modType == "Special"):
+            specialTypeString = self._specialTypeField.GetValue()
+            modeString += "." + specialTypeString
+            if(specialTypeString == "Effect"):
+                sub1TypeString = self._specialSub1TypeField.GetValue()
+                modeString += "." + sub1TypeString
+                sub2TypeString = self._specialSub2TypeField.GetValue()
+                modeString += ";" + sub2TypeString
+                sub3TypeString = self._specialSub3TypeField.GetValue()
+                modeString += ";" + sub3TypeString
+                sub4TypeString = self._specialSub4TypeField.GetValue()
+                modeString += ";" + sub4TypeString
         return modeString
 
     def _onSaveButton(self, event):
@@ -784,21 +869,28 @@ Constant static value.
             else:
                 self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
 
-    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
-        if(choicesFunction == None):
-            choiceList = [value]
-        else:
-            choiceList = choicesFunction()
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue = None, choiceList = None):
+        if(choiceList == None):
+            if(choicesFunction == None):
+                choiceList = [value]
+            else:
+                choiceList = choicesFunction()
         widget.Clear()
+        firstValue = None
         valueOk = False
         for choice in choiceList:
             widget.Append(choice)
+            if(firstValue == None):
+                firstValue = choice
             if(choice == value):
                 valueOk = True
         if(valueOk == True):
             widget.SetStringSelection(value)
         else:
-            widget.SetStringSelection(defaultValue)
+            if(defaultValue == None):
+                widget.SetStringSelection(firstValue)
+            else:
+                widget.SetStringSelection(defaultValue)
 
     def getModulationImageId(self, modulationString):
         modulationIdTuplet = self._midiModulation.findModulationId(modulationString)
@@ -948,6 +1040,9 @@ Constant static value.
                 calcValue = int(101.0 * subModId)
                 self._valueSlider.SetValue(calcValue)
                 self._valueValueLabel.SetLabel("%.2f" % (subModId))
+            elif(modulationIdTuplet[0] == ModulationSources.Special):
+                subModId = modulationIdTuplet[1]
+                print "DEBUG pcn: SPECIAL!!! subModId: " + str(subModId) 
 
         if(updatedId != "MidiChannel"):
             self._midiChannelSourceField.SetValue("Controller")

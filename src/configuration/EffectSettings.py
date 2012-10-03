@@ -183,9 +183,9 @@ class EffectTemplates(ConfigurationTemplates):
         for effect in self.getList():
             if(effect.getEffectName() == "BlobDetect"):
                 for i in range(10):
-                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".X." + str(i+1))
-                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".Y." + str(i+1))
-                    effectModulations.addModulation("BlobDetect." + effect.getName() + ".Z." + str(i+1))
+                    effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";X")
+                    effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Y")
+                    effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Z")
 
 class EffectSettings(object):
     def __init__(self, templateName, specialModulationHolder, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
@@ -260,6 +260,7 @@ class EffectSettings(object):
 #        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
     def getEffectName(self):
+        self._effectName = self._configurationTree.getValue("Effect")
         return self._effectName
 
     def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):

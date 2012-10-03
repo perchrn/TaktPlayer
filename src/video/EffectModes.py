@@ -231,10 +231,10 @@ class MirrorModes():
         return ["Vertical", "Horisontal"]
 
 class BlobDetectModes():
-    CircleAdd, CircleOnly, RectangleAdd, RectangleOnly = range(4)
+    CircleAdd, CircleOnly, RectangleAdd, RectangleOnly, NoAdd, Blank = range(6)
 
     def getChoices(self):
-        return ["CircleAdd", "CircleOnly", "RectangleAdd", "RectangleOnly"]
+        return ["CircleAdd", "CircleOnly", "RectangleAdd", "RectangleOnly", "NoAdd", "Blank"]
 
 class PixelateModes():
     Clean, Round, Star = range(3)

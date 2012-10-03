@@ -7,7 +7,7 @@ from cv2 import cv
 import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
-    ScrollModes, ContrastModes, HueSatModes, ValueToHueModes
+    ScrollModes, ContrastModes, HueSatModes, ValueToHueModes, BlobDetectModes
 import math
 import os
 import time
@@ -384,9 +384,9 @@ class BlobDetectEffect(object):
         self._zValModulationIds = []
         if(self._effectModulationHolder != None):
             for i in range(10):
-                descX = self._effectTemplateName + ".BlobDetect.X." + str(i)
-                descY = self._effectTemplateName + ".BlobDetect.Y." + str(i)
-                descZ = self._effectTemplateName + ".BlobDetect.Z." + str(i)
+                descX = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";X"
+                descY = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";Y"
+                descZ = "BlobDetect;" + self._effectTemplateName + ";" + str(i+1) + ";Z"
                 self._xValModulationIds.append(self._effectModulationHolder.addModulation(descX))
                 self._yValModulationIds.append(self._effectModulationHolder.addModulation(descY))
                 self._zValModulationIds.append(self._effectModulationHolder.addModulation(descZ))
@@ -407,10 +407,26 @@ class BlobDetectEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
-        return self.detectBlobsImage(image, blobFilter, mode, lineHue, lineSat, lineWeight)
+    def _findMode(self, value):
+        modeSelected = int(value*5.99)
+        if(modeSelected == BlobDetectModes.CircleAdd):
+            return BlobDetectModes.CircleAdd
+        elif(modeSelected == BlobDetectModes.CircleOnly):
+            return BlobDetectModes.CircleOnly
+        elif(modeSelected == BlobDetectModes.RectangleAdd):
+            return BlobDetectModes.RectangleAdd
+        elif(modeSelected == BlobDetectModes.RectangleOnly):
+            return BlobDetectModes.RectangleOnly
+        elif(modeSelected == BlobDetectModes.NoAdd):
+            return BlobDetectModes.NoAdd
+        else:
+            return BlobDetectModes.Blank
 
-    def detectBlobsImage(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
+    def applyEffect(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
+        blobMode = self._findMode(mode)
+        return self.detectBlobsImage(image, blobFilter, blobMode, lineHue, lineSat, lineWeight)
+
+    def detectBlobsImage(self, image, blobFilter, blobMode, lineHue, lineSat, lineWeight):
         if(blobFilter < 0.01):
             if(self._effectModulationHolder != None):
                 for i in range(10):
@@ -430,34 +446,32 @@ class BlobDetectEffect(object):
             blobSize = cv.ContourArea(contours)
             if(blobSize > threshold):
                 result = cv.ApproxPoly(contours, storage, cv.CV_POLY_APPROX_DP)
-                if(mode < 0.5):
-                    _, center, radius = cv.MinEnclosingCircle(result)
-                    xAmount = center[0] / self._internalResolutionX
-                    yAmount = center[1] / self._internalResolutionY
-                    detectedBlobs.append((xAmount, yAmount, blobSize, radius))
-                else:
+                if((blobMode == BlobDetectModes.RectangleAdd) or (blobMode == BlobDetectModes.RectangleOnly)):
                     blobBox = cv.MinAreaRect2(result)
                     xAmount = blobBox[0][0] / self._internalResolutionX
                     yAmount = blobBox[0][1] / self._internalResolutionY
                     detectedBlobs.append((xAmount, yAmount, blobSize, blobBox))
+                else:
+                    _, center, radius = cv.MinEnclosingCircle(result)
+                    xAmount = center[0] / self._internalResolutionX
+                    yAmount = center[1] / self._internalResolutionY
+                    detectedBlobs.append((xAmount, yAmount, blobSize, radius))
             contours = contours.h_next()
         sortedBlobs = sorted(detectedBlobs, key=lambda blobInfo: blobInfo[2], reverse=True)
-        if(mode < .5):
-            if(mode > 0.25):
-                cv.SetZero(image)
-        else:
-            if(mode > 0.75):
-                cv.SetZero(image)
+        if((blobMode == BlobDetectModes.CircleOnly) or (blobMode == BlobDetectModes.RectangleOnly) or (blobMode == BlobDetectModes.Blank)):
+            cv.SetZero(image)
         red, green, blue = modifyHue(getHueColor(lineHue), lineSat)
         lineWidth = 1 + int(5.99 * lineWeight)
+        maxI = -1
         for i in range(min(len(sortedBlobs), 32)):
+            maxI = i
             blob = sortedBlobs[i]
-            if(mode < .5):
+            if((blobMode == BlobDetectModes.CircleAdd) or (blobMode == BlobDetectModes.CircleOnly)):
                 intX = int(blob[0] * self._internalResolutionX)
                 intY = int(blob[1] * self._internalResolutionY)
                 intRad = int(blob[3])
                 cv.Circle(image, (intX, intY), intRad, (blue,green,red), thickness=lineWidth, lineType=8, shift=0)
-            else:
+            elif((blobMode == BlobDetectModes.RectangleAdd) or (blobMode == BlobDetectModes.RectangleOnly)):
                 intX = int(blob[0] * self._internalResolutionX)
                 intY = int(blob[1] * self._internalResolutionY)
                 boxVectors = [(int(point[0]), int(point[1])) for point in cv.BoxPoints(blob[3])]
@@ -468,9 +482,14 @@ class BlobDetectEffect(object):
                     self._effectModulationHolder.setValue(self._xValModulationIds[i], blob[0])
                     self._effectModulationHolder.setValue(self._yValModulationIds[i], blob[1])
                     self._effectModulationHolder.setValue(self._zValModulationIds[i], blob[2])
-                    print "DEBUG pcn: xID: " + str(self._xValModulationIds[i])
-                    print "DEBUG pcn: yID: " + str(self._yValModulationIds[i])
-            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
+#                    print "DEBUG pcn: xID: " + str(self._xValModulationIds[i])
+#                    print "DEBUG pcn: yID: " + str(self._yValModulationIds[i])
+#            print "DEBUG pcn: Fond blob: " + str((blob[0],blob[1])) + " size: " + str(blob[2])
+        if(maxI < 10):
+            for i in range(maxI + 1, 10):
+                self._effectModulationHolder.setValue(self._xValModulationIds[i], 0.0)
+                self._effectModulationHolder.setValue(self._yValModulationIds[i], 0.0)
+                self._effectModulationHolder.setValue(self._zValModulationIds[i], 0.0)
         return image
 
 class TVNoizeEffect(object):

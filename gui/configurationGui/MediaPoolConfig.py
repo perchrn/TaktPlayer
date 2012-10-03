@@ -1368,7 +1368,7 @@ class MediaFileGui(object): #@UndefinedVariable
             dlg.Destroy()
 
     def _onFontDialog(self, event):
-        dlg = MediaFontDialog(self._mediaFileGuiPanel, "Media Font:", self._fontField, self._fileName)
+        dlg = MediaFontDialog(self._mediaFileGuiPanel, "Media Font:", self._fontField, self._fileNameField.GetValue())
         dlg.ShowModal()
         try:
             dlg.Destroy()
@@ -2155,7 +2155,7 @@ All notes on events are quantized to this.
                     self._selectedSubMode = self._subModeField.GetValue()
                     self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 else:
-                    self._fontField.SetValue("Areal;32;#FFFFFF")
+                    self._fontField.SetValue("Arial;32;#FFFFFF")
                 self._values1Field.SetValue("0.5|0.5")
                 self._values2Field.SetValue("0.5|0.5")
                 self._subModulationField.SetValue("None")
@@ -2237,7 +2237,7 @@ All notes on events are quantized to this.
 
         if(self._type == "Sprite"):
             self._noteConfigSizer.Show(self._subModulation2Sizer)
-        if(self._type == "Text"):
+        elif(self._type == "Text"):
             self._noteConfigSizer.Show(self._subModulation2Sizer)
         else:
             self._noteConfigSizer.Hide(self._subModulation2Sizer)

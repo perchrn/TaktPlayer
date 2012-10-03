@@ -60,6 +60,9 @@ class GlobalConfig(object):
             self._getConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
+    def getEffectConfiguration(self):
+        return self._effectsConfiguration
+
     def getEffectChoices(self):
         return self._effectsConfiguration.getChoices()
 

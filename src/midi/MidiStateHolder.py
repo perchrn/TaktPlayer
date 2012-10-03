@@ -557,6 +557,75 @@ class GuiControllerValues(object):
                 effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
 
+class SpecialTypes():
+    NoType, Effect = range(2)
+
+    def __init__(self, effectsTemplateList):
+        self._subTypes = []
+        self._subTypes.append(None)
+        self._effectsTemplateList = effectsTemplateList
+        self._subTypes.append(self.SpecalEffectTypes(self._effectsTemplateList))
+
+    class SpecalEffectTypes():
+        BlobDetect = range(1)
+        def __init__(self, effectsTemplateList):
+            self._effectsTemplateList = effectsTemplateList
+
+        def getTypeStrings(self):
+            return ["BlobDetect"]
+
+        def getTypeId(self, typeString):
+            if(typeString == "BlobDetect"):
+                return self.BlobDetect
+
+        def getSubTypes(self, specialId):
+            subTypeList = []
+            if(specialId == self.BlobDetect):
+                for effectConfig in self._effectsTemplateList.getList():
+                    if(effectConfig.getEffectName() == "BlobDetect"):
+                        subTypeList.append(effectConfig.getName())
+            if(len(subTypeList) == 0):
+                subTypeList.append("[None found.]")
+            return subTypeList
+
+        def getSubSubTypes(self, specialId, level):
+            if(level == 1):
+                return ["1","2","3","4","5","6","7","8","9","10"]
+            if(level == 2):
+                return ["X", "Y", "Z"]
+
+    def getTypeStrings(self):
+        return ["None", "Effect"]
+
+    def getTypeId(self, typeString):
+        if(typeString == "None"):
+            return self.NoType
+        if(typeString == "Effect"):
+            return self.Effect
+
+    def getSubTypes(self, specialId):
+        if(specialId == self.NoType):
+            return None
+        if(specialId == self.Effect):
+            return self._subTypes[self.Effect].getTypeStrings()
+        return None
+
+    def getSubSubTypes(self, specialId, subTypeString):
+        if(specialId == self.NoType):
+            return None
+        if(specialId == self.Effect):
+            subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
+            return self._subTypes[self.Effect].getSubTypes(subTypeId)
+        return None
+
+    def getSubSubSubTypes(self, specialId, subTypeString, level):
+        if(specialId == self.NoType):
+            return None
+        if(specialId == self.Effect):
+            subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
+            return self._subTypes[self.Effect].getSubSubTypes(subTypeId, level)
+        return None
+
 class SpecialModulationHolder(object):
     def __init__(self):
         self._modulations = []
@@ -604,6 +673,7 @@ class SpecialModulationHolder(object):
         if((modId < 0) or (modId >= len(self._modulations))):
             return 0.0
         modulationHolder = self._modulations[modId]
+#        print "DEBUG pcn: getValue (SPECIAL) for id: " + str(comboId) + " value: " + str(modulationHolder.getValue(subId))
         return modulationHolder.getValue(subId)
 
 class GenericModulationHolder(object):

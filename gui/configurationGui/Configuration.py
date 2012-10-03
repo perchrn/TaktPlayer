@@ -279,6 +279,9 @@ class Configuration(object):
     def updateTimeModulationList(self, selectedName):
         self._globalConf.updateTimeModulationList(selectedName)
 
+    def getEffectConfiguration(self):
+        return self._globalConf.getEffectConfiguration()
+
     def getEffectChoices(self):
         return self._globalConf.getEffectChoices()
 

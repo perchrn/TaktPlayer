@@ -704,7 +704,7 @@ This graph auto adjusts to the length of the ADSR.
     def _onSpecialTypeChosen(self, event):
         specialType = self._specialTypeField.GetValue()
         specialTypeId = self._specialTypes.getTypeId(specialType)
-        print "DEBUG pcn: _onSpecialTypeChosen: " + str(specialType) + " -> " + str(specialTypeId) + " => " + str(self._specialTypes.getSubTypes(specialTypeId))
+#        print "DEBUG pcn: _onSpecialTypeChosen: " + str(specialType) + " -> " + str(specialTypeId) + " => " + str(self._specialTypes.getSubTypes(specialTypeId))
         self._updateChoices(self._specialSub1TypeField, None, self._specialSub1TypeField.GetValue(), None, self._specialTypes.getSubTypes(specialTypeId))
         self._onSpecialSubTypeChosen(event)
 
@@ -712,8 +712,8 @@ This graph auto adjusts to the length of the ADSR.
         specialType = self._specialTypeField.GetValue()
         specialTypeId = self._specialTypes.getTypeId(specialType)
         subTypeString = self._specialSub1TypeField.GetValue()
-        print "DEBUG pcn: _onSpecialTypeChosen: a " + str(specialType) + " -> " + str(specialTypeId)
-        print "DEBUG pcn: _onSpecialTypeChosen: b " + str(subTypeString) + " -> " + str(self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
+#        print "DEBUG pcn: _onSpecialTypeChosen: a " + str(specialType) + " -> " + str(specialTypeId)
+#        print "DEBUG pcn: _onSpecialTypeChosen: b " + str(subTypeString) + " -> " + str(self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
         self._updateChoices(self._specialSub2TypeField, None, self._specialSub2TypeField.GetValue(), None, self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
         self._updateChoices(self._specialSub3TypeField, None, self._specialSub3TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 1))
         self._updateChoices(self._specialSub4TypeField, None, self._specialSub4TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 2))
@@ -1042,7 +1042,34 @@ Constant static value.
                 self._valueValueLabel.SetLabel("%.2f" % (subModId))
             elif(modulationIdTuplet[0] == ModulationSources.Special):
                 subModId = modulationIdTuplet[1]
-                print "DEBUG pcn: SPECIAL!!! subModId: " + str(subModId) 
+#                print "DEBUG pcn: SPECIAL!!! subModId: " + str(subModId) 
+                subTypeId, _ = subModId
+                subTypeString = self._specialTypes.getTypeString(subTypeId)
+#                print "DEBUG pcn: SPECIAL!!! subMode: " + str(subTypeString)
+                if(subTypeString == "Effect"):
+                    subSubModeString = self._specialModulationHolder.getSubModString(subModId).split("Effect.")[1]
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeString: " + str(subSubModeString)
+                    if((subSubModeString == None) or (subSubModeString == "None")):
+                        subSubModeString = "BlobDetect;;1;X"
+                    subSubModeStringSplit = subSubModeString.split(";")
+                    if(len(subSubModeStringSplit) < 1):
+                        subSubModeStringSplit = ["BlobDetect", "", "1", "X"]
+                    if(len(subSubModeStringSplit) < 2):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], "", "1", "X"]
+                    if(len(subSubModeStringSplit) < 3):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], subSubModeStringSplit[1], "1", "X"]
+                    if(len(subSubModeStringSplit) < 4):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], subSubModeStringSplit[1], subSubModeStringSplit[2], "X"]
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[0]: " + str(subSubModeStringSplit[0])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[1]: " + str(subSubModeStringSplit[1])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[2]: " + str(subSubModeStringSplit[2])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[3]: " + str(subSubModeStringSplit[3])
+                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Effect")
+                    self._updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
+                    self._updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
+                    self._updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
+                    self._updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
+#                print "DEBUG pcn: SPECIAL!!! done."
 
         if(updatedId != "MidiChannel"):
             self._midiChannelSourceField.SetValue("Controller")

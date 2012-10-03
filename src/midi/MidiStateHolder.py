@@ -558,11 +558,10 @@ class GuiControllerValues(object):
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
 
 class SpecialTypes():
-    NoType, Effect = range(2)
+    Effect, NoNothing = range(2)
 
     def __init__(self, effectsTemplateList):
         self._subTypes = []
-        self._subTypes.append(None)
         self._effectsTemplateList = effectsTemplateList
         self._subTypes.append(self.SpecalEffectTypes(self._effectsTemplateList))
 
@@ -595,32 +594,31 @@ class SpecialTypes():
                 return ["X", "Y", "Z"]
 
     def getTypeStrings(self):
-        return ["None", "Effect"]
+        return ["Effect"]
+
+    def getTypeString(self, typeId):
+        if(typeId == self.Effect):
+            return "Effect"
+        else:
+            return "Effect"
 
     def getTypeId(self, typeString):
-        if(typeString == "None"):
-            return self.NoType
         if(typeString == "Effect"):
             return self.Effect
+        return self.Effect
 
     def getSubTypes(self, specialId):
-        if(specialId == self.NoType):
-            return None
         if(specialId == self.Effect):
             return self._subTypes[self.Effect].getTypeStrings()
         return None
 
     def getSubSubTypes(self, specialId, subTypeString):
-        if(specialId == self.NoType):
-            return None
         if(specialId == self.Effect):
             subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
             return self._subTypes[self.Effect].getSubTypes(subTypeId)
         return None
 
     def getSubSubSubTypes(self, specialId, subTypeString, level):
-        if(specialId == self.NoType):
-            return None
         if(specialId == self.Effect):
             subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
             return self._subTypes[self.Effect].getSubSubTypes(subTypeId, level)

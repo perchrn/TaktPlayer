@@ -7,7 +7,7 @@ import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
-    MediaGroup, TextMedia
+    MediaGroup, TextMedia, ModulationMedia
 from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
@@ -34,6 +34,7 @@ class MediaPool(object):
         self._midiTiming = midiTiming
         self._midiStateHolder = midiStateHolder
         self._specialModulationHolder = specialModulationHolder
+        self._noteModulation = GenericModulationHolder("Note", self._specialModulationHolder)
         self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
         self._mediaMixer = mediaMixer
         self._mediaMixer.gueueImage(self._emptyImage, 1)
@@ -84,6 +85,36 @@ class MediaPool(object):
                 noteLetter = MidiUtilities.noteToNoteString(i)
                 self.addMedia("", noteLetter)
         self._effectsConfigurationTemplates.setupEffectModulations(self._effectsModulation)
+        self.setupSpecialNoteModulations()
+
+    def setupSpecialNoteModulations(self):
+        print "+"*120
+        for note in self._mediaPool:
+            if(note == None):
+                print "n",
+            else:
+                print note.getType(),
+            if((note != None) and (note.getType() == "Modulation")):
+                noteName = note.getFileName()
+                descSum = "Modulation;" + noteName + ";Any;Sum"
+                desc1st = "Modulation;" + noteName + ";Any;1st"
+                desc2nd = "Modulation;" + noteName + ";Any;2nd"
+                desc3rd = "Modulation;" + noteName + ";Any;3rd"
+                self._noteModulation.addModulation(descSum)
+                self._noteModulation.addModulation(desc1st)
+                self._noteModulation.addModulation(desc2nd)
+                self._noteModulation.addModulation(desc3rd)
+                for midiChannel in range(16):
+                    descSum = "Modulation;" + noteName + ";" + str(midiChannel + 1) + ";Sum"
+                    desc1st = "Modulation;" + noteName + ";" + str(midiChannel + 1) + ";1st"
+                    desc2nd = "Modulation;" + noteName + ";" + str(midiChannel + 1) + ";2nd"
+                    desc3rd = "Modulation;" + noteName + ";" + str(midiChannel + 1) + ";3rd"
+                    self._noteModulation.addModulation(descSum)
+                    self._noteModulation.addModulation(desc1st)
+                    self._noteModulation.addModulation(desc2nd)
+                    self._noteModulation.addModulation(desc3rd)
+        print "\n"
+        print "+"*120
 
     def addXmlMedia(self, xmlConfig):
         fileName = forceUnixPath(xmlConfig.get("filename"))
@@ -120,7 +151,7 @@ class MediaPool(object):
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
                     print "FileName OK"
-                    if((oldMedia.getType() == mediaType) and (mediaType != "Sprite") and (mediaType != "Text")):
+                    if((oldMedia.getType() == mediaType)):
                         print "MediaType OK"
                         keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
@@ -169,6 +200,10 @@ class MediaPool(object):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = MediaGroup(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.setGetMediaCallback(self.getMedia)
+                        mediaFile.openFile(midiLength)
+                    elif(mediaType == "Modulation"):
+                        clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
+                        mediaFile = ModulationMedia(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)

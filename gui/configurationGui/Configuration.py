@@ -10,9 +10,15 @@ from configurationGui.MediaMixerConfig import MediaMixerConfig
 from network.SendMidiOverNet import SendMidiOverNet
 import os
 import sys
+from midi.MidiStateHolder import SpecialModulationHolder,\
+    GenericModulationHolder
 
 class Configuration(object):
     def __init__(self, configDir):
+        self._specialModulationHolder = SpecialModulationHolder()
+        self._noteModulation = GenericModulationHolder("Note", self._specialModulationHolder)
+        self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
+
         self._guiConfigurationTree = ConfigurationHolder("TaktGUI")
         self._guiConfigurationTree.setSelfclosingTags(['video', 'player', 'gui'])
         self.setupGuiConfiguration()
@@ -23,11 +29,11 @@ class Configuration(object):
         self.saveConfig()
 
         self._playerConfigurationTree = ConfigurationHolder("MusicalVideoPlayer")
-        self._globalConf = GlobalConfig(self._playerConfigurationTree, self)
+        self._globalConf = GlobalConfig(self._playerConfigurationTree, self, self._specialModulationHolder, self._effectsModulation)
         self._mediaMixerConf = MediaMixerConfig(self._playerConfigurationTree)
         self._mixerGui = None
 
-        self._mediaPoolConf = MediaPoolConfig(self._playerConfigurationTree)
+        self._mediaPoolConf = MediaPoolConfig(self._playerConfigurationTree, self._noteModulation)
         self._noteGui = None
 
         self._setNoteNewThumbCallback = None
@@ -37,6 +43,10 @@ class Configuration(object):
         self.setupMidiSender()
         self._latestMidiControllerRequestCallback = None
         self._effectStateRequestCallback = None
+
+    def setupSpecialModulations(self):
+        self._mediaPoolConf.setupSpecialNoteModulations()
+        self._globalConf.setupSpecialEffectModulations()
 
     def setupGuiConfiguration(self):
         taktPackageConfigDir = os.path.join(os.getcwd(), "config")
@@ -202,6 +212,9 @@ class Configuration(object):
 
     def setFromXml(self, config):
         self._playerConfigurationTree.setFromXml(config)
+        self.checkAndUpdateFromConfiguration()
+
+    def checkAndUpdateFromConfiguration(self):
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
         self._mediaMixerConf.checkAndUpdateFromConfiguration()
         self._globalConf.checkAndUpdateFromConfiguration()
@@ -440,6 +453,9 @@ class Configuration(object):
 
     def getNoteConfiguration(self, noteId):
         return self._mediaPoolConf.getNoteConfiguration(noteId)
+
+    def getNoteList(self):
+        return self._mediaPoolConf.getNoteList()
 
     def getTrackConfiguration(self, trackId):
         return self._mediaMixerConf.getTrackConfiguration(trackId)

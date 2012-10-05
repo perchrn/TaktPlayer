@@ -316,12 +316,12 @@ class ModulationGui(object):
 
         """Special"""
 
-        self._specialTypes = SpecialTypes(self._mainConfig.getEffectConfiguration())
+        self._specialTypes = SpecialTypes(self._mainConfig.getEffectConfiguration(), self._mainConfig.getNoteList())
 
         self._specialTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Type:") #@UndefinedVariable
         self._specialTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Effect"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Effect", "Effect")
+        self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Note", "Note")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
@@ -889,7 +889,7 @@ Choose which blob modulation value to use.
         if(modType == "Special"):
             specialTypeString = self._specialTypeField.GetValue()
             modeString += "." + specialTypeString
-            if(specialTypeString == "Effect"):
+            if((specialTypeString == "Effect") or (specialTypeString == "Note")):
                 sub1TypeString = self._specialSub1TypeField.GetValue()
                 modeString += "." + sub1TypeString
                 sub2TypeString = self._specialSub2TypeField.GetValue()
@@ -1098,13 +1098,13 @@ Choose which blob modulation value to use.
                 self._valueValueLabel.SetLabel("%.2f" % (subModId))
             elif(modulationIdTuplet[0] == ModulationSources.Special):
                 subModId = modulationIdTuplet[1]
-#                print "DEBUG pcn: SPECIAL!!! subModId: " + str(subModId) 
+                print "DEBUG pcn: SPECIAL!!! subModId: " + str(subModId) 
                 subTypeId, _ = subModId
                 subTypeString = self._specialTypes.getTypeString(subTypeId)
-#                print "DEBUG pcn: SPECIAL!!! subMode: " + str(subTypeString)
+                print "DEBUG pcn: SPECIAL!!! subMode: " + str(subTypeString)
                 if(subTypeString == "Effect"):
                     subSubModeString = self._specialModulationHolder.getSubModString(subModId).split("Effect.")[1]
-#                    print "DEBUG pcn: SPECIAL!!! subSubModeString: " + str(subSubModeString)
+                    print "DEBUG pcn: SPECIAL!!! subSubModeString: " + str(subSubModeString)
                     if((subSubModeString == None) or (subSubModeString == "None")):
                         subSubModeString = "BlobDetect;;1;X"
                     subSubModeStringSplit = subSubModeString.split(";")
@@ -1120,7 +1120,30 @@ Choose which blob modulation value to use.
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[1]: " + str(subSubModeStringSplit[1])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[2]: " + str(subSubModeStringSplit[2])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[3]: " + str(subSubModeStringSplit[3])
-                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Effect")
+                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
+                    self._updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
+                    self._updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
+                    self._updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
+                    self._updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
+                if(subTypeString == "Note"):
+                    subSubModeString = self._specialModulationHolder.getSubModString(subModId).split("Note.")[1]
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeString: " + str(subSubModeString)
+                    if((subSubModeString == None) or (subSubModeString == "None")):
+                        subSubModeString = "Modulation;;Any;Sum"
+                    subSubModeStringSplit = subSubModeString.split(";")
+                    if(len(subSubModeStringSplit) < 1):
+                        subSubModeStringSplit = ["Modulation", "", "Any", "Sum"]
+                    if(len(subSubModeStringSplit) < 2):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], "", "Any", "Sum"]
+                    if(len(subSubModeStringSplit) < 3):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], subSubModeStringSplit[1], "Any", "Sum"]
+                    if(len(subSubModeStringSplit) < 4):
+                        subSubModeStringSplit = [subSubModeStringSplit[0], subSubModeStringSplit[1], subSubModeStringSplit[2], "Sum"]
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[0]: " + str(subSubModeStringSplit[0])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[1]: " + str(subSubModeStringSplit[1])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[2]: " + str(subSubModeStringSplit[2])
+#                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[3]: " + str(subSubModeStringSplit[3])
+                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
                     self._updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
                     self._updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
                     self._updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))

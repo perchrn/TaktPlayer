@@ -7,6 +7,8 @@ import ntpath
 import posixpath
 #Media file utility to force unix paths in configurations.
 def forceUnixPath(pathPart):
+    if(pathPart == None):
+        return
     drive, _ = ntpath.splitdrive(pathPart)
     if(drive != ""):
         if((drive == pathPart) or ((drive + "\\") == pathPart)):
@@ -14,6 +16,8 @@ def forceUnixPath(pathPart):
     firstPart, lastPart = ntpath.split(pathPart)
     if((firstPart != "") and (lastPart != "")):
         unixPathPart = forceUnixPath(firstPart)
+        if(unixPathPart == None):
+            return lastPart
         return posixpath.join(unixPathPart, lastPart)
     if(firstPart != ""):
         return firstPart
@@ -107,10 +111,10 @@ class KinectMode:
         return self.getChoices()[0]
 
 class MediaTypes:
-    VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Text, Camera, KinectCamera, Group = range(9)
+    VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Text, Camera, KinectCamera, Group, Modulation = range(10)
 
     def getChoices(self):
-        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "KinectCamera", "Group"]
+        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "KinectCamera", "Group", "Modulation"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

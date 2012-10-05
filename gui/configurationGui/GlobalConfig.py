@@ -21,18 +21,16 @@ from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
 import re
-from midi.MidiStateHolder import SpecialModulationHolder,\
-    GenericModulationHolder
 
 class GlobalConfig(object):
-    def __init__(self, configParent, mainConfig):
+    def __init__(self, configParent, mainConfig, specialModulationHolder, effectsModulation):
         self._mainConfig = mainConfig
         self._configurationTree = configParent.addChildUnique("Global")
+        self._specialModulationHolder = specialModulationHolder
+        self._effectsModulation = effectsModulation
 
         self._midiTiming = MidiTiming()
 
-        self._specialModulationHolder = SpecialModulationHolder()
-        self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
         self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming, self._specialModulationHolder)
 
         self._timeModulationConfiguration = TimeModulationTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder)
@@ -50,9 +48,11 @@ class GlobalConfig(object):
 
     def _getConfiguration(self):
         self._effectsConfiguration._getConfiguration()
-        self._effectsConfiguration.setupEffectModulations(self._effectsModulation)
         self._effectImagesConfiguration._getConfiguration()
         self._fadeConfiguration._getConfiguration()
+
+    def setupSpecialEffectModulations(self):
+        self._effectsConfiguration.setupEffectModulations(self._effectsModulation)
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):

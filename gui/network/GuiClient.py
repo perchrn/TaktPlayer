@@ -329,6 +329,8 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     def sendConfiguration(self, xmlString):
+        #print "DEBUG pcn: sending config:"
+        #print xmlString
         self._commandQueue.put(xmlString)
 
     def sendPlayerConfiguration(self, xmlString):
@@ -439,7 +441,7 @@ class GuiClient(object):
                 elif(serverXml.tag == "playerConfiguration"):
                     xmlString = serverXml.get("xmlString")
                     returnValue = (self.ResponseTypes.PlayerConfiguration, xmlString)
-                    print "Got playerConfigurationRequest response. " + str(serverResponse)
+#                    print "Got playerConfigurationRequest response. " + str(serverResponse)
                 elif(serverXml.tag == "configFileTransfer"):
                     returnValue = (self.ResponseTypes.ConfigFileTransfer, serverXml)
 #                    print "Got configuration transfer response."

@@ -44,7 +44,8 @@ class NoteModulationSources():
         return -1
 
 class NoteState(object):
-    def __init__(self):
+    def __init__(self, midiChannel):
+        self._midiChannel = midiChannel
         self._noteOn = False
         self._note = -1
         self._octav = -1
@@ -61,6 +62,9 @@ class NoteState(object):
         self._noteOffInSync = False
         self._quantizeValue = 0
         self._isNew = False
+
+    def getMidiChannel(self):
+        return self._midiChannel
 
     def getModulationId(self, modName):
         if(modName == "Velocity"):
@@ -285,11 +289,11 @@ class MidiChannelStateHolder(object):
 
         self._activeNotes = []
         for _ in range(128):
-            self._activeNotes.append(NoteState())
+            self._activeNotes.append(NoteState(self._midiChannel))
         self._numberOfWaitingActiveNotes = 0
         self._nextNotes = []
         for _ in range(128):
-            self._nextNotes.append(NoteState())
+            self._nextNotes.append(NoteState(self._midiChannel))
         self._numberOfWaitingNextNotes = 0
         self._activeNote = self._activeNotes[0]
 
@@ -346,7 +350,7 @@ class MidiChannelStateHolder(object):
                 nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
         else:
             if(velocity > 0): #NOTE ON!!!
-                nextNote = NoteState()#reset note
+                nextNote = NoteState(self._midiChannel)#reset note
                 nextNote.noteOn(note, velocity, songPosition, spp, midiSync)
                 self._nextNotes[note] = nextNote
                 self._numberOfWaitingNextNotes += 1
@@ -437,20 +441,20 @@ class MidiChannelStateHolder(object):
     def removeDoneActiveNote(self):
         noteId = self._activeNote.getNote()
         if(noteId != -1):
-            self._activeNotes[noteId] = NoteState()#reset note
+            self._activeNotes[noteId] = NoteState(self._midiChannel)#reset note
             self._activeNote = self._activeNotes[noteId]
 
     def removeAllNotes(self):
         for i in range(128):
-            self._activeNotes[i] = NoteState()
-            self._nextNotes[i] = NoteState()
+            self._activeNotes[i] = NoteState(self._midiChannel)
+            self._nextNotes[i] = NoteState(self._midiChannel)
         self._activeNote = self._activeNotes[0]
 
     def _activateNextNote(self, nextNote):
         noteId = nextNote.getNote()
         self._activeNote = nextNote
         self._activeNotes[noteId] = nextNote
-        self._nextNotes[noteId] = NoteState()#reset note
+        self._nextNotes[noteId] = NoteState(self._midiChannel)#reset note
         self._numberOfWaitingNextNotes -= 1
         self._numberOfWaitingActiveNotes += 1
 
@@ -470,10 +474,10 @@ class MidiChannelStateHolder(object):
         for note in range(128):
             testNote = self._nextNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):
-                self._nextNotes[note] = NoteState()#reset note
+                self._nextNotes[note] = NoteState(self._midiChannel)#reset note
             testNote = self._activeNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):
-                self._activeNotes[note] = NoteState()#reset note
+                self._activeNotes[note] = NoteState(self._midiChannel)#reset note
         noteId = self._activeNote.getNote()
         if(noteId != -1):
             self._activeNote = self._activeNotes[noteId]
@@ -558,11 +562,13 @@ class GuiControllerValues(object):
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
 
 class SpecialTypes():
-    Effect, NoNothing = range(2)
+    Note, Effect = range(2)
 
-    def __init__(self, effectsTemplateList):
+    def __init__(self, effectsTemplateList, noteList):
         self._subTypes = []
         self._effectsTemplateList = effectsTemplateList
+        self._noteList = noteList
+        self._subTypes.append(self.SpecalNoteTypes(self._noteList))
         self._subTypes.append(self.SpecalEffectTypes(self._effectsTemplateList))
 
     class SpecalEffectTypes():
@@ -593,35 +599,75 @@ class SpecialTypes():
             if(level == 2):
                 return ["X", "Y", "Size"]
 
+    class SpecalNoteTypes():
+        Modulation = range(1)
+        def __init__(self, noteList):
+            self._noteList = noteList
+
+        def getTypeStrings(self):
+            return ["Modulation"]
+
+        def getTypeId(self, typeString):
+            if(typeString == "Modulation"):
+                return self.Modulation
+
+        def getSubTypes(self, specialId):
+            subTypeList = []
+            if(specialId == self.Modulation):
+                for noteConfig in self._noteList:
+                    if((noteConfig != None) and (noteConfig.getType() == "Modulation")):
+                        subTypeList.append(noteConfig.getName())
+            if(len(subTypeList) == 0):
+                subTypeList.append("[None found.]")
+            return subTypeList
+
+        def getSubSubTypes(self, specialId, level):
+            if(level == 1):
+                return ["Any", "1","2","3","4","5","6","7","8","9","10", "11", "12", "13", "14", "15", "16"]
+            if(level == 2):
+                return ["Sum", "1st", "2nd", "3rd"]
+
     def getTypeStrings(self):
-        return ["Effect"]
+        return ["Note", "Effect"]
 
     def getTypeString(self, typeId):
         if(typeId == self.Effect):
             return "Effect"
+        if(typeId == self.Note):
+            return "Note"
         else:
-            return "Effect"
+            return "Note"
 
     def getTypeId(self, typeString):
         if(typeString == "Effect"):
             return self.Effect
-        return self.Effect
+        if(typeString == "Note"):
+            return self.Note
+        return self.Note
 
     def getSubTypes(self, specialId):
         if(specialId == self.Effect):
             return self._subTypes[self.Effect].getTypeStrings()
+        if(specialId == self.Note):
+            return self._subTypes[self.Note].getTypeStrings()
         return None
 
     def getSubSubTypes(self, specialId, subTypeString):
         if(specialId == self.Effect):
             subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
             return self._subTypes[self.Effect].getSubTypes(subTypeId)
+        if(specialId == self.Note):
+            subTypeId = self._subTypes[self.Note].getTypeId(subTypeString)
+            return self._subTypes[self.Note].getSubTypes(subTypeId)
         return None
 
     def getSubSubSubTypes(self, specialId, subTypeString, level):
         if(specialId == self.Effect):
             subTypeId = self._subTypes[self.Effect].getTypeId(subTypeString)
             return self._subTypes[self.Effect].getSubSubTypes(subTypeId, level)
+        if(specialId == self.Note):
+            subTypeId = self._subTypes[self.Note].getTypeId(subTypeString)
+            return self._subTypes[self.Note].getSubSubTypes(subTypeId, level)
         return None
 
 class SpecialModulationHolder(object):
@@ -671,7 +717,7 @@ class SpecialModulationHolder(object):
         if((modId < 0) or (modId >= len(self._modulations))):
             return 0.0
         modulationHolder = self._modulations[modId]
-#        print "DEBUG pcn: getValue (SPECIAL) for id: " + str(comboId) + " value: " + str(modulationHolder.getValue(subId))
+        #print "DEBUG pcn: getValue (SPECIAL) for id: " + str(comboId) + " value: " + str(modulationHolder.getValue(subId))
         return modulationHolder.getValue(subId)
 
 class GenericModulationHolder(object):
@@ -691,11 +737,13 @@ class GenericModulationHolder(object):
             if(desc == description):
                 return i
         subId = len(self._descriptions)
+        #print "DEBUG pcn: addModulation (SPECIAL): " + description + " id " + str(subId)
         self._descriptions.append(description)
         self._values.append(0.0)
         return subId
 
     def getSubId(self, description):
+        #print "DEBUG pcn: getSubId (SPECIAL): " + description
         for i in range(len(self._descriptions)):
             desc = self._descriptions[i]
             if(desc == description):

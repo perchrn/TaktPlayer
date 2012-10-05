@@ -725,7 +725,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                     print "Both configs are updated! " * 5
                                     print "GUI " * 50
                                     print currentGuiConfigString
-                                    print "NEW " * 50
+                                    print "SRVR " * 50
                                     print newConfigString
                                     print "XXX " * 50
                                     text = "Both the configuration on the sever and in the GUI has been updated. Would you like to discard local configuration and load server version?"
@@ -964,6 +964,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._updateMidiButtonColor(self._configuration.isMidiEnabled())
             currentGuiConfigString = self._configuration.getXmlString()
             if(self._oldServerConfigurationString != currentGuiConfigString):
+                self._configuration.setupSpecialModulations()
                 if(self._stoppingWebRequests == True):
                     self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
                 else:

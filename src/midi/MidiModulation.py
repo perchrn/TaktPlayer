@@ -201,7 +201,7 @@ class ModulatiobReceiver(object):
 class MidiModulation(object):
     def __init__(self, configurationTree, midiTiming, specialHolder):
         self._tmpMidiChClass = MidiChannelStateHolder(0, None)
-        self._tmpMidiNoteClass = NoteState()
+        self._tmpMidiNoteClass = NoteState(0)
 
         self._configurationTree = configurationTree
         self._midiTiming = midiTiming

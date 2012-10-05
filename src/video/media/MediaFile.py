@@ -203,16 +203,17 @@ class MediaFile(object):
 
     def _setupConfiguration(self):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
-        self._configurationTree.addFloatParameter("QuantizeLength", 4.0)#Default one bar
-        self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
-        self._defaultTimeModulationSettingsName = "Default"
-        self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
-        self._defaultEffect1SettingsName = "MediaDefault1"
-        self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
-        self._defaultEffect2SettingsName = "MediaDefault2"
-        self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
-        self._defaultFadeSettingsName = "Default"
-        self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+        self._configurationTree.addFloatParameter("QuantizeLength", 1.0)#Default one beat
+        if(self.getType() != "Modulation"):
+            self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
+            self._defaultTimeModulationSettingsName = "Default"
+            self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
+            self._defaultEffect1SettingsName = "MediaDefault1"
+            self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
+            self._defaultEffect2SettingsName = "MediaDefault2"
+            self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
+            self._defaultFadeSettingsName = "Default"
+            self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
         self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         
         self._syncLength = -1.0
@@ -233,49 +234,50 @@ class MediaFile(object):
         self._timeModulationSettings = None
 
     def _getConfiguration(self):
-        timeModulationTemplateName = self._configurationTree.getValue("TimeModulationConfig")
-        self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(timeModulationTemplateName)
-        if(self._timeModulationSettings == None):
-            self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(self._defaultTimeModulationSettingsName)
+        if(self.getType() != "Modulation"):
+            timeModulationTemplateName = self._configurationTree.getValue("TimeModulationConfig")
+            self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(timeModulationTemplateName)
+            if(self._timeModulationSettings == None):
+                self._timeModulationSettings = self._timeModulationConfigurationTemplates.getTemplate(self._defaultTimeModulationSettingsName)
         
-        oldEffect1Name = "None"
-        oldEffect1Values = "0.0|0.0|0.0|0.0|0.0"
-        if(self._effect1Settings != None):
-            oldEffect1Name = self._effect1Settings.getEffectName()
-            oldEffect1Values = self._effect1Settings.getStartValuesString()
-        effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
-        self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(effect1ModulationTemplate)
-        if(self._effect1Settings == None):
-            self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
-        self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), effect1ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
-        if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
-            self._effect1StartValues = self._effect1Settings.getStartValues()
-            self._effect1OldValues = self._effect1StartValues
+            oldEffect1Name = "None"
+            oldEffect1Values = "0.0|0.0|0.0|0.0|0.0"
+            if(self._effect1Settings != None):
+                oldEffect1Name = self._effect1Settings.getEffectName()
+                oldEffect1Values = self._effect1Settings.getStartValuesString()
+            effect1ModulationTemplate = self._configurationTree.getValue("Effect1Config")
+            self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(effect1ModulationTemplate)
+            if(self._effect1Settings == None):
+                self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
+            self._effect1 = getEffectByName(self._effect1Settings.getEffectName(), effect1ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
+                self._effect1StartValues = self._effect1Settings.getStartValues()
+                self._effect1OldValues = self._effect1StartValues
 
-        oldEffect2Name = "None"
-        oldEffect2Values = "0.0|0.0|0.0|0.0|0.0"
-        if(self._effect2Settings != None):
-            oldEffect2Name = self._effect2Settings.getEffectName()
-            oldEffect2Values = self._effect2Settings.getStartValuesString()
-        effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
-        self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(effect2ModulationTemplate)
-        if(self._effect2Settings == None):
-            self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
-        self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), effect2ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
-        if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
-            self._effect2StartValues = self._effect2Settings.getStartValues()
-            self._effect2OldValues = self._effect2StartValues
+            oldEffect2Name = "None"
+            oldEffect2Values = "0.0|0.0|0.0|0.0|0.0"
+            if(self._effect2Settings != None):
+                oldEffect2Name = self._effect2Settings.getEffectName()
+                oldEffect2Values = self._effect2Settings.getStartValuesString()
+            effect2ModulationTemplate = self._configurationTree.getValue("Effect2Config")
+            self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(effect2ModulationTemplate)
+            if(self._effect2Settings == None):
+                self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
+            self._effect2 = getEffectByName(self._effect2Settings.getEffectName(), effect2ModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
+                self._effect2StartValues = self._effect2Settings.getStartValues()
+                self._effect2OldValues = self._effect2StartValues
 
-        self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
-        self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
-        if(self._fadeAndLevelSettings == None):
-            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+            self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
+            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
+            if(self._fadeAndLevelSettings == None):
+                self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+
+            mixMode = self._configurationTree.getValue("MixMode")
+            self._mixMode = getMixModeFromName(mixMode)
 
         self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
-
-        mixMode = self._configurationTree.getValue("MixMode")
-        self._mixMode = getMixModeFromName(mixMode)
 
         modulationRestartMode = self._configurationTree.getValue("ModulationValuesMode")
         self._modulationRestartMode = getModulationValueModeFromName(modulationRestartMode)
@@ -1345,12 +1347,17 @@ class SpriteImageFile(SpriteMediaBase):
 
     def _getConfiguration(self):
         SpriteMediaBase._getConfiguration(self)
-        self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
+        if(self._fileOk):
+            oldInvState = self._invertFirstImageMask
+            self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
+            if(oldInvState != self._invertFirstImageMask):
+                print "InvertFirstFrameMask is updated -> Sprite is re-loaded."
+                self._loadFile()
 
     def getType(self):
         return "Sprite"
 
-    def openFile(self, midiLength):
+    def _loadFile(self):
         filePath = self._fullFilePath
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
@@ -1444,6 +1451,12 @@ class SpriteImageFile(SpriteMediaBase):
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
         self._log.warning("Read image file %s", os.path.basename(self._cfgFileName))
+
+    def openFile(self, midiLength):
+        self._loadFile()
+        if(midiLength != None): # Else we get length from configuration or default.
+            if(midiLength > 0.0):
+                self.setMidiLengthInBeats(midiLength)
         self._fileOk = True
 
 class TextMedia(SpriteMediaBase):
@@ -1455,12 +1468,17 @@ class TextMedia(SpriteMediaBase):
 
     def _getConfiguration(self):
         SpriteMediaBase._getConfiguration(self)
-        self._font = self._configurationTree.getValue("Font")
+        if(self._fileOk):
+            oldFont = self._font
+            self._font = self._configurationTree.getValue("Font")
+            if(oldFont != self._font):
+                print "Font is updated -> Text is re-rendered."
+                self._renderText()
 
     def getType(self):
         return "Text"
 
-    def openFile(self, midiLength):
+    def _renderText(self):
         text = self._cfgFileName
         fontString = self._font
         fontStringSplit = fontString.split(";")
@@ -1508,6 +1526,12 @@ class TextMedia(SpriteMediaBase):
         self._originalTime = 1.0
 
         self._log.warning("Generated text media: %s", self._cfgFileName)
+
+    def openFile(self, midiLength):
+        self._renderText()
+        if(midiLength != None): # Else we get length from configuration or default.
+            if(midiLength > 0.0):
+                self.setMidiLengthInBeats(midiLength)
         self._fileOk = True
 
 class VideoCaptureCameras(object):
@@ -2181,6 +2205,91 @@ class VideoRecorderMedia(MediaFile):
         (self._captureImage, currentPreValues, unusedStarts) = self._applyOneEffect(image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
         (self._captureImage, currentPostValues, unusedStarts) = self._applyOneEffect(image, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
         return (self._captureImage, currentPreValues, currentPostValues)
+
+class ModulationMedia(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+
+        self._modulationName = fileName
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._midiModulation.setModulationReceiver("FirstModulation", "None")
+        self._midiModulation.setModulationReceiver("SecondModulation", "None")
+        self._midiModulation.setModulationReceiver("ThirdModulation", "None")
+
+        self._noteModulationHolder = None
+        if(self._specialModulationHolder != None):
+            self._noteModulationHolder = self._specialModulationHolder.getSubHolder("Note")
+        self._sumModulationDestId = None
+        self._firstModulationDestId = None
+        self._secondModulationDestId = None
+        self._thirdModulationDestId = None
+        if(self._noteModulationHolder == None):
+            print "-"*120
+        if(self._noteModulationHolder != None):
+            self._sumModulationDestId = []
+            self._firstModulationDestId = []
+            self._secondModulationDestId = []
+            self._thirdModulationDestId = []
+            descSum = "Modulation;" + self._modulationName + ";Any;Sum"
+            desc1st = "Modulation;" + self._modulationName + ";Any;1st"
+            desc2nd = "Modulation;" + self._modulationName + ";Any;2nd"
+            desc3rd = "Modulation;" + self._modulationName + ";Any;3rd"
+            self._sumModulationDestId.append(self._noteModulationHolder.addModulation(descSum))
+            self._firstModulationDestId.append(self._noteModulationHolder.addModulation(desc1st))
+            self._secondModulationDestId.append(self._noteModulationHolder.addModulation(desc2nd))
+            self._thirdModulationDestId.append(self._noteModulationHolder.addModulation(desc3rd))
+            for midiChannel in range(16):
+                descSum = "Modulation;" + self._modulationName + ";" + str(midiChannel + 1) + ";Sum"
+                desc1st = "Modulation;" + self._modulationName + ";" + str(midiChannel + 1) + ";1st"
+                desc2nd = "Modulation;" + self._modulationName + ";" + str(midiChannel + 1) + ";2nd"
+                desc3rd = "Modulation;" + self._modulationName + ";" + str(midiChannel + 1) + ";3rd"
+                self._sumModulationDestId.append(self._noteModulationHolder.addModulation(descSum))
+                self._firstModulationDestId.append(self._noteModulationHolder.addModulation(desc1st))
+                self._secondModulationDestId.append(self._noteModulationHolder.addModulation(desc2nd))
+                self._thirdModulationDestId.append(self._noteModulationHolder.addModulation(desc3rd))
+        self._getConfiguration()
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._firstModulationId = self._midiModulation.connectModulation("FirstModulation")
+        self._secondModulationId = self._midiModulation.connectModulation("SecondModulation")
+        self._thirdModulationId = self._midiModulation.connectModulation("ThirdModulation")
+
+    def close(self):
+        pass
+
+    def getType(self):
+        return "Modulation"
+
+    def restartSequence(self):
+        pass
+
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+        pass
+
+    def skipFrames(self, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+        if(self._noteModulationHolder != None):
+            firstValue = self._midiModulation.getModlulationValue(self._firstModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+            secondValue = self._midiModulation.getModlulationValue(self._secondModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+            thirdValue = self._midiModulation.getModlulationValue(self._thirdModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+            noteMidiChannel = midiNoteState.getMidiChannel() + 1
+            print "+ " + str(self._firstModulationDestId[16]) + " + " + str(firstValue) + " + " + str(secondValue) + " + " + str(thirdValue) + "+"
+            self._noteModulationHolder.setValue(self._firstModulationDestId[noteMidiChannel], firstValue)
+            self._noteModulationHolder.setValue(self._secondModulationDestId[noteMidiChannel], secondValue)
+            self._noteModulationHolder.setValue(self._thirdModulationDestId[noteMidiChannel], thirdValue)
+            self._noteModulationHolder.setValue(self._sumModulationDestId[noteMidiChannel], 0.0)
+            self._noteModulationHolder.setValue(self._firstModulationDestId[0], firstValue)
+            self._noteModulationHolder.setValue(self._secondModulationDestId[0], secondValue)
+            self._noteModulationHolder.setValue(self._thirdModulationDestId[0], thirdValue)
+            self._noteModulationHolder.setValue(self._sumModulationDestId[0], 0.0)
+        return False
+
+    def openFile(self, midiLength):
+        self._fileOk = True
+
+    def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+        return (image, None, None)
 
 class MediaError(Exception):
     def __init__(self, value):

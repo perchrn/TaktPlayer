@@ -251,6 +251,7 @@ class ConfigurationHolder(object):
         return None
 
     def _addParameter(self, name, defaultValue, value, paramType):
+#        print "DEBUG pcn: addParameter inId: " + str(self._uniqueId) + " name: " + name + " value: " + str(value)
         foundParam = self._findParameter(name)
         if(foundParam != None):
 #            xmlValue = None
@@ -269,7 +270,6 @@ class ConfigurationHolder(object):
             self._parameters.append(newParam)
             if(self._loadedXML != None):
                 self._getValueFromXml(self._loadedXML, name)
-
     def addBoolParameter(self, name, defaultValue):
         self._addParameter(name, defaultValue, defaultValue, ParameterTypes.Bool)
 
@@ -294,6 +294,7 @@ class ConfigurationHolder(object):
             return None
 
     def removeParameter(self, name):
+#        print "DEBUG pcn: removeParameter inId: " + str(self._uniqueId) + " name: " + name
         foundParameter = self._findParameter(name)
         if(foundParameter != None):
             self._parameters.remove(foundParameter)
@@ -357,6 +358,12 @@ class ConfigurationHolder(object):
         self._addXMLAttributes(ourNode)
         for child in self._children:
             child._addSelfToXML(ourNode)
+#        print "DEBUG pcn: _addSelfToXML: ourNode"
+#        self._printXml(ourNode)
+#        print "DEBUG pcn: _addSelfToXML: loaded"
+#        if(self._loadedXML != None):
+#            self._printXml(self._loadedXML)
+#        print "DEBUG pcn: _addSelfToXML:"
 
     def _addXMLAttributes(self, node):
         for param in self._parameters:
@@ -475,10 +482,10 @@ class ConfigurationHolder(object):
     def addChildUniqueId(self, name, idName, idValue, idRaw = None):
         foundChild = self._findChild(name, idName, idValue)
         if(foundChild != None):
-#            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
+            print "Warning! addChildUniqueId: Child exist already. Duplicate name? " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
             return foundChild
         else:
-#            print "Add Child Unique: " + name + " idName: " + str(idName) + " idValue: " + str(idValue)
+            #print "Add Child Unique: " + name + " idName: " + str(idName) + " idValue: " + str(idValue) + " idRaw: " + str(idRaw)
             self._configIsUpdated = True
             if(idRaw == None):
                 idRaw = idValue
@@ -510,7 +517,7 @@ class ConfigurationHolder(object):
     def isConfigurationUpdated(self):
         if(self._configIsUpdated == True):
             self._updateId()
-#            print "self._configIsUpdated == True for: " + self._name
+            #print "DEBUG pcn: self._configIsUpdated == True for: " + self._name
             return True
         else:
             for child in self._children:

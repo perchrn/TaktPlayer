@@ -209,6 +209,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         dragDoneEvent.SetEventObject(self)
         dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
         wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
+        wx.PostEvent(self._buttonParent, event) #@UndefinedVariable
 #    def on_motion(self, event):
 #        if self.clicked:
 #            self.clicked = False
@@ -321,6 +322,7 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
         dragDoneEvent.SetEventObject(self)
         dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
         wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
+        wx.PostEvent(self._buttonParent, event) #@UndefinedVariable
 #    def on_motion(self, event):
 #        if self.clicked:
 #            self.clicked = False

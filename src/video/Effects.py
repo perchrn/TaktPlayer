@@ -1625,15 +1625,10 @@ class ImageAddEffect(object):
 #Scroll area fix
 #More complex modulation.
 #    midi modulation note (media) ?
-#        3 sources (added, subtracted, multiplyed, if/the/else)
 #        end limiter (max/min or list of values)
-#        no midi channel?
-#        used by special modulation (publiched via)
 #        make sure its got an unique name
 #Tap tempo
 #Playback GUI
-#Fix MIDI on button
-#Fix font toggling bug!
 
 #Media:
 #Sprite size / zoom (Text media also)

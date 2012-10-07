@@ -171,9 +171,10 @@ class TrackOverviewSettings(object):
     def getPostFxWidget(self):
         return self._trackPostFxWidget
 
-    def setSelected(self):
+    def setSelected(self, isMidiEnabled):
         self._trackButton.setSelected()
-        self._trackPlayButton.setSelected()
+        if(isMidiEnabled == True):
+            self._trackPlayButton.setSelected()
 
     def unsetSelected(self):
         self._trackButton.unsetSelected()
@@ -1074,6 +1075,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if(midiOn == True):
             midiOn = False
             self._configuration.setMidiEnable(midiOn)
+            self._selectedMidiChannel = -1
+            for i in range(16):
+                settings = self._trackGuiSettings[i]
+                settings.unsetSelected()
         else:
             midiOn = True
             self._configuration.setMidiEnable(midiOn)
@@ -1089,7 +1094,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _selectTrack(self, trackId):
         if((trackId >= 0) and (trackId < 16)):
-            self._trackGuiSettings[trackId].setSelected()
+            self._trackGuiSettings[trackId].setSelected(self._configuration.isMidiEnabled())
         for i in range(16):
             settings = self._trackGuiSettings[i]
             if(i != trackId):
@@ -1117,6 +1122,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 noteBitmap = noteWidget.getBitmap()
                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
                 self._noteGui.updateGui(noteConfig, self._activeNoteId)
+        self._dragSource = None
+        self._noteGui.clearDragCursor()
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
@@ -1153,6 +1160,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._activeNoteId = destNoteId
                                 self._selectKeyboardKey(self._activeNoteId)
                                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
+        self._noteGui.clearDragCursor()
         self._dragSource = None
 
     def _onMouseClick(self, event):

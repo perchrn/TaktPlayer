@@ -31,7 +31,7 @@ class MediaPoolConfig(object):
 
     def _getConfiguration(self):
         self.loadMediaFromConfiguration()
-        self.setupSpecialNoteModulations(self._noteModulation)
+        self.setupSpecialNoteModulations()
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -235,7 +235,9 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
         elif(mediaType == "Modulation"):
             self._configurationTree.addTextParameter("FirstModulation", "None")
+            self._configurationTree.addTextParameter("ModulationCombiner1", "Add")
             self._configurationTree.addTextParameter("SecondModulation", "None")
+            self._configurationTree.addTextParameter("ModulationCombiner2", "Add")
             self._configurationTree.addTextParameter("ThirdModulation", "None")
 
         if(xmlConfig != None):
@@ -274,7 +276,9 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("Font")
             elif(oldType == "Modulation"):
                 self._configurationTree.removeParameter("FirstModulation")
+                self._configurationTree.removeParameter("ModulationCombiner1")
                 self._configurationTree.removeParameter("SecondModulation")
+                self._configurationTree.removeParameter("ModulationCombiner2")
                 self._configurationTree.removeParameter("ThirdModulation")
 
                 self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
@@ -327,7 +331,9 @@ class MediaFile(object):
                     pass
                 elif(oldType == "Modulation"):
                     self._configurationTree.removeParameter("FirstModulation")
+                    self._configurationTree.removeParameter("ModulationCombiner1")
                     self._configurationTree.removeParameter("SecondModulation")
+                    self._configurationTree.removeParameter("ModulationCombiner2")
                     self._configurationTree.removeParameter("ThirdModulation")
 
                     self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
@@ -492,17 +498,27 @@ class MediaFile(object):
             tmpModulation = sourceConfigTree.getValue("FirstModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("FirstModulation", tmpModulation)
+            self._configurationTree.addTextParameter("ModulationCombiner1", "Add")
+            tmpMod = sourceConfigTree.getValue("ModulationCombiner1")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("ModulationCombiner1", tmpMod)
             self._configurationTree.addTextParameter("SecondModulation", "None")
             tmpModulation = sourceConfigTree.getValue("SecondModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("SecondModulation", tmpModulation)
+            self._configurationTree.addTextParameter("ModulationCombiner2", "Add")
+            tmpMod = sourceConfigTree.getValue("ModulationCombiner2")
+            if(tmpModulation != None):
+                self._configurationTree.setValue("ModulationCombiner2", tmpMod)
             self._configurationTree.addTextParameter("ThirdModulation", "None")
             tmpModulation = sourceConfigTree.getValue("ThirdModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("ThirdModulation", tmpModulation)
         else:
             self._configurationTree.removeParameter("FirstModulation")
+            self._configurationTree.removeParameter("ModulationCombiner1")
             self._configurationTree.removeParameter("SecondModulation")
+            self._configurationTree.removeParameter("ModulationCombiner2")
             self._configurationTree.removeParameter("ThirdModulation")
 
     def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):
@@ -897,6 +913,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationSizer.Add(self._subModulationEditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._subModulationMode1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModulationMode1Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Combine 1 and 2:") #@UndefinedVariable
+        self._subModulationMode1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateSubModulationMode1Choices(self._subModulationMode1Field, "Add", "Add")
+        subModulationMode1HelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        subModulationMode1HelpButton.Bind(wx.EVT_BUTTON, self._onsubModulationMode1Help) #@UndefinedVariable
+        self._subModulationMode1Sizer.Add(self._subModulationMode1Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationMode1Sizer.Add(self._subModulationMode1Field, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationMode1Sizer.Add(subModulationMode1HelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModulationMode1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._noteConfigPanel.Bind(wx.EVT_COMBOBOX, self._onsubModulationMode1Chosen, id=self._subModulationMode1Field.GetId()) #@UndefinedVariable
+
         self._subModulation2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._subModulation2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Y position modulation:") #@UndefinedVariable
         self._subModulation2Field = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
@@ -908,6 +936,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulation2Sizer.Add(self._subModulation2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulation2Sizer.Add(self._subModulation2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulation2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._subModulationMode2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModulationMode2Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Combine 2 and 3:") #@UndefinedVariable
+        self._subModulationMode2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Add"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateSubModulationMode2Choices(self._subModulationMode2Field, "Add", "Add")
+        subModulationMode2HelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        subModulationMode2HelpButton.Bind(wx.EVT_BUTTON, self._onsubModulationMode2Help) #@UndefinedVariable
+        self._subModulationMode2Sizer.Add(self._subModulationMode2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationMode2Sizer.Add(self._subModulationMode2Field, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationMode2Sizer.Add(subModulationMode2HelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModulationMode2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._subModulation3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._subModulation3Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "ThirdModulation:") #@UndefinedVariable
@@ -1576,6 +1615,12 @@ Sometimes you may need to invert the mask on the first image.
             self._selectedSubMode = selectedSubMode
         self._showOrHideSaveButton()
 
+    def _onsubModulationMode1Chosen(self, event):
+        if(self._subModulationMode1Field.GetValue().startswith("If")):
+            self._updateSubModulationMode2Choices(self._subModulationMode2Field, "", "", True)
+        else:
+            self._updateSubModulationMode2Choices(self._subModulationMode2Field, self._subModulationMode2Field.GetValue(), "Add", False)
+
     def _onSubMode2Help(self, event):
         if(self._type == "ScrollImage"):
             text = """
@@ -1605,6 +1650,14 @@ Reverses the scroll direction when not modulated.
         self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
         self._highlightButton(self._selectedEditor)
 
+    def _onsubModulationMode1Help(self, event):
+        text = """
+Decides how we add the second value.
+"""
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+        
     def _onSubmodulation2Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.SubModulation2):
@@ -1622,6 +1675,14 @@ Reverses the scroll direction when not modulated.
         self._mainConfig.updateModulationGui(self._subModulation2Field.GetValue(), self._subModulation2Field, None, None)
         self._highlightButton(self._selectedEditor)
 
+    def _onsubModulationMode2Help(self, event):
+        text = """
+Decides how we add the third value.
+"""
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+        
     def _onSubmodulation3Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.SubModulation3):
@@ -2170,14 +2231,20 @@ All notes on events are quantized to this.
                 if(self._type == "Modulation"):
                     firstModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(firstModulation)
+                    modulationCombiner1 = self._subModulationMode1Field.GetValue()
                     secondModulation = self._midiModulation.validateModulationString(self._subModulation2Field.GetValue())
                     self._subModulation2Field.SetValue(secondModulation)
+                    modulationCombiner2 = self._subModulationMode2Field.GetValue()
                     thirdModulation = self._midiModulation.validateModulationString(self._subModulation3Field.GetValue())
-                    self._subModulation2Field.SetValue(thirdModulation)
+                    self._subModulation3Field.SetValue(thirdModulation)
                     self._config.addTextParameter("FirstModulation", "None")
                     self._config.setValue("FirstModulation", firstModulation)
+                    self._config.addTextParameter("ModulationCombiner1", "Add")
+                    self._config.setValue("ModulationCombiner1", modulationCombiner1)
                     self._config.addTextParameter("SecondModulation", "None")
                     self._config.setValue("SecondModulation", secondModulation)
+                    self._config.addTextParameter("ModulationCombiner2", "Add")
+                    self._config.setValue("ModulationCombiner2", modulationCombiner2)
                     self._config.addTextParameter("ThirdModulation", "None")
                     self._config.setValue("ThirdModulation", thirdModulation)
                     self._config.removeParameter("MixMode")
@@ -2187,7 +2254,9 @@ All notes on events are quantized to this.
                     self._config.removeParameter("FadeConfig")
                 else:
                     self._config.removeParameter("FirstModulation")
+                    self._config.removeParameter("ModulationCombiner1")
                     self._config.removeParameter("SecondModulation")
+                    self._config.removeParameter("ModulationCombiner2")
                     self._config.removeParameter("ThirdModulation")
 
                     self._config.addTextParameter("MixMode", "Add")#Default Add
@@ -2427,12 +2496,16 @@ All notes on events are quantized to this.
         if(self._type == "Modulation"):
             self._subModulation3Label.SetLabel("3rd modulation:")
             self._noteConfigSizer.Show(self._subModulation3Sizer)
+            self._noteConfigSizer.Show(self._subModulationMode1Sizer)
+            self._noteConfigSizer.Show(self._subModulationMode2Sizer)
             self._noteConfigSizer.Hide(self._mixSizer)
             self._noteConfigSizer.Hide(self._effect1Sizer)
             self._noteConfigSizer.Hide(self._effect2Sizer)
             self._noteConfigSizer.Hide(self._fadeSizer)
         else:
             self._noteConfigSizer.Hide(self._subModulation3Sizer)
+            self._noteConfigSizer.Hide(self._subModulationMode1Sizer)
+            self._noteConfigSizer.Hide(self._subModulationMode2Sizer)
             self._noteConfigSizer.Show(self._mixSizer)
             self._noteConfigSizer.Show(self._effect1Sizer)
             self._noteConfigSizer.Show(self._effect2Sizer)
@@ -2581,6 +2654,24 @@ All notes on events are quantized to this.
 
     def _updateTypeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
+
+    def _getCombineModulation1Choises(self):
+        return ["Add", "Subtract", "Mutiply", "If (1st > 0.5) Then:"]
+
+    def _updateSubModulationMode1Choices(self, widget, value, defaultValue):
+        self._updateChoices(widget, self._getCombineModulation1Choises, value, defaultValue)
+
+    def _getCombineModulation2Choises(self):
+        return ["Add", "Subtract", "Mutiply"]
+
+    def _getCombineModulation2Choises2(self):
+        return ["Else"]
+
+    def _updateSubModulationMode2Choices(self, widget, value, defaultValue, ifMode=False):
+        if(ifMode == True):
+            self._updateChoices(widget, self._getCombineModulation2Choises2, "Else", "Else")
+        else:
+            self._updateChoices(widget, self._getCombineModulation2Choises, value, defaultValue)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
@@ -3121,8 +3212,16 @@ All notes on events are quantized to this.
             configSubMode = self._config.getValue("FirstModulation")
             if(guiSubMode != configSubMode):
                 return True
+            guiSubMode = self._subModulationMode1Field.GetValue()
+            configSubMode = self._config.getValue("ModulationCombiner1")
+            if(guiSubMode != configSubMode):
+                return True
             guiSubMode = self._subModulation2Field.GetValue()
             configSubMode = self._config.getValue("SecondModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._subModulationMode2Field.GetValue()
+            configSubMode = self._config.getValue("ModulationCombiner2")
             if(guiSubMode != configSubMode):
                 return True
             guiSubMode = self._subModulation3Field.GetValue()

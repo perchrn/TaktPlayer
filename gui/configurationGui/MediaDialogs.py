@@ -9,6 +9,7 @@ import sys
 import PIL.Image as Image
 import PIL.ImageFont as ImageFont
 import PIL.ImageDraw as ImageDraw
+from video.media.TextRendrer import findOsFontPath
 
 class MediaFontDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, fontWidget, text):
@@ -48,13 +49,7 @@ class MediaFontDialog(wx.Dialog): #@UndefinedVariable
         self._fontListField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=[], style=wx.CB_READONLY) #@UndefinedVariable
         self._fontListField.Clear()
         valueOk = False
-        if(sys.platform == "darwin"):
-            self._fontDir = "/Library/Fonts"
-        elif(sys.platform == "win32"):
-            winDir = os.getenv('WINDIR')
-            self._fontDir = os.path.join(winDir, "fonts")
-        else:
-            self._fontDir = "/usr/share/fonts/"
+        self._fontDir = findOsFontPath()
         rawFontFileList = os.listdir(self._fontDir)
         backupSelection = None
         for fontFile in rawFontFileList:
@@ -116,14 +111,25 @@ class MediaFontDialog(wx.Dialog): #@UndefinedVariable
         size = self._fontSizeField.GetValue()
         textColour = self._colourField.GetColour()
         font = ImageFont.truetype(fontPath, size)
-        textSize = font.getsize(self._previewText)
+        textSplit = self._previewText.split("\\n")
+        textHeight = 0
+        textWidth = 0
+        for textLines in textSplit:
+            textW, textH = font.getsize(textLines)
+            textHeight += textH
+            textWidth = max(textWidth, textW)
         fontPILImage = Image.new('RGB', (600,300), (0, 0, 0))
         drawArea = ImageDraw.Draw(fontPILImage)
-        startX = int((600 - textSize[0]) / 2)
-        startY = int((300 - textSize[1]) / 2)
+        startX = int((600 - textWidth) / 2)
+        startY = int((300 - textHeight) / 2)
         startX = max(0, startX)
         startY = max(0, startY)
-        drawArea.text((startX, startY), self._previewText, font=font, fill=(textColour.Red(),textColour.Green(),textColour.Blue()))
+        posY = startY
+        for textLines in textSplit:
+            textW, textH = font.getsize(textLines)
+            posX = startX + int((textWidth - textW) / 2)
+            drawArea.text((posX, posY), textLines, font=font, fill=(textColour.Red(),textColour.Green(),textColour.Blue()))
+            posY += textH
         self._emptyWxImage.SetData(fontPILImage.convert("RGB").tostring())
         self._previewArea.SetBitmap(wx.BitmapFromImage(self._emptyWxImage)) #@UndefinedVariable
 

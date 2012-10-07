@@ -17,9 +17,8 @@ from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
-import PIL.ImageFont as ImageFont
-import PIL.ImageDraw as ImageDraw
 from midi.MidiUtilities import noteStringToNoteNumber
+from video.media.TextRendrer import generateTextImageAndMask, findOsFontPath
 try:
     import freenect
 except:
@@ -627,7 +626,6 @@ class MediaFile(object):
                     image = cv.QueryFrame(self._videoFile)
             else:
                 #Get current image...
-                #print "DEBUG Using current image for thumb (pos <= 0)"
                 image = self._captureImage
 
         filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()
@@ -675,6 +673,7 @@ class MediaGroup(MediaFile):
         self._mediaList = []
         self._getMediaCallback = None
         self._noteList = fileName.split(",")
+        self._groupName = fileName
 
         self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
         self._captureImage = self._blankImage
@@ -721,27 +720,29 @@ class MediaGroup(MediaFile):
             return noteDone
 
         for media in self._mediaList:
-            media.skipFrames(currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer)
+            if(media != None):
+                media.skipFrames(currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer)
 
         imageMix = None
         for media in self._mediaList:
-            mixLevel = 1.0
-            mixEffects = None
-            guiCtrlStateHolder = None
-            if(imageMix == None):
-                imageTest = media.getImage()
-                if(imageTest != None):
-                    mixMode = MixMode.Replace
+            if(media != None):
+                mixLevel = 1.0
+                mixEffects = None
+                guiCtrlStateHolder = None
+                if(imageMix == None):
+                    imageTest = media.getImage()
+                    if(imageTest != None):
+                        mixMode = MixMode.Replace
+                        if(imageMix == self._mixMat1):
+                            imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                        else:
+                            imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                else:
+                    mixMode = MixMode.Default
                     if(imageMix == self._mixMat1):
                         imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
                         imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
-            else:
-                mixMode = MixMode.Default
-                if(imageMix == self._mixMat1):
-                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
-                else:
-                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
 
         if(imageMix == None):
             imageMix = self._blankImage
@@ -760,6 +761,10 @@ class MediaGroup(MediaFile):
             noteId = noteStringToNoteNumber(noteString)
             if((noteId >= 0) and (noteId < 128)):
                 self._mediaList.append(self._getMediaCallback(noteId))
+        fontPath = findOsFontPath()
+        fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
+        self._captureImage = pilToCvImage(fontPILImage)
+        self._firstImage = self._captureImage
 
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -1463,8 +1468,9 @@ class TextMedia(SpriteMediaBase):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         SpriteMediaBase.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
-        self._font = "Arial;32;#FFFFFF"
+        self._font = "Undefined"
         self._getConfiguration()
+        self._fontPath = findOsFontPath()
 
     def _getConfiguration(self):
         SpriteMediaBase._getConfiguration(self)
@@ -1473,12 +1479,14 @@ class TextMedia(SpriteMediaBase):
             self._font = self._configurationTree.getValue("Font")
             if(oldFont != self._font):
                 print "Font is updated -> Text is re-rendered."
+                print "DEBUG pcn: _getConfiguration -> _renderText()"
                 self._renderText()
 
     def getType(self):
         return "Text"
 
     def _renderText(self):
+        print "DEBUG pcn: _renderText()"
         text = self._cfgFileName
         fontString = self._font
         fontStringSplit = fontString.split(";")
@@ -1498,37 +1506,25 @@ class TextMedia(SpriteMediaBase):
         startGreen = int(startColour[startPos+2:startPos+4], 16)
         startBlue = int(startColour[startPos+4:startPos+6], 16)
 
-        size = startSize
-        colour = (startBlue, startGreen, startRed) #BGR (to skip transforming later.)
-        fontPath = "/Library/Fonts/" + startFont + ".ttf"
-        if(os.path.isfile(fontPath) != True):
-            fontPath = "/Library/Fonts/" + self._font + ".otf"
-        if (os.path.isfile(fontPath) == False):
-            self._log.warning("Could not find font: %s (%s)", self._cfgFileName, fontPath)
-            print "Could not find font: %s (%s)" % (self._cfgFileName, fontPath)
-            raise MediaError("File does not exist!")
-        font = ImageFont.truetype(fontPath, size)
-        textSize = font.getsize(text)
-        #print "DEBUG pcn: textSize " + str(textSize) + " for: " + text 
-        fontPILImage = Image.new('RGB', textSize, (0, 0, 0))
-        drawArea = ImageDraw.Draw(fontPILImage)
-        drawArea.text((0, 0), text, font=font, fill=colour)
-
-        textPILMask = fontPILImage.convert('L')
-
+        fontPILImage, textPILMask = generateTextImageAndMask(text, startFont, self._fontPath, startSize, startRed, startGreen, startBlue)
         self._captureImage = pilToCvImage(fontPILImage)
         self._captureMask = pilToCvMask(textPILMask, 2)
+
         self._firstImage = self._captureImage
         self._firstImageMask = self._captureMask
+        self._bufferedImageList = []
+        self._bufferedImageMasks = []
         self._bufferedImageList.append(self._captureImage)
         self._bufferedImageMasks.append(self._captureMask)
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
 
+        self._oldCurrentFrame = -1
         self._log.warning("Generated text media: %s", self._cfgFileName)
 
     def openFile(self, midiLength):
-        self._renderText()
+        print "DEBUG pcn: openFile -> _getConfiguration()"
+        self._getConfiguration()
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength > 0.0):
                 self.setMidiLengthInBeats(midiLength)
@@ -2253,8 +2249,30 @@ class ModulationMedia(MediaFile):
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         self._firstModulationId = self._midiModulation.connectModulation("FirstModulation")
+        modCombiner1 = self._configurationTree.getValue("ModulationCombiner1")
+        if(modCombiner1 == "Add"):
+            self._modulationCombiner1 = self.AddModes.Add
+        elif(modCombiner1 == "Subtract"):
+            self._modulationCombiner1 = self.AddModes.Subtract
+        elif(modCombiner1 == "Multiply"):
+            self._modulationCombiner1 = self.AddModes.Multiply
+        else:
+            self._modulationCombiner1 = self.AddModes.IfThenElse
         self._secondModulationId = self._midiModulation.connectModulation("SecondModulation")
+        if(self._modulationCombiner1 == self.AddModes.IfThenElse):
+            self._modulationCombiner2 = self.AddModes.IfThenElse
+        else:
+            modCombiner2 = self._configurationTree.getValue("ModulationCombiner2")
+            if(modCombiner2 == "Add"):
+                self._modulationCombiner2 = self.AddModes.Add
+            elif(modCombiner2 == "Subtract"):
+                self._modulationCombiner2 = self.AddModes.Subtract
+            else:
+                self._modulationCombiner2 = self.AddModes.Multiply
         self._thirdModulationId = self._midiModulation.connectModulation("ThirdModulation")
+
+    class AddModes():
+        Add, Subtract, Multiply, IfThenElse = range(4)
 
     def close(self):
         pass
@@ -2273,20 +2291,55 @@ class ModulationMedia(MediaFile):
             firstValue = self._midiModulation.getModlulationValue(self._firstModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
             secondValue = self._midiModulation.getModlulationValue(self._secondModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
             thirdValue = self._midiModulation.getModlulationValue(self._thirdModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+
+            #Summing...
+            sumValue = 0.0
+            if(self._modulationCombiner1 == self.AddModes.IfThenElse):
+                if(firstValue > 0.5):
+                    sumValue = secondValue
+                else:
+                    sumValue = thirdValue
+            else:
+                if(self._modulationCombiner1 == self.AddModes.Add):
+                    sumValue = firstValue + secondValue
+                    sumValue = min(sumValue, 1.0)
+                elif(self._modulationCombiner1 == self.AddModes.Subtract):
+                    sumValue = firstValue - secondValue
+                    sumValue = max(sumValue, 0.0)
+                else:
+                    sumValue = (firstValue * secondValue * 2)
+                    sumValue = min(sumValue, 1.0)
+
+                if(self._modulationCombiner2 == self.AddModes.Add):
+                    sumValue = sumValue + thirdValue
+                    sumValue = min(sumValue, 1.0)
+                elif(self._modulationCombiner2 == self.AddModes.Subtract):
+                    sumValue = sumValue - thirdValue
+                    sumValue = max(sumValue, 0.0)
+                else:
+                    sumValue = (sumValue * thirdValue * 2)
+                    sumValue = min(sumValue, 1.0)
+
+            #Publishing...
             noteMidiChannel = midiNoteState.getMidiChannel() + 1
-            print "+ " + str(self._firstModulationDestId[16]) + " + " + str(firstValue) + " + " + str(secondValue) + " + " + str(thirdValue) + "+"
+#            print "+ " + str(self._firstModulationDestId[16]) + " + " + str(firstValue) + " + " + str(secondValue) + " + " + str(thirdValue) + "+"
             self._noteModulationHolder.setValue(self._firstModulationDestId[noteMidiChannel], firstValue)
             self._noteModulationHolder.setValue(self._secondModulationDestId[noteMidiChannel], secondValue)
             self._noteModulationHolder.setValue(self._thirdModulationDestId[noteMidiChannel], thirdValue)
-            self._noteModulationHolder.setValue(self._sumModulationDestId[noteMidiChannel], 0.0)
+            self._noteModulationHolder.setValue(self._sumModulationDestId[noteMidiChannel], sumValue)
+            #Any channels:
             self._noteModulationHolder.setValue(self._firstModulationDestId[0], firstValue)
             self._noteModulationHolder.setValue(self._secondModulationDestId[0], secondValue)
             self._noteModulationHolder.setValue(self._thirdModulationDestId[0], thirdValue)
-            self._noteModulationHolder.setValue(self._sumModulationDestId[0], 0.0)
+            self._noteModulationHolder.setValue(self._sumModulationDestId[0], sumValue)
         return False
 
     def openFile(self, midiLength):
         self._fileOk = True
+        fontPath = findOsFontPath()
+        fontPILImage, _ = generateTextImageAndMask("Modulation\\n" + self._modulationName, "Arial", fontPath, 10, 255, 255, 255)
+        self._captureImage = pilToCvImage(fontPILImage)
+        self._firstImage = self._captureImage
 
     def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         return (image, None, None)

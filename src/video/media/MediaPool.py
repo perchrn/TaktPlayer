@@ -88,12 +88,11 @@ class MediaPool(object):
         self.setupSpecialNoteModulations()
 
     def setupSpecialNoteModulations(self):
-        print "+"*120
         for note in self._mediaPool:
-            if(note == None):
-                print "n",
-            else:
-                print note.getType(),
+#            if(note == None):
+#                print "n",
+#            else:
+#                print note.getType(),
             if((note != None) and (note.getType() == "Modulation")):
                 noteName = note.getFileName()
                 descSum = "Modulation;" + noteName + ";Any;Sum"
@@ -113,14 +112,14 @@ class MediaPool(object):
                     self._noteModulation.addModulation(desc1st)
                     self._noteModulation.addModulation(desc2nd)
                     self._noteModulation.addModulation(desc3rd)
-        print "\n"
-        print "+"*120
 
     def addXmlMedia(self, xmlConfig):
-        fileName = forceUnixPath(xmlConfig.get("filename"))
-        xmlConfig.set("filename", fileName)
+        fileName = xmlConfig.get("filename")
         noteLetter = xmlConfig.get("note")
         mediaType = xmlConfig.get("type")
+        if(mediaType != "Text"):
+            fileName = forceUnixPath(fileName)
+            xmlConfig.set("filename", fileName)
         return self.addMedia(fileName, noteLetter, None, mediaType)
 
     def addMedia(self, fileName, noteLetter, midiLength = None, mediaType = None):

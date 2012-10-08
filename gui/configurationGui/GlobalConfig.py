@@ -331,7 +331,7 @@ class EffectsGui(object):
         self._hideModulationCallback = parentClass.hideModulationGui
         self._showEffectListCallback = parentClass.showEffectList
         self._showEffectImageListCallback = parentClass.showEffectImageListGui
-        self._setDragCursor = parentClass.setDragCursor
+        self._setDragCursor = parentClass.setDragCursorCallback
         self._effectNameFieldUpdateCallback = parentClass.updateEffecChoices
 
         headerLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect configuration:") #@UndefinedVariable
@@ -780,7 +780,7 @@ A list of start values for the effect modulation.
     def _onListDragStart(self, event):
         self._effectListSelectedIndex = event.m_itemIndex
         self._effectListDraggedIndex = event.m_itemIndex
-        self._setDragCursor()
+        self._setDragCursor("FX")
 
     def getDraggedFxIndex(self):
         dragIndex = self._effectListDraggedIndex # Gets updated by state calls
@@ -1637,7 +1637,7 @@ class FadeGui(object):
         self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_COL_CLICK, self._onListItemMouseDown, self._fadeListWidget)
         self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListItemSelected, self._fadeListWidget)
         self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_DESELECTED, self._onListItemDeselected, self._fadeListWidget)
-        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._fadeListWidget)
+#        self._mainFadeListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._fadeListWidget)
         self._fadeListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -1753,7 +1753,7 @@ Decides if this image fades to black or white.
     def _onListDragStart(self, event):
         self._fadeListSelectedIndex = event.m_itemIndex
         self._fadeListDraggedIndex = event.m_itemIndex
-        self._setDragCursor()
+        self._setDragCursor("Fade")
 
     def getDraggedFxIndex(self):
         dragIndex = self._fadeListDraggedIndex # Gets updated by state calls
@@ -2176,7 +2176,7 @@ class TimeModulationGui(object):
         self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_COL_CLICK, self._onListItemMouseDown, self._timeModulationListWidget)
         self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_SELECTED, self._onListItemSelected, self._timeModulationListWidget)
         self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_ITEM_DESELECTED, self._onListItemDeselected, self._timeModulationListWidget)
-        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._timeModulationListWidget)
+#        self._mainTimeModulationListPlane.Bind(ultimatelistctrl.EVT_LIST_BEGIN_DRAG, self._onListDragStart, self._timeModulationListWidget)
         self._timeModulationListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -2400,7 +2400,7 @@ Example for range = 4.0
     def _onListDragStart(self, event):
         self._timeModListSelectedIndex = event.m_itemIndex
         self._timeModulationListDraggedIndex = event.m_itemIndex
-        self._setDragCursor()
+        self._setDragCursor("Time")
 
     def getDraggedFxIndex(self):
         dragIndex = self._timeModulationListDraggedIndex # Gets updated by state calls

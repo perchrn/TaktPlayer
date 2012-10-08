@@ -97,18 +97,22 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
 
 
 class TrackOverviewSettings(object):
-    def __init__(self, panel, midiChannel, parent):
+    def __init__(self, panel, midiChannel, parent, cursorWidgetList):
         self._midiChannel = midiChannel
         extraSpace = ""
         if(self._midiChannel < 9):
             extraSpace = " "
         wx.StaticText(panel, wx.ID_ANY, extraSpace + str(self._midiChannel + 1), pos=(2, 4+36*self._midiChannel)) #@UndefinedVariable
         self._trackButton = PcnKeyboardButton(panel, parent._trackThumbnailBitmap, (16, 4+36*self._midiChannel), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        cursorWidgetList.append(self._trackButton)
         self._trackButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._trackButton.setBitmap(parent._emptyBitMap)
         self._trackPlayButton = PcnImageButton(panel, parent._trackPlayBitmap, parent._trackPlayPressedBitmap, (60, 4+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
         self._trackEditButton = PcnImageButton(panel, parent._trackEditBitmap, parent._trackEditPressedBitmap, (60, 15+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
         self._trackStopButton = PcnImageButton(panel, parent._trackStopBitmap, parent._trackStopPressedBitmap, (60, 26+36*self._midiChannel), wx.ID_ANY, size=(15, 11)) #@UndefinedVariable
+        cursorWidgetList.append(self._trackPlayButton)
+        cursorWidgetList.append(self._trackEditButton)
+        cursorWidgetList.append(self._trackStopButton)
         self._activeTrackNote = -1
         self._trackButtonWidgetId = self._trackButton.GetId()
         self._trackStopWidgetsId = self._trackStopButton.GetId()
@@ -235,6 +239,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._oldServerActiveConfig = ""
 
         self.SetBackgroundColour((120,120,120))
+        self._subPanelsList = []
+        self._subWidgetList = []
+        self._fxWidgetsList = [] #For destination cursor type on fx drag
+#        self._fadeWidgetsList = [] #For destination cursor type on fade drag
+#        self._timeWidgetsList = [] #For destination cursor type on time modulation drag
 
         self._mainSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._menuSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -246,6 +255,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         keyboardSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
 
         self._menuPanel =  wx.Panel(self, wx.ID_ANY, size=(3000,29)) #@UndefinedVariable
+        self._subPanelsList.append(self._menuPanel)
         self._menuPanel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
         self._menuPanel.SetSizer(self._menuSizer) #@UndefinedVariable
         menuSeperatorPannel = wx.Panel(self, wx.ID_ANY, size=(3000,2)) #@UndefinedVariable
@@ -253,6 +263,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         menuSeperatorPannel.SetSizer(menuSeperatorSizer) #@UndefinedVariable
 
         self._scrollingKeyboardPannel = ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,87)) #@UndefinedVariable
+        self._subPanelsList.append(self._scrollingKeyboardPannel)
         self._scrollingKeyboardPannel.SetupScrolling(True, False)
         self._scrollingKeyboardPannel.SetSizer(keyboardSizer)
         self._keyboardPanel = wx.Panel(self._scrollingKeyboardPannel, wx.ID_ANY, size=(3082,60)) #@UndefinedVariable
@@ -260,16 +271,19 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         keyboardSizer.Add(self._keyboardPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         self._scrollingMidiTrackPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(220,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._scrollingMidiTrackPanel)
         self._scrollingMidiTrackPanel.SetupScrolling(False, True)
         self._scrollingMidiTrackPanel.SetSizer(midiTrackSizer)
         self._midiTrackPanel = wx.Panel(self._scrollingMidiTrackPanel, wx.ID_ANY, size=(98,1200)) #@UndefinedVariable
+        self._subPanelsList.append(self._midiTrackPanel)
         self._scrollingMidiTrackPanel.SetBackgroundColour(wx.Colour(170,170,170)) #@UndefinedVariable
         midiTrackSizer.Add(self._midiTrackPanel, wx.EXPAND, 0) #@UndefinedVariable
 
         self._trackGui = MediaTrackGui(self._configuration)
         self._previewPanel = wx.Panel(self, wx.ID_ANY, size=(250,120)) #@UndefinedVariable
+        self._subPanelsList.append(self._previewPanel)
         self._previewPanel.SetBackgroundColour(wx.Colour(200,200,200)) #@UndefinedVariable
-        self._trackGui.setupPreviewGui(self._previewPanel)
+        self._trackGui.setupPreviewGui(self._previewPanel, self._subWidgetList)
 
         self._scrollingEditAreaPanel = wx.lib.scrolledpanel.ScrolledPanel(parent=self, id=wx.ID_ANY, size=(-1,-1)) #@UndefinedVariable
         self._scrollingEditAreaPanel.SetupScrolling(True, True)
@@ -277,7 +291,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
         self._configuration.setMixerGui(self._trackGui)
-        self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote)
+        self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote, self, self._subWidgetList, self._fxWidgetsList)
         self._configuration.setNoteGui(self._noteGui)
         trackAndPreviewSizer.Add(self._scrollingMidiTrackPanel, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
         trackAndPreviewSizer.Add(self._previewPanel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable        
@@ -386,9 +400,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._trackStopPressedBitmap = wx.Bitmap("graphics/stopButtonPressed.png") #@UndefinedVariable
         self._trackGuiSettings = []
         for track in range(16):
-            self._trackGuiSettings.append(TrackOverviewSettings(self._midiTrackPanel, track, self))
+            self._trackGuiSettings.append(TrackOverviewSettings(self._midiTrackPanel, track, self, self._subWidgetList))
             settings = self._trackGuiSettings[track]
-            self._trackGui.setupTrackOverviewGui(self._midiTrackPanel, self._noteGui, track, settings, self._trackGuiSettings)
+            self._trackGui.setupTrackOverviewGui(self._midiTrackPanel, self._noteGui, track, settings, self._trackGuiSettings, self._subWidgetList, self._fxWidgetsList)
 
         self._selectedMidiChannel = 0
         self._activeTrackId = -1
@@ -409,6 +423,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
         self.SetSizer(self._mainSizer)
+
+        for panels in self._subPanelsList:
+            panels.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
 
         self.Show()
 
@@ -458,7 +475,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 cornerBitmap = self._blackNoteBitmapLeft_6
             if(octav == 7):
                 cornerBitmap = self._blackNoteBitmapLeft_7
-            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=cornerBitmap, id=wx.ID_ANY) #@UndefinedVariable
+            widget = wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=cornerBitmap, id=wx.ID_ANY) #@UndefinedVariable
+            self._subWidgetList.append(widget)
         elif(noteId == 1):
             buttonPos = (22+baseX,  1)
             bitmap = self._blackNoteBitmap
@@ -471,11 +489,13 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         elif(noteId == 4):
             buttonPos = (88+baseX, 36)
             bitmap = self._whiteNoteBitmap
-            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+            widget = wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+            self._subWidgetList.append(widget)
         elif(noteId == 5):
             buttonPos = (132+baseX, 36)
             bitmap = self._whiteNoteBitmap
-            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=self._blackNoteBitmapLeft, id=wx.ID_ANY) #@UndefinedVariable
+            widget = wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0], 1), bitmap=self._blackNoteBitmapLeft, id=wx.ID_ANY) #@UndefinedVariable
+            self._subWidgetList.append(widget)
         elif(noteId == 6):
             buttonPos = (154+baseX,  1)
             bitmap = self._blackNoteBitmap
@@ -483,7 +503,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             buttonPos = (176+baseX, 36)
             bitmap = self._whiteNoteBitmap
             if(lastNote == True):
-                wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+                widget = wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+                self._subWidgetList.append(widget)
         elif(noteId == 8):
             buttonPos = (198+baseX,  1)
             bitmap = self._blackNoteBitmap
@@ -496,7 +517,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         elif(noteId == 11):
             buttonPos = (264+baseX, 36)
             bitmap = self._whiteNoteBitmap
-            wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+            widget = wx.StaticBitmap(self._keyboardPanel, pos=(buttonPos[0]+22, 1), bitmap=self._blackNoteBitmapRight, id=wx.ID_ANY) #@UndefinedVariable
+            self._subWidgetList.append(widget)
         else:
             return None
         keyboardButton = PcnKeyboardButton(self._keyboardPanel, bitmap, buttonPos, wx.ID_ANY, size=(44, 35), isBlack=(buttonPos[1]==1)) #@UndefinedVariable
@@ -1123,14 +1145,61 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
                 self._noteGui.updateGui(noteConfig, self._activeNoteId)
         self._dragSource = None
-        self._noteGui.clearDragCursor()
+        self.clearDragCursor()
+
+    def clearDragCursor(self):
+        cursor = self._noteGui.clearDragCursor()
+        self._updateCursor(cursor, "None")
+
+    def setDragCursor(self, dragType):
+        cursor = self._noteGui.setDragCursor()
+        self._updateCursor(cursor, dragType)
+
+    def _updateCursor(self, cursor, dragType):
+        cursorImage = wx.Image("graphics/mixSubtract.png") #@UndefinedVariable
+        destinationCursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
+        noteMode = False
+        fxMode = False
+        if(dragType == "Note"):
+            noteMode = True
+        elif(dragType == "FX"):
+            fxMode = True
+        sourceNoteId = -1
+        if(noteMode == True):
+            for i in range(128):
+                if(self._noteWidgetIds[i] == self._dragSource):
+                    sourceNoteId = i
+                    break
+        for i in range(128):
+            widget = self._noteWidgets[i]
+            if(noteMode == True):
+                if(sourceNoteId == i):
+                    widget.SetCursor(cursor)
+                else:
+                    widget.SetCursor(destinationCursor)
+            else:
+                widget.SetCursor(cursor)
+        for panels in self._subPanelsList:
+            panels.SetCursor(cursor)
+        for panels in self._subWidgetList:
+            panels.SetCursor(cursor)
+        for i in range(len(self._fxWidgetsList)):
+            widget = self._fxWidgetsList[i]
+            if(fxMode == True):
+                widget.SetCursor(destinationCursor)
+            else:
+                widget.SetCursor(cursor)
+
+    def _onMouseRelease(self, event):
+        self.clearDragCursor()
+        self._dragSource = None
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
-        self._noteGui.setDragCursor()
+        self.setDragCursor("Note")
 
     def _onDragDone(self, event):
-        self._noteGui.clearDragCursor()
+        self.clearDragCursor()
         if(self._dragSource != None):
             sourceNoteId = None
             for i in range(128):
@@ -1160,12 +1229,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._activeNoteId = destNoteId
                                 self._selectKeyboardKey(self._activeNoteId)
                                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
-        self._noteGui.clearDragCursor()
+        self.clearDragCursor()
         self._dragSource = None
 
     def _onMouseClick(self, event):
         self._dragSource = None
-        self._noteGui.clearDragCursor()
+        self.clearDragCursor()
 
     def _call_command(self, command, option, fileName):
         outputString = ""

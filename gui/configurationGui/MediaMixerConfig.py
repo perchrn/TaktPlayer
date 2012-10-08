@@ -175,7 +175,7 @@ class MediaTrackGui(object): #@UndefinedVariable
     class EditSelection():
         Unselected, PreEffect, PostEffect = range(3)
 
-    def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList):
+    def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList, cursorWidgetList, fxWidgetList):
         self._midiTracksPlane = plane
         self._trackGuiSettingsList = trackGuiSettingsList
 
@@ -201,6 +201,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         overviewPreFxButton = PcnImageButton(self._midiTracksPlane, self._blankFxBitmap, self._blankFxBitmap, (79, 14+36*midiChannel), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        fxWidgetList.append(overviewPreFxButton)
         overviewPreFxButton.enableDoubleClick()
         overviewPreFxButton.Bind(wx.EVT_BUTTON, self._onPreEffectClick) #@UndefinedVariable
         overviewPreFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPreFxButtonDouble)
@@ -211,6 +212,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         overviewTrackClipMixButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (113, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(overviewTrackClipMixButton)
         overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
         trackSettings.setMixWidget(overviewTrackClipMixButton)
 
@@ -218,6 +220,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         overviewTrackClipLvlButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (140, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(overviewTrackClipLvlButton)
         overviewTrackClipLvlButton.Bind(wx.EVT_BUTTON, self._onTrackLvlButton) #@UndefinedVariable
         trackSettings.setLvlWidget(overviewTrackClipLvlButton)
 
@@ -225,17 +228,19 @@ class MediaTrackGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         overviewPostFxButton = PcnImageButton(self._midiTracksPlane, self._blankFxBitmap, self._blankFxBitmap, (167, 14+36*midiChannel), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        fxWidgetList.append(overviewPostFxButton)
         overviewPostFxButton.enableDoubleClick()
         overviewPostFxButton.Bind(wx.EVT_BUTTON, self._onPostEffectClick) #@UndefinedVariable
         overviewPostFxButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onPostFxButtonDouble)
         overviewPostFxButton.Bind(EVT_DRAG_DONE_EVENT, self._onDragPostFxDone)
         trackSettings.setPostFxWidget(overviewPostFxButton)
 
-    def setupPreviewGui(self, overviewPanel):
+    def setupPreviewGui(self, overviewPanel, cursorWidgetList):
         self._previewPlane = overviewPanel
         wx.StaticText(overviewPanel, wx.ID_ANY, "PREVIEW:", pos=(4, 6)) #@UndefinedVariable
         previewBitmap = wx.Bitmap("graphics/blackPreview.png") #@UndefinedVariable
         self._overviewPreviewButton = PcnKeyboardButton(self._previewPlane, previewBitmap, (20, 20), wx.ID_ANY, size=(162, 142), isBlack=False) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewPreviewButton)
         self._overviewPreviewButton.setFrqameAddingFunction(addTrackButtonFrame)
 
     def setupTrackGui(self, plane, sizer, parentSizer, parentClass):

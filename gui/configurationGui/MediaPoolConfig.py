@@ -602,7 +602,7 @@ class MediaFile(object):
             self._configurationTree.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaFileGui(object): #@UndefinedVariable
-    def __init__(self, parentPlane, mainConfig, trackGui, noteRequestCallback):
+    def __init__(self, parentPlane, mainConfig, trackGui, noteRequestCallback, parentClass, cursorWidgetList, fxWidgetList):
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
         self._specialModulationHolder = self._mainConfig.getSpecialModulationHolder()
@@ -610,6 +610,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._lastDialogDir = self._videoDirectory
         self._trackGui = trackGui
         self._requestThumbCallback = noteRequestCallback
+        self._clearDragCursorCallback = parentClass.clearDragCursor
+        self.setDragCursorCallback = parentClass.setDragCursor
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
@@ -708,65 +710,48 @@ class MediaFileGui(object): #@UndefinedVariable
         self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
 
         self._configSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subPanelsList = []
         self._clipOverviewGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(88,288)) #@UndefinedVariable
+        self._subPanelsList.append(self._clipOverviewGuiPlane)
         self._trackGuiPlane = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._trackGuiPlane)
         self._noteConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._noteConfigPanel)
         self._noteSlidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._noteSlidersPanel)
         self._timeModulationListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._timeModulationListPanel)
         self._timeModulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._timeModulationConfigPanel)
         self._effectListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._effectListPanel)
         self._effectConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._effectConfigPanel)
         self._effectImageListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(280,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._effectImageListPanel)
         self._fadeListPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(500,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._fadeListPanel)
         self._fadeConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._fadeConfigPanel)
         self._moulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._moulationConfigPanel)
         self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._slidersPanel)
+
+        isFirst = True
+        for panels in self._subPanelsList:
+            panels.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
+            self._configSizer.Add(panels)
+            if(isFirst == True):
+                isFirst = False
+            else:
+                self._configSizer.Hide(panels)
 
         self._parentPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._clipOverviewGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._trackGuiPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._noteConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._noteSlidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._timeModulationListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._timeModulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._effectListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._effectConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._effectImageListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._fadeListPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._fadeConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._moulationConfigPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-        self._slidersPanel.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
-
-        self._configSizer.Add(self._clipOverviewGuiPlane)
-        self._configSizer.Add(self._trackGuiPlane)
-        self._configSizer.Add(self._noteConfigPanel)
-        self._configSizer.Add(self._noteSlidersPanel)
-        self._configSizer.Add(self._timeModulationListPanel)
-        self._configSizer.Add(self._timeModulationConfigPanel)
-        self._configSizer.Add(self._effectListPanel)
-        self._configSizer.Add(self._effectConfigPanel)
-        self._configSizer.Add(self._effectImageListPanel)
-        self._configSizer.Add(self._fadeListPanel)
-        self._configSizer.Add(self._fadeConfigPanel)
-        self._configSizer.Add(self._moulationConfigPanel)
-        self._configSizer.Add(self._slidersPanel)
-
-        self._configSizer.Hide(self._trackGuiPlane)
-        self._configSizer.Hide(self._noteConfigPanel)
-        self._configSizer.Hide(self._noteSlidersPanel)
-        self._configSizer.Hide(self._timeModulationListPanel)
-        self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectListPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._effectImageListPanel)
-        self._configSizer.Hide(self._fadeListPanel)
-        self._configSizer.Hide(self._fadeConfigPanel)
-        self._configSizer.Hide(self._moulationConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
         self._parentPlane.SetSizer(self._configSizer)
 
         self._clipOverviewGuiPlane.SetBackgroundColour((160,160,160))
-        self.setupClipOverviewGui(self._clipOverviewGuiPlane)
+        self.setupClipOverviewGui(self._clipOverviewGuiPlane, cursorWidgetList, fxWidgetList)
 
         self._trackGuiPlane.SetBackgroundColour((170,170,170))
         self._trackGuiSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
@@ -1105,7 +1090,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._type = "VideoLoop"
         self._setupSubConfig(self._config)
 
-    def setupClipOverviewGui(self, overviewPanel):
+    def setupClipOverviewGui(self, overviewPanel, cursorWidgetList, fxWidgetList):
         self._mainClipOverviewPlane = overviewPanel
 
         isMac = False
@@ -1118,13 +1103,16 @@ class MediaFileGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipButton)
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipButton.setBitmap(self._emptyBitMap)
 
         self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipModeButton)
         self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
         self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipMixButton)
         self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
         self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
         if(isMac == True):
@@ -1139,7 +1127,9 @@ class MediaFileGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        fxWidgetList.append(self._overviewFx1Button)
         self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        fxWidgetList.append(self._overviewFx2Button)
         self._overviewFx1Button.enableDoubleClick()
         self._overviewFx2Button.enableDoubleClick()
         self._overviewClipModeButton.Bind(wx.EVT_BUTTON, self._onClipModeButton) #@UndefinedVariable
@@ -1161,9 +1151,12 @@ class MediaFileGui(object): #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
         self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipFadeModeButton)
         self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
         self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipFadeModulationButton)
         self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipFadeLevelButton)
         self._overviewClipFadeModeButton.enableDoubleClick()
         self._overviewClipFadeModeButton.Bind(wx.EVT_BUTTON, self._onClipFadeButton) #@UndefinedVariable
         self._overviewClipFadeModeButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
@@ -1180,8 +1173,10 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._overviewClipSaveButtonDissabled = True
         self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipEditButton)
         self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipSaveButton)
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
 
         sizeText = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, ".", pos=(78, 435)) #@UndefinedVariable
@@ -1987,10 +1982,21 @@ All notes on events are quantized to this.
         self._mainConfig.stopModulationGui()
 
     def setDragCursor(self):
-        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
+#        cursorImage = wx.Image("graphics/mixSubtract.png") #@UndefinedVariable
+#        cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
+        cursor = wx.StockCursor(wx.CURSOR_HAND) #@UndefinedVariable
+        self._parentPlane.SetCursor(cursor) #@UndefinedVariable
+        for panels in self._subPanelsList:
+            panels.SetCursor(cursor)
+        return cursor
+#        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
 
     def clearDragCursor(self):
-        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_ARROW)) #@UndefinedVariable
+        cursor = wx.StockCursor(wx.CURSOR_ARROW) #@UndefinedVariable
+        self._parentPlane.SetCursor(cursor) #@UndefinedVariable
+        for panels in self._subPanelsList:
+            panels.SetCursor(cursor)
+        return cursor
 
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)
@@ -2828,19 +2834,7 @@ All notes on events are quantized to this.
     def _onMouseRelease(self, event):
         print "DEBUG mouse RELEASE " * 5
         self._mainConfig.getDraggedFxName()
-        self.clearDragCursor()
-
-#TODO: DELETE    def _onDragTrackFxPreDone(self, event):
-#        fxName = self._mainConfig.getDraggedFxName()
-#        if(fxName != None):
-#            print "Dragged fx: " + fxName + " to TrackFX1"
-#        self.clearDragCursor()
-#
-#    def _onDragTrackFxPostDone(self, event):
-#        fxName = self._mainConfig.getDraggedFxName()
-#        if(fxName != None):
-#            print "Dragged fx: " + fxName + " to TrackFX2"
-#        self.clearDragCursor()
+        self._clearDragCursorCallback()
 
     def _onClipMixButton(self, event):
         self._clipOverviewGuiPlane.PopupMenu(self._overviewClipMixButtonPopup, (77,30))
@@ -3010,7 +3004,7 @@ All notes on events are quantized to this.
                 self.updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
                 self.updateEffectThumb(self._overviewFx1Button, fxName)
                 self._showOrHideSaveButton()
-        self.clearDragCursor()
+        self._clearDragCursorCallback()
 
     def _onDragFx2Done(self, event):
         fxName = self._mainConfig.getDraggedFxName()
@@ -3019,7 +3013,7 @@ All notes on events are quantized to this.
                 self.updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
                 self.updateEffectThumb(self._overviewFx2Button, fxName)
                 self._showOrHideSaveButton()
-        self.clearDragCursor()
+        self._clearDragCursorCallback()
 
     def _onFxButton(self, event):
         buttonId = event.GetEventObject().GetId()

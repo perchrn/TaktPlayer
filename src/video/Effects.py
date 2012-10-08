@@ -1629,6 +1629,7 @@ class ImageAddEffect(object):
 #        make sure its got an unique name
 #Tap tempo
 #Playback GUI
+
 #Make better drag pointers
 #install gimp on mac
 

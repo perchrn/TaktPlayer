@@ -2256,6 +2256,8 @@ class ModulationMedia(MediaFile):
             self._modulationCombiner1 = self.AddModes.Subtract
         elif(modCombiner1 == "Multiply"):
             self._modulationCombiner1 = self.AddModes.Multiply
+        elif(modCombiner1 == "Mask"):
+            self._modulationCombiner1 = self.AddModes.Mask
         else:
             self._modulationCombiner1 = self.AddModes.IfThenElse
         self._secondModulationId = self._midiModulation.connectModulation("SecondModulation")
@@ -2267,12 +2269,14 @@ class ModulationMedia(MediaFile):
                 self._modulationCombiner2 = self.AddModes.Add
             elif(modCombiner2 == "Subtract"):
                 self._modulationCombiner2 = self.AddModes.Subtract
+            elif(modCombiner1 == "Mask"):
+                self._modulationCombiner2 = self.AddModes.Mask
             else:
                 self._modulationCombiner2 = self.AddModes.Multiply
         self._thirdModulationId = self._midiModulation.connectModulation("ThirdModulation")
 
     class AddModes():
-        Add, Subtract, Multiply, IfThenElse = range(4)
+        Add, Subtract, Multiply, Mask, IfThenElse = range(5)
 
     def close(self):
         pass
@@ -2306,6 +2310,8 @@ class ModulationMedia(MediaFile):
                 elif(self._modulationCombiner1 == self.AddModes.Subtract):
                     sumValue = firstValue - secondValue
                     sumValue = max(sumValue, 0.0)
+                elif(self._modulationCombiner1 == self.AddModes.Mask):
+                    sumValue = firstValue * secondValue
                 else:
                     sumValue = (firstValue * secondValue * 2)
                     sumValue = min(sumValue, 1.0)
@@ -2316,6 +2322,8 @@ class ModulationMedia(MediaFile):
                 elif(self._modulationCombiner2 == self.AddModes.Subtract):
                     sumValue = sumValue - thirdValue
                     sumValue = max(sumValue, 0.0)
+                elif(self._modulationCombiner2 == self.AddModes.Mask):
+                    sumValue = sumValue * thirdValue
                 else:
                     sumValue = (sumValue * thirdValue * 2)
                     sumValue = min(sumValue, 1.0)

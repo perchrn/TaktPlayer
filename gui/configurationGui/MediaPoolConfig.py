@@ -1715,6 +1715,8 @@ Decides how we add the third value.
             self._updateNoteSliders(self._values1Field.GetValue(), ("Pitch bend:", "Hmm1:", "Hmm2:"), self._values1Field, 3, "Video loop test:")
         elif((self._type == "Sprite") or (self._type == "Text")):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start X position:", "Start Y position:"), self._values1Field, 2, "Start position:")
+        elif(self._type == "Modulation"):
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Minimum value:"), self._values1Field, 1, "Minimum value:")
         else: #KinectInput
             self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
@@ -1737,6 +1739,8 @@ Decides how we add the third value.
             self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
         elif((self._type == "Sprite") or (self._type == "Text")):
             self._updateNoteSliders(self._values2Field.GetValue(), ("End X position:", "End Y position:"), self._values2Field, 2, "End position:")
+        elif(self._type == "Modulation"):
+            self._updateNoteSliders(self._values2Field.GetValue(), ("Maximum value:"), self._values2Field, 1, "Maximum value:")
         self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
@@ -2243,6 +2247,18 @@ All notes on events are quantized to this.
                     modulationCombiner2 = self._subModulationMode2Field.GetValue()
                     thirdModulation = self._midiModulation.validateModulationString(self._subModulation3Field.GetValue())
                     self._subModulation3Field.SetValue(thirdModulation)
+                    fieldValString = self._values1Field.GetValue()
+                    minVal = textToFloatValues(fieldValString, 1)
+                    minValString = floatValuesToString(minVal)
+                    if(fieldValString != minValString):
+                        minValString = "0.0"
+                    self._values1Field.SetValue(minValString)
+                    fieldValString = self._values2Field.GetValue()
+                    maxVal = textToFloatValues(fieldValString, 1)
+                    maxValString = floatValuesToString(maxVal)
+                    if(fieldValString != maxValString):
+                        maxValString = "0.0"
+                    self._values2Field.SetValue(maxValString)
                     self._config.addTextParameter("FirstModulation", "None")
                     self._config.setValue("FirstModulation", firstModulation)
                     self._config.addTextParameter("ModulationCombiner1", "Add")
@@ -2253,6 +2269,10 @@ All notes on events are quantized to this.
                     self._config.setValue("ModulationCombiner2", modulationCombiner2)
                     self._config.addTextParameter("ThirdModulation", "None")
                     self._config.setValue("ThirdModulation", thirdModulation)
+                    self._config.addTextParameter("MinValue", "0.0")
+                    self._config.setValue("MinValue", minValString)
+                    self._config.addTextParameter("MaxValue", "1.0")
+                    self._config.setValue("MaxValue", maxValString)
                     self._config.removeParameter("MixMode")
                     self._config.removeParameter("TimeModulationConfig")
                     self._config.removeParameter("Effect1Config")
@@ -2264,6 +2284,8 @@ All notes on events are quantized to this.
                     self._config.removeParameter("SecondModulation")
                     self._config.removeParameter("ModulationCombiner2")
                     self._config.removeParameter("ThirdModulation")
+                    self._config.removeParameter("MinValue")
+                    self._config.removeParameter("MaxValue")
 
                     self._config.addTextParameter("MixMode", "Add")#Default Add
                     self._config.addTextParameter("TimeModulationConfig", "Default")#Default Default
@@ -2662,13 +2684,13 @@ All notes on events are quantized to this.
         self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
 
     def _getCombineModulation1Choises(self):
-        return ["Add", "Subtract", "Mutiply", "If (1st > 0.5) Then:"]
+        return ["Add", "Subtract", "Mutiply", "Mask", "If (1st > 0.5) Then:"]
 
     def _updateSubModulationMode1Choices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCombineModulation1Choises, value, defaultValue)
 
     def _getCombineModulation2Choises(self):
-        return ["Add", "Subtract", "Mutiply"]
+        return ["Add", "Subtract", "Mutiply", "Mask"]
 
     def _getCombineModulation2Choises2(self):
         return ["Else"]

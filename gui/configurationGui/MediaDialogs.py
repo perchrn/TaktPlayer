@@ -60,6 +60,11 @@ class MediaFontDialog(wx.Dialog): #@UndefinedVariable
                     backupSelection = fontName
                 if(startFont == fontName):
                     valueOk = True
+                else:
+                    if(sys.platform == "win32"):
+                        if(fontName.lower() == startFont.lower()):
+                            startFont = fontName
+                            valueOk = True
         if(valueOk == True):
             self._fontListField.SetStringSelection(startFont)
         else:

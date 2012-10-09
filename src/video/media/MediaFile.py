@@ -628,7 +628,7 @@ class MediaFile(object):
                 #Get current image...
                 image = self._captureImage
 
-        filenameHash = hashlib.sha224(self._cfgFileName.encode("utf-8")).hexdigest()
+        filenameHash = hashlib.sha224(self.getFileName().encode("utf-8")).hexdigest()
         if(os.path.exists("thumbs") == False):
             os.makedirs("thumbs")
         if(os.path.isdir("thumbs") == False):
@@ -651,6 +651,10 @@ class MediaFile(object):
 
     def openFile(self, midiLength):
         pass
+
+    def doPostConfigurations(self):
+        if(self._fileOk):
+            self._getConfiguration() #Make sure we can connect to any loaded ModulationMedia
 
     def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(self._image == None):
@@ -720,29 +724,27 @@ class MediaGroup(MediaFile):
             return noteDone
 
         for media in self._mediaList:
-            if(media != None):
-                media.skipFrames(currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer)
+            media.skipFrames(currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer)
 
         imageMix = None
         for media in self._mediaList:
-            if(media != None):
-                mixLevel = 1.0
-                mixEffects = None
-                guiCtrlStateHolder = None
-                if(imageMix == None):
-                    imageTest = media.getImage()
-                    if(imageTest != None):
-                        mixMode = MixMode.Replace
-                        if(imageMix == self._mixMat1):
-                            imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
-                        else:
-                            imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
-                else:
-                    mixMode = MixMode.Default
+            mixLevel = 1.0
+            mixEffects = None
+            guiCtrlStateHolder = None
+            if(imageMix == None):
+                imageTest = media.getImage()
+                if(imageTest != None):
+                    mixMode = MixMode.Replace
                     if(imageMix == self._mixMat1):
                         imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
                         imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+            else:
+                mixMode = MixMode.Default
+                if(imageMix == self._mixMat1):
+                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                else:
+                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
 
         if(imageMix == None):
             imageMix = self._blankImage
@@ -757,14 +759,19 @@ class MediaGroup(MediaFile):
 
     def openFile(self, midiLength):
         self._mediaList = []
-        for noteString in self._noteList:
-            noteId = noteStringToNoteNumber(noteString)
-            if((noteId >= 0) and (noteId < 128)):
-                self._mediaList.append(self._getMediaCallback(noteId))
         fontPath = findOsFontPath()
         fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
         self._captureImage = pilToCvImage(fontPILImage)
         self._firstImage = self._captureImage
+        self._fileOk = True
+
+    def doPostConfigurations(self):
+        self._mediaList = []
+        for noteString in self._noteList:
+            noteId = noteStringToNoteNumber(noteString)
+            media = self._getMediaCallback(noteId)
+            if(media != None):
+                self._mediaList.append(media)
 
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -1478,15 +1485,16 @@ class TextMedia(SpriteMediaBase):
             oldFont = self._font
             self._font = self._configurationTree.getValue("Font")
             if(oldFont != self._font):
-                print "Font is updated -> Text is re-rendered."
-                print "DEBUG pcn: _getConfiguration -> _renderText()"
+#                print "DEBUG pcn: _getConfiguration -> _renderText()"
                 self._renderText()
 
     def getType(self):
         return "Text"
 
+    def getFileName(self):
+        return self.getType() + ":" + self._cfgFileName
+
     def _renderText(self):
-        print "DEBUG pcn: _renderText()"
         text = self._cfgFileName
         fontString = self._font
         fontStringSplit = fontString.split(";")
@@ -1523,7 +1531,7 @@ class TextMedia(SpriteMediaBase):
         self._log.warning("Generated text media: %s", self._cfgFileName)
 
     def openFile(self, midiLength):
-        print "DEBUG pcn: openFile -> _getConfiguration()"
+#        print "DEBUG pcn: openFile -> _getConfiguration()"
         self._getConfiguration()
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength > 0.0):
@@ -2284,6 +2292,9 @@ class ModulationMedia(MediaFile):
     def getType(self):
         return "Modulation"
 
+    def getFileName(self):
+        return self.getType() + ":" + self._modulationName
+
     def restartSequence(self):
         pass
 
@@ -2343,11 +2354,11 @@ class ModulationMedia(MediaFile):
         return False
 
     def openFile(self, midiLength):
-        self._fileOk = True
         fontPath = findOsFontPath()
         fontPILImage, _ = generateTextImageAndMask("Modulation\\n" + self._modulationName, "Arial", fontPath, 10, 255, 255, 255)
         self._captureImage = pilToCvImage(fontPILImage)
         self._firstImage = self._captureImage
+        self._fileOk = True
 
     def mixWithImage(self, image, mixMode, mixLevel, effects, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         return (image, None, None)

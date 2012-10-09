@@ -629,7 +629,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapImage = wx.Bitmap("graphics/modeImage.png") #@UndefinedVariable
         self._modeBitmapImageScroll = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
         self._modeBitmapSprite = wx.Bitmap("graphics/modeImageSprite.png") #@UndefinedVariable
-        self._modeBitmapText = wx.Bitmap("graphics/modeImageSprite.png") #@UndefinedVariable
+        self._modeBitmapText = wx.Bitmap("graphics/modeText.png") #@UndefinedVariable
         self._modeBitmapImageSeqModulation = wx.Bitmap("graphics/modeImageSeqModulation.png") #@UndefinedVariable
         self._modeBitmapImageSeqReTrigger = wx.Bitmap("graphics/modeImageSeqReTrigger.png") #@UndefinedVariable
         self._modeBitmapImageSeqTime = wx.Bitmap("graphics/modeImageSeqTime.png") #@UndefinedVariable
@@ -639,17 +639,17 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPingPongReverse = wx.Bitmap("graphics/modePingPongReverse.png") #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
-        self._modeBitmapGroup = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
-        self._modeBitmapModulation = wx.Bitmap("graphics/modeImageScroll.png") #@UndefinedVariable
+        self._modeBitmapGroup = wx.Bitmap("graphics/modeGroup.png") #@UndefinedVariable
+        self._modeBitmapModulation = wx.Bitmap("graphics/modeModulation.png") #@UndefinedVariable
 
         self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
                             self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapCamera, self._modeBitmapImage,
                             self._modeBitmapImageScroll, self._modeBitmapSprite, self._modeBitmapText, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
-                            self._modeBitmapImageSeqModulation, self._modeBitmapGroup]
+                            self._modeBitmapImageSeqModulation, self._modeBitmapGroup, self._modeBitmapModulation]
         self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
                            "VideoPlayOnce", "VideoPlayOnceReverse", "Camera", "Image",
                            "ScrollingImage", "Sprite", "Text", "ImageSeqTime", "ImageSeqReTrigger",
-                           "ImageSeqModulation", "Group"]
+                           "ImageSeqModulation", "Group", "Modulation"]
 
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
         self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable

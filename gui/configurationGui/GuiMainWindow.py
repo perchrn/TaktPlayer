@@ -422,6 +422,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
 
+        self._dragTimer = wx.Timer(self, -1) #@UndefinedVariable
+
         self.SetSizer(self._mainSizer)
 
         for panels in self._subPanelsList:
@@ -1148,6 +1150,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.clearDragCursor()
 
     def clearDragCursor(self):
+        if(self._dragTimer.IsRunning() == True):
+            self._dragTimer.Stop()
         cursor = wx.StockCursor(wx.CURSOR_ARROW) #@UndefinedVariable
         self._noteGui.clearDragCursor(cursor)
         self._updateCursor(cursor, "None")
@@ -1205,6 +1209,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
+        self._dragTimer.Start(100, oneShot=True)#1/2 sec
+        self.Bind(wx.EVT_TIMER, self._onDragTimeout, id=self._dragTimer.GetId()) #@UndefinedVariable
+
+    def _onDragTimeout(self, event):
         self.setDragCursor("Note")
 
     def _onDragDone(self, event):

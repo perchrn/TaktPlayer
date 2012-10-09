@@ -1610,6 +1610,8 @@ class ImageAddEffect(object):
 #class SliceEffect(object):
 
 #class StutterEffect(object):
+#class FreezeFx(object):
+
 #class BaerturEffect(object): #Sigle frame feedback ish ;-)
 
 #class EchoEffect2(object):
@@ -1626,12 +1628,11 @@ class ImageAddEffect(object):
 #More complex modulation.
 #    midi modulation note (media) ?
 #        end limiter (max/min or list of values)
-#        make sure its got an unique name
+#        make sure its got an unique name (ignored for now.)
+
 #Tap tempo
 #Playback GUI
 
-#Make better drag pointers
-#Make more icons/buttons (fx/media etc)
 #install gimp on mac
 
 #Fix multipple playback of same media.

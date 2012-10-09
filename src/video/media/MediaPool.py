@@ -86,6 +86,7 @@ class MediaPool(object):
                 self.addMedia("", noteLetter)
         self._effectsConfigurationTemplates.setupEffectModulations(self._effectsModulation)
         self.setupSpecialNoteModulations()
+        self.mediaPostConfigurations()
 
     def setupSpecialNoteModulations(self):
         for note in self._mediaPool:
@@ -215,8 +216,16 @@ class MediaPool(object):
         self._mediaPool[midiNote] = mediaFile
         return midiNote
 
+    def mediaPostConfigurations(self):
+        for media in self._mediaPool:
+            if(media != None):
+                media.doPostConfigurations()
+
     def getMedia(self, noteId):
-        return self._mediaPool[noteId]
+        if((noteId >= 0) and (noteId < 128)):
+            return self._mediaPool[noteId]
+        else:
+            return None
 
     def requestNoteList(self):
         noteListString = ""

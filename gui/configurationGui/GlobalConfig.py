@@ -487,55 +487,81 @@ class EffectsGui(object):
         self._parentSizer = parentSizer
         self._hideEffectsListCallback = parentClass.hideEffectsListGui
 
+        self._listImageIds = []
+
         self._effectImageList = wx.ImageList(32, 22) #@UndefinedVariable
         self._blankEffectIndex = self._effectImageList.Add(self._blankFxBitmap)
         self._fxIdImageIndex = []
+        self._fxBitmapList = []
         index = self._effectImageList.Add(self._fxBitmapZoom)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapZoom)
         index = self._effectImageList.Add(self._fxBitmapFlip)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapFlip)
         index = self._effectImageList.Add(self._fxBitmapMirror)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapMirror)
         index = self._effectImageList.Add(self._fxBitmapRotate)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapRotate)
         index = self._effectImageList.Add(self._fxBitmapScroll)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapScroll)
         index = self._effectImageList.Add(self._fxBitmapBlur)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapBlur)
         index = self._effectImageList.Add(self._fxBitmapBlurMul)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapBlurMul)
         index = self._effectImageList.Add(self._fxBitmapFeedback)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapFeedback)
         index = self._effectImageList.Add(self._fxBitmapDelay)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapDelay)
         index = self._effectImageList.Add(self._fxBitmapSelfDiff)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapSelfDiff)
         index = self._effectImageList.Add(self._fxBitmapDist)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapDist)
         index = self._effectImageList.Add(self._fxBitmapPixelate)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapPixelate)
         index = self._effectImageList.Add(self._fxBitmapTVNoize)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapTVNoize)
         index = self._effectImageList.Add(self._fxBitmapEdge)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapEdge)
         index = self._effectImageList.Add(self._fxBitmapTVNoize)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapTVNoize)
         index = self._effectImageList.Add(self._fxBitmapDeSat)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapDeSat)
         index = self._effectImageList.Add(self._fxBitmapContrast)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapContrast)
         index = self._effectImageList.Add(self._fxBitmapHueSat)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapHueSat)
         index = self._effectImageList.Add(self._fxBitmapColorize)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapColorize)
         index = self._effectImageList.Add(self._fxBitmapInverse)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapInverse)
         index = self._effectImageList.Add(self._fxBitmapVal2Hue)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapVal2Hue)
         index = self._effectImageList.Add(self._fxBitmapThreshold)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapThreshold)
         index = self._effectImageList.Add(self._fxBitmapImageAdd)
         self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapImageAdd)
 
         self._modIdImageIndex = []
         for i in range(self._modulationGui.getModulationImageCount()):
@@ -780,7 +806,14 @@ A list of start values for the effect modulation.
     def _onListDragStart(self, event):
         self._effectListSelectedIndex = event.m_itemIndex
         self._effectListDraggedIndex = event.m_itemIndex
-        self._setDragCursor("FX")
+        bitmap = None
+        if((self._effectListDraggedIndex >= 0) and (self._effectListDraggedIndex < len(self._listImageIds))):
+            imageIndex = self._listImageIds[self._effectListDraggedIndex]
+            if((imageIndex >= 0) and (imageIndex < len(self._fxBitmapList))):
+                bitmap = self._fxBitmapList[imageIndex]
+        if(bitmap == None):
+            bitmap = self._blankFxBitmap
+        self._setDragCursor("FX", bitmap)
 
     def getDraggedFxIndex(self):
         dragIndex = self._effectListDraggedIndex # Gets updated by state calls
@@ -1391,6 +1424,7 @@ A list of start values for the effect modulation.
 
     def updateEffectList(self, effectConfiguration, selectedName):
         self._effectListWidget.DeleteAllItems()
+        self._listImageIds = []
         selectedIndex = -1
         for effectConfig in effectConfiguration.getList():
             config = effectConfig.getConfigHolder()
@@ -1400,6 +1434,7 @@ A list of start values for the effect modulation.
                 bitmapId = self._fxIdImageIndex[effectId]
             else:
                 bitmapId = self._blankEffectIndex
+            self._listImageIds.append(effectId)
             configName = effectConfig.getName()
             index = self._effectListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
             if(configName == selectedName):

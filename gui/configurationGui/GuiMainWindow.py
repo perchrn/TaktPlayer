@@ -1148,47 +1148,56 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.clearDragCursor()
 
     def clearDragCursor(self):
-        cursor = self._noteGui.clearDragCursor()
+        cursor = wx.StockCursor(wx.CURSOR_ARROW) #@UndefinedVariable
+        self._noteGui.clearDragCursor(cursor)
         self._updateCursor(cursor, "None")
 
-    def setDragCursor(self, dragType):
-        cursor = self._noteGui.setDragCursor()
-        self._updateCursor(cursor, dragType)
-
-    def _updateCursor(self, cursor, dragType):
-        cursorImage = wx.Image("graphics/mixSubtract.png") #@UndefinedVariable
-        destinationCursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
+    def setDragCursor(self, dragType, bitmap=None):
         noteMode = False
         fxMode = False
         if(dragType == "Note"):
             noteMode = True
         elif(dragType == "FX"):
             fxMode = True
-        sourceNoteId = -1
+        dragBitmap = None
         if(noteMode == True):
             for i in range(128):
                 if(self._noteWidgetIds[i] == self._dragSource):
-                    sourceNoteId = i
+                    sourceConfig = self._configuration.getNoteConfiguration(i)
+                    if(sourceConfig != None):
+                        dragBitmap = self._noteWidgets[i].getBitmap()
                     break
+            if(dragBitmap == None):
+                self._dragSource = None
+                self.clearDragCursor()
+                return
+            cursorImage = wx.ImageFromBitmap(dragBitmap) #@UndefinedVariable
+            cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
+        elif(fxMode == True):
+            if(bitmap == None):
+                self._dragSource = None
+                self.clearDragCursor()
+                return
+            cursorImage = wx.ImageFromBitmap(bitmap) #@UndefinedVariable
+            cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
+        else:
+            self._dragSource = None
+            self.clearDragCursor()
+            return
+        self._noteGui.setDragCursor(cursor)
+        self._updateCursor(cursor, dragType)
+
+    def _updateCursor(self, cursor, dragType):
         for i in range(128):
             widget = self._noteWidgets[i]
-            if(noteMode == True):
-                if(sourceNoteId == i):
-                    widget.SetCursor(cursor)
-                else:
-                    widget.SetCursor(destinationCursor)
-            else:
-                widget.SetCursor(cursor)
+            widget.SetCursor(cursor)
         for panels in self._subPanelsList:
             panels.SetCursor(cursor)
         for panels in self._subWidgetList:
             panels.SetCursor(cursor)
         for i in range(len(self._fxWidgetsList)):
             widget = self._fxWidgetsList[i]
-            if(fxMode == True):
-                widget.SetCursor(destinationCursor)
-            else:
-                widget.SetCursor(cursor)
+            widget.SetCursor(cursor)
 
     def _onMouseRelease(self, event):
         self.clearDragCursor()

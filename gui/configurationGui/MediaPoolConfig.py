@@ -1985,22 +1985,15 @@ All notes on events are quantized to this.
         self.refreshLayout()
         self._mainConfig.stopModulationGui()
 
-    def setDragCursor(self):
-#        cursorImage = wx.Image("graphics/mixSubtract.png") #@UndefinedVariable
-#        cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
-        cursor = wx.StockCursor(wx.CURSOR_HAND) #@UndefinedVariable
+    def setDragCursor(self, cursor):
         self._parentPlane.SetCursor(cursor) #@UndefinedVariable
         for panels in self._subPanelsList:
             panels.SetCursor(cursor)
-        return cursor
-#        self._parentPlane.SetCursor(wx.StockCursor(wx.CURSOR_HAND)) #@UndefinedVariable
 
-    def clearDragCursor(self):
-        cursor = wx.StockCursor(wx.CURSOR_ARROW) #@UndefinedVariable
+    def clearDragCursor(self, cursor):
         self._parentPlane.SetCursor(cursor) #@UndefinedVariable
         for panels in self._subPanelsList:
             panels.SetCursor(cursor)
-        return cursor
 
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)

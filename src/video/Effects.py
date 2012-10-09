@@ -1631,7 +1631,10 @@ class ImageAddEffect(object):
 #Playback GUI
 
 #Make better drag pointers
+#Make more icons/buttons (fx/media etc)
 #install gimp on mac
+
+#Fix multipple playback of same media.
 
 #Media:
 #Sprite size / zoom (Text media also)

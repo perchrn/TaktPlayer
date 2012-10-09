@@ -772,6 +772,7 @@ class MediaGroup(MediaFile):
             media = self._getMediaCallback(noteId)
             if(media != None):
                 self._mediaList.append(media)
+        MediaFile.doPostConfigurations(self)
 
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):

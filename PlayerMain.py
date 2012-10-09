@@ -217,12 +217,12 @@ class PlayerMain(wx.Frame):
     def _startGUIProcess(self):
         if(sys.platform != "darwin"):
             self._log.debug("Starting GUI Process")
-#            from configurationGui.GuiMainWindow import startGui
-#            self._commandQueue = Queue(10)
-#            self._statusQueue = Queue(-1)
-#            self._guiProcess = Process(target=startGui, args=(False, self._configDirArgument, self._commandQueue, self._statusQueue))
-#            self._guiProcess.name = "guiProcess"
-#            self._guiProcess.start()
+            from configurationGui.GuiMainWindow import startGui
+            self._commandQueue = Queue(10)
+            self._statusQueue = Queue(-1)
+            self._guiProcess = Process(target=startGui, args=(False, self._configDirArgument, self._commandQueue, self._statusQueue))
+            self._guiProcess.name = "guiProcess"
+            self._guiProcess.start()
 
     def _checkStatusQueue(self):
         if(self._guiProcess != None):

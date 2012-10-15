@@ -422,7 +422,7 @@ class MediaFile(object):
 
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         noteDone = False
-        fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+        fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
         if(fadeValue > 0.999999):
             noteDone = True
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
@@ -487,7 +487,7 @@ class MediaFile(object):
             mediaSettingsHolder.image = fadeImage(mediaSettingsHolder.image, fadeValue, fadeMode, mediaSettingsHolder.fadeMat)
 
     def _timeModulatePos(self, unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, syncLength):
-        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+        self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
 
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
         if(guiStates[4] != None):
@@ -799,7 +799,7 @@ class MediaGroup(MediaFile):
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         if(timeMultiplyer == None):
             timeMultiplyer = self._timeMultiplyer
-        loopModulationMode, _, _, _ = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState)
+        loopModulationMode, _, _, _ = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
         if(loopModulationMode == TimeModulationMode.SpeedModulation):
             modifiedMultiplyer = self._timeModulatePos(timeMultiplyer, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, None)
             timeMultiplyer = modifiedMultiplyer * timeMultiplyer
@@ -2334,12 +2334,12 @@ class ModulationMedia(MediaFile):
                 self._thirdModulationDestId.append(self._noteModulationHolder.addModulation(desc3rd))
         self._limiterAdd = 0.0
         self._limiterMultiply = 1.0
+        self._valueSmootherLen = -1
         self._getConfiguration()
         self._lastNoteState = NoteState(0)
         self._dummyMidiControllerLatestModified = MidiControllerLatestModified()
         self._lastChannelState = MidiChannelStateHolder(1, self._dummyMidiControllerLatestModified)
         self._startSongPosition = 0.0
-        self._valueSmootherLen = -1
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
@@ -2440,7 +2440,6 @@ class ModulationMedia(MediaFile):
 
             #Summing...
             sumValue = 0.0
-            print "DEBUG pcn: firstValue: " + str(firstValue),
             if(self._modulationCombiner1 == self.AddModes.IfThenElse):
                 if(firstValue > 0.5):
                     sumValue = secondValue
@@ -2448,46 +2447,34 @@ class ModulationMedia(MediaFile):
                     sumValue = thirdValue
             else:
                 if(self._modulationCombiner1 == self.AddModes.Add):
-                    print "add",
                     sumValue = firstValue + secondValue
                     sumValue = min(sumValue, 1.0)
                 elif(self._modulationCombiner1 == self.AddModes.Subtract):
-                    print "sub",
                     sumValue = firstValue - secondValue
                     sumValue = max(sumValue, 0.0)
                 elif(self._modulationCombiner1 == self.AddModes.Mask):
-                    print "mask",
                     sumValue = firstValue * secondValue
                 else:
-                    print "mul",
                     sumValue = (firstValue * secondValue * 2)
                     sumValue = min(sumValue, 1.0)
 
-                print "sum1: " + str(sumValue),
+#                print "DEBUG pcn: sum1: " + str(sumValue),
                 if(self._modulationCombiner2 == self.AddModes.Add):
-                    print "add",
                     sumValue = sumValue + thirdValue
                     sumValue = min(sumValue, 1.0)
                 elif(self._modulationCombiner2 == self.AddModes.Subtract):
-                    print "sub",
                     sumValue = sumValue - thirdValue
                     sumValue = max(sumValue, 0.0)
                 elif(self._modulationCombiner2 == self.AddModes.Mask):
-                    print "mask",
                     sumValue = sumValue * thirdValue
                 else:
-                    print "mul",
                     sumValue = (sumValue * thirdValue * 2)
                     sumValue = min(sumValue, 1.0)
-                print "sum2: " + str(sumValue),
+#                print "DEBUG pcn: sum2: " + str(sumValue),
 
             sumValue = min(max(sumValue, 0.0), 1.0)
-            print "sumLim1: " + str(sumValue),
-            print "self._limiterAdd: " + str(self._limiterAdd),
-            print "self._limiterMultiply: " + str(self._limiterMultiply),
             if((self._limiterAdd > 0.01) or (self._limiterMultiply < 1.0)):
                 sumValue = self._limiterAdd + (sumValue * self._limiterMultiply)
-            print "sumLim2: " + str(sumValue),
 
             if(self._valueSmootherLen > 0):
                 self._valueSmootherIndex = (self._valueSmootherIndex + 1) % self._valueSmootherLen
@@ -2499,7 +2486,7 @@ class ModulationMedia(MediaFile):
                         valSum += val
                         numSums += 1
                 sumValue = valSum / numSums
-            print "sumSmooth: " + str(sumValue)
+#            print "DEBUG pcn: sumSmooth: " + str(sumValue)
 
             #Publishing...
             noteMidiChannel = midiNoteState.getMidiChannel() + 1

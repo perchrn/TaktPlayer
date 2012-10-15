@@ -37,13 +37,18 @@ class MediaPool(object):
         self._noteModulation = GenericModulationHolder("Note", self._specialModulationHolder)
         self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
         self._mediaMixer = mediaMixer
-        self._mediaMixer.gueueImage(self._emptyImage, 1)
+        self._mediaMixer.gueueImage(self._emptyImage, None, 1)
         self._mediaPool = []
         for i in range(128): #@UnusedVariable
             self._mediaPool.append(None)
         self._mediaTracks = []
+        self._mediaTrackIds = []
+        self._mediaTrackStateHolders = []
+        self._modulationMediaList = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
+            self._mediaTrackIds.append(-1)
+            self._mediaTrackStateHolders.append(None)
         self.loadMediaFromConfiguration()
 
     def _getConfiguration(self):
@@ -167,6 +172,11 @@ class MediaPool(object):
                     else:
                         print "Config child removed OK"
                     oldMedia.close()
+                    if((oldMedia.getType() == "Modulation")):
+                        try:
+                            self._modulationMediaList.remove(oldMedia)
+                        except:
+                            pass
                 try:
                     if(mediaType == "Image"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
@@ -205,6 +215,7 @@ class MediaPool(object):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = ModulationMedia(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
+                        self._modulationMediaList.append(mediaFile)
                     else:
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = VideoLoopFile(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
@@ -240,15 +251,10 @@ class MediaPool(object):
     def requestTrackState(self, timeStamp):
         noteListString = ""
         for i in range(16):
-            _, midiTime = self._midiTiming.getSongPosition(timeStamp)
-            midiChannelState = self._midiStateHolder.getMidiChannelState(i)
-            midiNoteState = midiChannelState.getActiveNote(midiTime)
+            noteId = self._mediaTrackIds[i]
             if(noteListString != ""):
                 noteListString += ","
-            if(midiNoteState.isActive(midiTime)):
-                noteListString += str(midiNoteState.getNote())
-            else:
-                noteListString += "-1"
+            noteListString += str(noteId)
         return noteListString
 
     def requestEffectState(self, midiChannel, midiNote):
@@ -280,8 +286,11 @@ class MediaPool(object):
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
+        for modulationMedia in self._modulationMediaList:
+            modulationMedia.updateModulationValues(None, midiTime)
         for midiChannel in range(16):
             activeMedia = None
+            noteMediaIsModulationType = False
             quantizeValue = self._defaultQuantize
             midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
             note = midiChannelState.checkIfNextNoteIsQuantized()
@@ -292,26 +301,47 @@ class MediaPool(object):
                 midiChannelState.quantizeWaitingNote(note, quantizeValue)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
             if(midiNoteState.isActive(midiTime)):
-                newMedia = self._mediaPool[midiNoteState.getNote()]
+                newNoteId = midiNoteState.getNote()
+                newMedia = self._mediaPool[newNoteId]
                 if(midiNoteState.isNew() == True):
                     if(newMedia != None):
                         midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
+                oldMediaState = self._mediaTrackStateHolders[midiChannel]
+                if((newMedia != None) and (newMedia.getType() == "Modulation")):
+                    newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, midiChannelState)
+                    newMedia = oldMedia
+                    noteMediaIsModulationType = True
+                activeMediaState = None
                 if(oldMedia == None):
                     self._mediaTracks[midiChannel] = newMedia
+                    self._mediaTrackIds[midiChannel] = newNoteId
+                    if(newMedia != None):
+                        activeMediaState = newMedia.getMediaStateHolder()
+                    self._mediaTrackStateHolders[midiChannel] = activeMediaState
                 elif(oldMedia != newMedia):
-                    oldMedia.restartSequence()
+                    oldMedia.releaseMedia(oldMediaState)
                     self._mediaTracks[midiChannel] = newMedia
-                if(newMedia):
-                    newMedia.setStartPosition(midiNoteState.getStartPosition(), midiTime, midiNoteState, midiChannelState)
+                    self._mediaTrackIds[midiChannel] = newNoteId
+                    if(newMedia != None):
+                        activeMediaState = newMedia.getMediaStateHolder()
+                    self._mediaTrackStateHolders[midiChannel] = activeMediaState
+                else:
+                    activeMediaState = oldMediaState
+                if(newMedia != None):
                     activeMedia = newMedia
+                    if(noteMediaIsModulationType == False):
+                        newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, midiChannelState)
+                else:
+                    self._mediaTrackStateHolders[midiChannel] = None
             if(activeMedia != None):
-                noteIsDone = activeMedia.skipFrames(midiTime, midiNoteState, midiChannelState)
+                activeMediaState = self._mediaTrackStateHolders[midiChannel]
+                noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, midiChannelState)
                 if(noteIsDone == True):
                     midiChannelState.removeDoneActiveNote()
-                self._mediaMixer.gueueImage(activeMedia, midiChannel)
+                self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
             else:
-                self._mediaMixer.gueueImage(None, midiChannel)
+                self._mediaMixer.gueueImage(None, None, midiChannel)
         #TODO: Make sure we only use the same VideoLoopFile instance once.
         self._mediaMixer.mixImages(midiTime)
 

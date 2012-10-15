@@ -239,6 +239,9 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("SecondModulation", "None")
             self._configurationTree.addTextParameter("ModulationCombiner2", "Add")
             self._configurationTree.addTextParameter("ThirdModulation", "None")
+            self._configurationTree.addFloatParameter("MinValue", 0.0)
+            self._configurationTree.addFloatParameter("MaxValue", 1.0)
+            self._configurationTree.addTextParameter("Smoother", "Off")
 
         if(xmlConfig != None):
             self._configurationTree._updateFromXml(xmlConfig)
@@ -280,6 +283,9 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("SecondModulation")
                 self._configurationTree.removeParameter("ModulationCombiner2")
                 self._configurationTree.removeParameter("ThirdModulation")
+                self._configurationTree.removeParameter("MinValue")
+                self._configurationTree.removeParameter("MaxValue")
+                self._configurationTree.removeParameter("Smoother")
 
                 self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
                 self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
@@ -335,6 +341,9 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("SecondModulation")
                     self._configurationTree.removeParameter("ModulationCombiner2")
                     self._configurationTree.removeParameter("ThirdModulation")
+                    self._configurationTree.removeParameter("MinValue")
+                    self._configurationTree.removeParameter("MaxValue")
+                    self._configurationTree.removeParameter("Smoother")
 
                     self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
                     self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
@@ -368,12 +377,18 @@ class MediaFile(object):
             self._configurationTree.removeParameter("Effect1Config")
             self._configurationTree.removeParameter("Effect2Config")
             self._configurationTree.removeParameter("FadeConfig")
+            self._configurationTree.removeParameter("MinValue")
+            self._configurationTree.removeParameter("MaxValue")
+            self._configurationTree.removeParameter("Smoother")
         else:
             self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
             self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
             self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
             self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
             self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+            self._configurationTree.addFloatParameter("MinValue", 0.0)
+            self._configurationTree.addFloatParameter("MaxValue", 1.0)
+            self._configurationTree.addTextParameter("Smoother", "Off")
             self._configurationTree.setValue("MixMode", sourceConfigTree.getValue("MixMode"))
             self._configurationTree.setValue("TimeModulationConfig", sourceConfigTree.getValue("TimeModulationConfig"))
             self._configurationTree.setValue("Effect1Config", sourceConfigTree.getValue("Effect1Config"))
@@ -514,12 +529,27 @@ class MediaFile(object):
             tmpModulation = sourceConfigTree.getValue("ThirdModulation")
             if(tmpModulation != None):
                 self._configurationTree.setValue("ThirdModulation", tmpModulation)
+            self._configurationTree.addFloatParameter("MinValue", 0.0)
+            tmpValue = sourceConfigTree.getValue("MinValue")
+            if(tmpValue != None):
+                self._configurationTree.setValue("MinValue", tmpValue)
+            self._configurationTree.addFloatParameter("MaxValue", 1.0)
+            tmpValue = sourceConfigTree.getValue("MaxValue")
+            if(tmpValue != None):
+                self._configurationTree.setValue("MaxValue", tmpValue)
+            self._configurationTree.addTextParameter("Smoother", "Off")
+            tmpValue = sourceConfigTree.getValue("Smoother")
+            if(tmpValue != None):
+                self._configurationTree.setValue("Smoother", tmpValue)
         else:
             self._configurationTree.removeParameter("FirstModulation")
             self._configurationTree.removeParameter("ModulationCombiner1")
             self._configurationTree.removeParameter("SecondModulation")
             self._configurationTree.removeParameter("ModulationCombiner2")
             self._configurationTree.removeParameter("ThirdModulation")
+            self._configurationTree.removeParameter("MinValue")
+            self._configurationTree.removeParameter("MaxValue")
+            self._configurationTree.removeParameter("Smoother")
 
     def countNumberOfTimeEffectTemplateUsed(self, effectsConfigName):
         returnNumber = 0
@@ -932,6 +962,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subModulationMode2Sizer.Add(self._subModulationMode2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._subModulationMode2Sizer.Add(subModulationMode2HelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._subModulationMode2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._subModulationMode2Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
 
         self._subModulation3Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._subModulation3Label = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "ThirdModulation:") #@UndefinedVariable
@@ -968,6 +999,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._values2Sizer.Add(self._values2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._values2Sizer.Add(self._values2EditButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._values2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._subModulationSmootherSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._subModulationSmootherLabel = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Smooth sum:") #@UndefinedVariable
+        self._subModulationSmootherField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Off"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateSubModulationSmootherChoices(self._subModulationSmootherField, "Off", "Off")
+        subModulationSmootherHelpButton = PcnImageButton(self._noteConfigPanel, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        subModulationSmootherHelpButton.Bind(wx.EVT_BUTTON, self._onsubModulationSmootherHelp) #@UndefinedVariable
+        self._subModulationSmootherSizer.Add(self._subModulationSmootherLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationSmootherSizer.Add(self._subModulationSmootherField, 1, wx.ALL, 5) #@UndefinedVariable
+        self._subModulationSmootherSizer.Add(subModulationSmootherHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._subModulationSmootherSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._subModulationSmootherField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
 
         self._midiNote = 24
         noteSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -1615,6 +1658,7 @@ Sometimes you may need to invert the mask on the first image.
             self._updateSubModulationMode2Choices(self._subModulationMode2Field, "", "", True)
         else:
             self._updateSubModulationMode2Choices(self._subModulationMode2Field, self._subModulationMode2Field.GetValue(), "Add", False)
+        self._showOrHideSaveButton()
 
     def _onSubMode2Help(self, event):
         if(self._type == "ScrollImage"):
@@ -1677,7 +1721,20 @@ Decides how we add the third value.
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
-        
+
+    def _onsubModulationSmootherHelp(self, event):
+        text = """
+Averages the sum value over the last n values.
+
+Smoothish\t-> n = 4
+Smooth\t-> n = 16
+Smoother\t-> n = 48
+Smoothest\t-> n = 128
+"""
+        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onSubmodulation3Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.SubModulation3):
@@ -2250,8 +2307,10 @@ All notes on events are quantized to this.
                     maxVal = textToFloatValues(fieldValString, 1)
                     maxValString = floatValuesToString(maxVal)
                     if(fieldValString != maxValString):
-                        maxValString = "0.0"
+                        maxValString = "1.0"
                     self._values2Field.SetValue(maxValString)
+                    smoothMode = self._subModulationSmootherField.GetValue()
+
                     self._config.addTextParameter("FirstModulation", "None")
                     self._config.setValue("FirstModulation", firstModulation)
                     self._config.addTextParameter("ModulationCombiner1", "Add")
@@ -2262,10 +2321,12 @@ All notes on events are quantized to this.
                     self._config.setValue("ModulationCombiner2", modulationCombiner2)
                     self._config.addTextParameter("ThirdModulation", "None")
                     self._config.setValue("ThirdModulation", thirdModulation)
-                    self._config.addTextParameter("MinValue", "0.0")
+                    self._config.addFloatParameter("MinValue", 0.0)
                     self._config.setValue("MinValue", minValString)
-                    self._config.addTextParameter("MaxValue", "1.0")
+                    self._config.addFloatParameter("MaxValue", 1.0)
                     self._config.setValue("MaxValue", maxValString)
+                    self._config.addTextParameter("Smoother", "Off")
+                    self._config.setValue("Smoother", smoothMode)
                     self._config.removeParameter("MixMode")
                     self._config.removeParameter("TimeModulationConfig")
                     self._config.removeParameter("Effect1Config")
@@ -2279,6 +2340,7 @@ All notes on events are quantized to this.
                     self._config.removeParameter("ThirdModulation")
                     self._config.removeParameter("MinValue")
                     self._config.removeParameter("MaxValue")
+                    self._config.removeParameter("Smoother")
 
                     self._config.addTextParameter("MixMode", "Add")#Default Add
                     self._config.addTextParameter("TimeModulationConfig", "Default")#Default Default
@@ -2447,6 +2509,44 @@ All notes on events are quantized to this.
             else:
                 self._subModulationField.SetValue("None")
                 self._values1Field.SetValue("0.0|0.0|0.0")
+        elif(self._type == "Modulation"):
+            if(config != None):
+                confMod = config.getValue("FirstModulation")
+                self._subModulationField.SetValue(str(confMod))
+                firstConfMode = config.getValue("ModulationCombiner1")
+                self._updateSubModulationMode1Choices(self._subModulationMode1Field, firstConfMode, "Add")
+                confMod = config.getValue("SecondModulation")
+                self._subModulation2Field.SetValue(str(confMod))
+                confMode = config.getValue("ModulationCombiner2")
+                if(firstConfMode.startswith("If")):
+                    self._updateSubModulationMode2Choices(self._subModulationMode2Field, confMode, "Else", True)
+                else:
+                    self._updateSubModulationMode2Choices(self._subModulationMode2Field, confMode, "Add", False)
+                confMod = config.getValue("ThirdModulation")
+                self._subModulation3Field.SetValue(str(confMod))
+                confString = self._config.getValue("MinValue")
+                if(confString == None):
+                    confValString = "0.0"
+                else:
+                    confVal = textToFloatValues(confString, 1)
+                    confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+                confString = self._config.getValue("MaxValue")
+                if(confString == None):
+                    confValString = "1.0"
+                else:
+                    confVal = textToFloatValues(confString, 1)
+                    confValString = floatValuesToString(confVal)
+                self._values2Field.SetValue(confValString)
+                firstConfMode = config.getValue("Smoother")
+                self._updateSubModulationSmootherChoices(self._subModulationSmootherField, firstConfMode, "Off")
+            else:
+                self._subModulationField.SetValue("None")
+                self._subModulation2Field.SetValue("None")
+                self._subModulation3Field.SetValue("None")
+                self._values1Field.SetValue("0.0")
+                self._values2Field.SetValue("1.0")
+                self._subModulationSmootherField.SetValue("Off")
 
         if(self._type == "Text"):
             self._noteConfigSizer.Show(self._fontSizer)
@@ -2519,6 +2619,7 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._subModulation3Sizer)
             self._noteConfigSizer.Show(self._subModulationMode1Sizer)
             self._noteConfigSizer.Show(self._subModulationMode2Sizer)
+            self._noteConfigSizer.Show(self._subModulationSmootherSizer)
             self._noteConfigSizer.Hide(self._mixSizer)
             self._noteConfigSizer.Hide(self._effect1Sizer)
             self._noteConfigSizer.Hide(self._effect2Sizer)
@@ -2527,6 +2628,7 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._subModulation3Sizer)
             self._noteConfigSizer.Hide(self._subModulationMode1Sizer)
             self._noteConfigSizer.Hide(self._subModulationMode2Sizer)
+            self._noteConfigSizer.Hide(self._subModulationSmootherSizer)
             self._noteConfigSizer.Show(self._mixSizer)
             self._noteConfigSizer.Show(self._effect1Sizer)
             self._noteConfigSizer.Show(self._effect2Sizer)
@@ -2544,6 +2646,9 @@ All notes on events are quantized to this.
         elif(self._type == "Text"):
             self._values1Label.SetLabel("Start position:")
             self._noteConfigSizer.Show(self._values1Sizer)
+        elif(self._type == "Modulation"):
+            self._values1Label.SetLabel("Minimum value:")
+            self._noteConfigSizer.Show(self._values1Sizer)
         else:
             self._noteConfigSizer.Hide(self._values1Sizer)
             if(self._selectedEditor == self.EditSelection.Values1):
@@ -2558,6 +2663,9 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._values2Sizer)
         elif(self._type == "Text"):
             self._values2Label.SetLabel("End position:")
+            self._noteConfigSizer.Show(self._values2Sizer)
+        elif(self._type == "Modulation"):
+            self._values2Label.SetLabel("Maximum value:")
             self._noteConfigSizer.Show(self._values2Sizer)
         else:
             self._noteConfigSizer.Hide(self._values2Sizer)
@@ -2693,6 +2801,12 @@ All notes on events are quantized to this.
             self._updateChoices(widget, self._getCombineModulation2Choises2, "Else", "Else")
         else:
             self._updateChoices(widget, self._getCombineModulation2Choises, value, defaultValue)
+
+    def _getModulationSmootherChoises(self):
+        return ["Off", "Smoothish", "Smooth", "Smoother","Smoothest"]
+
+    def _updateSubModulationSmootherChoices(self, widget, value, defaultValue):
+            self._updateChoices(widget, self._getModulationSmootherChoises, value, defaultValue)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
@@ -3236,6 +3350,18 @@ All notes on events are quantized to this.
             guiSubMode = self._subModulation3Field.GetValue()
             configSubMode = self._config.getValue("ThirdModulation")
             if(guiSubMode != configSubMode):
+                return True
+            guiValue = self._values1Field.GetValue()
+            configValue = self._config.getValue("MinValue")
+            if(guiValue != configValue):
+                return True
+            guiValue = self._values2Field.GetValue()
+            configValue = self._config.getValue("MaxValue")
+            if(guiValue != configValue):
+                return True
+            guiValue = self._subModulationSmootherField.GetValue()
+            configValue = self._config.getValue("Smoother")
+            if(guiValue != configValue):
                 return True
         else:
             guiMix = self._mixField.GetValue()

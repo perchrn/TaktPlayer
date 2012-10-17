@@ -437,12 +437,12 @@ class MediaFile(object):
 
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
-            if(effect != None):
-                print "DEBUG pcn: _applyOneEffect: startValues: " + str(effectStartValues)
+#            if(effect != None):
+#                print "DEBUG pcn: _applyOneEffect: startValues: " + str(effectStartValues)
             midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
             effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
-            if(effect != None):
-                print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
+#            if(effect != None):
+#                print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
             effectSCV0 = None
             if(effectAmount == effectStartControllerValues[0]):
@@ -471,7 +471,7 @@ class MediaFile(object):
                     effectSCV4 = effectStartControllerValues[4]
             if(effect != None):
                 image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
+#                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
             return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4), (effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
         else:
             return (image, (0.0, 0.0, 0.0, 0.0, 0.0), (None, None, None, None, None))

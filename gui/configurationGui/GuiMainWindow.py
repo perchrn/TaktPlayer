@@ -48,7 +48,7 @@ class TaskHolder(object):
         self._stateTime = time.time()
         self._startTime = self._stateTime
         self._timeout = 20.0
-        if((self._type == self.RequestTypes.Track) or (self._type == self.RequestTypes.Preview)):
+        if((self._type == self.RequestTypes.Track) or (self._type == self.RequestTypes.Preview) or (self._type == self.RequestTypes.EffectState)):
             self._timeout = 5.0
 
     def getDescription(self):
@@ -533,7 +533,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def setupClientProcess(self):
         self._guiClient = GuiClient()
-        self._configuration.setEffectStateRequestCallback(self._guiClient.requestEffectState)
+        self._configuration.setEffectStateRequestCallback(self.requestEffectState)
         host, port = self._configuration.getWebConfig()
         self._guiClient.startGuiClientProcess(host, port, None)
 
@@ -714,6 +714,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     guiString = result[1][1]
                     self._configuration.updateEffectsSliders(valuesString, guiString)
 #                    print "DEBUG values: %s gui: %s" %(valuesString, guiString)
+                if(foundTask != None):
+                    foundTask.taskDone()
+                    self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.ConfigState):
 #                print "GuiClient.ResponseTypes.ConfigState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
@@ -881,6 +884,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         task.setState(TaskHolder.States.Sendt)
                     else:
                         print "Waiting for user response..."
+                else:
+                    self._taskQueue.remove(task)
 
     def _requestTrackState(self):
         if(self._skippedTrackStateRequests > 5):
@@ -900,6 +905,14 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._taskQueue.append(imageRequestTask)
         self._guiClient.requestImage(noteId, noteTime, forceUpdate)
         imageRequestTask.setState(TaskHolder.States.Sendt)
+
+    def requestEffectState(self, channel, note):
+        foundTask = self._findQueuedTask(TaskHolder.RequestTypes.EffectState, None)
+        if(foundTask == None):
+            effectStateRequestTask = TaskHolder("Effect state request for " + str(channel) + " or " + str(note), TaskHolder.RequestTypes.EffectState, None, None)
+            self._taskQueue.append(effectStateRequestTask)
+            self._guiClient.requestEffectState(channel, note)
+            effectStateRequestTask.setState(TaskHolder.States.Sendt)
 
     def _requestPreview(self):
         if(self._skippedPreviewRequests > 5):

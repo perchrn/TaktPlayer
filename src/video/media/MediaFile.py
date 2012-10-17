@@ -719,8 +719,6 @@ class MediaFile(object):
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
             else:
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
-            if(postFx != None):
-                print "DEBUG pcn: mix got postFX start values: " + str(postFxStartVal)
             (mediaStateHolder.image, currentPreValues, unusedStarts) = self._applyOneEffect(mediaStateHolder.image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
             mixedImage =  mixImages(mixMode, mixLevel, image, mediaStateHolder.image, mediaStateHolder.imageMask, mixMat1, mixMask)
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable

@@ -183,7 +183,7 @@ class ZoomEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, xyrate, xcenter, ycenter, mode):
+    def applyEffect(self, image, amount, xyrate, xcenter, ycenter, mode, minZoomRange = None, zoomRange = None):
         zoomMode = self.findMode(mode)
         xzoom = 1.0 - amount
         if(zoomMode == ZoomModes.Full):
@@ -194,8 +194,10 @@ class ZoomEffect(object):
             yzoom = xzoom
             xcentr = 0.0
             ycentr = 0.0
-        minZoomRange = self._minZoomRange
-        zoomRange = self._zoomRange
+        if(minZoomRange == None):
+            minZoomRange = self._minZoomRange
+        if(zoomRange == None):
+            zoomRange = self._zoomRange
         if(zoomMode == ZoomModes.Out):
             if(minZoomRange < 1.0):
                 minZoomRange = 1.0
@@ -964,7 +966,7 @@ class FeedbackEffect(object):
             ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
             addImage = self._zoomEffect.zoomImage(addImage, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
         cv.Add(image, addImage, self._memoryMat)
-        return self._memoryMat
+        return copyImage(self._memoryMat)
 
 class DelayEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -1012,7 +1014,7 @@ class DelayEffect(object):
             lumaThreshold = int(512 * (lumaKey - 0.5))
             cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_LT)
             cv.Copy(image, self._memoryMat, self._replaceMask)
-        return self._memoryMat
+        return copyImage(self._memoryMat)
 
 class SelfDifferenceEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -1062,7 +1064,7 @@ class SelfDifferenceEffect(object):
             invertVal = int(-256.0 * invert)
             cv.ConvertScaleAbs(self._diffMat, self._contrastMat, contrastVal, invertVal)
             return self._contrastMat
-        return self._diffMat
+        return copyImage(self._diffMat)
 
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):

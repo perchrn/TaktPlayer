@@ -1296,6 +1296,7 @@ A list of start values for the effect modulation.
             self._setupValueLabels(None, None, self._scrollModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Flip):
             self._setLabels("Flip mode:", None, None, None, None)
+            self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Mirror):
             self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
             self._setupValueLabels(self._mirrorMode.getChoices(), None, None, None, None)
@@ -1310,6 +1311,7 @@ A list of start values for the effect modulation.
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Feedback):
             self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:")
+            self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Delay):
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:")
             self._setupValueLabels(None, None, None, None, None)

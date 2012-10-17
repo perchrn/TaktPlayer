@@ -290,6 +290,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._scrollingEditAreaPanel.SetSizer(editAreaSizer)
         self._scrollingEditAreaPanel.SetBackgroundColour((100,100,100))
 
+        self._configuration.setGetActiveNoteForTrackConfigCallback(self.getNoteConfig)
         self._configuration.setMixerGui(self._trackGui)
         self._noteGui = MediaFileGui(self._scrollingEditAreaPanel, self._configuration, self._trackGui, self._requestNote, self, self._subWidgetList, self._fxWidgetsList)
         self._configuration.setNoteGui(self._noteGui)
@@ -1426,6 +1427,18 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if(videoSaveSubDir != None):
             self._videoSaveSubDir = videoSaveSubDir
 
+    def getNoteConfig(self, trackId):
+        settings = self._trackGuiSettings[trackId]
+        activeNoteId = settings.getActiveNoteId()
+        activeNoteMixMode = "Default"
+        if((activeNoteId >= 0) and (activeNoteId < 128)):
+            activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+            if(activeNoteConfig != None):
+                activeNoteMixMode = activeNoteConfig.getMixMode()
+        else:
+            activeNoteMixMode = "None"
+        return (activeNoteId, activeNoteMixMode)
+
     def _onTrackEditButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
@@ -1441,17 +1454,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 self._activeTrackId = foundTrackId
                 destinationConfig = self._configuration.getTrackConfiguration(self._activeTrackId)
                 if(destinationConfig != None):
-                    settings = self._trackGuiSettings[self._activeTrackId]
-                    activeNoteId = settings.getActiveNoteId()
-                    noteMixMode = "Default"
-                    if((activeNoteId >= 0) and (activeNoteId < 128)):
-                        activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                        if(activeNoteConfig != None):
-                            noteMixMode = activeNoteConfig.getMixMode()
-                    else:
-                        noteMixMode = "None"
-                    self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
+                    activeNoteId, activeNoteMixMode = self.getNoteConfig(self._activeTrackId)
+                    self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, activeNoteMixMode)
                     self._noteGui.showTrackGui()
+        else:
+            self._activeTrackId = -1
+            self._noteGui.hideTrackGui()
 
     def _onTrackButton(self, event):
         buttonId = event.GetEventObject().GetId()

@@ -231,8 +231,9 @@ class MediaFile(object):
         elif(mediaType == "Camera"):
             self._configurationTree.addTextParameter("DisplayMode", "Crop")
         elif(mediaType == "KinectCamera"):
-            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
-            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
+#            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
+            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")
+            self._configurationTree.addTextParameter("ZoomValues", "0.5|0.5|0.5|0.5")
         elif(mediaType == "Modulation"):
             self._configurationTree.addTextParameter("FirstModulation", "None")
             self._configurationTree.addTextParameter("ModulationCombiner1", "Add")
@@ -264,8 +265,9 @@ class MediaFile(object):
             elif(oldType == "Camera"):
                 self._configurationTree.removeParameter("DisplayMode")
             elif(oldType == "KinectCamera"):
-                self._configurationTree.removeParameter("DisplayModeModulation")
+#                self._configurationTree.removeParameter("DisplayModeModulation")
                 self._configurationTree.removeParameter("FilterValues")
+                self._configurationTree.removeParameter("ZoomValues")
             elif(oldType == "ImageSequence"):
                 self._configurationTree.removeParameter("SequenceMode")
                 self._configurationTree.removeParameter("PlaybackModulation")
@@ -306,8 +308,9 @@ class MediaFile(object):
                 if(oldloopMode == None):
                     self._configurationTree.setValue("LoopMode", "Normal")
                 if(oldType == "KinectCamera"):
-                    self._configurationTree.removeParameter("DisplayModeModulation")
+#                    self._configurationTree.removeParameter("DisplayModeModulation")
                     self._configurationTree.removeParameter("FilterValues")
+                    self._configurationTree.removeParameter("ZoomValues")
                 elif(oldType == "Camera"):
                     self._configurationTree.removeParameter("DisplayMode")
                 elif(oldType == "ImageSequence"):
@@ -496,14 +499,18 @@ class MediaFile(object):
             self._configurationTree.removeParameter("PlaybackModulation")
 
         if(mediaType == "KinectCamera"):
-            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
-            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
-            tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
-            if(tmpModulation != None):
-                self._configurationTree.setValue("DisplayModeModulation", tmpModulation)
+#            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
+            self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")
+            self._configurationTree.addTextParameter("ZoomValues", "0.5|0.5|0.5|0.5")
+#            tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
+#            if(tmpModulation != None):
+#                self._configurationTree.setValue("DisplayModeModulation", tmpModulation)
             filterVal = sourceConfigTree.getValue("FilterValues")
             if(filterVal != None):
                 self._configurationTree.setValue("FilterValues", filterVal)
+            filterVal = sourceConfigTree.getValue("ZoomValues")
+            if(filterVal != None):
+                self._configurationTree.setValue("ZoomValues", filterVal)
         else:
             self._configurationTree.removeParameter("DisplayModeModulation")
             self._configurationTree.removeParameter("FilterValues")
@@ -699,6 +706,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fadeModeLabelsLong = ["FadeToBlack", "FadeToWhite"]
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
+        self._fxBitmapBlobDetect = wx.Bitmap("graphics/fxBlobDetect.png") #@UndefinedVariable
         self._fxBitmapBlur = wx.Bitmap("graphics/fxBlur.png") #@UndefinedVariable
         self._fxBitmapBlurMul = wx.Bitmap("graphics/fxBlurMultiply.png") #@UndefinedVariable
         self._fxBitmapFeedback = wx.Bitmap("graphics/fxFeedback.png") #@UndefinedVariable
@@ -1361,6 +1369,20 @@ class MediaFileGui(object): #@UndefinedVariable
         self.refreshLayout()
         self._updateValueLabels()
 
+    def setSliderValue(self, sliderId, value):
+        baseId = 10
+        calcValue = int(127.0 * value)
+        if(sliderId == 1):
+            self.sendGuiController(self._midiNote, baseId, calcValue)
+        elif(sliderId == 2):
+            self.sendGuiController(self._midiNote, baseId+1, calcValue)
+        elif(sliderId == 3):
+            self.sendGuiController(self._midiNote, baseId+2, calcValue)
+        elif(sliderId == 4):
+            self.sendGuiController(self._midiNote, baseId+3, calcValue)
+        elif(sliderId == 5):
+            self.sendGuiController(self._midiNote, baseId+4, calcValue)
+
     def _onSliderCloseButton(self, event):
         self._configSizer.Hide(self._noteSlidersPanel)
         self._selectedEditor = self.EditSelection.Unselected
@@ -1775,7 +1797,8 @@ Smoothest\t-> n = 128
         elif(self._type == "Modulation"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Minimum value:"), self._values1Field, 1, "Minimum value:")
         else: #KinectInput
-            self._updateNoteSliders(self._values1Field.GetValue(), ("Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 3, "Kinect filters:")
+            self.setSliderValue(5, 0.0)
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Display mode:", "Black filter:", "Diff filter:", "Erode filter:"), self._values1Field, 4, "Kinect filters:")
         self._highlightButton(self._selectedEditor)
 
     def _onValues2Edit(self, event, showEffectGui = True):
@@ -1798,6 +1821,9 @@ Smoothest\t-> n = 128
             self._updateNoteSliders(self._values2Field.GetValue(), ("End X position:", "End Y position:"), self._values2Field, 2, "End position:")
         elif(self._type == "Modulation"):
             self._updateNoteSliders(self._values2Field.GetValue(), ("Maximum value:"), self._values2Field, 1, "Maximum value:")
+        else: #KinectInput
+            self.setSliderValue(5, 1.0)
+            self._updateNoteSliders(self._values2Field.GetValue(), ("Zoom amount:", "X/Y ratio:", "X center:", "Y center:"), self._values2Field, 4, "Kinect zoom:")
         self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
@@ -2275,18 +2301,24 @@ All notes on events are quantized to this.
                     self._config.removeParameter("Font")
 
                 if(self._type == "KinectCamera"):
-                    modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
-                    self._subModulationField.SetValue(modeModulation)
-                    self._config.addTextParameter("DisplayModeModulation", "None")
-                    self._config.setValue("DisplayModeModulation", modeModulation)
-                    filterVal = textToFloatValues(self._values1Field.GetValue(), 3)
+#                    modeModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
+#                    self._subModulationField.SetValue(modeModulation)
+#                    self._config.addTextParameter("DisplayModeModulation", "None")
+#                    self._config.setValue("DisplayModeModulation", modeModulation)
+                    filterVal = textToFloatValues(self._values1Field.GetValue(), 4)
                     filterValString = floatValuesToString(filterVal)
                     self._values1Field.SetValue(filterValString)
-                    self._config.addTextParameter("FilterValues", "0.0|0.0|0.0")
+                    self._config.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")
                     self._config.setValue("FilterValues", filterValString)
+                    zoomVal = textToFloatValues(self._values2Field.GetValue(), 4)
+                    zoomValString = floatValuesToString(zoomVal)
+                    self._values1Field.SetValue(zoomValString)
+                    self._config.addTextParameter("ZoomValues", "0.5|0.5|0.5|0.5")
+                    self._config.setValue("ZoomValues", zoomValString)
                 else:
-                    self._config.removeParameter("DisplayModeModulation")
+#                    self._config.removeParameter("DisplayModeModulation")
                     self._config.removeParameter("FilterValues")
+                    self._config.removeParameter("ZoomValues")
 
                 if(self._type == "Modulation"):
                     firstModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
@@ -2497,18 +2529,26 @@ All notes on events are quantized to this.
                 self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
         elif(self._type == "KinectCamera"):
             if(config != None):
-                dispMod = config.getValue("DisplayModeModulation")
-                self._subModulationField.SetValue(str(dispMod))
+#                dispMod = config.getValue("DisplayModeModulation")
+#                self._subModulationField.SetValue(str(dispMod))
                 confString = self._config.getValue("FilterValues")
                 if(confString == None):
-                    confValString = "0.0|0.0|0.0"
+                    confValString = "0.0|0.0|0.0|0.0"
                 else:
-                    confVal = textToFloatValues(confString, 3)
+                    confVal = textToFloatValues(confString, 4)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
+                confString = self._config.getValue("ZoomValues")
+                if(confString == None):
+                    confValString = "0.5|0.5|0.5|0.5"
+                else:
+                    confVal = textToFloatValues(confString, 4)
+                    confValString = floatValuesToString(confVal)
+                self._values2Field.SetValue(confValString)
             else:
-                self._subModulationField.SetValue("None")
-                self._values1Field.SetValue("0.0|0.0|0.0")
+#                self._subModulationField.SetValue("None")
+                self._values1Field.SetValue("0.0|0.0|0.0|0.0")
+                self._values2Field.SetValue("0.5|0.5|0.5|0.5")
         elif(self._type == "Modulation"):
             if(config != None):
                 confMod = config.getValue("FirstModulation")
@@ -2554,9 +2594,9 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._fontSizer)
             
 
-        if(self._type == "KinectCamera"):
-            self._subModulationLabel.SetLabel("Display mode:")
-        elif((self._type == "Sprite") or (self._type == "Text")):
+#        if(self._type == "KinectCamera"):
+#            self._subModulationLabel.SetLabel("Display mode:")
+        if((self._type == "Sprite") or (self._type == "Text")):
             self._subModulationLabel.SetLabel("X position modulation:")
         elif(self._type == "Modulation"):
             self._subModulationLabel.SetLabel("1st modulation:")
@@ -2591,8 +2631,8 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._subModulationSizer)
         elif(self._type == "ImageSequence"):
             self._showOrHideSubModeModulation()
-        elif(self._type == "KinectCamera"):
-            self._noteConfigSizer.Show(self._subModulationSizer)
+#        elif(self._type == "KinectCamera"):
+#            self._noteConfigSizer.Show(self._subModulationSizer)
         elif(self._type == "Modulation"):
             self._noteConfigSizer.Show(self._subModulationSizer)
         else:
@@ -2663,6 +2703,9 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Show(self._values2Sizer)
         elif(self._type == "Text"):
             self._values2Label.SetLabel("End position:")
+            self._noteConfigSizer.Show(self._values2Sizer)
+        elif(self._type == "KinectCamera"):
+            self._values2Label.SetLabel("Zoom settings:")
             self._noteConfigSizer.Show(self._values2Sizer)
         elif(self._type == "Modulation"):
             self._values2Label.SetLabel("Maximum value:")
@@ -2858,6 +2901,8 @@ All notes on events are quantized to this.
         effectId = getEffectId(effectName)
         if(effectId == None):
             widget.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
+        elif(effectId == EffectTypes.BlobDetect):
+            widget.setBitmaps(self._fxBitmapBlobDetect, self._fxBitmapBlobDetect)
         elif(effectId == EffectTypes.Blur):
             widget.setBitmaps(self._fxBitmapBlur, self._fxBitmapBlur)
         elif(effectId == EffectTypes.BlurContrast):
@@ -3322,12 +3367,12 @@ All notes on events are quantized to this.
             if(guiSubMode != configSubMode):
                 return True
         if(self._type == "KinectCamera"):
-            guiSubMode = self._subModulationField.GetValue()
-            configSubMode = self._config.getValue("DisplayModeModulation")
-            if(guiSubMode != configSubMode):
-                return True
             guiSubMode = self._values1Field.GetValue()
             configSubMode = self._config.getValue("FilterValues")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._values2Field.GetValue()
+            configSubMode = self._config.getValue("ZoomValues")
             if(guiSubMode != configSubMode):
                 return True
         if(self._type == "Modulation"):

@@ -9,7 +9,7 @@ from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
-    copyImage, pilToCvImage, pilToCvMask
+    copyImage, pilToCvImage, pilToCvMask, ZoomEffect
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
@@ -437,9 +437,12 @@ class MediaFile(object):
 
     def _applyOneEffect(self, image, effect, effectSettings, effectStartControllerValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
+            if(effect != None):
+                print "DEBUG pcn: _applyOneEffect: startValues: " + str(effectStartValues)
             midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
             effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
-            #print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
+            if(effect != None):
+                print "DEBUG controller values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartControllerValues) + " sVals" + str(effectStartValues)
             #TODO: Add mode where values must pass start values?
             effectSCV0 = None
             if(effectAmount == effectStartControllerValues[0]):
@@ -468,7 +471,7 @@ class MediaFile(object):
                     effectSCV4 = effectStartControllerValues[4]
             if(effect != None):
                 image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-#            print "DEBUG modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
+                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
             return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4), (effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
         else:
             return (image, (0.0, 0.0, 0.0, 0.0, 0.0), (None, None, None, None, None))
@@ -716,6 +719,8 @@ class MediaFile(object):
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
             else:
                 preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
+            if(postFx != None):
+                print "DEBUG pcn: mix got postFX start values: " + str(postFxStartVal)
             (mediaStateHolder.image, currentPreValues, unusedStarts) = self._applyOneEffect(mediaStateHolder.image, preFx, preFxSettings, preFxCtrlVal, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
             mixedImage =  mixImages(mixMode, mixLevel, image, mediaStateHolder.image, mediaStateHolder.imageMask, mixMat1, mixMask)
             (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
@@ -1933,12 +1938,16 @@ class KinectCameraInput(MediaFile):
         self._diffFilterModulationId = -1
         self._erodeFilterModulationId = -1
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
-        self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0")
+#        self._midiModulation.setModulationReceiver("DisplayModeModulation", "None")
+        self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")
+        self._configurationTree.addTextParameter("ZoomValues", "0.5|0.5|0.5|0.5")
         self._kinectModesHolder = KinectMode()
+        self._zoomEffect = ZoomEffect(None, self._internalResolutionX, self._internalResolutionY)
+        self._filterValues = 0.0, 0.0, 0.0, 0.0
+        self._zoomValues = 0.5, 0.5, 0.5, 0.5
+        self._lastGuiModesValue = -1.0
         self._getConfiguration()
-        self._filterValues = 0.0, 0.0, 0.0
-        self._modeModulationId = None
+#        self._modeModulationId = None
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
@@ -1947,9 +1956,11 @@ class KinectCameraInput(MediaFile):
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
-        self._modeModulationId = self._midiModulation.connectModulation("DisplayModeModulation")
+#        self._modeModulationId = self._midiModulation.connectModulation("DisplayModeModulation")
         filterValuesString = self._configurationTree.getValue("FilterValues")
-        self._filterValues = textToFloatValues(filterValuesString, 3)
+        self._filterValues = textToFloatValues(filterValuesString, 4)
+        zoomValuesString = self._configurationTree.getValue("ZoomValues")
+        self._zoomValues = textToFloatValues(zoomValuesString, 4)
 
     def getType(self):
         return "KinectCamera"
@@ -1960,25 +1971,61 @@ class KinectCameraInput(MediaFile):
     def releaseMedia(self, mediaSettingsHolder):
         MediaFile.releaseMedia(self, mediaSettingsHolder)
 
-    def findKinectMode(self, currentSongPosition, midiNoteState, midiChannelState):
-        value = self._midiModulation.getModlulationValue(self._modeModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+    def findKinectMode(self, value, currentSongPosition, midiNoteState, midiChannelState):
+#        value = self._midiModulation.getModlulationValue(self._modeModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
         maxValue = len(self._kinectModesHolder.getChoices()) * 0.99999999
         modeSelected = int(value*maxValue)
         return modeSelected
 
     def _getFilterValues(self):
-        blackThreshold, diffThreshold, erodeValue = self._filterValues
+        displayModeVal, blackThreshold, diffThreshold, erodeValue = self._filterValues
         guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                blackThreshold = guiStates[0]
-        if(guiStates[1] != None):
-            if(guiStates[1] > -0.5):
-                diffThreshold = guiStates[1]
-        if(guiStates[2] != None):
-            if(guiStates[2] > -0.5):
-                erodeValue = guiStates[2]
-        return blackThreshold, diffThreshold, erodeValue
+        if(guiStates[4] != None):
+            if(guiStates[4] < 0.5):
+                if(guiStates[4] != self._lastGuiModesValue):
+                    self._lastGuiModesValue = guiStates[4]
+                    self._guiCtrlStateHolder.resetState(10)
+                    self._guiCtrlStateHolder.controllerChange(0, 0, 14)
+                    guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+                if(guiStates[0] != None):
+                    if(guiStates[0] > -0.5):
+                        displayModeVal = guiStates[0]
+                if(guiStates[1] != None):
+                    if(guiStates[1] > -0.5):
+                        blackThreshold = guiStates[1]
+                if(guiStates[2] != None):
+                    if(guiStates[2] > -0.5):
+                        diffThreshold = guiStates[2]
+                if(guiStates[3] != None):
+                    if(guiStates[3] > -0.5):
+                        erodeValue = guiStates[3]
+        self._filterValues = displayModeVal, blackThreshold, diffThreshold, erodeValue
+        return displayModeVal, blackThreshold, diffThreshold, erodeValue
+
+    def _getZoomValues(self):
+        zoomAmount, xyrate, xcenter, ycenter = self._zoomValues
+        guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+        if(guiStates[4] != None):
+            if(guiStates[4] > 0.5):
+                if(guiStates[4] != self._lastGuiModesValue):
+                    self._lastGuiModesValue = guiStates[4]
+                    self._guiCtrlStateHolder.resetState(10)
+                    self._guiCtrlStateHolder.controllerChange(0, 127, 14)
+                    guiStates = self._guiCtrlStateHolder.getGuiContollerState(10)
+                if(guiStates[0] != None):
+                    if(guiStates[0] > -0.5):
+                        zoomAmount = guiStates[0]
+                if(guiStates[1] != None):
+                    if(guiStates[1] > -0.5):
+                        xyrate = guiStates[1]
+                if(guiStates[2] != None):
+                    if(guiStates[2] > -0.5):
+                        xcenter = guiStates[2]
+                if(guiStates[3] != None):
+                    if(guiStates[3] > -0.5):
+                        ycenter = guiStates[3]
+        self._zoomValues = zoomAmount, xyrate, xcenter, ycenter
+        return zoomAmount, xyrate, xcenter, ycenter
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState):
         if(freenect == None):
@@ -1989,7 +2036,8 @@ class KinectCameraInput(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
 
-        kinectMode = self.findKinectMode(currentSongPosition, midiNoteState, midiChannelState)
+        displayModeVal, blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
+        kinectMode = self.findKinectMode(displayModeVal, currentSongPosition, midiNoteState, midiChannelState)
         if(kinectMode == KinectMode.RGBImage):
             mediaSettingsHolder.captureImage = copyImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.RGB, currentSongPosition))
         elif(kinectMode == KinectMode.IRImage):
@@ -1997,9 +2045,9 @@ class KinectCameraInput(MediaFile):
         elif(kinectMode == KinectMode.DepthImage):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
             cv.Merge(depthImage, depthImage, depthImage, None, mediaSettingsHolder.captureImage)
+            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.DepthMask):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
             cv.CmpS(depthImage, 10 + (50 * blackThreshold), mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat1)
             cv.AddS(mediaSettingsHolder.tmpMat1, 5 + (35 * diffThreshold), mediaSettingsHolder.tmpMat2)
@@ -2010,22 +2058,27 @@ class KinectCameraInput(MediaFile):
                 cv.Merge(mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat2, None, mediaSettingsHolder.captureImage)
             else:
                 cv.Merge(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, None, mediaSettingsHolder.captureImage)
+            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.DepthThreshold):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
             darkFilterValue = 256 - int(blackThreshold * 256)
             lightFilterValue = int(diffThreshold * 256)
             cv.CmpS(depthImage, darkFilterValue, mediaSettingsHolder.tmpMat1, cv.CV_CMP_LE)
             cv.CmpS(depthImage, lightFilterValue, mediaSettingsHolder.tmpMat2, cv.CV_CMP_GE)
             cv.Mul(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat1)
             cv.Merge(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, None, mediaSettingsHolder.captureImage)
+            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         else: # (kinectMode == KinectMode.Reset):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
-            blackThreshold, diffThreshold, erodeValue = self._getFilterValues()
             cv.CmpS(depthImage, 10 + (50 * blackThreshold), mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, mediaSettingsHolder.tmpMat2, self._startDepthMat)
+            cv.Zero(mediaSettingsHolder.tmpMat1)
             cv.Merge(self._startDepthMat, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat2, None, mediaSettingsHolder.captureImage)
+            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
 
+        zoomAmount, xyrate, xcenter, ycenter = self._getZoomValues()
+        if((zoomAmount != 0.5) or (xyrate != 0.5)):
+            mediaSettingsHolder.captureImage = self._zoomEffect.applyEffect(mediaSettingsHolder.captureImage, zoomAmount, xyrate, xcenter, ycenter, 1.0, 0.25, 0.75)
         self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
 

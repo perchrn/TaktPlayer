@@ -43,6 +43,7 @@ class Configuration(object):
         self.setupMidiSender()
         self._latestMidiControllerRequestCallback = None
         self._effectStateRequestCallback = None
+        self._getActiveNoteForTrackCallback = None
 
     def setupSpecialModulations(self):
         self._mediaPoolConf.setupSpecialNoteModulations()
@@ -218,6 +219,12 @@ class Configuration(object):
         self._mediaPoolConf.checkAndUpdateFromConfiguration()
         self._mediaMixerConf.checkAndUpdateFromConfiguration()
         self._globalConf.checkAndUpdateFromConfiguration()
+
+    def setGetActiveNoteForTrackConfigCallback(self, callback):
+        self._getActiveNoteForTrackCallback = callback
+
+    def getActiveNoteForTrack(self, trackId):
+        return self._getActiveNoteForTrackCallback(trackId)
 
     def setNoteGui(self, noteGui):
         self._noteGui = noteGui

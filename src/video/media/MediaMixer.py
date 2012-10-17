@@ -116,25 +116,55 @@ class MediaMixer(object):
 
         self._mediaTracksLevelMod[trackId] = self._mediaTracksMidiModulation[trackId].connectModulation("LevelModulation")
 
+        oldEffectSettings = self._mediaTracksEffects[trackId]
+        if(oldEffectSettings != None):
+            oldPreEffectSettings = oldEffectSettings[1]
+            oldPostEffectSettings = oldEffectSettings[5]
+            preEffectStartValues = oldEffectSettings[3]
+            postEffectStartValues = oldEffectSettings[7]
+            preEffectStartControllerValues = oldEffectSettings[2]
+            postEffectStartControllerValues = oldEffectSettings[6]
+        else:
+            oldPreEffectSettings = None
+            oldPostEffectSettings = None
+            preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+
+        oldPreEffectName = "None"
+        oldPreEffectValues = "0.0|0.0|0.0|0.0|0.0"
+        if(oldPreEffectSettings != None):
+            oldPreEffectName = oldPreEffectSettings.getEffectName()
+            oldPreEffectValues = oldPreEffectSettings.getStartValuesString()
         preEffectModulationTemplate = xmlConfig.get("preeffectconfig")
         trackConfig.setValue("PreEffectConfig", preEffectModulationTemplate)
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(preEffectModulationTemplate)
         if(preEffectSettings == None):
             preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        if((oldPreEffectName != preEffectSettings.getEffectName()) or (oldPreEffectValues != preEffectSettings.getStartValuesString())):
+            preEffectStartValues = preEffectSettings.getStartValues()
+            preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         preEffect = getEffectByName(preEffectSettings.getEffectName(), preEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
+        oldPostEffectName = "None"
+        oldPostEffectValues = "0.0|0.0|0.0|0.0|0.0"
+        if(oldPostEffectSettings != None):
+            oldPostEffectName = oldPostEffectSettings.getEffectName()
+            oldPostEffectValues = oldPostEffectSettings.getStartValuesString()
         postEffectModulationTemplate = xmlConfig.get("posteffectconfig")
         trackConfig.setValue("PostEffectConfig", postEffectModulationTemplate)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(postEffectModulationTemplate)
         if(postEffectSettings == None):
             postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        if((oldPostEffectName != postEffectSettings.getEffectName()) or (oldPostEffectValues != postEffectSettings.getStartValuesString())):
+            postEffectStartValues = postEffectSettings.getStartValues()
+            postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), postEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+
 #        print "DEBUG trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 
-        preEffectStartControllerValues = (None, None, None, None, None)
-        postEffectStartControllerValues = (None, None, None, None, None)
-        preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-        postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
         return trackId
 
@@ -154,8 +184,8 @@ class MediaMixer(object):
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
-        preEffectStartControllerValues = (None, None, None, None, None)
-        postEffectStartControllerValues = (None, None, None, None, None)
+        preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+        postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)

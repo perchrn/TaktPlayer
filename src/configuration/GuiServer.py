@@ -401,6 +401,9 @@ class GuiServer(object):
             webCommand = self._webInputQueue.get_nowait()
             webCommandXml = stringToXml(webCommand)
             if(webCommandXml != None):
+                queueSize = self._webInputQueue.qsize()
+                if(queueSize > 1):
+                    print "DEBUG pcn: rest web queue size: " + str(queueSize)
                 if(webCommandXml.tag == "servermessage"):
                     print "GuiServer Message: " + webCommandXml.get("message")
                 elif(webCommandXml.tag == "serverLog"):

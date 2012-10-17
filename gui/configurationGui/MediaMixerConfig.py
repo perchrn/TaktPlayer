@@ -182,7 +182,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self.updateMixmodeThumb = noteGuiClass.updateMixmodeThumb
         self.updateEffectThumb = noteGuiClass.updateEffectThumb
         self.showEffectList = noteGuiClass.showEffectList
-        self._clearDragCursorCallback = noteGuiClass.clearDragCursor
+        self._clearDragCursorCallback = noteGuiClass._clearDragCursorCallback
         self._mixImages = noteGuiClass._mixImages
         self._mixLabels = noteGuiClass._mixLabels
 
@@ -495,6 +495,8 @@ Replace:\tNo mixing. Just use this image.
             self._selectedEditor = self.EditSelection.PostEffect
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+            activeNoteId, activeNoteMixMode = self._mainConfig.getActiveNoteForTrack(foundTrackId)
+            self.updateGui(trackConfig, foundTrackId, activeNoteId, activeNoteMixMode)
             self._mainConfig.showSliderGuiEditButton()
             self._showSlidersCallback()
             self._showOrHideSaveButton()

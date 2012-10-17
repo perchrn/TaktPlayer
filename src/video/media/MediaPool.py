@@ -315,16 +315,20 @@ class MediaPool(object):
                 activeMediaState = None
                 if(oldMedia == None):
                     self._mediaTracks[midiChannel] = newMedia
-                    self._mediaTrackIds[midiChannel] = newNoteId
                     if(newMedia != None):
                         activeMediaState = newMedia.getMediaStateHolder()
+                        self._mediaTrackIds[midiChannel] = newNoteId
+                    else:
+                        self._mediaTrackIds[midiChannel] = -1
                     self._mediaTrackStateHolders[midiChannel] = activeMediaState
                 elif(oldMedia != newMedia):
                     oldMedia.releaseMedia(oldMediaState)
                     self._mediaTracks[midiChannel] = newMedia
-                    self._mediaTrackIds[midiChannel] = newNoteId
                     if(newMedia != None):
                         activeMediaState = newMedia.getMediaStateHolder()
+                        self._mediaTrackIds[midiChannel] = newNoteId
+                    else:
+                        self._mediaTrackIds[midiChannel] = -1
                     self._mediaTrackStateHolders[midiChannel] = activeMediaState
                 else:
                     activeMediaState = oldMediaState
@@ -342,6 +346,7 @@ class MediaPool(object):
                 self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
+                self._mediaTrackIds[midiChannel] = -1
         #TODO: Make sure we only use the same VideoLoopFile instance once.
         self._mediaMixer.mixImages(midiTime)
 

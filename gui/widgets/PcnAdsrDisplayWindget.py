@@ -17,7 +17,7 @@ class PcnAdsrDisplayWidget(wx.PyControl): #@UndefinedVariable
 
     def drawAdsr(self, adsr):
         baseX, baseY = self._baseBitmap.GetSize()
-        adsrMax = baseY -1
+        adsrMax = baseY - 3
 
         attackLength = adsr.getAttackLength()
         decayLength = adsr.getDecayLength()
@@ -47,7 +47,7 @@ class PcnAdsrDisplayWidget(wx.PyControl): #@UndefinedVariable
             else:
                 offSPP = adsrNoteOnLength
                 noteLength = adsrNoteOnLength
-            ypos = int(adsr.getValue(xpos*adsrStep, (0.0, offSPP, noteLength)) * adsrMax)
+            ypos = 1 + int(adsr.getValue(xpos*adsrStep, (0.0, offSPP, noteLength)) * adsrMax)
             if(lastYpos == None):
                 dc.DrawPoint(xpos, ypos)
             else:

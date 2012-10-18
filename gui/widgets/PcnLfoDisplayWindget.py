@@ -17,7 +17,7 @@ class PcnLfoDisplayWidget(wx.PyControl): #@UndefinedVariable
 
     def drawLfo(self, lfo):
         baseX, baseY = self._baseBitmap.GetSize()
-        lfoMax = baseY -1
+        lfoMax = baseY - 3
 
         lfoGraphLength = lfo.calculateLength(32.0)
         lfoStep = float(lfoGraphLength) / baseX
@@ -31,7 +31,7 @@ class PcnLfoDisplayWidget(wx.PyControl): #@UndefinedVariable
 
         lastYpos = None
         for xpos in range(baseX):
-            ypos = int((1.0 - lfo.getValue(xpos*lfoStep, None)) * lfoMax)
+            ypos = 1 + int((1.0 - lfo.getValue(xpos*lfoStep, None)) * lfoMax)
             if(lastYpos == None):
                 dc.DrawPoint(xpos, ypos)
             else:

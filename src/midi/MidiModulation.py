@@ -47,6 +47,11 @@ class LowFrequencyOscilator(object):
                 return self._minVal + ((1.0 - phase) * self._valRange)
             elif(self._shape == LfoShapes.Sine):
                 return self._minVal + ((1.0 + math.sin(self._radians360 * phase)) / 2 * self._valRange)
+            elif(self._shape == LfoShapes.Square):
+                if(phase < 0.5):
+                    return self._maxVal
+                else:
+                    return self._minVal
 
     def isEqual(self, mode, midiLength, startSPP, minVal, maxVal):
         if(self._shape == mode):
@@ -62,10 +67,10 @@ class LowFrequencyOscilator(object):
 
 
 class LfoShapes():
-    Triangle, SawTooth, Ramp, Sine, Random = range(5)
+    Triangle, SawTooth, Ramp, Sine, Square, Random = range(6)
 
     def getChoices(self):
-        return ["Triangle", "SawTooth", "Ramp", "Sine", "Random"]
+        return ["Triangle", "SawTooth", "Ramp", "Sine", "Square", "Random"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
@@ -82,6 +87,8 @@ def getLfoShapeId(shapeName):
         return LfoShapes.Ramp
     elif(shapeName == "Sine"):
         return LfoShapes.Sine
+    elif(shapeName == "Square"):
+        return LfoShapes.Square
     elif(shapeName == "Random"):
         return LfoShapes.Random
     else:

@@ -8,7 +8,7 @@ import logging
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT,\
-    PcnPopupMenu
+    PcnPopupMenu, EVT_DOUBLE_CLICK_EVENT
 
 from network.GuiClient import GuiClient
 from midi.MidiUtilities import noteToNoteString
@@ -119,6 +119,8 @@ class TrackOverviewSettings(object):
         self._trackEditWidgetsId = self._trackEditButton.GetId()
         self._trackPlayWidgetsId = self._trackPlayButton.GetId()
         self._trackButton.Bind(wx.EVT_BUTTON, parent._onTrackButton) #@UndefinedVariable
+        self._trackButton.enableDoubleClick()
+        self._trackButton.Bind(EVT_DOUBLE_CLICK_EVENT, parent._onTrackButtonDouble) #@UndefinedVariable
         self._trackPlayButton.Bind(wx.EVT_BUTTON, parent._onTrackPlayButton) #@UndefinedVariable
         self._trackEditButton.Bind(wx.EVT_BUTTON, parent._onTrackEditButton) #@UndefinedVariable
         self._trackStopButton.Bind(wx.EVT_BUTTON, parent._onTrackStopButton) #@UndefinedVariable
@@ -214,7 +216,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if((windowSizeX >= 500) and (windowSizeX >= 400)):
             self.SetSize((windowSizeX, windowSizeY))
         if((configPositionX >= 0) and (configPositionY >= 0)):
-            print "DEBUG pcn: cfgPos!!!!!!!!!!!!!!!!!!!!!!"
+#            print "DEBUG pcn: cfgPos!!!!!!!!!!!!!!!!!!!!!!"
             self.SetPosition((configPositionX, configPositionY))
 
         self._videoDirectory = self._configuration.getGuiVideoDir()
@@ -1452,6 +1454,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             activeNoteMixMode = "None"
         return (activeNoteId, activeNoteMixMode)
 
+    def setActiveTrackId(self, trackId):
+        self._activeTrackId = trackId
+        self._selectTrack(trackId)
+
     def _onTrackEditButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
@@ -1460,7 +1466,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 foundTrackId = i
                 break
         if(foundTrackId != None):
-            if(self._activeTrackId == foundTrackId):
+            if((self._activeTrackId == foundTrackId) and self._noteGui.isTrackEditorOpen()):
                 self._activeTrackId = -1
                 self._noteGui.hideTrackGui()
             else:
@@ -1486,20 +1492,49 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._selectTrack(foundTrackId)
             if(self._configuration.isMidiEnabled()):
                 self._selectedMidiChannel = foundTrackId
-                self._selectTrack(foundTrackId)
-                destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
-                if(destinationConfig != None):
-                    settings = self._trackGuiSettings[foundTrackId]
-                    activeNoteId = settings.getActiveNoteId()
-                    noteMixMode = "Default"
-                    if((activeNoteId >= 0) and (activeNoteId < 128)):
-                        activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                        if(activeNoteConfig != None):
-                            noteMixMode = activeNoteConfig.getMixMode()
+            else:
+                self._selectedMidiChannel = -1
+            self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+            if(destinationConfig != None):
+                settings = self._trackGuiSettings[foundTrackId]
+                activeNoteId = settings.getActiveNoteId()
+                noteMixMode = "Default"
+                if((activeNoteId >= 0) and (activeNoteId < 128)):
+                    activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
+                    if(activeNoteConfig != None):
+                        noteMixMode = activeNoteConfig.getMixMode()
+                else:
+                    noteMixMode = "None"
+                self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
+
+    def _onTrackButtonDouble(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettings[i].hasTrackWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
+            if(destinationConfig != None):
+                settings = self._trackGuiSettings[foundTrackId]
+                activeNoteId = settings.getActiveNoteId()
+                if((activeNoteId >= 0) and (activeNoteId < 128)):
+                    self._activeNoteId = activeNoteId
+                    self._selectKeyboardKey(self._activeNoteId)
+                    noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
+                    if(noteConfig == None):
+                        self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
+                        self._noteGui.clearGui(self._activeNoteId)
                     else:
-                        noteMixMode = "None"
-                    self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, noteMixMode)
-                self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+                        noteWidget = self._noteWidgets[self._activeNoteId]
+                        noteBitmap = noteWidget.getBitmap()
+                        self._noteGui.updateOverviewClipBitmap(noteBitmap)
+                        self._noteGui.updateGui(noteConfig, self._activeNoteId)
+                    self._noteGui.showNoteGui()
+            self._dragSource = None
+            self.clearDragCursor()
 
     def _onTrackPlayButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -1516,7 +1551,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             else:
                 if(self._configuration.isMidiEnabled()):
                     self._selectedMidiChannel = foundTrackId
-                    self._selectTrack(foundTrackId)
+            self._selectTrack(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
                 settings = self._trackGuiSettings[foundTrackId]

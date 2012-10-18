@@ -649,6 +649,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._requestThumbCallback = noteRequestCallback
         self._clearDragCursorCallback = parentClass.clearDragCursor
         self.setDragCursorCallback = parentClass.setDragCursor
+        self.trackEffectChoicesUpdateCallback = self._trackGui.updateEffecChoices
+        self._setActiveTrackId = parentClass.setActiveTrackId
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
@@ -721,10 +723,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
+        self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
@@ -1523,7 +1527,9 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._noteConfigPanel)
         self._mainSelection = self.MainSelection.Unselected
         self.refreshLayout()
-        #TODO: Note selection clear callback
+
+    def isTrackEditorOpen(self):
+        return self._mainSelection == self.MainSelection.Track
 
     def showTrackGui(self):
         self._configSizer.Show(self._trackGuiPlane)
@@ -1536,7 +1542,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._configSizer.Hide(self._trackGuiPlane)
         self._mainSelection = self.MainSelection.Unselected
         self.refreshLayout()
-        #TODO: Track selection clear callback
 
     class MainSelection():
         Unselected, Track, Note = range(3)
@@ -2931,14 +2936,25 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapImageAdd, self._fxBitmapImageAdd)
         elif(effectId == EffectTypes.Invert):
             widget.setBitmaps(self._fxBitmapInverse, self._fxBitmapInverse)
+        elif(effectId == EffectTypes.Mirror):
+            widget.setBitmaps(self._fxBitmapMirror, self._fxBitmapMirror)
+        elif(effectId == EffectTypes.Pixelate):
+            widget.setBitmaps(self._fxBitmapPixelate, self._fxBitmapPixelate)
+        elif(effectId == EffectTypes.Rotate):
+            widget.setBitmaps(self._fxBitmapRotate, self._fxBitmapRotate)
         elif(effectId == EffectTypes.Scroll):
             widget.setBitmaps(self._fxBitmapScroll, self._fxBitmapScroll)
         elif(effectId == EffectTypes.Threshold):
             widget.setBitmaps(self._fxBitmapThreshold, self._fxBitmapThreshold)
+        elif(effectId == EffectTypes.TVNoize):
+            widget.setBitmaps(self._fxBitmapTVNoize, self._fxBitmapTVNoize)
         elif(effectId == EffectTypes.ValueToHue):
             widget.setBitmaps(self._fxBitmapVal2Hue, self._fxBitmapVal2Hue)
         elif(effectId == EffectTypes.Zoom):
             widget.setBitmaps(self._fxBitmapZoom, self._fxBitmapZoom)
+        else:
+            print "Warning! Missing FX bitmap for effect: " + str(effectConfigName) + " with id: " + str(effectId)
+            widget.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
 
     def updateMediaTypeThumb(self, widget, configHolder):
         if(configHolder != None):

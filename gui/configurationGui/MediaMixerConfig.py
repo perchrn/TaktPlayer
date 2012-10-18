@@ -303,7 +303,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText8 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
+        self.updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
         self._preEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._preEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._preEffectButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
@@ -315,7 +315,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         postEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText9 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
+        self.updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
         self._postEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._postEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._postEffectButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
@@ -333,13 +333,13 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-    def _updateEffecChoices(self, widget, value, defaultValue):
+    def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
-            self._updateChoices(widget, None, value, defaultValue)
+            self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue)
+            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
 
-    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
+    def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
             choiceList = [value]
         else:
@@ -354,6 +354,8 @@ class MediaTrackGui(object): #@UndefinedVariable
             widget.SetStringSelection(value)
         else:
             widget.SetStringSelection(defaultValue)
+        if(updateSaveButton == True):
+            self._showOrHideSaveButton()
 
     def _onTrackHelp(self, event):
         text = """
@@ -433,29 +435,31 @@ Replace:\tNo mixing. Just use this image.
         self._showModulationCallback()
         self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, None, None)
 
-    def _onPreEffectEdit(self, event):
-        if(self._selectedEditor != self.EditSelection.PreEffect):
-            self._selectedEditor = self.EditSelection.PreEffect
-            self._showEffectsCallback()
-        else:
-            self._selectedEditor = self.EditSelection.Unselected
-            self._hideEffectsCallback()
-        self._hideModulationCallback()
+    def _onPreEffectEdit(self, event, showGui = True):
+        if(showGui == True):
+            if(self._selectedEditor != self.EditSelection.PreEffect):
+                self._selectedEditor = self.EditSelection.PreEffect
+                self._showEffectsCallback()
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._hideEffectsCallback()
+            self._hideModulationCallback()
         selectedEffectConfig = self._preEffectField.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect", self._preEffectField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
-    def _onPostEffectEdit(self, event):
-        if(self._selectedEditor != self.EditSelection.PostEffect):
-            self._selectedEditor = self.EditSelection.PostEffect
-            self._showEffectsCallback()
-        else:
-            self._selectedEditor = self.EditSelection.Unselected
-            self._hideEffectsCallback()
+    def _onPostEffectEdit(self, event, showGui = True):
+        if(showGui == True):
+            if(self._selectedEditor != self.EditSelection.PostEffect):
+                self._selectedEditor = self.EditSelection.PostEffect
+                self._showEffectsCallback()
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._hideEffectsCallback()
         self._hideModulationCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect", self._postEffectField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -527,7 +531,7 @@ Replace:\tNo mixing. Just use this image.
                 if(self._trackId != None):
                     trackConfig.setValue("PreEffectConfig", fxName)
                     if(foundTrackId == self._trackId):
-                        self._updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
+                        self.updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
                     self.updateEffectThumb(trackSettings.getPreFxWidget(), fxName)
                     self._showOrHideSaveButton()
             self._clearDragCursorCallback()
@@ -548,7 +552,7 @@ Replace:\tNo mixing. Just use this image.
                 if(self._trackId != None):
                     trackConfig.setValue("PostEffectConfig", fxName)
                     if(foundTrackId == self._trackId):
-                        self._updateEffecChoices(self._postEffectField, fxName, "MixPostDefault")
+                        self.updateEffecChoices(self._postEffectField, fxName, "MixPostDefault")
                     self.updateEffectThumb(trackSettings.getPostFxWidget(), fxName)
                     self._showOrHideSaveButton()
             self._clearDragCursorCallback()
@@ -662,15 +666,15 @@ Replace:\tNo mixing. Just use this image.
         levelMod = self._config.getValue("LevelModulation")
         self._levelModulationField.SetValue(levelMod)
         preEffectConfig = self._config.getValue("PreEffectConfig")
-        self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
+        self.updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
         postEffectConfig = self._config.getValue("PostEffectConfig")
-        self._updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
+        self.updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
 
         if(self._selectedEditor != self.EditSelection.Unselected):
             if(self._selectedEditor == self.EditSelection.PreEffect):
-                self._onPreEffectEdit(None)
+                self._onPreEffectEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.PostEffect):
-                self._onPostEffectEdit(None)
+                self._onPostEffectEdit(None, False)
 
         self._showOrHideSaveButton()
 

@@ -94,6 +94,8 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self._normal = self._baseBitmap
         self._pressed = self._baseBitmap
         self._buttonParent = parent
+        self._doubleClickEnabled = False
+        self._doubleClicked = False
         self._bitmap = None
         self._frameAddingFunction = addKeyboardButtonFrame
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM) #@UndefinedVariable
@@ -104,6 +106,11 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_UP, self.on_left_up) #@UndefinedVariable
 #        self.Bind(wx.EVT_MOTION, self.on_motion) #@UndefinedVariable
         self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window) #@UndefinedVariable
+
+        self._singleClickTimer = wx.Timer(self, -1) #@UndefinedVariable
+
+    def enableDoubleClick(self):
+        self._doubleClickEnabled = True
 
     def setFrqameAddingFunction(self, function):
         self._frameAddingFunction = function
@@ -200,11 +207,28 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId)
         wx.PostEvent(self, dragStartEvent) #@UndefinedVariable
     def on_left_dclick(self, event):
+        if(self._singleClickTimer.IsRunning() == True):
+            self._singleClickTimer.Stop()
+        self._doubleClicked = True
         self.on_left_down(event)
+    def on_single_click(self, event):
+        self.post_event()
     def on_left_up(self, event):
-        if self.clicked:
-            self.post_event()
+        if(self._doubleClickEnabled == False):
+            if self.clicked:
+                self.post_event()
+        else:
+            if(self._doubleClicked == True):
+                doubleEvent = wx.CommandEvent() #@UndefinedVariable
+                doubleEvent.SetEventObject(self)
+                doubleEvent.SetEventType(EVT_DOUBLE_CLICK_EVENT.typeId) #@UndefinedVariable
+                wx.PostEvent(self, doubleEvent) #@UndefinedVariable
+            else:
+                if self.clicked:
+                    self._singleClickTimer.Start(100, oneShot=True)#1/2 sec
+                    self.Bind(wx.EVT_TIMER, self.on_single_click) #@UndefinedVariable
         self.clicked = False
+        self._doubleClicked = False
         dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
         dragDoneEvent.SetEventObject(self)
         dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)

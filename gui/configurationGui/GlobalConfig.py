@@ -269,7 +269,6 @@ class EffectsGui(object):
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
-        self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
@@ -277,6 +276,7 @@ class EffectsGui(object):
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
+        self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
 
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
@@ -332,7 +332,8 @@ class EffectsGui(object):
         self._showEffectListCallback = parentClass.showEffectList
         self._showEffectImageListCallback = parentClass.showEffectImageListGui
         self._setDragCursor = parentClass.setDragCursorCallback
-        self._effectNameFieldUpdateCallback = parentClass.updateEffecChoices
+        self._mediaPoolEffectNameFieldUpdateCallback = parentClass.updateEffecChoices
+        self._trackEffectNameFieldUpdateCallback = parentClass.trackEffectChoicesUpdateCallback
 
         headerLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -535,9 +536,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapEdge)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapEdge)
-        index = self._effectImageList.Add(self._fxBitmapTVNoize)
+        index = self._effectImageList.Add(self._fxBitmapBlobDetect)
         self._fxIdImageIndex.append(index)
-        self._fxBitmapList.append(self._fxBitmapTVNoize)
+        self._fxBitmapList.append(self._fxBitmapBlobDetect)
         index = self._effectImageList.Add(self._fxBitmapDeSat)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapDeSat)
@@ -918,9 +919,9 @@ A list of start values for the effect modulation.
             self._mainConfig.updateEffectList(saveName)
             if(self._editFieldWidget != None):
                 if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
-                    print "DEBUG track FX TODO: " + saveName #TODO:
+                    self._trackEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
                 else:
-                    self._effectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
+                    self._mediaPoolEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _onSlidersButton(self, event):
         self.showSliderGuiEditButton(False)
@@ -2043,6 +2044,7 @@ class TimeModulationGui(object):
         self._parentSizer = parentSizer
         self._hideTimeModulationCallback = parentClass.hideTimeModulationGui
         self._showTimeModulationCallback = parentClass.showTimeModulationGui
+        self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
         self._showTimeModulationListCallback = parentClass.showTimeModulationListGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui

@@ -222,8 +222,10 @@ class MediaFile(object):
 
     def _updateMediaSettingsHolder(self, mediaSettingsHolder):
         if(self.getType() != "Modulation"):
-            mediaSettingsHolder.effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
-            mediaSettingsHolder.effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if((mediaSettingsHolder.effect1 == None) or (mediaSettingsHolder.effect1.getName() != self._effect1Settings.getEffectName())):
+                mediaSettingsHolder.effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if((mediaSettingsHolder.effect2 == None) or (mediaSettingsHolder.effect2.getName() != self._effect2Settings.getEffectName())):
+                mediaSettingsHolder.effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
     def _setupConfiguration(self):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
@@ -307,7 +309,7 @@ class MediaFile(object):
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
-            print "mediaFile config is updated..."
+            print "mediaFile config is updated in " + self.getType()
             self._getConfiguration()
             if(self._midiModulation != None):
                 self._midiModulation.checkAndUpdateFromConfiguration()
@@ -759,9 +761,8 @@ class MediaSettings(object):
 
 class MediaGroup(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._mediaList = []
-        self._mediaSettingsList = []
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, guiCtrlStateHolder, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._getMediaCallback = None
         self._noteList = fileName.split(",")
         self._groupName = fileName
@@ -773,6 +774,12 @@ class MediaGroup(MediaFile):
         self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
         self._getConfiguration()
+
+    def _setupMediaSettingsHolder(self, mediaSettingsHolder):
+        MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
+        mediaSettingsHolder.mediaSettingsList = []
+        for media in self._mediaList:
+            mediaSettingsHolder.mediaSettingsList.append(media.getMediaStateHolder())
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -825,7 +832,7 @@ class MediaGroup(MediaFile):
             mixEffects = None
             guiCtrlStateHolder = None
             if(imageMix == None):
-                imageTest = media.getImage()
+                imageTest = media.getImage(mediaSettings)
                 if(imageTest != None):
                     mixMode = MixMode.Replace
                     if(imageMix == self._mixMat1):
@@ -859,14 +866,32 @@ class MediaGroup(MediaFile):
         self._fileOk = True
 
     def doPostConfigurations(self):
-        self._mediaList = []
-        self._mediaSettingsHolder.mediaSettingsHolder = []
-        for noteString in self._noteList:
+        newMediaList = []
+        mediaListUpdated = False
+        for i in range(len(self._noteList)):
+            noteString = self._noteList[i]
             noteId = noteStringToNoteNumber(noteString)
             media = self._getMediaCallback(noteId)
             if(media != None):
-                self._mediaList.append(media)
-                self._mediaSettingsHolder.mediaSettingsHolder.append(media.getMediaStateHolder())
+                newMediaList.append(media)
+            if(i < len(self._mediaList)):
+                oldMedia = self._mediaList[i]
+                if(oldMedia != media):
+                    mediaListUpdated = True
+        if(len(self._mediaList) != len(newMediaList)):
+            mediaListUpdated = True
+        if(mediaListUpdated == True):
+            subMediaSettingsList = self._mediaSettingsHolder.getSettingsList()
+            for i in range(len(subMediaSettingsList)):
+                mediaSettings = subMediaSettingsList[i]
+                for j in range(len(self._mediaList)):
+                    media = self._mediaList[j]
+                    media.releaseMedia(mediaSettings.mediaSettingsList[j])
+            self._mediaList = newMediaList
+            for mediaSettings in self._mediaSettingsHolder.getSettingsList():
+                mediaSettings.mediaSettingsList = []
+                for media in self._mediaList:
+                    mediaSettings.mediaSettingsList.append(media.getMediaStateHolder())
         MediaFile.doPostConfigurations(self)
 
 class ImageFile(MediaFile):
@@ -1026,8 +1051,8 @@ class ImageFile(MediaFile):
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, dst_region)
             mediaSettingsHolder.captureImage = mediaSettingsHolder.zoomResizeMat
-#        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-        mediaSettingsHolder.image = mediaSettingsHolder.captureImage
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+#        mediaSettingsHolder.image = mediaSettingsHolder.captureImage
         return False
 
     def _angleAndMoveToXY(self, angle, move):

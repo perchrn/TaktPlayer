@@ -963,6 +963,8 @@ Choose which blob modulation value to use.
                 return ModulationSources.ADSR
             elif(modulationIdTuplet[0] == ModulationSources.Value):
                 return ModulationSources.Value
+            else:
+                return ModulationSources.NoModulation
 
     def getModulationImageCount(self):
         return len(self._modulationSorces.getChoices())

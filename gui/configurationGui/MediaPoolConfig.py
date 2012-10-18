@@ -2569,20 +2569,14 @@ All notes on events are quantized to this.
                     self._updateSubModulationMode2Choices(self._subModulationMode2Field, confMode, "Add", False)
                 confMod = config.getValue("ThirdModulation")
                 self._subModulation3Field.SetValue(str(confMod))
-                confString = self._config.getValue("MinValue")
-                if(confString == None):
-                    confValString = "0.0"
-                else:
-                    confVal = textToFloatValues(confString, 1)
-                    confValString = floatValuesToString(confVal)
-                self._values1Field.SetValue(confValString)
-                confString = self._config.getValue("MaxValue")
-                if(confString == None):
-                    confValString = "1.0"
-                else:
-                    confVal = textToFloatValues(confString, 1)
-                    confValString = floatValuesToString(confVal)
-                self._values2Field.SetValue(confValString)
+                confVal = self._config.getValue("MinValue")
+                if(confVal == None):
+                    confVal = 0.0
+                self._values1Field.SetValue(str(confVal))
+                confVal = self._config.getValue("MaxValue")
+                if(confVal == None):
+                    confVal = 1.0
+                self._values2Field.SetValue(str(confVal))
                 firstConfMode = config.getValue("Smoother")
                 self._updateSubModulationSmootherChoices(self._subModulationSmootherField, firstConfMode, "Off")
             else:

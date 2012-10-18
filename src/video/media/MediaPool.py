@@ -346,6 +346,8 @@ class MediaPool(object):
                 self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
+                if(self._mediaTracks[midiChannel] != None):
+                    self._mediaTracks[midiChannel].releaseMedia(self._mediaTrackStateHolders[midiChannel])
                 self._mediaTracks[midiChannel] = None
                 self._mediaTrackStateHolders[midiChannel] = None
                 self._mediaTrackIds[midiChannel] = -1

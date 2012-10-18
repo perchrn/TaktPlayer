@@ -598,7 +598,7 @@ class PixelateEffect(object):
             miniImageSizeY = int(self._internalResolutionY * sizeScale)
             miniImageSizeX = min(max(1, miniImageSizeX), self._internalResolutionX)
             miniImageSizeY = min(max(1, miniImageSizeY), self._internalResolutionY)
-            print "DEBUG pcn: amount: " + str(amount) + " range: " + str(self._blockRange) + " scale: " + str(sizeScale) + " X: " + str(miniImageSizeX) + " Y: " + str(miniImageSizeY)
+#            print "DEBUG pcn: amount: " + str(amount) + " range: " + str(self._blockRange) + " scale: " + str(sizeScale) + " X: " + str(miniImageSizeX) + " Y: " + str(miniImageSizeY)
             self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
         downScaler = cv.CV_INTER_CUBIC
         if(mode < 0.33):
@@ -1033,8 +1033,8 @@ class SelfDifferenceEffect(object):
         return "SelfDifference"
 
     def reset(self):
-        for _ in range(self._memoryLength):
-            self._memoryArray.append(getEmptyImage(self._internalResolutionX, self._internalResolutionY))
+        for i in range(self._memoryLength):
+            cv.SetZero(self._memoryArray[i])
 
     def applyEffect(self, image, amount, contrast, invert, smooth, dummy4):
         return self.diffImage(image, amount, contrast, invert, smooth)

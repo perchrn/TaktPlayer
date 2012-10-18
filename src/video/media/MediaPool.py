@@ -346,6 +346,8 @@ class MediaPool(object):
                 self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
+                self._mediaTracks[midiChannel] = None
+                self._mediaTrackStateHolders[midiChannel] = None
                 self._mediaTrackIds[midiChannel] = -1
         #TODO: Make sure we only use the same VideoLoopFile instance once.
         self._mediaMixer.mixImages(midiTime)

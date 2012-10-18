@@ -160,7 +160,7 @@ class MediaMixer(object):
         if((oldPostEffectName != postEffectSettings.getEffectName()) or (oldPostEffectValues != postEffectSettings.getStartValuesString())):
             postEffectStartValues = postEffectSettings.getStartValues()
             postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
+#            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), postEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
 #        print "DEBUG trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)

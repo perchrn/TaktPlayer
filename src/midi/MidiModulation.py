@@ -116,7 +116,7 @@ def getAdsrShapeId(shapeName):
 
 
 class AttackDecaySustainRelease(object):
-    def __init__(self, midiTimingClass, mode, attack, decay, sustain, release):
+    def __init__(self, midiTimingClass, mode, attack, decay, sustain, release, minVal = 0.0, maxVal = 1.0):
         self._midiTiming = midiTimingClass
         self._shape = mode
 
@@ -128,6 +128,10 @@ class AttackDecaySustainRelease(object):
             self._decayLength = 0.0
             self._sustainValue = 1.0
         self._releaseLength = release
+        self._minVal = minVal
+        self._maxVal = maxVal
+        self._valRange = maxVal - minVal
+
         self._attackLengthCalc = attack * self._midiTiming.getTicksPerQuarteNote()
         self._decayLengthCalc = decay * self._midiTiming.getTicksPerQuarteNote()
         self._sustainStartCalc = self._attackLengthCalc + self._decayLengthCalc
@@ -138,19 +142,19 @@ class AttackDecaySustainRelease(object):
         noteOnSPP, noteOffSPP, originalLength = argument
         if((originalLength < 0.0001)):
             if(songPosition < noteOnSPP):
-                return 0.0
+                returnValue = 0.0
             elif((songPosition - noteOnSPP) < self._attackLengthCalc):
-                return 1.0 - ((float(songPosition) - noteOnSPP) / self._attackLengthCalc)
+                returnValue = 1.0 - ((float(songPosition) - noteOnSPP) / self._attackLengthCalc)
             else:
                 if(self._sustainValue >= 0.99):
-                    return 0.0
+                    returnValue = 0.0
                 else:
                     if((songPosition - noteOnSPP - self._attackLengthCalc) < self._decayLengthCalc):
-                        return (((float(songPosition) - noteOnSPP - self._attackLengthCalc) / self._decayLengthCalc) * (1.0 - self._sustainValue))
+                        returnValue = (((float(songPosition) - noteOnSPP - self._attackLengthCalc) / self._decayLengthCalc) * (1.0 - self._sustainValue))
                     else:
-                        return 1.0 - self._sustainValue
+                        returnValue = 1.0 - self._sustainValue
         else:
-            #print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
+#            print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
             if((self._releaseLengthCalc > 0.0)):
                 if((noteOffSPP - noteOnSPP) < self._sustainStartCalc):
                     releaseStartValue = self.getValue(noteOffSPP, (noteOnSPP, 0.0, 0.0))
@@ -160,8 +164,11 @@ class AttackDecaySustainRelease(object):
                     returnValue = (((float(songPosition) - noteOffSPP) / self._releaseLengthCalc) * releaseStartValue) + (1.0 - releaseStartValue)
                     if((returnValue == 0.0) and (songPosition - noteOffSPP) <= self._postReleaseLengthCalc):
                         returnValue = 0.00001
-                    return returnValue
-            return 1.0
+                else:
+                    returnValue = 1.0
+            else:
+                returnValue = 1.0
+        return returnValue
 
     def getAttackLength(self):
         return self._attackLengthCalc

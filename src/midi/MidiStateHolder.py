@@ -200,6 +200,8 @@ class NoteState(object):
         self._noteOffSPP = spp
         self._noteOffInSync = midiSync
         self._noteOffQuantizedSPP = quantizePosition(spp, self._quantizeValue)
+        if(self._noteOffQuantizedSPP < self._noteOnQuantizedSPP):
+            self._noteOffQuantizedSPP = self._noteOnQuantizedSPP
         self._noteLegth = self._noteOffQuantizedSPP - self._noteOnQuantizedSPP
         if(self._noteLegth == 0.0):
             self._noteLegth = self._quantizeValue / 4.0
@@ -217,6 +219,14 @@ class NoteState(object):
             self._noteOnQuantizedSPP = quantizePosition(self._noteOnSPP, quantizeValue)
         if((self._noteOffSPP >= 0.0) and (self._noteOffQuantizedSPP < 0)):
             self._noteOffQuantizedSPP = quantizePosition(self._noteOffSPP, quantizeValue)
+        if(self._noteOffSPP >= 0.0):
+            if(self._noteOffQuantizedSPP < self._noteOnQuantizedSPP):
+                self._noteOffQuantizedSPP = self._noteOnQuantizedSPP
+                self._noteLegth = self._noteOffQuantizedSPP - self._noteOnQuantizedSPP
+                if(self._noteLegth == 0.0):
+                    self._noteLegth = self._quantizeValue / 4.0
+                if(self._noteLegth == 0.0):
+                    self._noteLegth = 6.0
 
     def moveStartPos(self, moveValue):
         self._noteOnSPP += moveValue

@@ -1890,8 +1890,11 @@ class KinectCameras(object):
         self._irMask = None
         self._internalResolutionX = 800
         self._internalResolutionY = 600
+        self._errorCount = 0
 
     def openCamera(self, internalResolutionX, internalResolutionY):
+        if(self._errorCount > 10):
+            return False
         if(freenect == None):
             self._log.warning("Error while importing kinect!")
             print "Error while importing kinect!"
@@ -1903,14 +1906,15 @@ class KinectCameras(object):
             self._videoImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
             self._convertMat = createMat(self._internalResolutionX, self._internalResolutionY)
             try:
-                depthArray, _ = freenect.sync_get_depth()
+                depthArray, _ = freenect.sync_get_depth(0)
                 depthCapture = cv.fromarray(depthArray.astype(numpy.uint8))
                 resizeImage(depthCapture, self._depthMask)
 #                depthArray, _ = freenect.sync_get_video(0, freenect.VIDEO_IR_8BIT)
-                rgbImage, _ = freenect.sync_get_video()
+                rgbImage, _ = freenect.sync_get_video(0)
                 rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
                 resizeImage(rgbCapture, self._videoImage)
             except:
+                self._errorCount += 1
                 print "Exception while opening kinnect camera!"
                 self._depthMask = None
                 self._videoImage = None

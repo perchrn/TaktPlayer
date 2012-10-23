@@ -302,6 +302,11 @@ class MediaPool(object):
                     quantizeValue = noteMedia.getQuantize()
                 midiChannelState.quantizeWaitingNote(note, quantizeValue)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
+#            if(midiNoteState.isActive(midiTime) == False):
+#                noteId = midiNoteState.getNote()
+#                if(noteId >= 0):
+#                    print "DEBUG pcn: note not active: " + str(noteId)
+#                    midiNoteState.printState(midiChannel)
             if(midiNoteState.isActive(midiTime)):
                 newNoteId = midiNoteState.getNote()
                 newMedia = self._mediaPool[newNoteId]
@@ -316,6 +321,9 @@ class MediaPool(object):
                     noteMediaIsModulationType = True
                 activeMediaState = None
                 if(oldMedia == None):
+#                    if(newMedia != None):
+#                        print "DEBUG pcn: newMedia noteId: " + str(newNoteId)
+#                        midiNoteState.printState(midiChannel)
                     self._mediaTracks[midiChannel] = newMedia
                     if(newMedia != None):
                         activeMediaState = newMedia.getMediaStateHolder()
@@ -324,6 +332,8 @@ class MediaPool(object):
                         self._mediaTrackIds[midiChannel] = -1
                     self._mediaTrackStateHolders[midiChannel] = activeMediaState
                 elif(oldMedia != newMedia):
+#                    print "DEBUG pcn: newMedia noteId: " + str(newNoteId)
+#                    midiNoteState.printState(midiChannel)
                     oldMedia.releaseMedia(oldMediaState)
                     self._mediaTracks[midiChannel] = newMedia
                     if(newMedia != None):

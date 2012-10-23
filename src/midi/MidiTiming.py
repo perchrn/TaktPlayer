@@ -25,6 +25,7 @@ class MidiTiming(object):
         self._midiInitTime = self.getTime()
         self._midiBpm = 120.0
         self._midiMaxSyncBarsMissed = 4
+        self._midiSyncState = False
 
     def getTicksPerQuarteNote(self):
         return self._midiTicksPerQuarteNote
@@ -43,6 +44,7 @@ class MidiTiming(object):
             midiSync = False;
             deltaTime = timeStamp - self._midiInitTime
             subsubPos = (self._midiTicksPerQuarteNote * deltaTime * self._midiBpm) / 60
+        self._midiSyncState = midiSync
         return (midiSync, subsubPos)
 
     def getTime(self):
@@ -94,6 +96,9 @@ class MidiTiming(object):
             self._vstStopDetectionCount += 1
         else:
             self._vstStopDetectionCount = 0
+        if(self._midiSyncState == False):
+            if(abs(oldPosition - self._midiOurSongPosition) > (self._midiTicksPerQuarteNote * 2)):
+                return (True, oldPosition, self._midiOurSongPosition)
         if(abs(oldPosition - self._midiOurSongPosition) > self._midiTicksPerQuarteNote):
             return ((self._vstStopDetectionCount > 2), oldPosition, self._midiOurSongPosition)
         return None

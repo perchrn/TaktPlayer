@@ -92,6 +92,7 @@ class MediaPool(object):
         self._effectsConfigurationTemplates.setupEffectModulations(self._effectsModulation)
         self.setupSpecialNoteModulations()
         self.mediaPostConfigurations()
+        self._mediaMixer.doPostConfigurations()
 
     def setupSpecialNoteModulations(self):
         for note in self._mediaPool:
@@ -230,6 +231,7 @@ class MediaPool(object):
     def mediaPostConfigurations(self):
         for media in self._mediaPool:
             if(media != None):
+#                print "DEBUG pcn: mediaPostConfigurations() mediaType: " + str(media.getType()) + " name: " + str(media.getFileName())
                 media.doPostConfigurations()
 
     def getMedia(self, noteId):
@@ -286,8 +288,10 @@ class MediaPool(object):
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
+#        print "DEBUG pcn: Updating modulation medias.........................................."
         for modulationMedia in self._modulationMediaList:
             modulationMedia.updateModulationValues(None, midiTime)
+#        print "DEBUG pcn: Updating modulation medias..................................... done"
         for midiChannel in range(16):
             activeMedia = None
             noteMediaIsModulationType = False

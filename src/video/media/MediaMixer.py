@@ -142,6 +142,8 @@ class MediaMixer(object):
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(preEffectModulationTemplate)
         if(preEffectSettings == None):
             preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        if(preEffectSettings != None):
+            preEffectSettings.updateConfiguration()
         if((oldPreEffectName != preEffectSettings.getEffectName()) or (oldPreEffectValues != preEffectSettings.getStartValuesString())):
             preEffectStartValues = preEffectSettings.getStartValues()
             preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
@@ -157,6 +159,8 @@ class MediaMixer(object):
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(postEffectModulationTemplate)
         if(postEffectSettings == None):
             postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+        if(postEffectSettings != None):
+            postEffectSettings.updateConfiguration()
         if((oldPostEffectName != postEffectSettings.getEffectName()) or (oldPostEffectValues != postEffectSettings.getStartValuesString())):
             postEffectStartValues = postEffectSettings.getStartValues()
             postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
@@ -167,6 +171,9 @@ class MediaMixer(object):
 
         self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, preEffectStartControllerValues, preEffectStartValues, postEffect, postEffectSettings, postEffectStartControllerValues, postEffectStartValues)
         return trackId
+
+    def doPostConfigurations(self):
+        self._getConfiguration()
 
     def deafultTrackSettings(self, trackIndex):
         trackConfig = self._mediaTrackConfigs[trackIndex]

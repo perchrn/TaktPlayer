@@ -747,7 +747,6 @@ class GenericModulationHolder(object):
             if(desc == description):
                 return i
         subId = len(self._descriptions)
-        #print "DEBUG pcn: addModulation (SPECIAL): " + description + " id " + str(subId)
         self._descriptions.append(description)
         self._values.append(0.0)
         return subId

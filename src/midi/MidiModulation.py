@@ -257,7 +257,7 @@ class MidiModulation(object):
             print "Unregistered receiver \"%s\"" % receiverName
             return None
         sourceDescription = self._configurationTree.getValue(receiverName)
-        return  self.findModulationId(sourceDescription)
+        return self.findModulationId(sourceDescription)
 
     def findModulationId(self, sourceDescription):
         if(sourceDescription == None):

@@ -273,6 +273,8 @@ class MediaFile(object):
             self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._effect1TemplateName)
             if(self._effect1Settings == None):
                 self._effect1Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect1SettingsName)
+            if(self._effect1Settings != None):
+                self._effect1Settings.updateConfiguration()
             if((oldEffect1Name != self._effect1Settings.getEffectName()) or (oldEffect1Values != self._effect1Settings.getStartValuesString())):
                 self._effect1StartValues = self._effect1Settings.getStartValues()
                 self._effect1OldValues = self._effect1StartValues
@@ -286,6 +288,8 @@ class MediaFile(object):
             self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._effect2TemplateName)
             if(self._effect2Settings == None):
                 self._effect2Settings = self._effectsConfigurationTemplates.getTemplate(self._defaultEffect2SettingsName)
+            if(self._effect2Settings != None):
+                self._effect2Settings.updateConfiguration()
             if((oldEffect2Name != self._effect2Settings.getEffectName()) or (oldEffect2Values != self._effect2Settings.getStartValuesString())):
                 self._effect2StartValues = self._effect2Settings.getStartValues()
                 self._effect2OldValues = self._effect2StartValues
@@ -335,6 +339,9 @@ class MediaFile(object):
 
     def getFileName(self):
         return self._cfgFileName
+
+    def getThumbFileName(self):
+        return self.getFileName()
 
     def setFileName(self, fileName):
         self._cfgFileName = fileName
@@ -683,7 +690,7 @@ class MediaFile(object):
                 #Get current image...
                 image = self._mediaSettingsHolder.captureImage
 
-        filenameHash = hashlib.sha224(self.getFileName().encode("utf-8")).hexdigest()
+        filenameHash = hashlib.sha224(self.getThumbFileName().encode("utf-8")).hexdigest()
         if(os.path.exists("thumbs") == False):
             os.makedirs("thumbs")
         if(os.path.isdir("thumbs") == False):
@@ -1627,7 +1634,7 @@ class TextMedia(SpriteMediaBase):
     def getType(self):
         return "Text"
 
-    def getFileName(self):
+    def getThumbFileName(self):
         return self.getType() + ":" + self._cfgFileName
 
     def _renderText(self):
@@ -2483,6 +2490,9 @@ class ModulationMedia(MediaFile):
         return "Modulation"
 
     def getFileName(self):
+        return self._modulationName
+
+    def getThumbFileName(self):
         return self.getType() + ":" + self._modulationName
 
     def releaseMedia(self, mediaSettingsHolder):
@@ -2568,6 +2578,7 @@ class ModulationMedia(MediaFile):
                 sumValue = valSum / numSums
 #            print "DEBUG pcn: sumSmooth: " + str(sumValue)
 
+#            print "DEBUG pcn: ModulationMedia: updateModulationValues() sum: " + str(sumValue)
             #Publishing...
             noteMidiChannel = midiNoteState.getMidiChannel() + 1
 #            print "+ " + str(self._firstModulationDestId[16]) + " + " + str(firstValue) + " + " + str(secondValue) + " + " + str(thirdValue) + "+"

@@ -259,6 +259,9 @@ class EffectSettings(object):
         self._setStartValuesString(startValues)
 #        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
+    def updateConfiguration(self):
+        self._getConfiguration()
+
     def getEffectName(self):
         self._effectName = self._configurationTree.getValue("Effect")
         return self._effectName

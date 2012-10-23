@@ -288,10 +288,8 @@ class MediaPool(object):
 
     def updateVideo(self, timeStamp):
         midiSync, midiTime = self._midiTiming.getSongPosition(timeStamp) #@UnusedVariable
-#        print "DEBUG pcn: Updating modulation medias.........................................."
         for modulationMedia in self._modulationMediaList:
             modulationMedia.updateModulationValues(None, midiTime)
-#        print "DEBUG pcn: Updating modulation medias..................................... done"
         for midiChannel in range(16):
             activeMedia = None
             noteMediaIsModulationType = False

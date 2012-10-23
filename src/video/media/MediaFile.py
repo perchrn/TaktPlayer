@@ -178,6 +178,7 @@ class MediaFile(object):
         self._secondImage = None
         self._bufferedImageList = None
         self._numberOfFrames = 0
+        self._pingPongNumberOfFrames = 0
         self._originalFrameRate = 25
         self._originalTime = 0.0
         self._loopModulationMode = TimeModulationMode.Off
@@ -659,6 +660,7 @@ class MediaFile(object):
                 print "Exception while reading: " + os.path.basename(self._cfgFileName)
                 raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
+        self._pingPongNumberOfFrames = (2 * self._numberOfFrames) - 2
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength <= 0.0):
                 midiLength = self._midiTiming.guessMidiLength(self._originalTime)
@@ -2278,9 +2280,9 @@ class VideoLoopFile(MediaFile):
         elif(self._loopMode == VideoLoopMode.Reverse):
             mediaSettingsHolder.currentFrame = -framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.PingPong):
-            mediaSettingsHolder.currentFrame = abs(((framePos + self._numberOfFrames) % (2 * self._numberOfFrames)) - self._numberOfFrames)
+            mediaSettingsHolder.currentFrame = abs(((framePos + self._numberOfFrames) % (self._pingPongNumberOfFrames)) - self._numberOfFrames)
         elif(self._loopMode == VideoLoopMode.PingPongReverse):
-            mediaSettingsHolder.currentFrame = abs((framePos % (2 * self._numberOfFrames)) - self._numberOfFrames)
+            mediaSettingsHolder.currentFrame = abs(((framePos) % (self._pingPongNumberOfFrames)) - (self._numberOfFrames - 1))
         elif(self._loopMode == VideoLoopMode.DontLoop):
             if(framePos < self._numberOfFrames):
                 mediaSettingsHolder.currentFrame = framePos
@@ -2306,9 +2308,11 @@ class VideoLoopFile(MediaFile):
                 mediaSettingsHolder.captureImage = self._secondImage
 #                self._log.debug("Setting secondframe %d", mediaSettingsHolder.currentFrame)
             else:
-                mediaSettingsHolder.captureImage = cv.CloneImage(cv.QueryFrame(self._videoFile))
-                if(mediaSettingsHolder.captureImage == None):
-                    mediaSettingsHolder.captureImage = self._firstImage
+                captureImage = cv.QueryFrame(self._videoFile)
+                if(captureImage == None):
+                    print "DEBUG pcn: Bad capture! Setting first frame not frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
+                    captureImage = self._firstImage
+                mediaSettingsHolder.captureImage = copyImage(captureImage)
             self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
             return False
         else:

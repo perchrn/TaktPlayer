@@ -1173,7 +1173,7 @@ class EdgeEffect(object):
             if(edgeMode == EdgeModes.Canny):
                 cv.SetZero(image)
             contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
-            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, thikness=2)
+            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, thickness=2)
             return image
 #            else: # Canny
 #                cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
@@ -1623,21 +1623,26 @@ class ImageAddEffect(object):
 
 #??? TODO ???
 #get coordinates from image blob (I want better tracking (or sorting if you like))
-#kinect blob detection with xyz values
 #Redo clip overview (use more space)
 #Showoff DEMO
-#Scroll area fix
-#More complex modulation.
-#    midi modulation note (media) ?
-#        end limiter (max/min or list of values)
-#        make sure its got an unique name (ignored for now.)
+#make ModulationValueMode available
+#Move ModulationRestartMode to EffectConfig.
+
+#AudioUnit plugin fixes (Stop state + how often we send ppq and tempo (1/10))
+#Program not saved indicator in GUI
+#Fix clear note graphichs
 
 #Tap tempo
 #Playback GUI
 
 #install gimp on mac
 
-#Fix multipple playback of same media.
+#Debugging.
+#Check in blip on verse on RulleIGlassskaar, Effects related?
+#Check with midi in mod
+#Check with cameras...
+#Redo baertur with time modulation
+
 
 #Media:
 #Sprite size / zoom (Text media also)

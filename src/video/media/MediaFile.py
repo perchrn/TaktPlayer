@@ -2518,7 +2518,8 @@ class ModulationMedia(MediaFile):
                 #discard last value and recalculate if we get a new note or channel object:
                 self._lastNoteState = midiNoteStateHolder
                 self._lastChannelState = midiChannelStateHolder
-                self._valueSmootherIndex = (self._valueSmootherIndex - 1) % self._valueSmootherLen
+                if(self._valueSmootherLen > 1):
+                    self._valueSmootherIndex = (self._valueSmootherIndex - 1) % self._valueSmootherLen
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         return False

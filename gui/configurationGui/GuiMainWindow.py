@@ -1056,6 +1056,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._updateTitle(self._activeConfig)
         elif(menuString == "Save"):
             if(self._stoppingWebRequests == True):
+                print "Warning! Cannot save program when we have connection troubles!"
                 wx.MessageBox('Cannot save program when we have connection troubles!', 'Warning', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
             else:
                 selectedConfig = self._activeConfig
@@ -1070,6 +1071,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 except wx._core.PyDeadObjectError: #@UndefinedVariable
                     pass
             else:
+                print "Warning! Cannot edit Player config without network contact!"
                 wx.MessageBox('Cannot edit Player config without network contact!', 'Warning', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         elif(menuString == "GUI Config"):
             dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration)

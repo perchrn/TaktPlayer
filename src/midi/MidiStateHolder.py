@@ -194,6 +194,8 @@ class NoteState(object):
         self._octav = octav
         self._noteLetter = noteLetter
         self._velocity = velocity
+        print "DEBUG pcn: note recieved:     ",
+        self.printState(self._midiChannel-1)
 
     def noteOff(self, note, velocity, songPosition, spp, midiSync):
         self._noteOn = False
@@ -381,6 +383,9 @@ class MidiChannelStateHolder(object):
             self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
             for i in range(128):
                 self._controllerValues[i] = 0.0
+        elif(controllerId == self._midiControllers.AllNotesOff):
+#            print "DEBUG pcn: AllNotesOff received!!!"
+            self.removeAllNotes()
         else:
             self._controllerValues[controllerId] = (float(value) / 127)
             self._midiControllerLatestModified.controllerUpdated(controllerId)
@@ -413,6 +418,8 @@ class MidiChannelStateHolder(object):
         for note in range(128):
             testNote = self._nextNotes[note]
             if(testNote.isActive(-1.0)):
+#                print "DEBUG pcn: _findWaitingNextNote() testNote is Active.",
+#                testNote.printState(self._midiChannel-1)
                 if(returnNote == None):
                     returnNote = testNote
                 else:
@@ -436,10 +443,17 @@ class MidiChannelStateHolder(object):
 
     def getActiveNote(self, spp):
         if(self._numberOfWaitingNextNotes > 0):
+#            print "DEBUG pcn: _numberOfWaitingNextNotes = " + str(self._numberOfWaitingNextNotes) + " for ch: " + str(self._midiChannel-1) + " SPP: " + str(spp)
             nextNote = self._findWaitingNextNote()
             if((nextNote != None) and (nextNote.isActive(spp))):
+#                print "DEBUG pcn: _findWaitingNextNote() returned Active note!" + " for " + str(self._midiChannel-1)
                 self._activateNextNote(nextNote)
                 self._activeNote.setNewState(True)
+#            elif(nextNote != None):
+#                print "DEBUG pcn: nextNote != None ",
+#                nextNote.printState(self._midiChannel-1)
+#            else:
+#                print "DEBUG pcn: _findWaitingNextNote() returned None" + " for " + str(self._midiChannel-1)
         if(self._numberOfWaitingActiveNotes > 0):
             if(self._activeNote.isNoteReleased(spp)):
                 testNote = self._findWaitingActiveNote(spp)
@@ -455,6 +469,7 @@ class MidiChannelStateHolder(object):
             self._activeNote = self._activeNotes[noteId]
 
     def removeAllNotes(self):
+        print "DEBUG pcn: removeAllNotes() for " + str(self._midiChannel-1)
         for i in range(128):
             self._activeNotes[i] = NoteState(self._midiChannel)
             self._nextNotes[i] = NoteState(self._midiChannel)
@@ -462,6 +477,7 @@ class MidiChannelStateHolder(object):
 
     def _activateNextNote(self, nextNote):
         noteId = nextNote.getNote()
+        print "DEBUG pcn: _activateNextNote() Note: " + str(noteId) + " for " + str(self._midiChannel-1)
         self._activeNote = nextNote
         self._activeNotes[noteId] = nextNote
         self._nextNotes[noteId] = NoteState(self._midiChannel)#reset note
@@ -483,6 +499,7 @@ class MidiChannelStateHolder(object):
         for note in range(128):
             testNote = self._nextNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):
+                print "DEBUG pcn: cleanupFutureNotes() nextNote: " + str(note) + " for " + str(self._midiChannel-1)
                 self._nextNotes[note] = NoteState(self._midiChannel)#reset note
             testNote = self._activeNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):
@@ -506,7 +523,6 @@ class MidiChannelStateHolder(object):
 
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)
-
 
 class GuiControllerValues(object):
     def __init__(self, myId):

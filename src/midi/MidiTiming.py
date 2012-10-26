@@ -90,15 +90,16 @@ class MidiTiming(object):
         self._midiTicksTimestampsPos = (self._midiTicksTimestampsPos + 1) % self._midiTicksTimestampsLength
         self._midiTicksTimestamps[self._midiTicksTimestampsPos] = dataTimeStamp
         oldPosition = self._midiOurSongPosition
+        _, oldCalcPos = self.getSongPosition(dataTimeStamp)
         self._midiOurSongPosition = vstPpqPos * 24
         self._midiBpm = vstTempo
+        if(self._midiSyncState == False):
+            if(abs(oldCalcPos - self._midiOurSongPosition) > (self._midiTicksPerQuarteNote * 2)):
+                return (True, oldPosition, self._midiOurSongPosition)
         if(oldPosition == self._midiOurSongPosition):
             self._vstStopDetectionCount += 1
         else:
             self._vstStopDetectionCount = 0
-        if(self._midiSyncState == False):
-            if(abs(oldPosition - self._midiOurSongPosition) > (self._midiTicksPerQuarteNote * 2)):
-                return (True, oldPosition, self._midiOurSongPosition)
         if(abs(oldPosition - self._midiOurSongPosition) > self._midiTicksPerQuarteNote):
             return ((self._vstStopDetectionCount > 2), oldPosition, self._midiOurSongPosition)
         return None

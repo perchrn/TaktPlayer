@@ -257,6 +257,7 @@ class TcpMidiListner(object):
 #                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
                 if(dataLen > 8): # VST timing or programName over net!
                     if(str(data).startswith("vstTime|")):
+                        print "t",
                         vstTimeSplit = str(data).split("|")
                         if(len(vstTimeSplit) == 3):
                             posVal = float(vstTimeSplit[1])

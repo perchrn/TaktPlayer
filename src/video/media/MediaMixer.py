@@ -186,11 +186,11 @@ class MediaMixer(object):
 
         trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPreEffectSettingsName)
-        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
+        preEffect = getEffectByName(preEffectSettings.getEffectName(), self._defaultPreEffectSettingsName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
-        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._configurationTree, self._effectImagesConfigurationTemplates, self._internalResolutionX, self._internalResolutionY)
+        postEffect = getEffectByName(postEffectSettings.getEffectName(), self._defaultPostEffectSettingsName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
         preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)

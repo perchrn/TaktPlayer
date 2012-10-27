@@ -1639,9 +1639,10 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
-#Check with midi in mod
 #Check with cameras...
 #Redo baertur with time modulation
+#Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
+#Remove unessesary sending when server is updatet (Related to looping trouble above.)
 
 
 #Media:

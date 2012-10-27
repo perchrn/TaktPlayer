@@ -661,7 +661,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 found = True
                         if(found == False):
                             widget = self._noteWidgets[i]
-                            widget.clearBitmap()
+                            widget.clearKeyboardButton()
                     if(foundTask != None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
@@ -1300,7 +1300,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def clearImageOnNote(self, noteId):
         if((noteId >= 0) and (noteId < 128)):
-            self._noteWidgets[noteId].clearBitmap()
+            self._noteWidgets[noteId].clearKeyboardButton()
             self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
 
     def fileDropped(self, widgetId, fileName, fileNameIndex):

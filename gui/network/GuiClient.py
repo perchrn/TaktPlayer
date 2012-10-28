@@ -329,7 +329,7 @@ class GuiClient(object):
         self._commandQueue.put(commandXml.getXmlString())
 
     def sendConfiguration(self, xmlString):
-        #print "DEBUG pcn: sending config:"
+        print "DEBUG pcn: sending config:"
         #print xmlString
         self._commandQueue.put(xmlString)
 
@@ -364,15 +364,15 @@ class GuiClient(object):
     def getServerResponse(self):
         returnValue = (None, None)
         try:
-            queueSize = self._commandQueue.qsize()
-            if(queueSize > 1):
-                print "DEBUG pcn: self._commandQueue queue size: " + str(queueSize)
+#            queueSize = self._commandQueue.qsize()
+#            if(queueSize > 1):
+#                print "DEBUG pcn: self._commandQueue queue size: " + str(queueSize)
             serverResponse = self._resultQueue.get_nowait()
             serverXml = stringToXml(serverResponse)
             if(serverXml != None):
-                queueSize = self._resultQueue.qsize()
-                if(queueSize > 1):
-                    print "DEBUG pcn: self._resultQueue queue size: " + str(queueSize)
+#                queueSize = self._resultQueue.qsize()
+#                if(queueSize > 1):
+#                    print "DEBUG pcn: self._resultQueue queue size: " + str(queueSize)
                 if(serverXml.tag == "servermessage"):
                     print "GuiClient Message: " + serverXml.get("message")
                 elif(serverXml.tag == "fileDownloaded"):
@@ -461,7 +461,12 @@ class GuiClient(object):
                 elif(serverXml.tag == "configFileRequest"):
                     listTxt = serverXml.get("configFiles")
                     activeConfig = serverXml.get("activeConfig")
-                    returnValue = (self.ResponseTypes.ConfigFileList, (listTxt, activeConfig))
+                    configSavedStateString = serverXml.get("configIsSaved")
+                    if(configSavedStateString == "True"):
+                        configSavedState = True
+                    else:
+                        configSavedState = False
+                    returnValue = (self.ResponseTypes.ConfigFileList, (listTxt, activeConfig, configSavedState))
 #                    print "Got configFileRequest response: " + listTxt
                 else:
                     print "Unknown Message: " + serverResponse

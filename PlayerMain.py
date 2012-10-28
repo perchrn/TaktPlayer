@@ -204,10 +204,6 @@ class PlayerMain(wx.Frame):
                 self._mediaPool.checkAndUpdateFromConfiguration()
                 self._mediaMixer.checkAndUpdateFromConfiguration()
                 self._configurationTree.resetConfigurationUpdated()
-                #TODO: autosave...
-#                print "**********" * 10
-#                print self._configurationTree.getConfigurationXMLString()
-#                print "**********" * 10
             self._configCheckCounter = 0
         else:
             self._configCheckCounter += 1

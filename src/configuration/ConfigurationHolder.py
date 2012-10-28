@@ -87,6 +87,7 @@ class ConfigurationHolder(object):
 
         self._loadedXML = None
         self._loadedFileName = ""
+        self._unsavedConfig = False
 
         self._configIsUpdated = True
         self._configId = -1
@@ -114,10 +115,13 @@ class ConfigurationHolder(object):
 
     def loadConfig(self, configName):
         print "DEBUG pcn: loadConfig: " + configName
+        if(self._unsavedConfig == True):
+            self.saveConfigFile(self._loadedFileName + ".bak")
         if(os.path.isabs(configName) == True):
             filePath = os.path.normpath(configName)
         else:
             filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        self._loadedFileName = filePath
         if(os.path.isfile(filePath) == False):
             print "********** Error loading configuration: \"%s\" **********" %(filePath)
             filePath = os.path.normpath(os.path.join(os.getcwd(), "config", os.path.basename(configName)))
@@ -135,14 +139,15 @@ class ConfigurationHolder(object):
                 soup = BeautifulStoneSoup(xmlString)
             self._loadedXML = ElementTree.XML(soup.prettify())
             self._updateFromXml(self._loadedXML)
-            self._loadedFileName = os.path.basename(configName)
+            self._unsavedConfig = False
         except:
             print "********** Error loading configuration: \"%s\" **********" %(filePath)
             raise
 
     def saveConfigFile(self, configName):
-        if(configName.endswith(".cfg") == False):
-            configName = configName + ".cfg"
+        if(configName.endswith(".cfg.bak") == False):
+            if(configName.endswith(".cfg") == False):
+                configName = configName + ".cfg"
         if(os.path.isabs(configName) == True):
             filePath = os.path.normpath(configName)
         else:
@@ -151,7 +156,8 @@ class ConfigurationHolder(object):
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
             saveFile.write(xmlString)
-            self._loadedFileName = os.path.basename(configName)
+            self._loadedFileName = filePath
+            self._unsavedConfig = False
         except:
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
             raise
@@ -192,7 +198,10 @@ class ConfigurationHolder(object):
         return fileListString
 
     def getCurrentFileName(self):
-        return self._loadedFileName
+        return os.path.basename(self._loadedFileName)
+
+    def isConfigNotSaved(self):
+        return self._unsavedConfig
 
     def setFromXmlString(self, xmlString):
         if(self._selfClosingList != None):
@@ -201,6 +210,7 @@ class ConfigurationHolder(object):
             soup = BeautifulStoneSoup(xmlString)
         self._loadedXML = ElementTree.XML(soup.prettify())
         self._updateFromXml(self._loadedXML)
+        self._unsavedConfig = True
 
     def setFromXml(self, xmlConfig):
 #        print "iIiIiI" * 50
@@ -208,6 +218,7 @@ class ConfigurationHolder(object):
 #        print "iIiIiI" * 50
         self._loadedXML = xmlConfig
         self._updateFromXml(self._loadedXML)
+        self._unsavedConfig = True
 
     def _updateParamsFromXml(self):
         for param in self._parameters:

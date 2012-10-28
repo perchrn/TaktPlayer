@@ -1576,7 +1576,7 @@ class ImageAddEffect(object):
                 self._maskImage = None
             else:
                 self._maskImage = self.getImage(maskId - 1)
-            
+
     def _updateAddImage(self, addId):
         if(self._addId != addId):
             self._addId = addId
@@ -1628,10 +1628,7 @@ class ImageAddEffect(object):
 #make ModulationValueMode available
 #Move ModulationRestartMode to EffectConfig.
 
-#AudioUnit plugin fixes (Stop state + how often we send ppq and tempo (1/10))
-#Program not saved indicator in GUI
-#Fix clear note graphichs
-
+#DMX512
 #Tap tempo
 #Playback GUI
 
@@ -1641,8 +1638,8 @@ class ImageAddEffect(object):
 #Check in blip on verse on RulleIGlassskaar, Effects related?
 #Check with cameras...
 #Redo baertur with time modulation
-#Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
-#Remove unessesary sending when server is updatet (Related to looping trouble above.)
+#Retest: #Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
+#Retest: #Remove unessesary sending when server is updatet (Related to looping trouble above.)
 
 
 #Media:

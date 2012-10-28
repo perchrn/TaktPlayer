@@ -203,6 +203,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
         self._baseTitle = title
         self._activeConfig = ""
+        self._serverConfigIsSaved = False
         self._updateTitle(self._activeConfig)
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -236,6 +237,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._convertionOutputFileName = ""
         self._playerConfigString = None
         self._oldServerConfigurationString = ""
+        self._oldGuiConfigurationString = ""
         self._oldServerConfigList = ""
         self._configurationFilesList = ["N/A"]
         self._oldServerActiveConfig = ""
@@ -448,7 +450,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._latestControllersRequestResult = None
         self._dragSource = None
         self.setupClientProcess()
-        self._oldServerConfigurationString = self._configuration.getXmlString()
+        self._oldGuiConfigurationString = self._configuration.getXmlString()
+        self._oldServerConfigurationString = self._oldGuiConfigurationString
         self._commandQueue = None
         self._statusQueue = None
         self._timedUpdate(None)
@@ -747,7 +750,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if(self._oldServerConfigurationString != newConfigString):
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
-                        if(currentGuiConfigString != self._oldServerConfigurationString):
+                        if(currentGuiConfigString != self._oldGuiConfigurationString):
+                            self._oldGuiConfigurationString = currentGuiConfigString
+                            print "DEBUG pcn: self._oldGuiConfigurationString = currentGuiConfigString"
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
@@ -768,7 +773,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                         self._oldServerConfigurationString = newConfigString
                                     self._configUpdatedRequestIsOpen = False
                         if(loadConfig == True):
+                            print "DEBUG pcn loadConfig == True"
                             self._configuration.setFromXml(newConfigXml)
+                            self._oldGuiConfigurationString = self._configuration.getXmlString()
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
                             if(noteConfig == None):
                                 self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
@@ -786,7 +793,14 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 #                            self._configuration.printConfiguration()
 #                            print "#" * 150
                         self.updateKeyboardImages()
-                    self._oldServerConfigurationString = newConfigString
+                        self._oldServerConfigurationString = newConfigString
+                    if(foundTask != None):
+                        foundTask.taskDone()
+                        try:
+                            self._taskQueue.remove(foundTask)
+                        except:
+                            pass
+                    foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
                     if(foundTask != None):
                         foundTask.taskDone()
                         try:
@@ -822,7 +836,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.ConfigFileList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
                 if(result[1] != None):
-                    configurationFileListString, activeConfig = result[1]
+                    configurationFileListString, activeConfig, isConfigSaved = result[1]
+                    self._serverConfigIsSaved = isConfigSaved
                     if((self._oldServerConfigList != configurationFileListString) or (self._oldServerActiveConfig != activeConfig)):
                         self._configurationFilesList = configurationFileListString.split(';', 128)
                         self._oldServerActiveConfig = activeConfig
@@ -830,6 +845,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             self._updateTitle("No configuration loaded.")
                         else:
                             self._updateTitle(activeConfig)
+                    else:
+                        self._updateTitle(activeConfig)
                     self._oldServerConfigList = configurationFileListString
                     if(foundTask != None):
                         foundTask.taskDone()
@@ -841,7 +858,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         elif(activeConfig == "Connecting to server..."):
             self.SetTitle(self._baseTitle + "   * Connecting to server... *")
         else:
-            self.SetTitle(self._baseTitle + "   [" + activeConfig + "]")
+            if(self._serverConfigIsSaved):
+                self.SetTitle(self._baseTitle + "   [" + activeConfig + "]")
+            else:
+                self.SetTitle(self._baseTitle + "   [" + activeConfig + "] *Not saved!*")
         self._activeConfig = activeConfig
 
     def _checkForStaleTasks(self):
@@ -877,7 +897,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     self._guiClient.requestConfigList()
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.SendConfig):
-                    xmlString = self._configuration.getXmlString()
+                    xmlString = task.getExtraData()
                     self._guiClient.sendConfiguration(xmlString)
                     task.setState(TaskHolder.States.Sendt)
                 elif(task.getType() == TaskHolder.RequestTypes.Configuration):
@@ -1004,13 +1024,15 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._skippedCheckConfigState = 0
             self._updateMidiButtonColor(self._configuration.isMidiEnabled())
             currentGuiConfigString = self._configuration.getXmlString()
-            if(self._oldServerConfigurationString != currentGuiConfigString):
+            if(self._oldGuiConfigurationString != currentGuiConfigString):
+                print "DEBUG pcn: self._oldGuiConfigurationString != currentGuiConfigString"
                 self._configuration.setupSpecialModulations()
                 if(self._stoppingWebRequests == True):
                     self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
                 else:
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
                     if(foundTask == None):
+                        print "DEBUG pcn: foundTask == None"
                         if(self._configuration.isAutoSendEnabled() == True):
                             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                             self._onSendButton(None)
@@ -1084,6 +1106,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._onClose(None)
 
     def _updateConfigName(self, newConfigName):
+        self._serverConfigIsSaved = False
         self._activeConfig = newConfigName
 
     def _updatePlayerConfiguration(self, xmlString):
@@ -1092,14 +1115,21 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onSendButton(self, event):
         if(self._configUpdatedRequestIsOpen == False):
+            print "DEBUG pcn: _onSendButton()"
             xmlString = self._configuration.getXmlString()
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-            if(foundTask == None):
-                trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
-                self._taskQueue.append(trackRequestTask)
+            if(foundTask != None):
+                foundTask.taskDone()
+                try:
+                    self._taskQueue.remove(foundTask)
+                except:
+                    pass
+            trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.SendConfig, None, None)
+            trackRequestTask.setExtraData(xmlString)
+            self._oldGuiConfigurationString = xmlString
+            self._taskQueue.append(trackRequestTask)
             self._guiClient.sendConfiguration(xmlString)
-            if(foundTask == None):
-                trackRequestTask.setState(TaskHolder.States.Sendt)
+            trackRequestTask.setState(TaskHolder.States.Sendt)
             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
             self._sendingConfig = True
 

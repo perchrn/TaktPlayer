@@ -505,9 +505,14 @@ class GuiServer(object):
                         self._configurationTree.saveConfigFile(filePath)
                     configFileList = self._configurationTree.getConfigFileList(self._configDir)
                     currentConfigFile = self._configurationTree.getCurrentFileName()
+                    currentConfigIsUnsaved = self._configurationTree.isConfigNotSaved()
                     resposeXml = MiniXml("configFileRequest")
                     resposeXml.addAttribute("configFiles", configFileList)
                     resposeXml.addAttribute("activeConfig", currentConfigFile)
+                    if(currentConfigIsUnsaved == True):
+                        resposeXml.addAttribute("configIsSaved", "False")
+                    else:
+                        resposeXml.addAttribute("configIsSaved", "True")
 #                    print "GuiServer client request for configuration file names. List: " + configFileList
                     self._webOutputQueue.put(resposeXml.getXmlString())
                     return retVal

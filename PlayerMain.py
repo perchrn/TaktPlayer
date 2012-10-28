@@ -105,10 +105,7 @@ class PlayerMain(wx.Frame):
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         if(configFile != ""):
             filePath = os.path.join(self._playerConfiguration.getConfigDir(), configFile)
-            if(os.path.isfile(filePath)):
-                self._configurationTree.loadConfig(filePath)
-            else:
-                self._configurationTree.loadConfig(configFile)
+            self._configurationTree.loadConfig(filePath)
         else:
             self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
         self._globalConfig = self._configurationTree.addChildUnique("Global")
@@ -183,7 +180,8 @@ class PlayerMain(wx.Frame):
     def _configLoadCallback(self, programName):
         if(programName != ""):
             activeConfigName = self._configurationTree.getCurrentFileName()
-            if(activeConfigName != programName):
+            isConfigNotSaved = self._configurationTree.isConfigNotSaved()
+            if(isConfigNotSaved or (activeConfigName != programName)):
                 #Find config...
                 print "-" * 120
                 print "DEBUG pcn: _configLoadCallback loading: " + str(programName)

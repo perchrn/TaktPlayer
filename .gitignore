@@ -15,3 +15,5 @@ TaktPlayer.dmg.old
 *.pyc
 TaktPlayer.log.old
 TaktPlayer.log.old
+.pydevproject
+.project

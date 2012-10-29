@@ -43,9 +43,10 @@ launchGUI = True
 applicationHolder = None
 
 class PlayerMain(wx.Frame):
-    def __init__(self, parent, configDir, configFile, title):
+    def __init__(self, parent, configDir, configFile, debugMode, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
         self._configDirArgument = configDir
+        self._debugModeOn = debugMode
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -105,9 +106,9 @@ class PlayerMain(wx.Frame):
         self._configurationTree = ConfigurationHolder("MusicalVideoPlayer")
         if(configFile != ""):
             filePath = os.path.join(self._playerConfiguration.getConfigDir(), configFile)
-            self._configurationTree.loadConfig(filePath)
         else:
-            self._configurationTree.loadConfig(self._playerConfiguration.getStartConfig())
+            filePath = os.path.join(self._playerConfiguration.getConfigDir(), self._playerConfiguration.getStartConfig())
+        self._configurationTree.loadConfig(filePath)
         self._globalConfig = self._configurationTree.addChildUnique("Global")
 
 
@@ -439,7 +440,7 @@ if __name__ in ('__android__', '__main__'):
         os.environ["PATH"] += ":."
         launchGUI = False
     applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = PlayerMain(None, configDir, configFile, title="Takt Player")
+    gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
     try:
         applicationHolder.MainLoop()
 #    except QuitRequestException, quitRequest:

@@ -199,8 +199,9 @@ class TrackOverviewSettings(object):
         return self._activeTrackNote
 
 class TaktPlayerGui(wx.Frame): #@UndefinedVariable
-    def __init__(self, parent, configDir, title):
+    def __init__(self, parent, configDir, debugMode, title):
         super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
+        self._debugModeOn = debugMode
         self._baseTitle = title
         self._activeConfig = ""
         self._serverConfigIsSaved = False
@@ -752,7 +753,6 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         loadConfig = True
                         if(currentGuiConfigString != self._oldGuiConfigurationString):
                             self._oldGuiConfigurationString = currentGuiConfigString
-                            print "DEBUG pcn: self._oldGuiConfigurationString = currentGuiConfigString"
                             if(newConfigString == currentGuiConfigString):
                                 loadConfig = False
                             else:
@@ -1655,7 +1655,7 @@ def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = TaktPlayerGui(None, configDir, title="Takt Player GUI")
+    gui = TaktPlayerGui(None, configDir, debugMode, title="Takt Player GUI")
     if(commandQueue != None and statusQueue != None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()

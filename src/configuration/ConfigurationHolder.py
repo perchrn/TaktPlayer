@@ -90,6 +90,7 @@ class ConfigurationHolder(object):
         self._unsavedConfig = False
 
         self._configIsUpdated = True
+        self._oldConfigId = -1
         self._configId = -1
         self._updateId()
 
@@ -108,13 +109,33 @@ class ConfigurationHolder(object):
         if(self._parent != None):
             return self._parent.getConfigId()
         else:
+            if(self._oldConfigId != self._configId):
+                self._oldConfigId = self._configId
+                if(self._loadedXML != None):
+                    #DEBUG pcn:
+                    import difflib
+                    loadedXml = self._xmlToString(self._loadedXML)
+                    generatedXML = self.getConfigurationXMLString()
+                    if(generatedXML != loadedXml):
+                        print "L"*120
+                        print loadedXml
+                        print "G"*120
+                        print generatedXML
+                        print "="*120
+                        for line in difflib.context_diff(a=loadedXml, b=generatedXML):
+                            print line
+    #                    differThing = difflib.SequenceMatcher(a=loadedXml, b=generatedXML)
+    #                    for block in differThing.get_matching_blocks():
+    #                        print "match at a[%d] and b[%d] of length %d" % block
+                        print "="*120
+                        print "DEBUG pcn: generatedXML != loadedXML"
             return self._configId
 
     def addXml(self, xmlPart):
         self._loadedXML = xmlPart
 
     def loadConfig(self, configName):
-        print "DEBUG pcn: loadConfig: " + configName
+        print "Loading config: " + configName
         if(self._unsavedConfig == True):
             self.saveConfigFile(self._loadedFileName + ".bak")
         if(os.path.isabs(configName) == True):
@@ -131,6 +152,7 @@ class ConfigurationHolder(object):
             print "**********          Keeping last configuration.          **********"
             return
         try:
+            print "DEBUG pcn: loadConfig: " + filePath
             loadFile = open(filePath, 'r')
             xmlString = loadFile.read()
             if(self._selfClosingList != None):
@@ -213,9 +235,6 @@ class ConfigurationHolder(object):
         self._unsavedConfig = True
 
     def setFromXml(self, xmlConfig):
-#        print "iIiIiI" * 50
-#        self._printXml(xmlConfig)
-#        print "iIiIiI" * 50
         self._loadedXML = xmlConfig
         self._updateFromXml(self._loadedXML)
         self._unsavedConfig = True
@@ -356,13 +375,16 @@ class ConfigurationHolder(object):
             soup = BeautifulStoneSoup(xmlString)
         return soup.prettify()
 
-    def _printXml(self, xml):
+    def _xmlToString(self, xml):
         xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")
         if(self._selfClosingList != None):
             soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
         else:
             soup = BeautifulStoneSoup(xmlString)
-        print soup.prettify()
+        return soup.prettify()
+
+    def _printXml(self, xml):
+        print self._xmlToString(xml)
 
     def _addSelfToXML(self, parentNode):
         ourNode = SubElement(parentNode, self._name)

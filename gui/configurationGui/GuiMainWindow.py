@@ -692,6 +692,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             settings.clearThumb()
                             if((settings.getActiveNoteId() == -1)):
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
+                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             settings.setActiveNoteId(-1)
                         else:
@@ -704,9 +705,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             activeNoteConfig = self._configuration.getNoteConfiguration(note)
                             if(activeNoteConfig == None):
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
+                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             else:
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, activeNoteConfig.getMixMode())
+                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             settings.setActiveNoteId(note)
                     if(foundTask != None):

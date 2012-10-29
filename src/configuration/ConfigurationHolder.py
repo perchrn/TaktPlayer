@@ -242,7 +242,10 @@ class ConfigurationHolder(object):
     def _updateParamsFromXml(self):
         for param in self._parameters:
             oldVal = param.getValue()
-            xmlValue = self._loadedXML.get(param.getName().lower())
+            if(self._loadedXML != None):
+                xmlValue = self._loadedXML.get(param.getName().lower())
+            else:
+                xmlValue = None
             if(xmlValue == None):
 #                print "defaulting " + param.getName().lower()
                 param.resetToDefault()
@@ -261,11 +264,16 @@ class ConfigurationHolder(object):
             childUniqueId = child.getUniqueParameterName()
             if(childUniqueId != None):
                 childUniqueValue = str(child._findParameter(childUniqueId).getValue())
-                childXmlPart = self._findXmlChild(xmlPart, childName, childUniqueId, childUniqueValue)
+                if(xmlPart != None):
+                    childXmlPart = self._findXmlChild(xmlPart, childName, childUniqueId, childUniqueValue)
+                else:
+                    childXmlPart = None
             else:
-                childXmlPart = self._findXmlChild(xmlPart, childName)
-            if(childXmlPart != None):
-                child._updateFromXml(childXmlPart)
+                if(xmlPart != None):
+                    childXmlPart = self._findXmlChild(xmlPart, childName)
+                else:
+                    childXmlPart = None
+            child._updateFromXml(childXmlPart)
         self._configIsUpdated = True
 
     def getName(self):

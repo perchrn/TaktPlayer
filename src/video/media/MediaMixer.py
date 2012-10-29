@@ -92,6 +92,7 @@ class MediaMixer(object):
         trackConfigHolder.addTextParameter("PostEffectConfig", self._defaultPostEffectSettingsName)#Default MixPostDefault
 
     def loadMediaFromConfiguration(self):
+        print "DEBUG pcn: loadMediaFromConfiguration()"
         mediaTrackState = []
         for i in range(16):
             mediaTrackState.append(False)
@@ -99,11 +100,13 @@ class MediaMixer(object):
         if(xmlChildren != None):
             for xmlConfig in xmlChildren:
                 trackId = self.updateTrackFromXml(xmlConfig)
-                mediaTrackState[trackId - 1] = True
+                mediaTrackState[trackId] = True
+                print "DEBUG pcn: updateTrackFromXml: " + str(trackId)
         for i in range(16):
             mediaState = mediaTrackState[i]
             if(mediaState == False):
                 self.deafultTrackSettings(i)
+                print "DEBUG pcn: deafultTrackSettings: " + str(i)
 
     def updateTrackFromXml(self, xmlConfig):
         trackId = int(xmlConfig.get("trackid"))

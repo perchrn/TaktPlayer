@@ -2310,8 +2310,12 @@ class VideoLoopFile(MediaFile):
             else:
                 captureImage = cv.QueryFrame(self._videoFile)
                 if(captureImage == None):
-                    print "DEBUG pcn: Bad capture! Setting first frame not frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-                    captureImage = self._firstImage
+                    if(mediaSettingsHolder.captureImage == None):
+                        print "DEBUG pcn: Bad capture! Setting first frame not frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
+                        captureImage = self._firstImage
+                    else:
+                        print "DEBUG pcn: Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
+                        captureImage = mediaSettingsHolder.captureImage
                 mediaSettingsHolder.captureImage = copyImage(captureImage)
             self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
             return False

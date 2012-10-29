@@ -17,3 +17,5 @@ TaktPlayer.log.old
 TaktPlayer.log.old
 .pydevproject
 .project
+com.aptana.ide.core.unifiedBuilder.launch
+org.python.pydev.PyDevBuilder.launch

@@ -380,10 +380,9 @@ class MediaFile(object):
             quantizeLength = roundLength
         self._quantizeLength = quantizeLength
 
-    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
         if((self._loopModulationMode == TimeModulationMode.TriggeredJump) or (self._loopModulationMode == TimeModulationMode.TriggeredLoop)):
-            lastSpp = mediaSettingsHolder.triggerSongPosition
-            if(startSpp != lastSpp):
+            if(noteIsNew):
                 if(mediaSettingsHolder.firstNoteTrigger == True):
                     mediaSettingsHolder.firstNoteTrigger = False
                     mediaSettingsHolder.startSongPosition = startSpp
@@ -799,14 +798,14 @@ class MediaGroup(MediaFile):
     def close(self):
         pass
 
-    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder):
-        if(startSpp != mediaSettingsHolder.startSongPosition):
+    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
+        if(noteIsNew):
             mediaSettingsHolder.startSongPosition = startSpp
             self._resetEffects(mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder)
             for i in range(len(self._mediaList)):
                 media = self._mediaList[i]
                 mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
-                media.setStartPosition(startSpp, mediaSettings, songPosition, midiNoteStateHolder, midiChannelStateHolder)
+                media.setStartPosition(startSpp, mediaSettings, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew)
 
     def releaseMedia(self, mediaSettingsHolder):
         for i in range(len(self._mediaList)):
@@ -2163,9 +2162,8 @@ class ImageSequenceFile(MediaFile):
     def getType(self):
         return "ImageSequence"
 
-    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder):
-        lastSpp = mediaSettingsHolder.triggerSongPosition
-        if(startSpp != lastSpp):
+    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
+        if(noteIsNew):
             if(mediaSettingsHolder.firstNoteTrigger == True):
                 mediaSettingsHolder.firstNoteTrigger = False
                 mediaSettingsHolder.startSongPosition = startSpp
@@ -2350,7 +2348,7 @@ class VideoRecorderMedia(MediaFile):
     def releaseMedia(self, mediaSettingsHolder):
         pass
 
-    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder):
+    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
@@ -2506,10 +2504,9 @@ class ModulationMedia(MediaFile):
     def releaseMedia(self, mediaSettingsHolder):
         pass
 
-    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder):
-        lastSpp = self._startSongPosition
+    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
         mediaSettingsHolder = self._mediaSettingsHolder
-        if(startSpp != lastSpp):
+        if(noteIsNew):
             self._startSongPosition = startSpp
             for i in range(self._valueSmootherLen):
                 self._valueSmoother[i] = -1.0

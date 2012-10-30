@@ -184,6 +184,17 @@ class ConfigurationHolder(object):
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
             raise
 
+    def newConfigFileName(self, configName):
+        if(configName.endswith(".cfg.bak") == False):
+            if(configName.endswith(".cfg") == False):
+                configName = configName + ".cfg"
+        if(os.path.isabs(configName) == True):
+            filePath = os.path.normpath(configName)
+        else:
+            filePath = os.path.normpath(os.path.join(os.getcwd(), "config", configName))
+        self._loadedFileName = filePath
+        self._unsavedConfig = True
+
     def getConfigFileList(self, configDir):
         packageConfigDir = os.path.normpath(os.path.join(os.getcwd(), "config"))
         if((configDir != "") and (os.path.isabs(configDir) == True)):

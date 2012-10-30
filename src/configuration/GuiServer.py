@@ -500,9 +500,12 @@ class GuiServer(object):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.loadConfig(filePath)
                         retVal = True
-                    if((reqType == "save") and (fileName != "None")):
+                    elif((reqType == "save") and (fileName != "None")):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.saveConfigFile(filePath)
+                    elif((reqType == "new") and (fileName != "None")):
+                        filePath = os.path.join(self._configDir, fileName)
+                        self._configurationTree.newConfigFileName(filePath)
                     configFileList = self._configurationTree.getConfigFileList(self._configDir)
                     currentConfigFile = self._configurationTree.getCurrentFileName()
                     currentConfigIsUnsaved = self._configurationTree.isConfigNotSaved()

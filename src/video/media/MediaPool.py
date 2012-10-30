@@ -313,13 +313,15 @@ class MediaPool(object):
             if(midiNoteState.isActive(midiTime)):
                 newNoteId = midiNoteState.getNote()
                 newMedia = self._mediaPool[newNoteId]
+                noteIsNew = False
                 if(midiNoteState.isNew() == True):
+                    noteIsNew = True
                     if(newMedia != None):
                         midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
                 oldMediaState = self._mediaTrackStateHolders[midiChannel]
                 if((newMedia != None) and (newMedia.getType() == "Modulation")):
-                    newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, midiChannelState)
+                    newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, midiChannelState, noteIsNew)
                     newMedia = oldMedia
                     noteMediaIsModulationType = True
                 if(oldMedia == None):
@@ -349,7 +351,7 @@ class MediaPool(object):
                 if(newMedia != None):
                     activeMedia = newMedia
                     if(noteMediaIsModulationType == False):
-                        newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, midiChannelState)
+                        newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, midiChannelState, noteIsNew)
             elif(midiNoteState.isActive(-1.0)):
                 activeMedia = self._mediaTracks[midiChannel]
                 activeMediaState = self._mediaTrackStateHolders[midiChannel]

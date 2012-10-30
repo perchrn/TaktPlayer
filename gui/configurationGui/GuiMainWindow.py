@@ -754,11 +754,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if(self._oldServerConfigurationString != newConfigString):
                         currentGuiConfigString = self._configuration.getXmlString()
                         loadConfig = True
+                        if(newConfigString == currentGuiConfigString):
+                            loadConfig = False
                         if(currentGuiConfigString != self._oldGuiConfigurationString):
                             self._oldGuiConfigurationString = currentGuiConfigString
-                            if(newConfigString == currentGuiConfigString):
-                                loadConfig = False
-                            else:
+                            if(newConfigString != currentGuiConfigString):
                                 if(self._configUpdatedRequestIsOpen == False):
                                     self._configUpdatedRequestIsOpen = True
                                     print "Both configs are updated! " * 5
@@ -1028,14 +1028,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._updateMidiButtonColor(self._configuration.isMidiEnabled())
             currentGuiConfigString = self._configuration.getXmlString()
             if(self._oldGuiConfigurationString != currentGuiConfigString):
-                print "DEBUG pcn: self._oldGuiConfigurationString != currentGuiConfigString"
                 self._configuration.setupSpecialModulations()
                 if(self._stoppingWebRequests == True):
                     self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
                 else:
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
                     if(foundTask == None):
-                        print "DEBUG pcn: foundTask == None"
                         if(self._configuration.isAutoSendEnabled() == True):
                             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                             self._onSendButton(None)
@@ -1079,6 +1077,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             except wx._core.PyDeadObjectError: #@UndefinedVariable
                 pass
             self._updateTitle(self._activeConfig)
+            self._guiClient.requestConfigNew(self._activeConfig)
         elif(menuString == "Save"):
             if(self._stoppingWebRequests == True):
                 print "Warning! Cannot save program when we have connection troubles!"

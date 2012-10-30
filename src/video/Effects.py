@@ -1625,9 +1625,9 @@ class ImageAddEffect(object):
 #get coordinates from image blob (I want better tracking (or sorting if you like))
 #Redo clip overview (use more space)
 #Showoff DEMO
-#make ModulationValueMode available
-#Move ModulationRestartMode to EffectConfig.
+#make ModulationValueMode available and Move ModulationValueMode to EffectConfig.
 
+#ADSR add A AHoldR HoldR modes
 #DMX512
 #Tap tempo
 #Playback GUI
@@ -1640,9 +1640,11 @@ class ImageAddEffect(object):
 #Redo baertur with time modulation
 #Retest: #Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
 #Retest: #Remove unessesary sending when server is updatet (Related to looping trouble above.)
-#Skipping first note on EkkoLego.
 #Retest: #Mix level config not cleared correctly after beeing set (when other config is missing parameter?)
-#AudioUnit plugin always broadcasts first program change. (VST problem also?)
+#AudioUnit plugin always broadcasts first program change. (VST problem also?) Mac OK.
+#New config file -> skips back to old name :-( + New effect template ++
+#Space to stop -> space to start -> skipped first note :-(
+#Start values problem.
 
 #Media:
 #Sprite size / zoom (Text media also)

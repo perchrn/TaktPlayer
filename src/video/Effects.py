@@ -1636,14 +1636,13 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
-#Check with cameras...
+#Check with more cameras...
 #Redo baertur with time modulation
 #Retest: #Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
 #Retest: #Remove unessesary sending when server is updatet (Related to looping trouble above.)
 #Skipping first note on EkkoLego.
 #Retest: #Mix level config not cleared correctly after beeing set (when other config is missing parameter?)
 #AudioUnit plugin always broadcasts first program change. (VST problem also?)
-#Time modulation template does not list available configs in media editor...
 
 #Media:
 #Sprite size / zoom (Text media also)

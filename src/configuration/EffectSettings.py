@@ -187,6 +187,10 @@ class EffectTemplates(ConfigurationTemplates):
                     effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Y")
                     effectModulations.addModulation("BlobDetect;" + effect.getName() + ";" + str(i+1) + ";Size")
 
+    def doPostConfigurations(self):
+        for effect in self.getList():
+            effect._getConfiguration()
+
 class EffectSettings(object):
     def __init__(self, templateName, specialModulationHolder, name, effectTemplates, effectConfigTree, parentConfigurationTree, templateId):
         self._effectTemplates = effectTemplates
@@ -257,7 +261,6 @@ class EffectSettings(object):
         self._effectName = self._configurationTree.getValue("Effect")
         startValues = self._configurationTree.getValue("StartValues")
         self._setStartValuesString(startValues)
-#        self._actualEffect = getEffectByName(effectName, self._configurationTree, self._internalResolutionX, self._internalResolutionY)
 
     def updateConfiguration(self):
         self._getConfiguration()
@@ -348,7 +351,11 @@ class FadeTemplates(ConfigurationTemplates):
             if(configName == name):
                 return True
         return False
-        
+
+    def doPostConfigurations(self):
+        for fade in self.getList():
+            fade._getConfiguration()
+
 class FadeSettings(object):
     def __init__(self, templateName, specialModulationHolder, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
@@ -458,7 +465,11 @@ class TimeModulationTemplates(ConfigurationTemplates):
             if(configName == name):
                 return True
         return False
-        
+
+    def doPostConfigurations(self):
+        for time in self.getList():
+            time._getConfiguration()
+
 class TimeModulationSettings(object):
     def __init__(self, templateName, specialHolder, name, fadeTemplates, fadeConfigTree, parentConfigurationTree, templateId):
         self._fadeTemplates = fadeTemplates
@@ -544,6 +555,7 @@ class TimeModulationSettings(object):
 
     def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
         modulation =  self._midiModulation.getModlulationValue(self._modulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
+#        print "DEBUG pcn: TimeModulationSettings.getValues() -> " + str((self._modulationId, modulation, self._range, self._rangeQuantize))
         return (self._mode, modulation, self._range, self._rangeQuantize)
 
 class EffectImageList(ConfigurationTemplates):

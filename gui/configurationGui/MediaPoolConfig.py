@@ -608,7 +608,7 @@ class MediaFile(object):
                 nameOk = True
                 break
         if(nameOk == False):
-            self._configurationTree.setValue("TimeModulationConfig", self._defaultTimeModulationSettingsName)
+            self._configurationTree.setValue("TimeModulationConfig", "Default")
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         usedConfigName = self._configurationTree.getValue("Effect1Config")
@@ -2723,6 +2723,12 @@ All notes on events are quantized to this.
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         else:
+            if(config != None):
+                timeModulationTemplate = config.getValue("TimeModulationConfig")
+                self.updateTimeModulationChoices(self._timeModulationField, timeModulationTemplate, "Default")
+            else:
+                oldTimeModulationTemplate = self._timeModulationField.GetValue()
+                self.updateTimeModulationChoices(self._timeModulationField, oldTimeModulationTemplate, "Default")
             self._noteConfigSizer.Show(self._timeModulationSizer)
 
         if(self._type == "Group"):
@@ -3436,6 +3442,11 @@ All notes on events are quantized to this.
             guiFade = self._fadeField.GetValue()
             configFade = self._config.getValue("FadeConfig")
             if(guiFade != configFade):
+                return True
+        if((self._type != "Modulation") and (self._type != "Camera") and (self._type != "KinectCamera")):
+            guiTime = self._timeModulationField.GetValue()
+            configTime = self._config.getValue("TimeModulationConfig")
+            if(guiTime != configTime):
                 return True
         guiSyncLength = float(self._syncField.GetValue())
         configSyncLength = float(self._config.getValue("SyncLength"))

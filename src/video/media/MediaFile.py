@@ -19,8 +19,7 @@ from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
 from midi.MidiUtilities import noteStringToNoteNumber
 from video.media.TextRendrer import generateTextImageAndMask, findOsFontPath
-from midi.MidiStateHolder import NoteState, MidiControllerLatestModified,\
-    MidiChannelStateHolder
+from midi.MidiStateHolder import NoteState
 try:
     import freenect
 except:
@@ -2432,9 +2431,10 @@ class ModulationMedia(MediaFile):
         self._valueSmootherLen = -1
         self._getConfiguration()
         self._lastNoteState = NoteState(0)
-        self._dummyMidiControllerLatestModified = MidiControllerLatestModified()
-        self._lastChannelState = MidiChannelStateHolder(1, self._dummyMidiControllerLatestModified)
         self._startSongPosition = 0.0
+
+    def setMidiChannelState(self, midiChannelState):
+        self._lastChannelState = midiChannelState
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
@@ -2590,7 +2590,6 @@ class ModulationMedia(MediaFile):
 #            print "DEBUG pcn: ModulationMedia: updateModulationValues() sum: " + str(sumValue)
             #Publishing...
             noteMidiChannel = midiNoteState.getMidiChannel() + 1
-#            print "+ " + str(self._firstModulationDestId[16]) + " + " + str(firstValue) + " + " + str(secondValue) + " + " + str(thirdValue) + "+"
             self._noteModulationHolder.setValue(self._firstModulationDestId[noteMidiChannel], firstValue)
             self._noteModulationHolder.setValue(self._secondModulationDestId[noteMidiChannel], secondValue)
             self._noteModulationHolder.setValue(self._thirdModulationDestId[noteMidiChannel], thirdValue)

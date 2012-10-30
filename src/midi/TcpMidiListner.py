@@ -274,7 +274,8 @@ class TcpMidiListner(object):
                         programSplit = str(data).split("|")
                         if(len(programSplit) == 2):
                             programName = programSplit[1]
-                            self._configLoadCallback(programName)
+                            if(self._configLoadCallback != None):
+                                self._configLoadCallback(programName)
                 else:
                     if(dataLen > 3): # MVP MIDI over net
                         command = ord(data[0:1])

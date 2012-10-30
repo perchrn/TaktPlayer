@@ -215,6 +215,8 @@ class MediaPool(object):
                     elif(mediaType == "Modulation"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = ModulationMedia(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, guiCtrlStateHolder, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        midiChannelState = self._midiStateHolder.getMidiChannelState(0)
+                        mediaFile.setMidiChannelState(midiChannelState)
                         mediaFile.openFile(midiLength)
                         self._modulationMediaList.append(mediaFile)
                     else:

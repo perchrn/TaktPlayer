@@ -47,6 +47,7 @@ class GlobalConfig(object):
         return self._specialModulationHolder
 
     def _getConfiguration(self):
+        self._timeModulationConfiguration._getConfiguration()
         self._effectsConfiguration._getConfiguration()
         self._effectImagesConfiguration._getConfiguration()
         self._fadeConfiguration._getConfiguration()
@@ -2600,10 +2601,10 @@ Example for range = 4.0
             modulation = config.getValue("Modulation")
             self._mainConfig.updateModulationGuiButton(modulationWidget, modulation)
 
-    def updateTimeModulationList(self, effectConfiguration, selectedName):
+    def updateTimeModulationList(self, timeModConfiguration, selectedName):
         self._timeModulationListWidget.DeleteAllItems()
         selectedIndex = -1
-        for effectConfig in effectConfiguration.getList():
+        for effectConfig in timeModConfiguration.getList():
             config = effectConfig.getConfigHolder()
             selectedMode = config.getValue("Mode")
             selectedModeLower = selectedMode.lower()

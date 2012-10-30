@@ -204,6 +204,9 @@ class PlayerMain(wx.Frame):
                 self._mediaFadeConfiguration.checkAndUpdateFromConfiguration()
                 self._mediaPool.checkAndUpdateFromConfiguration()
                 self._mediaMixer.checkAndUpdateFromConfiguration()
+                self._timeModulationConfiguration.doPostConfigurations()
+                self._effectsConfiguration.doPostConfigurations()
+                self._mediaFadeConfiguration.doPostConfigurations()
                 self._configurationTree.resetConfigurationUpdated()
             self._configCheckCounter = 0
         else:

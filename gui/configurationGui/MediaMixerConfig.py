@@ -478,6 +478,7 @@ Replace:\tNo mixing. Just use this image.
             selectedEffectConfig = trackConfig.getValue("PreEffectConfig")
             self._selectedEditor = self.EditSelection.PreEffect
             self._highlightButton(self._selectedEditor)
+            self._mainConfig.setSelectedMidiChannel(foundTrackId)
             self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
             self._mainConfig.showSliderGuiEditButton()
             self._showSlidersCallback()

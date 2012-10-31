@@ -537,7 +537,7 @@ class MediaFile(object):
                     effectSCV4 = effectStartSumValues[4]
             if(effect != None):
                 image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
-#                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4))
+#                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " ctrl: " + str((effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
             return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4), (effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
         else:
             return (image, (0.0, 0.0, 0.0, 0.0, 0.0), (None, None, None, None, None))
@@ -779,21 +779,21 @@ class MediaFile(object):
         if(self._fileOk):
             self._getConfiguration() #Make sure we can connect to any loaded ModulationMedia
 
-    def mixWithImage(self, image, mixMode, mixLevel, effects, mediaStateHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaStateHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(mediaStateHolder.image == None):
-            return (image, None, None)
+            return (image, None, None, None, None)
         else:
             emptyStartValues = (None, None, None, None, None)
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
             if(effects != None):
-                preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
+                preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = effects
             else:
-                preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
-            (mediaStateHolder.image, currentPreValues, unusedStarts) = self._applyOneEffect(mediaStateHolder.image, preFx, preFxSettings, preFxCtrlVal, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
+                preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = (None, None, None, None, None, None)
+            (mediaStateHolder.image, currentPreValues, preEffectStartSumValues) = self._applyOneEffect(mediaStateHolder.image, preFx, preFxSettings, preCtrlValues, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0)
             mixedImage =  mixImages(mixMode, mixLevel, image, mediaStateHolder.image, mediaStateHolder.imageMask, mixMat1, mixMask)
-            (mixedImage, currentPostValues, unusedStarts) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postFxCtrlVal, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
-            return (mixedImage, currentPreValues, currentPostValues)
+            (mixedImage, currentPostValues, postEffectStartSumValues) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postCtrlValues, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5)
+            return (mixedImage, currentPreValues, currentPostValues, preEffectStartSumValues, postEffectStartSumValues)
 
 class MediaSettings(object):
     def __init__(self, uid):
@@ -906,15 +906,15 @@ class MediaGroup(MediaFile):
                 if(imageTest != None):
                     mixMode = MixMode.Replace
                     if(imageMix == self._mixMat1):
-                        imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                        imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                     else:
-                        imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                        imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
             else:
                 mixMode = MixMode.Default
                 if(imageMix == self._mixMat1):
-                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
                 else:
-                    imageMix, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
 
         if(imageMix == None):
             imageMix = self._blankImage
@@ -2431,17 +2431,17 @@ class VideoRecorderMedia(MediaFile):
         fourcc = cv.CV_FOURCC('M','J','P','G')
         self._videoWriter = cv.CreateVideoWriter("test.avi", fourcc, 30, (self._internalResolutionX, self._internalResolutionY))
 
-    def mixWithImage(self, image, mixMode, mixLevel, effects, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         if(mixMode == MixMode.Default):
             mixMode = self._mixMode
         emptyStartValues = (None, None, None, None, None)
         if(effects != None):
-            preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = effects
+            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = effects
         else:
-            preFx, preFxSettings, preFxCtrlVal, preFxStartVal, postFx, postFxSettings, postFxCtrlVal, postFxStartVal = (None, None, (None, None, None, None, None), None, None, None, (None, None, None, None, None), None)
-        (self._captureImage, currentPreValues, unusedStarts) = self._applyOneEffect(image, preFx, preFxSettings, preFxCtrlVal, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0) #@UnusedVariable
-        (self._captureImage, currentPostValues, unusedStarts) = self._applyOneEffect(image, postFx, postFxSettings, postFxCtrlVal, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5) #@UnusedVariable
-        return (self._captureImage, currentPreValues, currentPostValues)
+            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = (None, None, None, None, None, None)
+        (self._captureImage, currentPreValues, preEffectStartSumValues) = self._applyOneEffect(image, preFx, preFxSettings, preCtrlValues, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0)
+        (self._captureImage, currentPostValues, postEffectStartSumValues) = self._applyOneEffect(image, postFx, postFxSettings, postCtrlValues, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5)
+        return (self._captureImage, currentPreValues, currentPostValues, preEffectStartSumValues, postEffectStartSumValues)
 
 class ModulationMedia(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -2670,8 +2670,8 @@ class ModulationMedia(MediaFile):
         self._firstImage = self._mediaSettingsHolder.captureImage
         self._fileOk = True
 
-    def mixWithImage(self, image, mixMode, mixLevel, effects, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
-        return (image, None, None)
+    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+        return (image, None, None, None, None)
 
 class MediaError(Exception):
     def __init__(self, value):

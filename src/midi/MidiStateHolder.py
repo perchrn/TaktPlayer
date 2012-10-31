@@ -534,7 +534,12 @@ class MidiChannelStateHolder(object):
             noteStart = testNote.getUnquantizedStartPosition()
             if(noteStart > newPosQuantized):
                 testNote.moveStartPos(-jumpLengthQuantized)
-#                print "DEBUG fixLoopingNotes() for note: " + str(testNote.getNote()) + " with old start: " + str(noteStart) + " new start: " + str(testNote.getUnquantizedStartPosition())
+#                print "DEBUG pcn: fixLoopingNotes() for active note: " + str(testNote.getNote()) + " with old start: " + str(noteStart) + " new start: " + str(testNote.getUnquantizedStartPosition())
+            testNote = self._nextNotes[note]
+            noteStart = testNote.getUnquantizedStartPosition()
+            if(noteStart == oldSongPosition):
+#                print "DEBUG pcn: fixLoopingNotes() == for next note: " + str(testNote.getNote()) + " with old start: " + str(noteStart) + " new start: " + str(testNote.getUnquantizedStartPosition())
+                testNote.moveStartPos(-jumpLengthQuantized)
 
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)

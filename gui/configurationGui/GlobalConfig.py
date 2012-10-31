@@ -1042,17 +1042,19 @@ A list of start values for the effect modulation.
         isChannelController = False
         if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
             isChannelController = True
+        midiChannel = self._mainConfig.getSelectedMidiChannel()
         if(isChannelController == True):
-            midiChannel = self._mainConfig.getSelectedMidiChannel()
             if((midiChannel < 0) or (midiChannel >= 16)):
                 pass
             else:
                 self._mainConfig.getEffectState(midiChannel, None)
         else:
+            if((midiChannel < 0) or (midiChannel >= 16)):
+                midiChannel = None
             if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
                 pass
             else:
-                self._mainConfig.getEffectState(None, self._midiNote)
+                self._mainConfig.getEffectState(midiChannel, self._midiNote)
     
     def _onSliderCloseButton(self, event):
         self._hideSlidersCallback()

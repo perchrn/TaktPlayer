@@ -129,8 +129,8 @@ class MediaMixer(object):
             oldPostEffectSettings = None
             preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
             postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-            preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
-            postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            preEffectStartControllerValues = (None, None, None, None, None)
+            postEffectStartControllerValues = (None, None, None, None, None)
 
         oldPreEffectName = "None"
         oldPreEffectValues = "0.0|0.0|0.0|0.0|0.0"
@@ -146,7 +146,7 @@ class MediaMixer(object):
             preEffectSettings.updateConfiguration()
         if((oldPreEffectName != preEffectSettings.getEffectName()) or (oldPreEffectValues != preEffectSettings.getStartValuesString())):
             preEffectStartValues = preEffectSettings.getStartValues()
-            preEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            preEffectStartControllerValues = (None, None, None, None, None)
         preEffect = getEffectByName(preEffectSettings.getEffectName(), preEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
         oldPostEffectName = "None"
@@ -163,7 +163,7 @@ class MediaMixer(object):
             postEffectSettings.updateConfiguration()
         if((oldPostEffectName != postEffectSettings.getEffectName()) or (oldPostEffectValues != postEffectSettings.getStartValuesString())):
             postEffectStartValues = postEffectSettings.getStartValues()
-            postEffectStartControllerValues = (0.0, 0.0, 0.0, 0.0, 0.0)
+            postEffectStartControllerValues = (None, None, None, None, None)
 #            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), postEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 

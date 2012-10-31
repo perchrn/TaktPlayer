@@ -934,7 +934,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def requestEffectState(self, channel, note):
         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.EffectState, None)
         if(foundTask == None):
-            effectStateRequestTask = TaskHolder("Effect state request for " + str(channel) + " or " + str(note), TaskHolder.RequestTypes.EffectState, None, None)
+            effectStateRequestTask = TaskHolder("Effect state request for " + str(note) + " or " + str(channel), TaskHolder.RequestTypes.EffectState, None, None)
             self._taskQueue.append(effectStateRequestTask)
             self._guiClient.requestEffectState(channel, note)
             effectStateRequestTask.setState(TaskHolder.States.Sendt)

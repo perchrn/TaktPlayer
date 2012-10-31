@@ -299,25 +299,28 @@ class MidiChannelStateHolder(object):
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._midiChannel = channelId
 
-        self._activeNotes = []
-        for _ in range(128):
-            self._activeNotes.append(NoteState(self._midiChannel))
         self._numberOfWaitingActiveNotes = 0
-        self._nextNotes = []
-        for _ in range(128):
-            self._nextNotes.append(NoteState(self._midiChannel))
         self._numberOfWaitingNextNotes = 0
-        self._activeNote = self._activeNotes[0]
 
+        self._activeNotes = []
+        self._nextNotes = []
         self._controllerValues = []
-        for _ in range(128):
+        self._guiControllerStateHolders = []
+        for i in range(128):
+            self._activeNotes.append(NoteState(self._midiChannel))
+            self._nextNotes.append(NoteState(self._midiChannel))
             self._controllerValues.append(0.0)
+            self._guiControllerStateHolders.append(GuiControllerValues(i))
+        self._activeNote = self._activeNotes[0]
 
         self._pitchBendValue = 0.5 #No pitch bend
         self._aftertouch = 0.0 #No aftertouch
 
         self._midiControllers = MidiControllers()
         self._midiControllerLatestModified = midiControllerLatestModified
+
+    def getMidiChannel(self):
+        return self._midiChannel
 
     def getModulationId(self, modName):
         if(modName == "Controller"):
@@ -390,6 +393,18 @@ class MidiChannelStateHolder(object):
             self._controllerValues[controllerId] = (float(value) / 127)
             self._midiControllerLatestModified.controllerUpdated(controllerId)
 
+    def guiControllerNoteEvent(self, data1, data2, data3):
+        note = min(max(0, data1), 127)
+        self._guiControllerStateHolders[note].controllerChange(data2, data3)
+
+    def guiControllerNoteResetEvent(self, data1, data3):
+        note = min(max(0, data1), 127)
+        self._guiControllerStateHolders[note].resetState(data3)
+
+    def getGuiControllerStateHolder(self, data1):
+        note = min(max(0, data1), 127)
+        return self._guiControllerStateHolders[note]
+        
     def pitchBendChange(self, data1, data2, songPosition):
         self._pitchBendValue = (float(data2) / 128) + (float(data1) / 16256)#(127*128)
 
@@ -527,13 +542,11 @@ class MidiChannelStateHolder(object):
 class GuiControllerValues(object):
     def __init__(self, myId):
         self._id = myId
-        self._lastMidiChannel = -1
         self._controllerStates = []
         for i in range(16): #@UnusedVariable
             self._controllerStates.append(None)
 
-    def controllerChange(self, midiChannel, value, command):
-        self._lastMidiChannel = midiChannel
+    def controllerChange(self, value, command):
         controllerNr = int(command & 0x0f)
         self._controllerStates[controllerNr] = (float(value) / 127)
         #print "DEBUG setting gui value: " + str(self._controllerStates[controllerNr]) + " for ID: " + str(self._id) + " contoller: " + str(controllerNr)
@@ -556,34 +569,29 @@ class GuiControllerValues(object):
         effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = effectsValues
         if(self._controllerStates[guiCtrlStateStartId] != None):
             if(self._controllerStates[guiCtrlStateStartId] < 0.0):
-                effectAmount = effectStartValues[0]
+#                effectAmount = effectStartValues[0]
                 self._controllerStates[guiCtrlStateStartId] = None
-            else:
-                effectAmount = self._controllerStates[guiCtrlStateStartId]
+            effectAmount = self._controllerStates[guiCtrlStateStartId]
         if(self._controllerStates[guiCtrlStateStartId+1] != None):
             if(self._controllerStates[guiCtrlStateStartId+1] < 0.0):
-                effectArg1 = effectStartValues[1]
+#                effectArg1 = effectStartValues[1]
                 self._controllerStates[guiCtrlStateStartId+1] = None
-            else:
-                effectArg1 = self._controllerStates[guiCtrlStateStartId+1]
+            effectArg1 = self._controllerStates[guiCtrlStateStartId+1]
         if(self._controllerStates[guiCtrlStateStartId+2] != None):
             if(self._controllerStates[guiCtrlStateStartId+2] < 0.0):
-                effectArg2 = effectStartValues[2]
+#                effectArg2 = effectStartValues[2]
                 self._controllerStates[guiCtrlStateStartId+2] = None
-            else:
-                effectArg2 = self._controllerStates[guiCtrlStateStartId+2]
+            effectArg2 = self._controllerStates[guiCtrlStateStartId+2]
         if(self._controllerStates[guiCtrlStateStartId+3] != None):
             if(self._controllerStates[guiCtrlStateStartId+3] < 0.0):
-                effectArg3 = effectStartValues[3]
+#                effectArg3 = effectStartValues[3]
                 self._controllerStates[guiCtrlStateStartId+3] = None
-            else:
-                effectArg3 = self._controllerStates[guiCtrlStateStartId+3]
+            effectArg3 = self._controllerStates[guiCtrlStateStartId+3]
         if(self._controllerStates[guiCtrlStateStartId+4] != None):
             if(self._controllerStates[guiCtrlStateStartId+4] < 0.0):
-                effectArg4 = effectStartValues[4]
+#                effectArg4 = effectStartValues[4]
                 self._controllerStates[guiCtrlStateStartId+4] = None
-            else:
-                effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
+            effectArg4 = self._controllerStates[guiCtrlStateStartId+4]
         return (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
 
 class SpecialTypes():
@@ -795,9 +803,9 @@ class MidiStateHolder(object):
         self._midiControllerLatestModified = MidiControllerLatestModified()
         for i in range(16):
             self._midiChannelStateHolder.append(MidiChannelStateHolder(i+1, self._midiControllerLatestModified))
-        self._guiControllerNoteValues = []
-        for i in range(128):
-            self._guiControllerNoteValues.append(GuiControllerValues(i))
+#        self._guiControllerNoteValues = []
+#        for i in range(128):
+#            self._guiControllerNoteValues.append(GuiControllerValues(i))
         self._guiControllerChannelValues = []
         for i in range(16):
             self._guiControllerChannelValues.append(GuiControllerValues(i))
@@ -817,17 +825,17 @@ class MidiStateHolder(object):
 
     def guiController(self, midiChannel, data1, data2, data3):
         if((data3 & 0xf0) == 0xf0):
-            note = min(max(0, data1), 127)
-            self._guiControllerNoteValues[note].controllerChange(midiChannel, data2, data3)
-        if((data3 & 0xf0) == 0xe0):
-            self._guiControllerChannelValues[midiChannel].controllerChange(midiChannel, data2, data3)
-        if((data3 & 0xf0) == 0xd0):
-            note = min(max(0, data1), 127)
-            self._guiControllerNoteValues[note].resetState(data3)
-        if((data3 & 0xf0) == 0xc0):
+            self._midiChannelStateHolder[midiChannel].guiControllerNoteEvent(data1, data2, data3)
+#            self._guiControllerNoteValues[note].controllerChange(midiChannel, data2, data3)
+        elif((data3 & 0xf0) == 0xe0):
+            self._guiControllerChannelValues[midiChannel].controllerChange(data2, data3)
+        elif((data3 & 0xf0) == 0xd0):
+            self._midiChannelStateHolder[midiChannel].guiControllerNoteResetEvent(data1, data3)
+#            self._guiControllerNoteValues[note].resetState(data3)
+        elif((data3 & 0xf0) == 0xc0):
             self._guiControllerChannelValues[midiChannel].resetState(data3)
 
-        if((data3 & 0xf0) == 0x80):
+        elif((data3 & 0xf0) == 0x80):
             self._midiChannelStateHolder[midiChannel].removeAllNotes()
 
     def programChange(self, midiChannel, data1, data2, data3, songPosition):
@@ -866,10 +874,6 @@ class MidiStateHolder(object):
 
     def getLatestMidiControllersString(self):
         return self._midiControllerLatestModified.getLatestControllersString()
-
-    def getGuiNoteControllerStareHolder(self, midiNote):
-        note = min(max(0, midiNote), 127)
-        return self._guiControllerNoteValues[note]
 
     def getMidiChannelControllerStateHolder(self, midiChannel):
         channel = min(max(0, midiChannel), 15)

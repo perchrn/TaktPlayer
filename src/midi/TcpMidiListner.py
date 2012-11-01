@@ -19,6 +19,11 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
     if(useBroadcast == True):
         midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         host = ''
+#    else:
+#        processLogger.error("DEBUG pcn: Setting up multicast for: %s:%d" % (host, port))
+#        midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#        mcastAddress = host
+#        host = ''
     try:
         midiSocket.bind((host, port))
     except:
@@ -41,6 +46,9 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
         except:
             processLogger.error("Address already in use and won't shut down: %s:%d" % (host, port))
             return
+#    if(useBroadcast == False):
+#        mreq = struct.pack("4sl", socket.inet_aton(mcastAddress), socket.INADDR_ANY)        
+#        midiSocket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
     midiSocket.settimeout(1.0)
     run = True
     while(run):
@@ -257,10 +265,10 @@ class TcpMidiListner(object):
 #                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
                 if(dataLen > 8): # VST timing or programName over net!
                     if(str(data).startswith("vstTime|")):
-                        print "t",
                         vstTimeSplit = str(data).split("|")
                         if(len(vstTimeSplit) == 3):
                             posVal = float(vstTimeSplit[1])
+                            print "t," + str(posVal*24),
                             tempoVal = float(vstTimeSplit[2])
                             returnValue = self._midiTiming._updateFromVstTiming(dataTimeStamp, posVal, tempoVal);
                             if(returnValue != None):

@@ -136,7 +136,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         playerHostNameSizer.Add(self._playerHostNameField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(playerHostNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        playerHostName, playerMidiPort = self._configurationClass.getMidiConfig()
+        playerHostName, playerMidiPort, playerMode = self._configurationClass.getMidiConfig()
         playerMidiPortSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         playerMidiPortLabel = wx.StaticText(self, wx.ID_ANY, "MIDI port:") #@UndefinedVariable
         self._playerMidiPortField = wx.SpinCtrl(self, value=str(playerMidiPort), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable

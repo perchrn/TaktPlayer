@@ -7,7 +7,7 @@ from configuration.ConfigurationHolder import ConfigurationHolder
 from configurationGui.GlobalConfig import GlobalConfig
 from configurationGui.MediaPoolConfig import MediaPoolConfig
 from configurationGui.MediaMixerConfig import MediaMixerConfig
-from network.SendMidiOverNet import SendMidiOverNet
+from network.SendMidiOverNet import SendMidiOverNet, SendModes
 import os
 import sys
 from midi.MidiStateHolder import SpecialModulationHolder,\
@@ -124,8 +124,8 @@ class Configuration(object):
         self._guiConfigurationTree.saveConfigFile(self._configurationFile)
 
     def setupMidiSender(self):
-        host, port = self.getMidiConfig()
-        self._midiSender = SendMidiOverNet(host, port)
+        host, port, mode = self.getMidiConfig()
+        self._midiSender = SendMidiOverNet(host, port, mode)
 
     def getWebConfig(self):
         host = self._guiPlayerConfig.getValue("PlayerHost")
@@ -135,7 +135,8 @@ class Configuration(object):
     def getMidiConfig(self):
         host = self._guiPlayerConfig.getValue("PlayerHost")
         port = self._guiPlayerConfig.getValue("MidiPort")
-        return (host, port)
+        mode = SendModes.Mcast #TODO: add multicast mode!
+        return (host, port, mode)
 
     def getMidiListenConfig(self):
         bcast = self._guiConfig.getValue("MidiBroadcast")

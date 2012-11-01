@@ -6,14 +6,28 @@ Created on 4. feb. 2012
 import ctypes
 import socket
 
+class SendModes():
+    UDP, Bcast, Mcast = range(3)
+
 class SendMidiOverNet(object):
-    def __init__(self, host, port):
+    def __init__(self, host, port, mode):
         self._host = host
         self._port = port
+#        self._mode = mode
+#        self._oldMode = -1
         self._midiCommandBuffer = ctypes.create_string_buffer(4) #@ReservedAssignment
         self._udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def _sendMidiData(self, command, data1, data2, data3):
+#        if(self._mode != self._oldMode):
+#            if(self._mode == SendModes.Mcast):
+#                self._udpClientSocket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+#                print "DEBUG pcn: turning on MULTICAST send host: " + str(self._host) + " port: " + str(self._port)
+#            elif(self._oldMode == SendModes.Mcast):
+#                self._udpClientSocket.close()
+#                self._udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#                print "DEBUG pcn: turning off MULTICAST send host: " + str(self._host) + " port: " + str(self._port)
+#            self._oldMode = self._mode
         if((command > 0x7f) and (command <= 0xff)):
             data1 = min(max(0, data1), 127)
             data2 = min(max(0, data2), 127)

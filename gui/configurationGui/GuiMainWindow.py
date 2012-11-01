@@ -1204,6 +1204,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._dragTimer.Stop()
         cursor = wx.StockCursor(wx.CURSOR_ARROW) #@UndefinedVariable
         self._noteGui.clearDragCursor(cursor)
+        self._configuration.setDraggedNoteName("")
         self._updateCursor(cursor, "None")
 
     def setDragCursor(self, dragType, bitmap=None):
@@ -1225,6 +1226,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 self._dragSource = None
                 self.clearDragCursor()
                 return
+            else:
+                self._configuration.setDraggedNoteName(noteToNoteString(i))
             cursorImage = wx.ImageFromBitmap(dragBitmap) #@UndefinedVariable
             cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
         elif(fxMode == True):

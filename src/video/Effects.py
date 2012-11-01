@@ -1537,6 +1537,9 @@ class ImageAddEffect(object):
         image = None
         imageFileName = os.path.normpath(fileName)
         fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), imageFileName)
+        packageFilePath = os.path.join(os.getcwd(), "testFiles", imageFileName)
+        if(os.path.isfile(fullFilePath) == False):
+            fullFilePath = packageFilePath
         try:
             image = cv.LoadImage(fullFilePath)
             imageSize = cv.GetSize(image)

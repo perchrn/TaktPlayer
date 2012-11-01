@@ -167,9 +167,10 @@ class ConfigurationHolder(object):
             raise
 
     def saveConfigFile(self, configName):
-        if(configName.endswith(".cfg.bak") == False):
-            if(configName.endswith(".cfg") == False):
-                configName = configName + ".cfg"
+        if(configName.endswith(".cfg.autosave") == False):
+            if(configName.endswith(".cfg.bak") == False):
+                if(configName.endswith(".cfg") == False):
+                    configName = configName + ".cfg"
         if(os.path.isabs(configName) == True):
             filePath = os.path.normpath(configName)
         else:
@@ -178,7 +179,8 @@ class ConfigurationHolder(object):
             saveFile = open(filePath, 'w')
             xmlString = self.getConfigurationXMLString()
             saveFile.write(xmlString)
-            self._loadedFileName = filePath
+            if((configName.endswith(".cfg.autosave") == False) and (configName.endswith(".cfg.bak") == False)):
+                self._loadedFileName = filePath
             self._unsavedConfig = False
         except:
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
@@ -242,11 +244,17 @@ class ConfigurationHolder(object):
         else:
             soup = BeautifulStoneSoup(xmlString)
         self._loadedXML = ElementTree.XML(soup.prettify())
+        if(self._unsavedConfig == True):
+            if(self._loadedFileName != ""):
+                self.saveConfigFile(self._loadedFileName + ".autosave")
         self._updateFromXml(self._loadedXML)
         self._unsavedConfig = True
 
     def setFromXml(self, xmlConfig):
         self._loadedXML = xmlConfig
+        if(self._unsavedConfig == True):
+            if(self._loadedFileName != ""):
+                self.saveConfigFile(self._loadedFileName + ".autosave")
         self._updateFromXml(self._loadedXML)
         self._unsavedConfig = True
 

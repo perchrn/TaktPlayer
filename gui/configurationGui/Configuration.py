@@ -38,6 +38,7 @@ class Configuration(object):
 
         self._setNoteNewThumbCallback = None
         self._clearNoteNewThumbCallback = None
+        self._draggedNoteName = ""
 
         self._selectedMidiChannel = -1
         self.setupMidiSender()
@@ -350,6 +351,12 @@ class Configuration(object):
 
     def getDraggedFxName(self):
         return self._globalConf.getDraggedFxName()
+
+    def getDraggedNoteName(self):
+        return self._draggedNoteName
+
+    def setDraggedNoteName(self, draggedNoteName):
+        self._draggedNoteName = draggedNoteName
 
     def getEffectTemplate(self, configName):
         return self._globalConf.getEffectTemplate(configName)

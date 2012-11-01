@@ -872,6 +872,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fileNameField.SetEditable(False)
         self._fileNameField.SetBackgroundColour((232,232,232))
         self._fileNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._fileNameField.Bind(wx.EVT_LEFT_UP, self._onFileLeftRelease) #@UndefinedVariable
         fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         fileOpenButton.Bind(wx.EVT_BUTTON, self._onOpenFile) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
@@ -1583,6 +1584,20 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._setupSubConfig(self._config)
                     self._showOrHideSaveButton()
             dlg.Destroy()
+
+    def _onFileLeftRelease(self, event):
+        noteName = self._mainConfig.getDraggedNoteName()
+        if(noteName != ""):
+            self._mainConfig.setDraggedNoteName("")
+            if(self._type == "Group"):
+                if(self._fileName != ""):
+                    self._fileName += ","
+                self._fileName += noteName
+                selectedTypeId = self._typeField.GetSelection()
+                self._type = self._typeModes.getNames(selectedTypeId)
+                self._fileNameField.SetValue(self._fileName)
+        self._clearDragCursorCallback()
+        event.Skip(True)
 
     def _onFontDialog(self, event):
         dlg = MediaFontDialog(self._mediaFileGuiPanel, "Media Font:", self._fontField, self._fileNameField.GetValue())

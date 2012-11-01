@@ -14,6 +14,7 @@ class EffectImagesListGui(object):
     def __init__(self, mainConfig, effectImagesConfig):
         self._mainConfig = mainConfig
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
+        self._lastDialogDir = self._videoDirectory
         self._effectImagesConfig = effectImagesConfig
         self._effectImageListSelectedIndex = -1
 
@@ -71,9 +72,21 @@ class EffectImagesListGui(object):
         self._hideEffectImagesListCallback()
 
     def _onListNewButton(self, event):
-        dlg = wx.FileDialog(self._mainEffectImagesListPlane, "Choose a file", os.getcwd(), "", "*.*", wx.OPEN) #@UndefinedVariable
+        dlg = wx.FileDialog(self._mainEffectImagesListPlane, "Choose a file", self._lastDialogDir, "", "*.*", wx.OPEN) #@UndefinedVariable
         if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
-            fileName = forceUnixPath(os.path.relpath(dlg.GetPath(), self._videoDirectory))
+            selectedFileName = dlg.GetPath()
+            self._lastDialogDir = os.path.dirname(selectedFileName)
+            fileName = forceUnixPath(selectedFileName)
+            if((self._videoDirectory != "") and (fileName != "")):
+                if(os.path.isabs(fileName)):
+                    try:
+                        noteFileName = forceUnixPath(os.path.relpath(fileName, self._videoDirectory))
+                    except:
+                        noteFileName = fileName
+                    else:
+                        if(noteFileName.startswith("..") == True):
+                            noteFileName = fileName
+                    fileName = noteFileName
             oldImage = self._mainConfig.getEffectImage(fileName)
             if(oldImage == None):
                 self._mainConfig.makeNewEffectImage(fileName)

@@ -2607,7 +2607,6 @@ class ModulationMedia(MediaFile):
     def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
         mediaSettingsHolder = self._mediaSettingsHolder
         if(noteIsNew):
-            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteStateHolder, midiChannelStateHolder)
             self._startSongPosition = startSpp
             for i in range(self._valueSmootherLen):
                 self._valueSmoother[i] = -1.0

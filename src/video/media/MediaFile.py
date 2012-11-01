@@ -677,7 +677,7 @@ class MediaFile(object):
             framePosFloat = unmodifiedFramePos
         return framePosFloat
 
-    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         pass
 
     def openVideoFile(self, midiLength):
@@ -1890,7 +1890,7 @@ class CameraInput(MediaFile):
     def close(self):
         pass
 
-    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             mediaSettingsHolder.image = None
@@ -2147,7 +2147,7 @@ class KinectCameraInput(MediaFile):
             self._zoomValues = zoomAmount, xyrate, xcenter, ycenter
         return zoomAmount, xyrate, xcenter, ycenter
 
-    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState):
+    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         if(freenect == None):
             mediaSettingsHolder.image = None
             return True

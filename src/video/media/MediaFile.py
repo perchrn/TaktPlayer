@@ -491,7 +491,10 @@ class MediaFile(object):
     def _applyOneEffect(self, image, effect, effectSettings, effectStartSumValues, effectMidiStartValues, effectStartValues, songPosition, midiChannelStateHolder, midiNoteStateHolder, guiCtrlStateHolder, guiCtrlStateStartId):
         if(effectSettings != None):
             midiEffectVaules = effectSettings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, self._specialModulationHolder)
-            effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
+            if(guiCtrlStateHolder != None):
+                effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = guiCtrlStateHolder.updateWithGuiSettings(guiCtrlStateStartId, midiEffectVaules, effectStartValues)
+            else:
+                effectAmount, effectArg1, effectArg2, effectArg3, effectArg4 = (None, None, None, None, None)
 #            if(effect != None):
 #                print "DEBUG controller values" + str(midiEffectVaules) + " +gui" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " start" + str(effectStartSumValues) + " sVals" + str(effectStartValues),
             #TODO: Add mode where values must pass start values?
@@ -561,10 +564,11 @@ class MediaFile(object):
     def _timeModulatePos(self, unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, syncLength):
         self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
 
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[4] != None):
-            if(guiStates[4] > -0.5):
-                modulation = guiStates[4]
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[4] != None):
+                if(guiStates[4] > -0.5):
+                    modulation = guiStates[4]
 
         if(syncLength != None):
             jumpQuantize = speedQuantize * self._midiTiming.getTicksPerQuarteNote()
@@ -877,6 +881,8 @@ class MediaGroup(MediaFile):
             media.releaseMedia(mediaSettings)
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
         if(timeMultiplyer == None):
             timeMultiplyer = self._timeMultiplyer
         loopModulationMode, _, _, _ = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
@@ -1011,6 +1017,9 @@ class ImageFile(MediaFile):
             self._image = None
             return noteDone
 
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         syncLength = self._syncLength
         if(timeMultiplyer != None):
             syncLength = self._syncLength * timeMultiplyer
@@ -1035,20 +1044,21 @@ class ImageFile(MediaFile):
                 moveX = self._startX + (((self._endX - self._startX)) * (modifiedPos))
             if(self._endY != self._startY):
                 moveY = self._startY + (((self._endY - self._startY)) * (modifiedPos))
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                zoom = guiStates[0]
-        if(guiStates[1] != None):
-            if(guiStates[1] > -0.5):
-                move = guiStates[1]
-                guiMove = True
-        if(guiStates[2] != None):
-            if(guiStates[2] > -0.5):
-                angle = guiStates[2]
-                guiMove = True
-        if(guiMove == True):
-            moveX, moveY = self._angleAndMoveToXY(angle, move)
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[0] != None):
+                if(guiStates[0] > -0.5):
+                    zoom = guiStates[0]
+            if(guiStates[1] != None):
+                if(guiStates[1] > -0.5):
+                    move = guiStates[1]
+                    guiMove = True
+            if(guiStates[2] != None):
+                if(guiStates[2] > -0.5):
+                    angle = guiStates[2]
+                    guiMove = True
+            if(guiMove == True):
+                moveX, moveY = self._angleAndMoveToXY(angle, move)
         if((zoom != mediaSettingsHolder.oldZoom) or (moveX != mediaSettingsHolder.oldMoveX) or (moveY != mediaSettingsHolder.oldMoveY) or (self._cropMode != mediaSettingsHolder.oldCrop)):
 #            print "DEBUG pcn: render image!!!!!!!!! " + str(mediaSettingsHolder._uid)
             mediaSettingsHolder.oldZoom = zoom
@@ -1233,6 +1243,9 @@ class ScrollImageFile(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
 
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         syncLength = self._syncLength
         if(timeMultiplyer != None):
             syncLength = self._syncLength * timeMultiplyer
@@ -1248,10 +1261,11 @@ class ScrollImageFile(MediaFile):
                 scrollLength = 1.0 - scrollLength
         else:
             scrollLength = self._midiModulation.getModlulationValue(self._scrollModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                scrollLength = guiStates[0]
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[0] != None):
+                if(guiStates[0] > -0.5):
+                    scrollLength = guiStates[0]
 
         #Scroll image + mask
         if((self._isScrollModeHorizontal != mediaSettingsHolder.oldScrollMode) or (scrollLength != mediaSettingsHolder.oldScrollLength)):
@@ -1438,6 +1452,9 @@ class SpriteMediaBase(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
 
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         syncLength = self._syncLength
         if(timeMultiplyer != None):
             syncLength = self._syncLength * timeMultiplyer
@@ -1467,13 +1484,14 @@ class SpriteMediaBase(MediaFile):
                 if(self._endY != self._startY):
                     posY = self._startY + ((self._endY - self._startY) * modifiedPos)
 
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[0] != None):
-            if(guiStates[0] > -0.5):
-                posX = guiStates[0]
-        if(guiStates[1] != None):
-            if(guiStates[1] > -0.5):
-                posY = guiStates[1]
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[0] != None):
+                if(guiStates[0] > -0.5):
+                    posX = guiStates[0]
+            if(guiStates[1] != None):
+                if(guiStates[1] > -0.5):
+                    posY = guiStates[1]
 
         #Select frame.
         if(self._numberOfFrames == 1):
@@ -1882,6 +1900,9 @@ class CameraInput(MediaFile):
         else:
             mediaSettingsHolder.captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
 
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         if(self._cropMode != "Stretch"):
             imageSize = cv.GetSize(mediaSettingsHolder.captureImage)
             xRatio = float(imageSize[0]) / self._internalResolutionX
@@ -2076,52 +2097,54 @@ class KinectCameraInput(MediaFile):
 
     def _getFilterValues(self, mediaSettingsHolder):
         displayModeVal, blackThreshold, diffThreshold, erodeValue = self._filterValues
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[4] != None):
-            if(guiStates[4] < 0.5):
-                if(guiStates[4] != self._lastGuiModesValue):
-                    self._lastGuiModesValue = guiStates[4]
-                    mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
-                    mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 0, 14)
-                    guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-                if(guiStates[0] != None):
-                    if(guiStates[0] > -0.5):
-                        displayModeVal = guiStates[0]
-                if(guiStates[1] != None):
-                    if(guiStates[1] > -0.5):
-                        blackThreshold = guiStates[1]
-                if(guiStates[2] != None):
-                    if(guiStates[2] > -0.5):
-                        diffThreshold = guiStates[2]
-                if(guiStates[3] != None):
-                    if(guiStates[3] > -0.5):
-                        erodeValue = guiStates[3]
-        self._filterValues = displayModeVal, blackThreshold, diffThreshold, erodeValue
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[4] != None):
+                if(guiStates[4] < 0.5):
+                    if(guiStates[4] != self._lastGuiModesValue):
+                        self._lastGuiModesValue = guiStates[4]
+                        mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
+                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 0, 14)
+                        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+                    if(guiStates[0] != None):
+                        if(guiStates[0] > -0.5):
+                            displayModeVal = guiStates[0]
+                    if(guiStates[1] != None):
+                        if(guiStates[1] > -0.5):
+                            blackThreshold = guiStates[1]
+                    if(guiStates[2] != None):
+                        if(guiStates[2] > -0.5):
+                            diffThreshold = guiStates[2]
+                    if(guiStates[3] != None):
+                        if(guiStates[3] > -0.5):
+                            erodeValue = guiStates[3]
+            self._filterValues = displayModeVal, blackThreshold, diffThreshold, erodeValue
         return displayModeVal, blackThreshold, diffThreshold, erodeValue
 
     def _getZoomValues(self, mediaSettingsHolder):
         zoomAmount, xyrate, xcenter, ycenter = self._zoomValues
-        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-        if(guiStates[4] != None):
-            if(guiStates[4] > 0.5):
-                if(guiStates[4] != self._lastGuiModesValue):
-                    self._lastGuiModesValue = guiStates[4]
-                    mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
-                    mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 127, 14)
-                    guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
-                if(guiStates[0] != None):
-                    if(guiStates[0] > -0.5):
-                        zoomAmount = guiStates[0]
-                if(guiStates[1] != None):
-                    if(guiStates[1] > -0.5):
-                        xyrate = guiStates[1]
-                if(guiStates[2] != None):
-                    if(guiStates[2] > -0.5):
-                        xcenter = guiStates[2]
-                if(guiStates[3] != None):
-                    if(guiStates[3] > -0.5):
-                        ycenter = guiStates[3]
-        self._zoomValues = zoomAmount, xyrate, xcenter, ycenter
+        if(mediaSettingsHolder.guiCtrlStateHolder != None):
+            guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+            if(guiStates[4] != None):
+                if(guiStates[4] > 0.5):
+                    if(guiStates[4] != self._lastGuiModesValue):
+                        self._lastGuiModesValue = guiStates[4]
+                        mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
+                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 127, 14)
+                        guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
+                    if(guiStates[0] != None):
+                        if(guiStates[0] > -0.5):
+                            zoomAmount = guiStates[0]
+                    if(guiStates[1] != None):
+                        if(guiStates[1] > -0.5):
+                            xyrate = guiStates[1]
+                    if(guiStates[2] != None):
+                        if(guiStates[2] > -0.5):
+                            xcenter = guiStates[2]
+                    if(guiStates[3] != None):
+                        if(guiStates[3] > -0.5):
+                            ycenter = guiStates[3]
+            self._zoomValues = zoomAmount, xyrate, xcenter, ycenter
         return zoomAmount, xyrate, xcenter, ycenter
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState):
@@ -2132,6 +2155,9 @@ class KinectCameraInput(MediaFile):
         if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
             mediaSettingsHolder.image = None
             return noteDone
+
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
 
         displayModeVal, blackThreshold, diffThreshold, erodeValue = self._getFilterValues(mediaSettingsHolder)
         kinectMode = self.findKinectMode(displayModeVal, currentSongPosition, midiNoteState, midiChannelState)
@@ -2247,6 +2273,9 @@ class ImageSequenceFile(MediaFile):
             mediaStateHolder.image = None
             return noteDone
 
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         syncLength = self._syncLength
         if(timeMultiplyer != None):
             syncLength = self._syncLength * timeMultiplyer
@@ -2327,6 +2356,9 @@ class VideoLoopFile(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
         lastFrame = mediaSettingsHolder.currentFrame
+
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
 
         syncLength = self._syncLength
         if(timeMultiplyer != None):
@@ -2416,6 +2448,9 @@ class VideoRecorderMedia(MediaFile):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+
         recOnValue = self._midiModulation.getModlulationValue(self._recOnModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
         if(recOnValue > 0.5):
             recOn = True

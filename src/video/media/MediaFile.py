@@ -2572,13 +2572,13 @@ class ModulationMedia(MediaFile):
         smootherMode = self._configurationTree.getValue("Smoother")
         smootherLen = 0
         if(smootherMode == "Smoothish"):
-            smootherLen = 4
+            smootherLen = 2
         if(smootherMode == "Smooth"):
-            smootherLen = 16
+            smootherLen = 4
         if(smootherMode == "Smoother"):
-            smootherLen = 48
+            smootherLen = 16
         if(smootherMode == "Smoothest"):
-            smootherLen = 128
+            smootherLen = 32
         if(smootherLen != self._valueSmootherLen):
             self._valueSmoother = []
             for _ in range(smootherLen):

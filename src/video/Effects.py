@@ -1640,19 +1640,12 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
-#Check with more cameras...
+#Check with more cameras... (Started)
 #Redo baertur with time modulation (started)
-#Make Sofaen project
+#Make Sofaen project (started)
 #Make Rygg I Rand project
 #Make Elg project
-#Retest: #Plugin load -> GUI update ?= Trouble (Loaded program name is correct but config has been reverted to old cfg. How?)
-#Retest: #Remove unessesary sending when server is updatet (Related to looping trouble above.)
-#Retest: #Mix level config not cleared correctly after beeing set (when other config is missing parameter?)
 #AudioUnit plugin always broadcasts first program change. (VST problem also?) Mac OK.
-#Retest: Space to stop -> space to start -> skipped first note :-(
-#Retest: Start values problem.
-#Image list request start dir...
-
 
 #Media:
 #Sprite size / zoom (Text media also)

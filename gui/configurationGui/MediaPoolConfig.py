@@ -1459,12 +1459,12 @@ class MediaFileGui(object): #@UndefinedVariable
             midiSender.sendGuiRelease(channel, note, command)
 
     def sendGuiController(self, note, guiControllerId, value):
-        channel = 0
+        midiChannel = self._mainConfig.getSelectedMidiChannel()
         guiControllerId = (guiControllerId & 0x0f)
         command = 0xf0
         command += guiControllerId
         midiSender = self._mainConfig.getMidiSender()
-        midiSender.sendGuiController(channel, note, command, value)
+        midiSender.sendGuiController(midiChannel, note, command, value)
 
     def getPlane(self):
         return self._mediaFileGuiPanel

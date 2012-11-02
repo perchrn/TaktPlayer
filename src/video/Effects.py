@@ -1645,7 +1645,6 @@ class ImageAddEffect(object):
 #Make Sofaen project (started)
 #Make Rygg I Rand project
 #Make Elg project
-#AudioUnit plugin always broadcasts first program change. (VST problem also?) Mac OK.
 
 #Media:
 #Sprite size / zoom (Text media also)

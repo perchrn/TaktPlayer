@@ -341,6 +341,7 @@ class MediaFile(object):
     def getMediaStateHolder(self):
         mediaSettingsHolder = self._mediaSettingsHolder.getSettings()
         if(mediaSettingsHolder.isNew() == True):
+#            print "DEBUG pcn: getMediaStateHolder() -> new holder with id: " + str(mediaSettingsHolder._uid) + " in: " + self.getType()
             self._setupMediaSettingsHolder(mediaSettingsHolder)
             mediaSettingsHolder.captureImage = self._firstImage
             mediaSettingsHolder.captureMask = self._firstImageMask
@@ -879,6 +880,7 @@ class MediaGroup(MediaFile):
             media = self._mediaList[i]
             mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
             media.releaseMedia(mediaSettings)
+        mediaSettingsHolder.release()
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
         if(mediaSettingsHolder.guiCtrlStateHolder == None):

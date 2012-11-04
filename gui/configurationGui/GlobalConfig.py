@@ -867,7 +867,7 @@ A list of start values for the effect modulation.
                             move = True
                     else:
                         text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
-                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                         result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                         dlg.Destroy()
                         if(result == True):
@@ -882,7 +882,7 @@ A list of start values for the effect modulation.
                         move = True
                 else:
                     text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
-                    dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                    dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                     result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                     dlg.Destroy()
                     if(result == True):

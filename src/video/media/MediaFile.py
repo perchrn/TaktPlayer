@@ -360,7 +360,7 @@ class MediaFile(object):
     def getFileName(self):
         return self._cfgFileName
 
-    def getThumbFileName(self):
+    def getThumbnailUniqueString(self):
         return self.getFileName()
 
     def setFileName(self, fileName):
@@ -756,7 +756,7 @@ class MediaFile(object):
                 #Get current image...
                 image = self._mediaSettingsHolder.captureImage
 
-        filenameHash = hashlib.sha224(self.getThumbFileName().encode("utf-8")).hexdigest()
+        filenameHash = hashlib.sha224(self.getThumbnailUniqueString().encode("utf-8")).hexdigest()
         if(os.path.exists("thumbs") == False):
             os.makedirs("thumbs")
         if(os.path.isdir("thumbs") == False):
@@ -861,6 +861,14 @@ class MediaGroup(MediaFile):
 
     def getType(self):
         return "Group"
+
+    def getThumbnailUniqueString(self):
+        groupIdString = self._groupName + ":"
+        for media in self._mediaList:
+            if(groupIdString != ""):
+                groupIdString += ","
+            groupIdString += "," + media.getThumbnailUniqueString()
+        return groupIdString
 
     def close(self):
         pass
@@ -1717,7 +1725,7 @@ class TextMedia(SpriteMediaBase):
     def getType(self):
         return "Text"
 
-    def getThumbFileName(self):
+    def getThumbnailUniqueString(self):
         return self.getType() + ":" + self._cfgFileName
 
     def _renderText(self):
@@ -1888,6 +1896,9 @@ class CameraInput(MediaFile):
 
     def getType(self):
         return "Camera"
+
+    def getThumbnailUniqueString(self):
+        return self.getType() + ":" + str(self._cameraId)
 
     def close(self):
         pass
@@ -2084,6 +2095,9 @@ class KinectCameraInput(MediaFile):
 
     def getType(self):
         return "KinectCamera"
+
+    def getThumbnailUniqueString(self):
+        return self.getType() + ":" + str(self._cameraId)
 
     def close(self):
         pass
@@ -2600,7 +2614,7 @@ class ModulationMedia(MediaFile):
     def getFileName(self):
         return self._modulationName
 
-    def getThumbFileName(self):
+    def getThumbnailUniqueString(self):
         return self.getType() + ":" + self._modulationName
 
     def releaseMedia(self, mediaSettingsHolder):

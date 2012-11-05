@@ -370,15 +370,15 @@ class GuiClient(object):
     def getServerResponse(self):
         returnValue = (None, None)
         try:
-            queueSize = self._commandQueue.qsize()
-            if(queueSize > 1):
-                print "DEBUG pcn: self._commandQueue queue size: " + str(queueSize)
+#            queueSize = self._commandQueue.qsize()
+#            if(queueSize > 1):
+#                print "DEBUG pcn: self._commandQueue queue size: " + str(queueSize)
             serverResponse = self._resultQueue.get_nowait()
             serverXml = stringToXml(serverResponse)
             if(serverXml != None):
-                queueSize = self._resultQueue.qsize()
-                if(queueSize > 1):
-                    print "DEBUG pcn: self._resultQueue queue size: " + str(queueSize)
+#                queueSize = self._resultQueue.qsize()
+#                if(queueSize > 1):
+#                    print "DEBUG pcn: self._resultQueue queue size: " + str(queueSize)
                 if(serverXml.tag == "servermessage"):
                     print "GuiClient Message: " + serverXml.get("message")
                 elif(serverXml.tag == "fileDownloaded"):

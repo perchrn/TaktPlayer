@@ -11,6 +11,7 @@ export PATH
 which python
 
 ln -s PlayerMain.py TaktPlayer.py
+git log -1 > VersionInfo.log
 arch -i386 py2applet-2.7 --arch=i386 --iconfile=graphics/TaktPlayer.icns --make-setup TaktPlayer.py
 
 if [ -d thumbs ] ; then
@@ -19,7 +20,7 @@ else
     mkdir thumbs
 fi
 rm thumbs/*
-arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config/Default.cfg,config/EffectsDemo.cfg,config/PlaybackModesDemo.cfg,thumbs,testFiles,graphics/TaktPlayer.ico
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config/Default.cfg,config/EffectsDemo.cfg,config/PlaybackModesDemo.cfg,thumbs,testFiles,graphics/TaktPlayer.ico,versionInfo.log
 
 mkdir dist/TaktPlayer.app/Contents/Resources/config
 chmod 775 dist/TaktPlayer.app/Contents/Resources/config

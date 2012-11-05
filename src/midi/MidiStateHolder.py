@@ -194,8 +194,8 @@ class NoteState(object):
         self._octav = octav
         self._noteLetter = noteLetter
         self._velocity = velocity
-        print "DEBUG pcn: note recieved:     ",
-        self.printState(self._midiChannel-1)
+#        print "DEBUG pcn: note recieved:     ",
+#        self.printState(self._midiChannel-1)
 
     def noteOff(self, note, velocity, songPosition, spp, midiSync):
         self._noteOn = False
@@ -484,7 +484,7 @@ class MidiChannelStateHolder(object):
             self._activeNote = self._activeNotes[noteId]
 
     def removeAllNotes(self):
-        print "DEBUG pcn: removeAllNotes() for " + str(self._midiChannel-1)
+#        print "DEBUG pcn: removeAllNotes() for " + str(self._midiChannel-1)
         for i in range(128):
             self._activeNotes[i] = NoteState(self._midiChannel)
             self._nextNotes[i] = NoteState(self._midiChannel)
@@ -492,7 +492,7 @@ class MidiChannelStateHolder(object):
 
     def _activateNextNote(self, nextNote):
         noteId = nextNote.getNote()
-        print "DEBUG pcn: _activateNextNote() Note: " + str(noteId) + " for " + str(self._midiChannel-1)
+#        print "DEBUG pcn: _activateNextNote() Note: " + str(noteId) + " for " + str(self._midiChannel-1)
         self._activeNote = nextNote
         self._activeNotes[noteId] = nextNote
         self._nextNotes[noteId] = NoteState(self._midiChannel)#reset note
@@ -514,7 +514,7 @@ class MidiChannelStateHolder(object):
         for note in range(128):
             testNote = self._nextNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):
-                print "DEBUG pcn: cleanupFutureNotes() nextNote: " + str(note) + " for " + str(self._midiChannel-1)
+#                print "DEBUG pcn: cleanupFutureNotes() nextNote: " + str(note) + " for " + str(self._midiChannel-1)
                 self._nextNotes[note] = NoteState(self._midiChannel)#reset note
             testNote = self._activeNotes[note]
             if(testNote.isFarAway(songPosition, timeLimit)):

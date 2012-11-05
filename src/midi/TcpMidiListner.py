@@ -268,7 +268,7 @@ class TcpMidiListner(object):
                         vstTimeSplit = str(data).split("|")
                         if(len(vstTimeSplit) == 3):
                             posVal = float(vstTimeSplit[1])
-                            print "t," + str(posVal*24),
+#                            print "t," + str(posVal*24),
                             tempoVal = float(vstTimeSplit[2])
                             returnValue = self._midiTiming._updateFromVstTiming(dataTimeStamp, posVal, tempoVal);
                             if(returnValue != None):

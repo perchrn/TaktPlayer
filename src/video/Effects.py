@@ -1641,11 +1641,10 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
-#Check with more cameras... (Started)
+#FFull path bug: could be when importing multipple files (DnD)
 #Redo baertur with time modulation (started)
-#Make Sofaen project (started)
-#Make Rygg I Rand project
-#Make Elg project
+#Make Rygg I Rand project (started)
+#Make Elg project (started)
 
 #Media:
 #Sprite size / zoom (Text media also)

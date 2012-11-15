@@ -1631,6 +1631,10 @@ class ImageAddEffect(object):
 #make ModulationValueMode available and Move ModulationValueMode to EffectConfig.
 #Dont reload all thumbs on config update (only for changed media.) Optemizing ;-)
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!! Embedd licence information !!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #ADSR add A AHoldR HoldR modes
 #DMX512
 #Tap tempo

@@ -1650,9 +1650,17 @@ class ImageAddEffect(object):
 #Make Elg project (started)
 #Luma key bug when we already have multipple layers... Retest!!!
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!      Full HD Demo/test        !!!
+#!!! More complete startup program !!!
+#!!!          Fancy demo           !!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #Media:
 #Sprite size / zoom (Text media also)
 #TextMedia font directory config.
 #Recording / resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?
+#Complex looping (rollin, rollout, keep last?) (Under time modulation?)
+

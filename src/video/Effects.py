@@ -1643,12 +1643,22 @@ class ImageAddEffect(object):
 
 #install gimp on mac
 
+#Lage teaser video
+#Make default config more showoffy/complete (TaktDemo ;-) )
+
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
 #FFull path bug: could be when importing multipple files (DnD)
 #Redo baertur with time modulation (started)
 #Make Rygg I Rand project (started)
 #Make Elg project (started)
+#Luma key bug when we already have multipple layers... Retest!!!
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!      Full HD Demo/test        !!!
+#!!! More complete startup program !!!
+#!!!          Fancy demo           !!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #Media:
 #Sprite size / zoom (Text media also)
@@ -1656,3 +1666,5 @@ class ImageAddEffect(object):
 #Recording / resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?
+#Complex looping (rollin, rollout, keep last?) (Under time modulation?)
+

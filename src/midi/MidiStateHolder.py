@@ -924,5 +924,9 @@ class DummyMidiStateHolder(object):
         self._lastMidiEventTime = time.time()
 #        print "Got clr! " + str(self._lastMidiEventTime)
 
+    def fixLoopingNotes(self, oldSongPosition, newSongPosition, ticksPerQuarteNote):
+        self._lastMidiEventTime = time.time()
+#        print "Got fix! " + str(self._lastMidiEventTime)
+
     def getLastMidiEventTime(self):
         return self._lastMidiEventTime

@@ -28,6 +28,8 @@ import sys
 from configurationGui.FileMenu import ConfigOpenDialog, ConfigNewDialog,\
     ConfigGuiDialog, ConfigPlayerDialog
 from video.media.MediaFileModes import forceUnixPath
+from taktVersion import getVersionNumberString, getVersionDateString,\
+    getVersionGitIdString
 
 APP_NAME = "TaktPlayerGui"
 
@@ -316,10 +318,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._fileMenuNew = wx.Bitmap("graphics/menuButtonFilePluss.png") #@UndefinedVariable
         self._fileMenuSave = wx.Bitmap("graphics/menuButtonDisk.png") #@UndefinedVariable
         self._fileMenuConfig = wx.Bitmap("graphics/menuButtonConfig.png") #@UndefinedVariable
+        self._fileMenuAbout = wx.Bitmap("graphics/menuButtonAbout.png") #@UndefinedVariable
         self._fileMenuExit = wx.Bitmap("graphics/menuButtonExit.png") #@UndefinedVariable
 
-        self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig, self._fileMenuExit]
-        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config", "Exit"]
+        self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig, self._fileMenuAbout, self._fileMenuExit]
+        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config", "About", "Exit"]
 
         self._sendConfigBitmap = wx.Bitmap("graphics/sendConfigButton.png") #@UndefinedVariable
         self._sendConfigPressedBitmap = wx.Bitmap("graphics/sendConfigButtonPressed.png") #@UndefinedVariable
@@ -1104,6 +1107,14 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 dlg.Destroy()
             except wx._core.PyDeadObjectError: #@UndefinedVariable
                 pass
+        elif(menuString == "About"):
+            aboutString = "Takt GUI version: " + getVersionNumberString() + "\n\n"
+            aboutString += " Build date: " + getVersionDateString() + "\n"
+            aboutString += " Build id:\t" + getVersionGitIdString() + "\n"
+            aboutString += "\n"
+            aboutString += "Takt Industries AS\n"
+            aboutString += "http://www.taktindustries.com/\n"
+            wx.MessageBox(aboutString, 'About', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         elif(menuString == "Exit"):
             self._onClose(None)
 
@@ -1364,7 +1375,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if(", image2," in ffmpegLine):
                         print "image!!!"
                         inputIsVideo = False
-                    if(", avi," in ffmpegLine):
+                    elif(", mov," in ffmpegLine):
+                        print "qucktime video!!!"
+                    elif(", avi," in ffmpegLine):
                         print "video!!!"
                         inputIsAvi = True
                     inputCount += 1
@@ -1383,8 +1396,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                         print "MJPG " * 20
                                         if(inputIsAvi == True):
                                             inputOk = True
-                                else:
-                                    tryConvert = True
+                                tryConvert = True
                             else:
                                 if(" mjpeg," in ffmpegLine):
                                     print "Jpeg " * 10

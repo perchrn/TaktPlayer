@@ -1682,6 +1682,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def _onShortCut(self, event):
         print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
         self._fileButtonPopup._onChoice(event)
+        if(event.GetId() == wx.ID_EXIT):
+            self._onClose(None)
 
 def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
     logFileName = APP_NAME + ".log"

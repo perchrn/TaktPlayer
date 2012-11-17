@@ -430,6 +430,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_TIMER, self._timedUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
+        self._ctrlDown = False
+        self._altDown = False
+        self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
+        self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
 
         self._dragTimer = wx.Timer(self, -1) #@UndefinedVariable
 
@@ -1655,6 +1659,23 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 if(sys.platform != "darwin"):
                     self.Destroy()
                 wx.Exit() #@UndefinedVariable
+
+    def _onKeyPress(self, event):
+        print "DEBUG pcn: got key down!"
+        keyCode = event.GetKeyCode()
+        if(keyCode == 308): #Ctrl.
+            self._ctrlDown = True
+        else:
+            if(self._ctrlDown == True):
+                print "DEBUG key pressed: ctrl + " + str(keyCode)
+            else:
+                print "DEBUG key pressed: " + str(keyCode)
+
+    def _onKeyRelease(self, event):
+        print "DEBUG pcn: got key up!"
+        keyCode = event.GetKeyCode()
+        if(keyCode == 308): #Ctrl.
+            self._ctrlDown = False
 
 
 def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):

@@ -22,7 +22,11 @@ class PcnPopupMenu(wx.Menu): #@UndefinedVariable
             image = imageList[i]
             name = nameList[i]
             
-            menuItem = wx.MenuItem(self, wx.NewId(), name) #@UndefinedVariable
+            if(name == "Quit"):
+                itemId = wx.ID_QUIT #@UndefinedVariable
+            else:
+                itemId = wx.NewId() #@UndefinedVariable
+            menuItem = wx.MenuItem(self, itemId, name) #@UndefinedVariable
             menuItem.SetBitmap(image) #@UndefinedVariable
             menuItem.SetBackgroundColour((190,190,190))
             self.AppendItem(menuItem)

@@ -1648,6 +1648,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._configuration.getMidiSender().sendGuiClearChannelNotes(foundTrackId)
 
     def _onClose(self, event):
+        print "User has closed window!"
         self._guiClient.requestGuiClientProcessToStop()
         self._midiListner.requestTcpMidiListnerProcessToStop()
         if(self._statusQueue != None):
@@ -1679,7 +1680,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 wx.Exit() #@UndefinedVariable
 
     def _onShortCut(self, event):
-#        print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
+        print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
         self._fileButtonPopup._onChoice(event)
 
 def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):

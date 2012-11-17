@@ -342,6 +342,24 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
         self._fileButton = PcnImageButton(self._menuPanel, self._fileMenuBitmap, self._fileMenuPressedBitmap, (-1, -1), wx.ID_ANY, size=(46, 17)) #@UndefinedVariable
         self._fileButtonPopup = PcnPopupMenu(self, self._fileImages, self._fileLabels, self._onFileMenuItemChosen)
+
+        menuIdList = self._fileButtonPopup.getIdList()
+        shortCuts = [];
+        shortCuts.append((wx.ACCEL_ALT,  ord('L'), menuIdList[0] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_CMD,  ord('L'), menuIdList[0] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_ALT,  ord('O'), menuIdList[0] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_CMD,  ord('O'), menuIdList[0] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_ALT,  ord('N'), menuIdList[1] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_CMD,  ord('N'), menuIdList[1] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_ALT,  ord('S'), menuIdList[2] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_CMD,  ord('S'), menuIdList[2] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_ALT,  ord('X'), menuIdList[6] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_ALT,  ord('Q'), menuIdList[6] )) #@UndefinedVariable
+        shortCuts.append((wx.ACCEL_CMD,  ord('Q'), menuIdList[6] )) #@UndefinedVariable
+        shortcutsTable = wx.AcceleratorTable(shortCuts); #@UndefinedVariable
+        self.SetAcceleratorTable(shortcutsTable);
+        self.Bind(wx.EVT_MENU, self._onShortCut) #@UndefinedVariable
+
         self._fileButton.Bind(wx.EVT_BUTTON, self._onFileButton) #@UndefinedVariable
         self._sendButton = PcnImageButton(self._menuPanel, self._sendConfigNoNewConfigBitmap, self._sendConfigNoNewConfigBitmap, (-1, -1), wx.ID_ANY, size=(93, 17)) #@UndefinedVariable
         self._sendButton.Bind(wx.EVT_BUTTON, self._onSendButton) #@UndefinedVariable
@@ -430,10 +448,6 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.Bind(wx.EVT_TIMER, self._timedUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_LEFT_DOWN, self._onMouseClick) #@UndefinedVariable
         self.Bind(wx.EVT_CLOSE, self._onClose) #@UndefinedVariable
-        self._ctrlDown = False
-        self._altDown = False
-        self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
-        self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
 
         self._dragTimer = wx.Timer(self, -1) #@UndefinedVariable
 
@@ -1375,7 +1389,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             tryConvert = False
             for ffmpegLine in ffmpegString.split('\n'):
                 if(ffmpegLine.startswith("Input") == True):
-                    print "Input: " + ffmpegLine
+                    print "Input: " + ffmpegLine,
                     if(", image2," in ffmpegLine):
                         print "image!!!"
                         inputIsVideo = False
@@ -1384,6 +1398,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     elif(", avi," in ffmpegLine):
                         print "video!!!"
                         inputIsAvi = True
+                    else:
+                        print "unknown :-("
                     inputCount += 1
                 if(inputCount == 1):
                     if(ffmpegLine.startswith("Input") == False):
@@ -1415,8 +1431,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                     print ffmpegLine
             if(inputCount > 0):
                 convertBeforeImport = True
-                if((inputCount == 1) and (streamcount == 1) and (inputOk == True)):
-                    convertBeforeImport = False
+                mouseState = wx.GetMouseState() #@UndefinedVariable
+                if((mouseState.AltDown() == False) and (mouseState.CmdDown() == False) and (mouseState.ControlDown() == False) and (mouseState.MetaDown() == False)): #@UndefinedVariable
+                    print "Press ctrl, command, meta or alt to force convertion."
+                    if((inputCount == 1) and (streamcount == 1) and (inputOk == True)):
+                        convertBeforeImport = False
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
                         self._convertionWentOk = False
@@ -1660,23 +1679,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     self.Destroy()
                 wx.Exit() #@UndefinedVariable
 
-    def _onKeyPress(self, event):
-        print "DEBUG pcn: got key down!"
-        keyCode = event.GetKeyCode()
-        if(keyCode == 308): #Ctrl.
-            self._ctrlDown = True
-        else:
-            if(self._ctrlDown == True):
-                print "DEBUG key pressed: ctrl + " + str(keyCode)
-            else:
-                print "DEBUG key pressed: " + str(keyCode)
-
-    def _onKeyRelease(self, event):
-        print "DEBUG pcn: got key up!"
-        keyCode = event.GetKeyCode()
-        if(keyCode == 308): #Ctrl.
-            self._ctrlDown = False
-
+    def _onShortCut(self, event):
+#        print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
+        self._fileButtonPopup._onChoice(event)
 
 def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
     logFileName = APP_NAME + ".log"

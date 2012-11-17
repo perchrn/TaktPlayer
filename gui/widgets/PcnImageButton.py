@@ -29,6 +29,8 @@ class PcnPopupMenu(wx.Menu): #@UndefinedVariable
             self._menuIds.append(menuItem.GetId())
             self.Bind(wx.EVT_MENU, self._onChoice, menuItem) #@UndefinedVariable
 
+    def getIdList(self):
+        return self._menuIds
 
     def _onChoice(self, event):
         menuId = event.GetId()

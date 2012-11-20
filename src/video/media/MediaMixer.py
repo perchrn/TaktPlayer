@@ -15,7 +15,7 @@ from midi.MidiTiming import MidiTiming
 
 
 class MediaMixer(object):
-    def __init__(self, configurationTree, midiStateHolder, specialModulationHolder, effectsConfiguration, effectImagesConfig, internalResolutionX, internalResolutionY):
+    def __init__(self, configurationTree, midiStateHolder, specialModulationHolder, effectsConfiguration, effectImagesConfig, internalResolutionX, internalResolutionY, appDataDir):
         self._configurationTree = configurationTree
         self._midiStateHolder = midiStateHolder
         self._specialModulationHolder = specialModulationHolder
@@ -26,6 +26,7 @@ class MediaMixer(object):
 
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY = internalResolutionY
+        self._appDataDirectory = appDataDir
         self._midiTiming = MidiTiming()
 
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -72,8 +73,8 @@ class MediaMixer(object):
 
         self._imagesSinceLastPreviewSave = 0
         self._imagesToSkipBetweenPreviewSave = 20
-        self._tempPreviewName = os.path.normpath("thumbs/preview_tmp.jpg")
-        self._previewName = os.path.normpath("thumbs/preview.jpg")
+        self._tempPreviewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview_tmp.jpg"))
+        self._previewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview.jpg"))
 
     def _getConfiguration(self):
         self.loadMediaFromConfiguration()

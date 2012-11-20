@@ -732,7 +732,7 @@ class MediaFile(object):
         self._log.warning("Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f", os.path.basename(self._cfgFileName), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
-    def getThumbnailId(self, videoPosition, forceUpdate):
+    def getThumbnailId(self, videoPosition, appDataDir, forceUpdate):
         image = self._firstImage # Default
         ourType = self.getType()
         if((ourType == "Group") or (ourType == "Camera") or (ourType == "KinectCamera")):
@@ -757,16 +757,18 @@ class MediaFile(object):
                 image = self._mediaSettingsHolder.captureImage
 
         filenameHash = hashlib.sha224(self.getThumbnailUniqueString().encode("utf-8")).hexdigest()
-        if(os.path.exists("thumbs") == False):
-            os.makedirs("thumbs")
-        if(os.path.isdir("thumbs") == False):
-            print "Error!!! thumbs directory is not in: " + os.getcwd()
+        thumbsDir = os.path.join(os.path.normpath((appDataDir)), "thumbs")
+        if(os.path.exists(thumbsDir) == False):
+            os.makedirs(thumbsDir)
+        if(os.path.isdir(thumbsDir) == False):
+            print "Error!!! thumbs directory does not exist " + thumbsDir + " cwd: " + os.getcwd()
             return None
         else:
-            thumbnailName = "thumbs/%s.jpg" % (filenameHash)
+            thumbnailName = os.path.join(thumbsDir, "%s.jpg" % (filenameHash))
+            returnThumbnailName = os.path.join("thumbs", "%s.jpg" % (filenameHash))
             osFileName = os.path.normpath(thumbnailName)
             if((forceUpdate == True) or (os.path.isfile(osFileName) == False)):
-                print "Thumb file does not exist. Generating... " + thumbnailName
+                print "Thumb file does not exist. Generating... " + os.path.basename(thumbnailName)
                 destWidth, destHeight = (40, 30)
                 resizeMat = createMat(destWidth, destHeight)
                 if(image == None):
@@ -774,8 +776,8 @@ class MediaFile(object):
                 else:
                     scaleAndSave(image, osFileName, resizeMat)
             else:
-                print "Thumb file already exist. " + thumbnailName
-            return thumbnailName
+                print "Thumb file already exist. " + os.path.basename(thumbnailName)
+            return returnThumbnailName
 
     def openFile(self, midiLength):
         pass

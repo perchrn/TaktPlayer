@@ -13,7 +13,7 @@ from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import mimetypes
 import socket
 
-def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
+def guiNetworkClientProcess(host, port, passwd, appDataDirectory, commandQueue, resultQueue):
     run = True
     hostPort = "%s:%d" %(host, port)
     urlSignaturer = UrlSignature(passwd)
@@ -71,7 +71,7 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
                 elif(commandXml.tag == "thumbnailFileRequest"):
                     fileName = getFromXml(commandXml, "fileName", None)
                     if(fileName != None):
-                        resposeXmlString = requestUrl(hostPort, "%s" %(fileName), "image/jpg")
+                        resposeXmlString = requestUrl(hostPort, "%s" %(fileName), "image/jpg", appDataDirectory)
                         resultQueue.put(resposeXmlString)
                 elif(commandXml.tag == "configuration"):
                     resposeXmlString = postXMLFile(urlSignaturer, hostPort, "configuration", "active configuration", command)
@@ -102,7 +102,7 @@ def guiNetworkClientProcess(host, port, passwd, commandQueue, resultQueue):
         except Empty:
             pass
 
-def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "servermessage"):
+def requestUrl(hostPort, urlArgs, excpectedMimeType, appDataDirectory=None, xmlErrorResponseName = "servermessage"):
     try:
         httpConnection = httplib.HTTPConnection(hostPort, timeout=5)
         httpConnection.request("GET", urlArgs)
@@ -114,23 +114,23 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, xmlErrorResponseName = "ser
                     pathDir = os.path.dirname(urlArgs)
                     pathFile = os.path.basename(urlArgs)
                     playerFilePath = ""
-                    filePath = ""
                     if((pathDir == "/thumbs") or (pathDir == "thumbs")):
                         playerFilePath = "thumbs/%s" % pathFile
-                        filePath = "guiThumbs/%s" % pathFile
                     else:
                         serverMessageXml = MiniXml(xmlErrorResponseName, "Bad directory in response: %s" % pathDir)
                         return serverMessageXml.getXmlString()
-                    if(os.path.exists("guiThumbs") == False):
-                        os.makedirs("guiThumbs")
-                    if(os.path.isdir("guiThumbs") == False):
-                        serverMessageXml = MiniXml(xmlErrorResponseName, "Error! Cannot save thumbnail. \"guiThumbs\" directory is not in: %s" % os.getcwd())
+                    thumbsDirPath = os.path.normpath(os.path.join(appDataDirectory, "guiThumbs"))
+                    if(os.path.exists(thumbsDirPath) == False):
+                        os.makedirs(thumbsDirPath)
+                    if(os.path.isdir(thumbsDirPath) == False):
+                        serverMessageXml = MiniXml(xmlErrorResponseName, "Error! Cannot save thumbnail. \"guiThumbs\" directory is not in: %s" % appDataDirectory)
                         return serverMessageXml.getXmlString()
-                    fileHandle=open(filePath, 'wb')
+                    fullFilePath = os.path.join(thumbsDirPath, pathFile)
+                    fileHandle=open(fullFilePath, 'wb')
                     fileHandle.write(serverResponse.read())
                     fileHandle.close()
                     downloadMessageXml = MiniXml("fileDownloaded")
-                    downloadMessageXml.addAttribute("fileName", filePath)
+                    downloadMessageXml.addAttribute("fileName", fullFilePath)
                     downloadMessageXml.addAttribute("playerFileName", playerFilePath)
                     return downloadMessageXml.getXmlString()
                 else:
@@ -241,17 +241,18 @@ def get_content_type(filename):
     return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
 class GuiClient(object):
-    def __init__(self):
+    def __init__(self, appDataDirectory):
         self._commandQueue = None
         self._resultQueue = None
         self._lastTrackRequestError = None
+        self._appDataDirectory = appDataDirectory
 
     def startGuiClientProcess(self, host, port, passwd):
         if(passwd == None):
             passwd = getDefaultUrlSignaturePasswd()
         self._commandQueue = Queue(256)
         self._resultQueue = Queue(256)
-        self._guiClientProcess = Process(target=guiNetworkClientProcess, args=(host, port, passwd, self._commandQueue, self._resultQueue))
+        self._guiClientProcess = Process(target=guiNetworkClientProcess, args=(host, port, passwd, self._appDataDirectory, self._commandQueue, self._resultQueue))
         self._guiClientProcess.name = "guiNetworkClient"
         self._guiClientProcess.start()
 

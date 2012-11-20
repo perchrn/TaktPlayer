@@ -9,6 +9,40 @@ from xml.etree import ElementTree
 from BeautifulSoup import BeautifulStoneSoup
 import os
 import random
+import sys
+
+def getDefaultDirectories():
+    taktPackageConfigDir = os.path.join(os.getcwd(), "config")
+    if(sys.platform == "win32"):
+        appDataDir = os.getenv('APPDATA')
+        taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+    elif(sys.platform == "darwin"):
+        appDataDir = os.path.join(os.getenv('USERPROFILE') or os.getenv('HOME'), "Library")
+        taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
+    else:
+        appDataDir = os.getenv('USERPROFILE') or os.getenv('HOME')
+        taktConfigDefaultDir = os.path.join(appDataDir, ".TaktPlayer")
+    if(os.path.isdir(appDataDir) == True):
+        if(os.path.isdir(taktConfigDefaultDir) == False):
+            os.makedirs(taktConfigDefaultDir)
+        if(os.path.isdir(taktConfigDefaultDir) == False):
+            taktConfigDefaultDir = taktPackageConfigDir
+            taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+        else:
+            taktVideoDefaultDir = os.path.join(taktConfigDefaultDir, "Video")
+            if(os.path.isdir(taktVideoDefaultDir) == False):
+                os.makedirs(taktVideoDefaultDir)
+            if(os.path.isdir(taktVideoDefaultDir) == False):
+                taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+    else:
+        taktConfigDefaultDir = taktPackageConfigDir
+        taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
+    print "*" * 100
+    print "DEBUG pcn: appDataDir: " + str(appDataDir)
+    print "DEBUG pcn: taktConfigDefaultDir: " + str(taktConfigDefaultDir)
+    print "DEBUG pcn: taktVideoDefaultDir: " + str(taktVideoDefaultDir)
+    print "*" * 100
+    return taktConfigDefaultDir, taktVideoDefaultDir
 
 def xmlToPrettyString(xml):
     xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")

@@ -10,6 +10,7 @@ from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectI
 from configuration.GuiServer import GuiServer
 import multiprocessing
 from multiprocessing import Process, Queue
+from configuration.ConfigurationHolder import getDefaultDirectories
 from configuration.PlayerConfiguration import PlayerConfiguration
 import sys
 import shutil
@@ -45,8 +46,8 @@ applicationHolder = None
 class PlayerMain(wx.Frame):
     def __init__(self, parent, configDir, configFile, debugMode, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
-        self._configDirArgument = configDir
         self._debugModeOn = debugMode
+        self._configDirArgument = configDir
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -64,7 +65,7 @@ class PlayerMain(wx.Frame):
         screenHeight = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
         print "DEBUG screensize: " + str((screenWidth, screenHeight))
 
-        self._playerConfiguration = PlayerConfiguration(self._configDirArgument)
+        self._playerConfiguration = PlayerConfiguration(configDir)
         configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
         configResolution = self._playerConfiguration.getResolution()
         configPositionX, configPositionY = self._playerConfiguration.getPosition()
@@ -132,13 +133,15 @@ class PlayerMain(wx.Frame):
         confChild = self._configurationTree.addChildUnique("MediaMixer")
         self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._specialModulationHolder,
                                       self._effectsConfiguration, self._effectImagesConfiguration,
-                                      self._internalResolutionX, self._internalResolutionY)
+                                      self._internalResolutionX, self._internalResolutionY,
+                                    self._playerConfiguration.getAppDataDirectory())
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._specialModulationHolder,
                                     self._mediaMixer, self._timeModulationConfiguration,
                                     self._effectsConfiguration, self._effectImagesConfiguration,
                                     self._mediaFadeConfiguration, confChild, self._internalResolutionX,
-                                    self._internalResolutionY, self._playerConfiguration.getVideoDir())
+                                    self._internalResolutionY, self._playerConfiguration.getVideoDir(),
+                                    self._playerConfiguration.getAppDataDirectory())
 
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger, self._configLoadCallback)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
@@ -391,6 +394,7 @@ if __name__ in ('__android__', '__main__'):
 
     launchGUI = True
     debugMode = False
+    guiOnlyMode = False
     checkForMoreConfigFileName = False
     checkForMoreConfigDirName = False
     configDir = ""
@@ -398,6 +402,10 @@ if __name__ in ('__android__', '__main__'):
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].lower() == "--guionly"):
+            guiOnlyMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
         elif(sys.argv[i+1].lower() == "--debug"):
@@ -418,37 +426,44 @@ if __name__ in ('__android__', '__main__'):
             if(checkForMoreConfigFileName == True):
                 configFile += " " + sys.argv[i+1]
     if(sys.platform == "win32"):
-        from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
-        import win32process
-        import win32con
-        #Incerase priority
-        pid = GetCurrentProcessId()
-        handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
-        win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+        try:
+            from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
+            import win32process
+            import win32con
+            #Incerase priority
+            pid = GetCurrentProcessId()
+            handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+            win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+        except:
+            pass
 #    else:
 #        print "do os nice thing???"
 
-    logFileName = APP_NAME + ".log"
+    appDataDir, _ = getDefaultDirectories()
+    logFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".log"))
     if(debugMode == True):
         redirectValue = 0
+    else:
+        redirectValue = 1
         oldLogFileName = logFileName + ".old"
         if(os.path.isfile(logFileName)):
             try:
                 shutil.move(logFileName, oldLogFileName)
             except:
                 pass
-    else:
-        redirectValue = 1
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
         launchGUI = False
-    applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-    gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
-    try:
-        applicationHolder.MainLoop()
-#    except QuitRequestException, quitRequest:
-#        app.Exit()
-    except:
-        gui._stopPlayer()
-        raise
+        guiOnlyMode = False
+    if(guiOnlyMode == True):
+        from configurationGui.GuiMainWindow import startGui
+        startGui(debugMode, configDir)
+    else:
+        applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
+        gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
+        try:
+            applicationHolder.MainLoop()
+        except:
+            gui._stopPlayer()
+            raise
 

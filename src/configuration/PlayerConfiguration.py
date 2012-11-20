@@ -4,7 +4,8 @@ Created on 16. feb. 2012
 @author: pcn
 '''
 from midi.MidiUtilities import noteStringToNoteNumber
-from configuration.ConfigurationHolder import ConfigurationHolder
+from configuration.ConfigurationHolder import ConfigurationHolder,\
+    getDefaultDirectories
 import sys
 import os
 
@@ -13,36 +14,8 @@ class PlayerConfiguration(object):
         self._playerConfigurationTree = ConfigurationHolder("TaktPlayer")
         self._playerConfigurationTree.setSelfclosingTags(['startup', 'screen', 'server'])
 
-        taktPackageConfigDir = os.path.join(os.getcwd(), "config")
-        if(sys.platform == "win32"):
-            appDataDir = os.getenv('APPDATA')
-            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
-        elif(sys.platform == "darwin"):
-            appDataDir = os.path.join(os.getenv('USERPROFILE') or os.getenv('HOME'), "Library")
-            taktConfigDefaultDir = os.path.join(appDataDir, "TaktPlayer")
-        else:
-            appDataDir = os.getenv('USERPROFILE') or os.getenv('HOME')
-            taktConfigDefaultDir = os.path.join(appDataDir, ".TaktPlayer")
-        if(os.path.isdir(appDataDir) == True):
-            if(os.path.isdir(taktConfigDefaultDir) == False):
-                os.makedirs(taktConfigDefaultDir)
-            if(os.path.isdir(taktConfigDefaultDir) == False):
-                taktConfigDefaultDir = taktPackageConfigDir
-                taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
-            else:
-                taktVideoDefaultDir = os.path.join(taktConfigDefaultDir, "Video")
-                if(os.path.isdir(taktVideoDefaultDir) == False):
-                    os.makedirs(taktVideoDefaultDir)
-                if(os.path.isdir(taktVideoDefaultDir) == False):
-                    taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
-        else:
-            taktConfigDefaultDir = taktPackageConfigDir
-            taktVideoDefaultDir = os.path.join(os.getcwd(), "testVideo")
-        print "*" * 100
-        print "DEBUG pcn: appDataDir: " + str(appDataDir)
-        print "DEBUG pcn: taktConfigDefaultDir: " + str(taktConfigDefaultDir)
-        print "DEBUG pcn: taktVideoDefaultDir: " + str(taktVideoDefaultDir)
-        print "*" * 100
+        taktConfigDefaultDir, taktVideoDefaultDir = getDefaultDirectories()
+        self._taktPlayerAppDataDir = taktConfigDefaultDir
 
         if((configDir != "") and (configDir != None)):
             self._configurationFile = os.path.join(configDir, "PlayerConfig.cfg")
@@ -159,6 +132,9 @@ class PlayerConfiguration(object):
     def getWebServerPort(self):
 #        print "WebPort: " + str(self._serverConfig.getValue("WebPort"))
         return self._serverConfig.getValue("WebPort")
+
+    def getAppDataDirectory(self):
+        return self._taktPlayerAppDataDir
 
     def getVideoDir(self):
         return self._startupConfig.getValue("VideoDir")

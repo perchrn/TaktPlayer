@@ -20,6 +20,7 @@ import cgi
 webInputQueue = None
 webOutputQueue = None
 urlSignaturer = None
+taktPlayerAppDataDirectory = ""
 
 class ErrorHandelingHTTPServer(HTTPServer):
     def handle_error(self, request, client_address):
@@ -62,7 +63,7 @@ class PcnWebHandler(BaseHTTPRequestHandler):
             dirOk = False
             if((pathDir == "/thumbs") or (pathDir == "thumbs")):
                 dirOk = True
-                filePath = "thumbs/%s" % pathFile
+                filePath = os.path.join(taktPlayerAppDataDirectory, "thumbs", pathFile)
             else:
                 serverMessageXml = MiniXml("servermessage", "Bad directory request sending 404: %s" % pathDir)
                 webInputQueue.put(serverMessageXml.getXmlString())
@@ -317,13 +318,15 @@ class PcnWebHandler(BaseHTTPRequestHandler):
         webInputQueue.put(serverLogXml.getXmlString())
 
 
-def guiWebServerProcess(host, port, passwd, serverMessageQueue, serverCommandQueue, webIQ, webOQ):
+def guiWebServerProcess(host, port, passwd, appDataDir, serverMessageQueue, serverCommandQueue, webIQ, webOQ):
     global webInputQueue
     global webOutputQueue
     global urlSignaturer
+    global taktPlayerAppDataDirectory
     webInputQueue = webIQ
     webOutputQueue = webOQ
     urlSignaturer = UrlSignature(passwd)
+    taktPlayerAppDataDirectory = appDataDir
     server = ErrorHandelingHTTPServer((host, port), PcnWebHandler)
     server.timeout = 10.0
     serverMessageXml = MiniXml("servermessage", "Started Web server. Address: %s Port: %d" % (host, port))
@@ -349,6 +352,7 @@ class GuiServer(object):
         self._configurationTree = configurationTree
         self._playerConfiguration = playerConfiguration
         self._configDir = self._playerConfiguration.getConfigDir()
+        self._appDataDir = self._playerConfiguration.getAppDataDirectory()
         self._mediaPool = mediaPool
         self._midiStateHolder = midiStateHolder
 
@@ -363,7 +367,7 @@ class GuiServer(object):
             passwd = getDefaultUrlSignaturePasswd()
         self._serverMessageQueue = Queue(256)
         self._serverCommandQueue = Queue(256)
-        self._guiServerProcess = Process(target=guiWebServerProcess, args=(host, port, passwd, self._serverMessageQueue, self._serverCommandQueue, self._webInputQueue, self._webOutputQueue))
+        self._guiServerProcess = Process(target=guiWebServerProcess, args=(host, port, passwd, self._appDataDir, self._serverMessageQueue, self._serverCommandQueue, self._webInputQueue, self._webOutputQueue))
         self._guiServerProcess.name = "guiNetworkServer"
         self._guiServerProcess.start()
 

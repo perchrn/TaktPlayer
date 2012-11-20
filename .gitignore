@@ -19,3 +19,6 @@ TaktPlayer.log.old
 .project
 com.aptana.ide.core.unifiedBuilder.launch
 org.python.pydev.PyDevBuilder.launch
+warnPlayerMain.txt
+logdict2.7.3.final.0-1.log
+PlayerMain.spec

@@ -15,7 +15,8 @@ from midi.MidiUtilities import noteToNoteString
 import time
 from configurationGui.Configuration import Configuration
 from configurationGui.MediaPoolConfig import MediaFileGui
-from configuration.ConfigurationHolder import xmlToPrettyString
+from configuration.ConfigurationHolder import xmlToPrettyString,\
+    getDefaultDirectories
 import subprocess
 from utilities.MultiprocessLogger import MultiprocessLogger
 from configurationGui.MediaMixerConfig import MediaTrackGui
@@ -322,7 +323,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._fileMenuExit = wx.Bitmap("graphics/menuButtonExit.png") #@UndefinedVariable
 
         self._fileImages = [self._fileMenuOpen, self._fileMenuNew, self._fileMenuSave, self._fileMenuConfig, self._fileMenuConfig, self._fileMenuAbout, self._fileMenuExit]
-        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config", "About", "Exit"]
+        self._fileLabels = ["Open", "New", "Save", "Player Config", "GUI Config", "About", "Quit"]
 
         self._sendConfigBitmap = wx.Bitmap("graphics/sendConfigButton.png") #@UndefinedVariable
         self._sendConfigPressedBitmap = wx.Bitmap("graphics/sendConfigButtonPressed.png") #@UndefinedVariable
@@ -558,7 +559,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._statusQueue = statusQueue
 
     def setupClientProcess(self):
-        self._guiClient = GuiClient()
+        self._guiClient = GuiClient(self._configuration.getAppDataDirectory())
         self._configuration.setEffectStateRequestCallback(self.requestEffectState)
         host, port = self._configuration.getWebConfig()
         self._guiClient.startGuiClientProcess(host, port, None)
@@ -616,7 +617,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 #                print "GuiClient.ResponseTypes.FileDownload"
                 if(result[1] != None):
                     fileName, playerFileName = result[1]
-                    if(playerFileName == "thumbs/preview.jpg"):
+                    playerFileName = os.path.normpath(playerFileName)
+                    if(playerFileName == os.path.normpath("thumbs/preview.jpg")):
 #                        print "DEBUG Got preview!!!"
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
@@ -653,7 +655,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         if(fileName.startswith("thumbs")):
                             namePart = fileName[6:]
                             guiFileName = "guiThumbs" + namePart
-                            osFileName = os.path.normpath(guiFileName)
+                            osFileName = os.path.normpath(os.path.join(self._configuration.getAppDataDirectory(), guiFileName))
                             needFile = True
                             if(os.path.isfile(osFileName)):
                                 if(self._noteWidgets[noteId].setBitmapFile(osFileName) == True):
@@ -665,7 +667,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             if((needFile == True) or (forceUpdate == True)):
                                 fileRequestTask = TaskHolder("File request for note %d" %(foundTask.getUniqueId()), TaskHolder.RequestTypes.File, foundTask.getWidget(), fileName)
                                 self._taskQueue.append(fileRequestTask)
-                                self._guiClient.requestImageFile(fileName)
+                                self._guiClient.requestImageFile(os.path.normpath(fileName))
                                 fileRequestTask.setState(TaskHolder.States.Sendt)
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
@@ -796,7 +798,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                         self._oldServerConfigurationString = newConfigString
                                     self._configUpdatedRequestIsOpen = False
                         if(loadConfig == True):
-                            print "DEBUG pcn loadConfig == True"
+#                            print "DEBUG pcn loadConfig == True"
                             self._configuration.setFromXml(newConfigXml)
                             self._oldGuiConfigurationString = self._configuration.getXmlString()
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
@@ -1145,7 +1147,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onSendButton(self, event):
         if(self._configUpdatedRequestIsOpen == False):
-            print "DEBUG pcn: _onSendButton()"
+#            print "DEBUG pcn: _onSendButton()"
             xmlString = self._configuration.getXmlString()
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
             if(foundTask != None):
@@ -1680,23 +1682,24 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 wx.Exit() #@UndefinedVariable
 
     def _onShortCut(self, event):
-        print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
+#        print "DEBUG pcn: shortcut pressed: " + str(event.GetId())
         self._fileButtonPopup._onChoice(event)
-        if(event.GetId() == wx.ID_EXIT):
+        if(event.GetId() == wx.ID_EXIT): #@UndefinedVariable
             self._onClose(None)
 
 def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
-    logFileName = APP_NAME + ".log"
+    appDataDir, _ = getDefaultDirectories()
+    logFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".log"))
     if(debugMode == True):
         redirectValue = 0
+    else:
+        redirectValue = 1
         oldLogFileName = logFileName + ".old"
         if(os.path.isfile(logFileName)):
             try:
                 shutil.move(logFileName, oldLogFileName)
             except:
                 pass
-    else:
-        redirectValue = 1
     if(sys.platform == "darwin"):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable

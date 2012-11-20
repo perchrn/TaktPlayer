@@ -14,7 +14,7 @@ from video.media.MediaFileModes import forceUnixPath
 from midi.MidiStateHolder import GenericModulationHolder
 
 class MediaPool(object):
-    def __init__(self, midiTiming, midiStateHolder, specialModulationHolder, mediaMixer, timeModulationConfiguration, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+    def __init__(self, midiTiming, midiStateHolder, specialModulationHolder, mediaMixer, timeModulationConfiguration, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir, appDataDir):
         self._configurationTree = configurationTree
         self._timeModulationConfiguration = timeModulationConfiguration
         self._effectsConfigurationTemplates = effectsConfiguration
@@ -26,6 +26,7 @@ class MediaPool(object):
         self._internalResolutionX =  internalResolutionX
         self._internalResolutionY =  internalResolutionY
         self._videoDirectory = videoDir
+        self._appDataDirectory = appDataDir
 
         self._emptyImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
 
@@ -289,7 +290,7 @@ class MediaPool(object):
     def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
         if(noteMedia != None):
-            return noteMedia.getThumbnailId(videoPosition, forceUpdate)
+            return noteMedia.getThumbnailId(videoPosition, self._appDataDirectory, forceUpdate)
         else:
             return None
 

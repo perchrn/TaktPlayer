@@ -354,8 +354,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         shortCuts.append((wx.ACCEL_CMD,  ord('N'), menuIdList[1] )) #@UndefinedVariable
         shortCuts.append((wx.ACCEL_ALT,  ord('S'), menuIdList[2] )) #@UndefinedVariable
         shortCuts.append((wx.ACCEL_CMD,  ord('S'), menuIdList[2] )) #@UndefinedVariable
-        shortCuts.append((wx.ACCEL_ALT,  ord('X'), menuIdList[6] )) #@UndefinedVariable
         shortCuts.append((wx.ACCEL_ALT,  ord('Q'), menuIdList[6] )) #@UndefinedVariable
+        if(sys.platform != "darwin"):
+            shortCuts.append((wx.ACCEL_CTRL,  ord('Q'), menuIdList[6] )) #@UndefinedVariable
         shortcutsTable = wx.AcceleratorTable(shortCuts); #@UndefinedVariable
         self.SetAcceleratorTable(shortcutsTable);
         self.Bind(wx.EVT_MENU, self._onShortCut) #@UndefinedVariable

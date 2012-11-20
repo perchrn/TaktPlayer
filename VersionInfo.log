@@ -1,6 +1,6 @@
-commit 18aefbc8f330dce88fe38b0907e7bcd9cef64aa5
-Merge: 12f687a 759f2e5
+commit 01e690120c2bed840635813e18bf9ec827c27d5c
 Author: unknown <pcn@.(none)>
-Date:   Tue Nov 20 16:30:02 2012 +0100
+Date:   Wed Nov 21 00:24:07 2012 +0100
 
-    Merge branch 'master' of ssh://10.242.10.44/volume1/git/MusicalVideoPlayer_Player
+    Fixing about in windows install.
+    Fixing menu quit.

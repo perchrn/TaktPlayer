@@ -1134,7 +1134,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             aboutString += "Takt Industries AS\n"
             aboutString += "http://www.taktindustries.com/\n"
             wx.MessageBox(aboutString, 'About', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
-        elif(menuString == "Exit"):
+        elif(menuString == "Quit"):
             self._onClose(None)
 
     def _updateConfigName(self, newConfigName):

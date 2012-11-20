@@ -40,6 +40,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\PlayerMain.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\VersionInfo.log"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\ffmpeg\bin\*"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\OpenCV\bin\*"; DestDir: {app}; Flags: IgnoreVersion; 
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

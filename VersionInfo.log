@@ -1,5 +1,6 @@
-commit c5a693b40f1c06c083ad2bf3358a506331cdb14d
+commit 18aefbc8f330dce88fe38b0907e7bcd9cef64aa5
+Merge: 12f687a 759f2e5
 Author: unknown <pcn@.(none)>
-Date:   Mon Nov 5 14:51:45 2012 +0100
+Date:   Tue Nov 20 16:30:02 2012 +0100
 
-    Fixed version file name error.
+    Merge branch 'master' of ssh://10.242.10.44/volume1/git/MusicalVideoPlayer_Player

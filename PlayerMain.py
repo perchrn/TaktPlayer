@@ -175,6 +175,7 @@ class PlayerMain(wx.Frame):
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda evt: None)
         self.Bind(wx.EVT_CLOSE, self._onWindowClose) #@UndefinedVariable
         self._ctrlDown = False
+        self._altDown = False
         self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
         self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
 
@@ -283,9 +284,15 @@ class PlayerMain(wx.Frame):
         keyCode = event.GetKeyCode()
         if(keyCode == 308): #Ctrl.
             self._ctrlDown = True
+        elif(keyCode == 307): #Alt.
+            self._altDown = True
         elif(keyCode == 27): #ESC
             print "User has pressed ESC!"
             self._stopPlayer()
+        elif((self._altDown == True) and (keyCode == 81)): #alt q
+            if(sys.platform != "darwin"):
+                print "User has pressed ALT-Q!"
+                self._stopPlayer()
         elif((self._ctrlDown == True) and (keyCode == 81)): #ctrl q
             print "User has pressed CTRL-Q!"
             self._stopPlayer()
@@ -295,6 +302,8 @@ class PlayerMain(wx.Frame):
         else:
             if(self._ctrlDown == True):
                 print "DEBUG key pressed: ctrl + " + str(keyCode)
+            elif(self._altDown == True):
+                print "DEBUG key pressed: alt + " + str(keyCode)
             else:
                 print "DEBUG key pressed: " + str(keyCode)
 
@@ -302,6 +311,8 @@ class PlayerMain(wx.Frame):
         keyCode = event.GetKeyCode()
         if(keyCode == 308): #Ctrl.
             self._ctrlDown = False
+        elif(keyCode == 307): #Alt.
+            self._altDown = False
 
     def _onWindowClose(self, event = None):
         print "User has closed window!"

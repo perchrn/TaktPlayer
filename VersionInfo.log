@@ -1,6 +1,8 @@
-commit 01e690120c2bed840635813e18bf9ec827c27d5c
+commit af36d0daff9ee68d8e895bfffbbfe206acddadff
 Author: unknown <pcn@.(none)>
-Date:   Wed Nov 21 00:24:07 2012 +0100
+Date:   Fri Nov 23 13:28:32 2012 +0100
 
-    Fixing about in windows install.
-    Fixing menu quit.
+    Added debug binary to windows version (prints to console.)
+    Fixed template move dialog.
+    Track doubble click and effect now selects track and MIDI channel.
+    Now resetting gui controllers when track effect start values are updated.

@@ -15,5 +15,5 @@ echo ""
 
 mv TaktPlayer.dmg TaktPlayer.dmg.old
 hdiutil create TaktPlayer.dmg -volname "Takt Player" -fs HFS+ -srcfolder "dist"
-echo "All done!"
+echo "All done."
 

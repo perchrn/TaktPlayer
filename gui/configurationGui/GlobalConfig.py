@@ -21,6 +21,7 @@ from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
 import re
+from configurationGui.UtilityDialogs import ThreeChoiceMessageDialog
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig, specialModulationHolder, effectsModulation):
@@ -333,8 +334,8 @@ class EffectsGui(object):
         self._showEffectListCallback = parentClass.showEffectList
         self._showEffectImageListCallback = parentClass.showEffectImageListGui
         self._setDragCursor = parentClass.setDragCursorCallback
-        self._mediaPoolEffectNameFieldUpdateCallback = parentClass.updateEffecChoices
-        self._trackEffectNameFieldUpdateCallback = parentClass.trackEffectChoicesUpdateCallback
+        self._mediaPoolEffectNameFieldUpdateCallback = parentClass.updateEffectField
+        self._trackEffectNameFieldUpdateCallback = parentClass.trackEffectFieldUpdateCallback
 
         headerLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -841,11 +842,15 @@ A list of start values for the effect modulation.
         self._mainConfig.updateEffectImageList()
         self._showEffectImageListCallback()
 
+    def _dialogResultCallback(self, value):
+        self._dialogResult = value
+
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getEffectTemplate(saveName)
         rename = False
         move = False
+        moveOne = False
         cancel = False
         if(saveName != self._startConfigName):
             inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(self._startConfigName)
@@ -859,12 +864,23 @@ A list of start values for the effect modulation.
                     cancel = True
                 else:
                     if(inUseNumber > 0):
-                        text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
-                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                        dlg.Destroy()
-                        if(result == True):
-                            move = True
+                        if(self._editFieldWidget != None):
+                            self._dialogResultCallback(-1)
+                            text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                            dlg = ThreeChoiceMessageDialog(self._mainEffectsPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                            dlg.ShowModal()
+                            dlg.Destroy()
+                            if(self._dialogResult == 1):
+                                moveOne = True
+                            elif(self._dialogResult == 2):
+                                move = True
+                        else:
+                            text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                            dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                            result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                            dlg.Destroy()
+                            if(result == True):
+                                move = True
                     else:
                         text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
                         dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
@@ -874,12 +890,23 @@ A list of start values for the effect modulation.
                             rename = True
             else:
                 if(inUseNumber > 0):
-                    text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
-                    dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                    result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                    dlg.Destroy()
-                    if(result == True):
-                        move = True
+                    if(self._editFieldWidget != None):
+                        self._dialogResultCallback(-1)
+                        text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = ThreeChoiceMessageDialog(self._mainEffectsPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        if(self._dialogResult == 1):
+                            moveOne = True
+                        elif(self._dialogResult == 2):
+                            move = True
+                    else:
+                        text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            move = True
                 else:
                     text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
                     dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
@@ -915,14 +942,14 @@ A list of start values for the effect modulation.
                 oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 savedTemplate = oldTemplate
             self.updateGui(savedTemplate, self._midiNote, self._activeEffectId, self._editFieldWidget)
+            if(self._editFieldWidget != None):
+                if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
+                    self._trackEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, moveOne, self._activeEffectId)
+                else:
+                    self._mediaPoolEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, moveOne, self._activeEffectId)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateEffectList(saveName)
-            if(self._editFieldWidget != None):
-                if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
-                    self._trackEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
-                else:
-                    self._mediaPoolEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _onSlidersButton(self, event):
         self.showSliderGuiEditButton(False)
@@ -1571,7 +1598,7 @@ class FadeGui(object):
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
-        self._fadeNameFieldUpdateCallback = parentClass.updateFadeChoices
+        self._fadeNameFieldUpdateCallback = parentClass.updateFadeField
 
         headerLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -1816,10 +1843,14 @@ Decides if this image fades to black or white.
         self._mainConfig.updateFadeList(fadeConfigName)
         self._showFadeListCallback()
 
+    def _dialogResultCallback(self, value):
+        self._dialogResult = value
+
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getFadeTemplate(saveName)
         rename = False
+        renameOne = False
         cancel = False
         if(saveName != self._startConfigName):
             inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(self._startConfigName)
@@ -1832,19 +1863,41 @@ Decides if this image fades to black or white.
                 if(result == False):
                     cancel = True
                 else:
+                    if(self._editFieldWidget != None):
+                        self._dialogResultCallback(-1)
+                        text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = ThreeChoiceMessageDialog(self._mainFadeGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        if(self._dialogResult == 1):
+                            renameOne = True
+                        elif(self._dialogResult == 2):
+                            rename = True
+                    else:
+                        text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            rename = True
+            else:
+                if(self._editFieldWidget != None):
+                    self._dialogResultCallback(-1)
+                    text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                    dlg = ThreeChoiceMessageDialog(self._mainFadeGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    if(self._dialogResult == 1):
+                        renameOne = True
+                    elif(self._dialogResult == 2):
+                        rename = True
+                else:
                     text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                     dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                     result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                     dlg.Destroy()
                     if(result == True):
                         rename = True
-            else:
-                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
-                dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                dlg.Destroy()
-                if(result == True):
-                    rename = True
         fadeMode = self._fadeModesField.GetValue()
         fadeMod = self._midiModulation.validateModulationString(self._fadeModulationField.GetValue())
         levelMod = self._midiModulation.validateModulationString(self._levelModulationField.GetValue())
@@ -1854,7 +1907,6 @@ Decides if this image fades to black or white.
             self._levelModulationField.SetValue(levelMod)
         else:
             if(oldTemplate == None):
-                print "Make new template..."
                 savedTemplate = self._mainConfig.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)
                 if(rename == True):
                     self._mainConfig.renameFadeTemplateUsed(self._startConfigName, saveName)
@@ -1862,12 +1914,12 @@ Decides if this image fades to black or white.
             else:
                 oldTemplate.update(fadeMode, fadeMod, levelMod)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate, None)
+            self.updateGui(savedTemplate, self._editFieldName, self._editFieldWidget)
+            if(self._editFieldWidget != None):
+                self._fadeNameFieldUpdateCallback(self._editFieldWidget, saveName, renameOne)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateFadeList(saveName)
-            if(self._editFieldWidget != None):
-                self._fadeNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -2052,7 +2104,7 @@ class TimeModulationGui(object):
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixTimeModulationGuiLayout = parentClass.fixTimeModulationGuiLayout
-        self._timeModulationNameFieldUpdateCallback = parentClass.updateTimeModulationChoices
+        self._timeModulationNameFieldUpdateCallback = parentClass.updateTimeModulationField
 
         headerLabel = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Time Modulation configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -2464,10 +2516,14 @@ Example for range = 4.0
         self._mainConfig.updateTimeModulationList(timeModulationConfigName)
         self._showTimeModulationListCallback()
 
+    def _dialogResultCallback(self, value):
+        self._dialogResult = value
+
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
         oldTemplate = self._mainConfig.getTimeModulationTemplate(saveName)
         rename = False
+        renameOne = True
         cancel = False
         if(saveName != self._startConfigName):
             inUseNumber = self._mainConfig.countNumberOfTimeTimeModulationTemplateUsed(self._startConfigName)
@@ -2480,19 +2536,41 @@ Example for range = 4.0
                 if(result == False):
                     cancel = True
                 else:
+                    if(self._editFieldWidget != None):
+                        self._dialogResultCallback(-1)
+                        text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = ThreeChoiceMessageDialog(self._mainTimeModulationGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        if(self._dialogResult == 1):
+                            renameOne = True
+                        elif(self._dialogResult == 2):
+                            rename = True
+                    else:
+                        text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                        dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                        dlg.Destroy()
+                        if(result == True):
+                            rename = True
+            else:
+                if(self._editFieldWidget != None):
+                    self._dialogResultCallback(-1)
+                    text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
+                    dlg = ThreeChoiceMessageDialog(self._mainTimeModulationGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    if(self._dialogResult == 1):
+                        renameOne = True
+                    elif(self._dialogResult == 2):
+                        rename = True
+                else:
                     text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                     dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                     result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                     dlg.Destroy()
                     if(result == True):
                         rename = True
-            else:
-                text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
-                dlg = wx.MessageDialog(self._mainTimeModulationGuiPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                dlg.Destroy()
-                if(result == True):
-                    rename = True
         timeModulationMode = self._timeModulationModesField.GetValue()
         timeModulationMod = self._midiModulation.validateModulationString(self._timeModulationModulationField.GetValue())
         try:
@@ -2508,7 +2586,6 @@ Example for range = 4.0
             self._timeModulationModulationField.SetValue(timeModulationMod)
         else:
             if(oldTemplate == None):
-                print "Make new template..."
                 savedTemplate = self._mainConfig.makeTimeModulationTemplate(saveName, timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
                 if(rename == True):
                     self._mainConfig.renameTimeModulationTemplateUsed(self._startConfigName, saveName)
@@ -2517,11 +2594,11 @@ Example for range = 4.0
                 oldTemplate.update(timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
                 savedTemplate = oldTemplate
             self.updateGui(savedTemplate, self._midiNote, self._editFieldWidget)
+            if(self._editFieldWidget != None):
+                self._timeModulationNameFieldUpdateCallback(self._editFieldWidget, saveName, renameOne)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateTimeModulationList(saveName)
-            if(self._editFieldWidget != None):
-                self._timeModulationNameFieldUpdateCallback(self._editFieldWidget, saveName, saveName, True)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):

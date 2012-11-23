@@ -147,6 +147,8 @@ class MediaMixer(object):
             preEffectSettings.updateConfiguration()
         if((oldPreEffectName != preEffectSettings.getEffectName()) or (oldPreEffectValues != preEffectSettings.getStartValuesString())):
             preEffectStartValues = preEffectSettings.getStartValues()
+            guiCtrlStateHolder = self._midiStateHolder.getMidiChannelControllerStateHolder(trackId)
+            guiCtrlStateHolder.resetState(0)
             self._mediaTracksPreEffectControllerValues[trackId] = None
         preEffect = getEffectByName(preEffectSettings.getEffectName(), preEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
@@ -164,6 +166,8 @@ class MediaMixer(object):
             postEffectSettings.updateConfiguration()
         if((oldPostEffectName != postEffectSettings.getEffectName()) or (oldPostEffectValues != postEffectSettings.getStartValuesString())):
             postEffectStartValues = postEffectSettings.getStartValues()
+            guiCtrlStateHolder = self._midiStateHolder.getMidiChannelControllerStateHolder(trackId)
+            guiCtrlStateHolder.resetState(5)
             self._mediaTracksPostEffectControllerValues[trackId] = None
 #            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), postEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)

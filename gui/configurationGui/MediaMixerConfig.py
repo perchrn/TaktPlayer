@@ -175,7 +175,7 @@ class MediaTrackGui(object): #@UndefinedVariable
     class EditSelection():
         Unselected, PreEffect, PostEffect = range(3)
 
-    def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList, cursorWidgetList, fxWidgetList):
+    def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList, cursorWidgetList, fxWidgetList, setActiveTrackIdCallback):
         self._midiTracksPlane = plane
         self._trackGuiSettingsList = trackGuiSettingsList
 
@@ -185,6 +185,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._clearDragCursorCallback = noteGuiClass._clearDragCursorCallback
         self._mixImages = noteGuiClass._mixImages
         self._mixLabels = noteGuiClass._mixLabels
+        self._setActiveTrackIdCallback = setActiveTrackIdCallback
 
         if(self._overviewTrackMixModeButtonPopup == None):
             self._overviewTrackMixModeButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onTrackMixModeChosen)
@@ -303,7 +304,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText8 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
+        self._updateEffecChoices(self._preEffectField, "MixPreDefault", "MixPreDefault")
         self._preEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._preEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._preEffectButton.Bind(wx.EVT_BUTTON, self._onPreEffectEdit) #@UndefinedVariable
@@ -315,7 +316,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         postEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText9 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Post effect template:") #@UndefinedVariable
         self._postEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
+        self._updateEffecChoices(self._postEffectField, "MixPostDefault", "MixPostDefault")
         self._postEffectField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._postEffectButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._postEffectButton.Bind(wx.EVT_BUTTON, self._onPostEffectEdit) #@UndefinedVariable
@@ -333,7 +334,18 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-    def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
+    def updateEffectField(self, widget, value, saveValue, fieldName):
+        self._updateEffecChoices(widget, value, value, False)
+        if(saveValue == True):
+            if(fieldName == "PreEffect"):
+                preEffectConfig = self._preEffectField.GetValue()
+                self._config.setValue("PreEffectConfig", preEffectConfig)
+            elif(fieldName == "PostEffect"):
+                postEffectConfig = self._postEffectField.GetValue()
+                self._config.setValue("PostEffectConfig", postEffectConfig)
+        self._showOrHideSaveButton()
+
+    def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
@@ -471,6 +483,7 @@ Replace:\tNo mixing. Just use this image.
                 foundTrackId = i
                 break
         if(foundTrackId != None):
+            self._setActiveTrackIdCallback(self._trackId)
             self._currentTrackEffectEditorIndex = foundTrackId
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
             if(self._selectedEditor != self.EditSelection.PreEffect):
@@ -532,7 +545,7 @@ Replace:\tNo mixing. Just use this image.
                 if(self._trackId != None):
                     trackConfig.setValue("PreEffectConfig", fxName)
                     if(foundTrackId == self._trackId):
-                        self.updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
+                        self._updateEffecChoices(self._preEffectField, fxName, "MixPreDefault")
                     self.updateEffectThumb(trackSettings.getPreFxWidget(), fxName)
                     self._showOrHideSaveButton()
             self._clearDragCursorCallback()
@@ -553,7 +566,7 @@ Replace:\tNo mixing. Just use this image.
                 if(self._trackId != None):
                     trackConfig.setValue("PostEffectConfig", fxName)
                     if(foundTrackId == self._trackId):
-                        self.updateEffecChoices(self._postEffectField, fxName, "MixPostDefault")
+                        self._updateEffecChoices(self._postEffectField, fxName, "MixPostDefault")
                     self.updateEffectThumb(trackSettings.getPostFxWidget(), fxName)
                     self._showOrHideSaveButton()
             self._clearDragCursorCallback()
@@ -667,9 +680,9 @@ Replace:\tNo mixing. Just use this image.
         levelMod = self._config.getValue("LevelModulation")
         self._levelModulationField.SetValue(levelMod)
         preEffectConfig = self._config.getValue("PreEffectConfig")
-        self.updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
+        self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
         postEffectConfig = self._config.getValue("PostEffectConfig")
-        self.updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
+        self._updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
 
         if(self._selectedEditor != self.EditSelection.Unselected):
             if(self._selectedEditor == self.EditSelection.PreEffect):

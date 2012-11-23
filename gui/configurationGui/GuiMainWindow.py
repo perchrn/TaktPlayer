@@ -430,7 +430,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         for track in range(16):
             self._trackGuiSettings.append(TrackOverviewSettings(self._midiTrackPanel, track, self, self._subWidgetList))
             settings = self._trackGuiSettings[track]
-            self._trackGui.setupTrackOverviewGui(self._midiTrackPanel, self._noteGui, track, settings, self._trackGuiSettings, self._subWidgetList, self._fxWidgetsList)
+            self._trackGui.setupTrackOverviewGui(self._midiTrackPanel, self._noteGui, track, settings, self._trackGuiSettings, self._subWidgetList, self._fxWidgetsList, self.setActiveTrackId)
 
         self._selectedMidiChannel = 0
         self._activeTrackId = -1
@@ -1531,6 +1531,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def setActiveTrackId(self, trackId):
         self._activeTrackId = trackId
         self._selectTrack(trackId)
+        if(self._configuration.isMidiEnabled()):
+            self._selectedMidiChannel = trackId
+        else:
+            self._selectedMidiChannel = -1
+        self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
 
     def _onTrackEditButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -1562,13 +1567,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 foundTrackId = i
                 break
         if(foundTrackId != None):
-            self._activeTrackId = foundTrackId
-            self._selectTrack(foundTrackId)
-            if(self._configuration.isMidiEnabled()):
-                self._selectedMidiChannel = foundTrackId
-            else:
-                self._selectedMidiChannel = -1
-            self._configuration.setSelectedMidiChannel(self._selectedMidiChannel)
+            self.setActiveTrackId(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
                 settings = self._trackGuiSettings[foundTrackId]
@@ -1590,6 +1589,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 foundTrackId = i
                 break
         if(foundTrackId != None):
+            self.setActiveTrackId(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
             if(destinationConfig != None):
                 settings = self._trackGuiSettings[foundTrackId]

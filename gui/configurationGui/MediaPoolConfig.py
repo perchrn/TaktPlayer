@@ -649,8 +649,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._requestThumbCallback = noteRequestCallback
         self._clearDragCursorCallback = parentClass.clearDragCursor
         self.setDragCursorCallback = parentClass.setDragCursor
-        self.trackEffectChoicesUpdateCallback = self._trackGui.updateEffecChoices
-        self._setActiveTrackId = parentClass.setActiveTrackId
+        self.trackEffectFieldUpdateCallback = self._trackGui.updateEffectField
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
@@ -1078,7 +1077,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._timeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Time modulation template:") #@UndefinedVariable
         self._timeModulationField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateTimeModulationChoices(self._timeModulationField, "Default", "Default")
+        self._updateTimeModulationChoices(self._timeModulationField, "Default", "Default")
         self._timeModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._timeModulationButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._timeModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationEdit) #@UndefinedVariable
@@ -1090,7 +1089,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
         self._effect1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
+        self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
         self._effect1Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect1Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect1Button.Bind(wx.EVT_BUTTON, self._onEffect1Edit) #@UndefinedVariable
@@ -1102,7 +1101,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._effect2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
         self._effect2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
+        self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._effect2Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect2Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect2Button.Bind(wx.EVT_BUTTON, self._onEffect2Edit) #@UndefinedVariable
@@ -1114,7 +1113,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fadeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Fade template:") #@UndefinedVariable
         self._fadeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
-        self.updateFadeChoices(self._fadeField, "Default", "Default")
+        self._updateFadeChoices(self._fadeField, "Default", "Default")
         self._fadeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._fadeButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._fadeButton.Bind(wx.EVT_BUTTON, self._onFadeEdit) #@UndefinedVariable
@@ -2740,10 +2739,10 @@ All notes on events are quantized to this.
         else:
             if(config != None):
                 timeModulationTemplate = config.getValue("TimeModulationConfig")
-                self.updateTimeModulationChoices(self._timeModulationField, timeModulationTemplate, "Default")
+                self._updateTimeModulationChoices(self._timeModulationField, timeModulationTemplate, "Default")
             else:
                 oldTimeModulationTemplate = self._timeModulationField.GetValue()
-                self.updateTimeModulationChoices(self._timeModulationField, oldTimeModulationTemplate, "Default")
+                self._updateTimeModulationChoices(self._timeModulationField, oldTimeModulationTemplate, "Default")
             self._noteConfigSizer.Show(self._timeModulationSizer)
 
         if(self._type == "Group"):
@@ -2785,19 +2784,44 @@ All notes on events are quantized to this.
         self._noteConfigPanel.Layout()
         self.refreshLayout()
 
-    def updateTimeModulationChoices(self, widget, value, defaultValue, updateSaveButton = False):
+    def updateTimeModulationField(self, widget, value, saveValue):
+        self._updateTimeModulationChoices(widget, value, value, False)
+        if(saveValue == True):
+            timeModulation = self._timeModulationField.GetValue()
+            self._config.setValue("TimeModulationConfig", timeModulation)
+        self._showOrHideSaveButton()
+
+    def _updateTimeModulationChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._mainConfig.getTimeModulationChoices, value, defaultValue, updateSaveButton)
 
-    def updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
+    def updateEffectField(self, widget, value, saveValue, fieldName):
+        self._updateEffecChoices(widget, value, value, False)
+        if(saveValue == True):
+            if(fieldName == "Effect1"):
+                effect1Config = self._effect1Field.GetValue()
+                self._config.setValue("Effect1Config", effect1Config)
+            elif(fieldName == "Effect2"):
+                effect2Config = self._effect2Field.GetValue()
+                self._config.setValue("Effect2Config", effect2Config)
+        self._showOrHideSaveButton()
+
+    def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
 
-    def updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
+    def updateFadeField(self, widget, value, saveValue):
+        self._updateFadeChoices(widget, value, value, False)
+        if(saveValue == True):
+            fadeConfig = self._fadeField.GetValue()
+            self._config.setValue("FadeConfig", fadeConfig)
+        self._showOrHideSaveButton()
+
+    def _updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
@@ -3149,7 +3173,7 @@ All notes on events are quantized to this.
                                             self._config.setValue("FadeConfig", newFadeConfigName)
                                     else:
                                         oldConfig.update(fadeMode, None, None)
-                                    self.updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                                    self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                                     self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                                     self._showOrHideSaveButton()
 
@@ -3182,7 +3206,7 @@ All notes on events are quantized to this.
                             fadeConfig = self._mainConfig.getFadeTemplate(dupTemplateName)
                             fadeConfig.setName(newFadeConfigName)
                             self._config.setValue("FadeConfig", newFadeConfigName)
-                            self.updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
+                            self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
                             self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                             self._mainConfig.updateFadeList(newFadeConfigName)
                             self._showOrHideSaveButton()
@@ -3206,7 +3230,7 @@ All notes on events are quantized to this.
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
-                self.updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
+                self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
                 self.updateEffectThumb(self._overviewFx1Button, fxName)
                 self._showOrHideSaveButton()
         self._clearDragCursorCallback()
@@ -3215,7 +3239,7 @@ All notes on events are quantized to this.
         fxName = self._mainConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
-                self.updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
+                self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
                 self.updateEffectThumb(self._overviewFx2Button, fxName)
                 self._showOrHideSaveButton()
         self._clearDragCursorCallback()
@@ -3532,13 +3556,13 @@ All notes on events are quantized to this.
             self._updateMixModeChoices(self._mixField, mixMode, "Add")
             self.updateMixmodeThumb(self._overviewClipMixButton, mixMode, mixMode)
             effect1Config = self._config.getValue("Effect1Config")
-            self.updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
+            self._updateEffecChoices(self._effect1Field, effect1Config, "MediaDefault1")
             self.updateEffectThumb(self._overviewFx1Button, effect1Config)
             effect2Config = self._config.getValue("Effect2Config")
-            self.updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
+            self._updateEffecChoices(self._effect2Field, effect2Config, "MediaDefault2")
             self.updateEffectThumb(self._overviewFx2Button, effect2Config)
             fadeConfigName = self._config.getValue("FadeConfig")
-            self.updateFadeChoices(self._fadeField, fadeConfigName, "Default")
+            self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
             self._mainConfig.updateFadeGuiButtons(fadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
@@ -3578,9 +3602,9 @@ All notes on events are quantized to this.
         self._syncField.SetValue("4.0")
         self._quantizeField.SetValue("1.0")
         self._updateMixModeChoices(self._mixField, "Add", "Add")
-        self.updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
-        self.updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
-        self.updateFadeChoices(self._fadeField, "Default", "Default")
+        self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
+        self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
+        self._updateFadeChoices(self._fadeField, "Default", "Default")
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.TimeModulation):

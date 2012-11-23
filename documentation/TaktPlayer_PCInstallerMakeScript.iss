@@ -40,10 +40,11 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\PlayerMain.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\documentation\Output\PlayerMain_debug.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\VersionInfo.log"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\ffmpeg\bin\*"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\OpenCV\bin\*"; DestDir: {app}; Flags: IgnoreVersion; 
-Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\*"; DestDir: "{app}"; Excludes: "avicap32.dll,avifil32.dll,msacm32.dll,msvfw32.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\graphics\*; DestDir: {app}\graphics; Flags: ignoreversion recursesubdirs createallsubdirs; 
 Source: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\licenses\*; DestDir: {app}\liceses; Flags: ignoreversion recursesubdirs createallsubdirs; 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files

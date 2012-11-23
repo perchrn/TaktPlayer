@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TaktPlayer"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "Takt Industries AS"
 #define MyAppURL "http://www.taktindustries.com/"
 #define MyAppExeName "PlayerMain.exe"
@@ -28,7 +28,7 @@ Compression=lzma/Max
 SolidCompression=true
 MinVersion=5.1.2600
 AppCopyright=Takt Industries AS 2012
-AppVerName=1.0.2
+AppVerName=1.0.3
 PrivilegesRequired=none
 
 [Languages]

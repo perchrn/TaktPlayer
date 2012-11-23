@@ -403,15 +403,36 @@ class QuitRequestException(Exception):
 if __name__ in ('__android__', '__main__'):
     multiprocessing.freeze_support()
 
+    helpMode = False
     launchGUI = True
     debugMode = False
+    raisePriority = True
     guiOnlyMode = False
     checkForMoreConfigFileName = False
     checkForMoreConfigDirName = False
     configDir = ""
     configFile = ""
     for i in range(len(sys.argv) - 1):
-        if(sys.argv[i+1].lower() == "--nogui"):
+        if(sys.argv[i+1].lower() == "--help"):
+            if(sys.platform == "darwin"):
+                print os.path.basename(sys.argv[0]) + " --help --debug --configDir=DIR_NAME --configFile=FILE_NAME"
+                print "\t--help\t\t\tPrint this text and exit"
+                print "\t--debug\t\t\tPrints debug info to console and not to logfile"
+                print "\t--configDir=DIR_NAME\tSet config file to start with"
+                print "\t--configFile=FILE_NAME\tSet configuration directory"
+            else:
+                print os.path.basename(sys.argv[0]) + " --help --debug --normalpriority --nogui --guionly --configDir=DIR_NAME --configFile=FILE_NAME"
+                print "\t--help\t\t\tPrint this text and exit"
+                print "\t--debug\t\t\tPrints debug info to console and not to logfile"
+                print "\t--normalpriority\tDon't raise priority"
+                print "\t--nogui\t\t\tRun without GUI (always on mac)"
+                print "\t--guionly\t\tRun without Player (not on mac)"
+                print "\t--configDir=DIR_NAME\tSet config file to start with"
+                print "\t--configFile=FILE_NAME\tSet configuration directory"
+            helpMode = True
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
@@ -421,6 +442,10 @@ if __name__ in ('__android__', '__main__'):
             checkForMoreConfigFileName = False
         elif(sys.argv[i+1].lower() == "--debug"):
             debugMode = True
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+        elif(sys.argv[i+1].lower() == "--normalpriority"):
+            raisePriority = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
         elif(sys.argv[i+1].startswith("--configDir=")):
@@ -436,45 +461,47 @@ if __name__ in ('__android__', '__main__'):
                 configDir += " " + sys.argv[i+1]
             if(checkForMoreConfigFileName == True):
                 configFile += " " + sys.argv[i+1]
-    if(sys.platform == "win32"):
-        try:
-            from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
-            import win32process
-            import win32con
-            #Incerase priority
-            pid = GetCurrentProcessId()
-            handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
-            win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
-        except:
-            pass
+    if(raisePriority == True):
+        if(sys.platform == "win32"):
+            try:
+                from win32api import GetCurrentProcessId, OpenProcess #@UnresolvedImport
+                import win32process
+                import win32con
+                #Incerase priority
+                pid = GetCurrentProcessId()
+                handle = OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+                win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+            except:
+                pass
 #    else:
 #        print "do os nice thing???"
 
-    appDataDir, _ = getDefaultDirectories()
-    logFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".log"))
-    if(debugMode == True):
-        redirectValue = 0
-    else:
-        redirectValue = 1
-        oldLogFileName = logFileName + ".old"
-        if(os.path.isfile(logFileName)):
+    if(helpMode != True):
+        appDataDir, _ = getDefaultDirectories()
+        logFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".log"))
+        if(debugMode == True):
+            redirectValue = 0
+        else:
+            redirectValue = 1
+            oldLogFileName = logFileName + ".old"
+            if(os.path.isfile(logFileName)):
+                try:
+                    shutil.move(logFileName, oldLogFileName)
+                except:
+                    pass
+        if(sys.platform == "darwin"):
+            os.environ["PATH"] += ":."
+            launchGUI = False
+            guiOnlyMode = False
+        if(guiOnlyMode == True):
+            from configurationGui.GuiMainWindow import startGui
+            startGui(debugMode, configDir)
+        else:
+            applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
+            gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
             try:
-                shutil.move(logFileName, oldLogFileName)
+                applicationHolder.MainLoop()
             except:
-                pass
-    if(sys.platform == "darwin"):
-        os.environ["PATH"] += ":."
-        launchGUI = False
-        guiOnlyMode = False
-    if(guiOnlyMode == True):
-        from configurationGui.GuiMainWindow import startGui
-        startGui(debugMode, configDir)
-    else:
-        applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-        gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
-        try:
-            applicationHolder.MainLoop()
-        except:
-            gui._stopPlayer()
-            raise
+                gui._stopPlayer()
+                raise
 

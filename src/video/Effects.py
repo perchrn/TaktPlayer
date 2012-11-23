@@ -1653,7 +1653,7 @@ class ImageAddEffect(object):
 #Redo baertur with time modulation (started)
 #Make Rygg I Rand project (started)
 #Make Elg project (started)
-#Luma key bug when we already have multipple layers... Retest!!!
+#Try to recreate Einar bug when doubble clikking on Player window on a 1080*1900 screen (1900x1080?)
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!

@@ -1,6 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html401/loose.dtd">
+<!DOCTYPE html>
 <html>
-<!-- Created on November 21, 2011 by texi2html 1.82 -->
+<!-- Created on November 13, 2012 by texi2html 1.82 -->
 <!--
 texi2html was written by: 
             Lionel Cons <Lionel.Cons@cern.ch> (original author)
@@ -19,17 +19,131 @@ Send bugs and suggestions to <texi2html-bug@nongnu.org>
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="texi2html 1.82">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+<!--
+.container {
+  margin-right: auto;
+  margin-left: auto;
+  width: 1070px;
+}
+body {
+  font-size: 14px;
+  line-height: 20px;
+  color: #333333;
+  background-color: #ffffff;
+}
+a {
+  color: #0088cc;
+  text-decoration: none;
+}
+a:hover {
+  color: #005580;
+  text-decoration: underline;
+}
+p {
+  margin: 0 0 10px;
+}
+h2,
+h3,
+h4 {
+  margin: 10px 0;
+  font-family: inherit;
+  font-weight: bold;
+  line-height: 1;
+  border-color: #D6E9C6;
+  color: #468847;
+  border-style: solid;
+  border-width: 0 0 1px;
+  padding-left: 0.5em;
+}
 
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: inherit;
+}
+h1 {
+  font-size: 30px;
+  line-height: 40px;
+}
+h2 {
+  font-size: 20px;
+  line-height: 40px;
+}
+h3 {
+  font-size: 18px;
+  line-height: 40px;
+}
+code,
+pre {
+  padding: 0 3px 2px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #333333;
+  border-radius: 3px;
+}
+pre {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre;
+  white-space: pre-wrap;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+code {
+  padding: 2px 4px;
+  color: #d14;
+  background-color: #f7f7f9;
+  border: 1px solid #e1e1e8;
+}
+pre code {
+  padding: 0;
+  color: inherit;
+  background-color: transparent;
+  border: 0;
+}
+.alert {
+  padding: 8px 35px 8px 14px;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-color: #fcf8e3;
+  border: 1px solid #fbeed5;
+  border-radius: 4px;
+  color: #c09853;
+}
+
+.alert-danger,
+.alert-error {
+  background-color: #f2dede;
+  border-color: #eed3d7;
+  color: #b94a48;
+}
+.alert-info {
+  background-color: #d9edf7;
+  border-color: #bce8f1;
+  color: #3a87ad;
+}
+
+ul.toc {
+  list-style-type: none;
+}
+-->
+</style>
 
 <link rel="icon" href="favicon.png" type="image/png" />
-<link rel="stylesheet" type="text/css" href="default.css" />
-
 </head>
+<body>
+<div class="container">
 
-<body >
-<div id="container">
-
-<div id="body">
 <a name="SEC_Top"></a>
 <h1 class="settitle">Developer Documentation</h1>
 
@@ -43,13 +157,25 @@ Send bugs and suggestions to <texi2html-bug@nongnu.org>
     <li><a name="toc-API" href="#API">1.1 API</a></li>
     <li><a name="toc-Integrating-libavcodec-or-libavformat-in-your-program" href="#Integrating-libavcodec-or-libavformat-in-your-program">1.2 Integrating libavcodec or libavformat in your program</a></li>
     <li><a name="toc-Contributing" href="#Contributing">1.3 Contributing</a></li>
-    <li><a name="toc-Coding-Rules-1" href="#Coding-Rules-1">1.4 Coding Rules</a></li>
+    <li><a name="toc-Coding-Rules-1" href="#Coding-Rules-1">1.4 Coding Rules</a>
+    <ul class="toc">
+      <li><a name="toc-Code-formatting-conventions" href="#Code-formatting-conventions">1.4.1 Code formatting conventions</a></li>
+      <li><a name="toc-Comments" href="#Comments">1.4.2 Comments</a></li>
+      <li><a name="toc-C-language-features" href="#C-language-features">1.4.3 C language features</a></li>
+      <li><a name="toc-Naming-conventions" href="#Naming-conventions">1.4.4 Naming conventions</a></li>
+      <li><a name="toc-Miscellanous-conventions" href="#Miscellanous-conventions">1.4.5 Miscellanous conventions</a></li>
+      <li><a name="toc-Editor-configuration" href="#Editor-configuration">1.4.6 Editor configuration</a></li>
+    </ul></li>
     <li><a name="toc-Development-Policy" href="#Development-Policy">1.5 Development Policy</a></li>
     <li><a name="toc-Submitting-patches-1" href="#Submitting-patches-1">1.6 Submitting patches</a></li>
     <li><a name="toc-New-codecs-or-formats-checklist" href="#New-codecs-or-formats-checklist">1.7 New codecs or formats checklist</a></li>
     <li><a name="toc-patch-submission-checklist" href="#patch-submission-checklist">1.8 patch submission checklist</a></li>
     <li><a name="toc-Patch-review-process" href="#Patch-review-process">1.9 Patch review process</a></li>
-    <li><a name="toc-Regression-tests" href="#Regression-tests">1.10 Regression tests</a></li>
+    <li><a name="toc-Regression-tests-1" href="#Regression-tests-1">1.10 Regression tests</a>
+    <ul class="toc">
+      <li><a name="toc-Adding-files-to-the-fate_002dsuite-dataset" href="#Adding-files-to-the-fate_002dsuite-dataset">1.10.1 Adding files to the fate-suite dataset</a></li>
+    </ul>
+</li>
   </ul>
 </li>
 </ul>
@@ -62,12 +188,13 @@ Send bugs and suggestions to <texi2html-bug@nongnu.org>
 <h2 class="section"><a href="developer.html#toc-API">1.1 API</a></h2>
 <ul>
 <li> libavcodec is the library containing the codecs (both encoding and
-decoding). Look at &lsquo;<tt>libavcodec/apiexample.c</tt>&rsquo; to see how to use it.
+decoding). Look at &lsquo;<tt>doc/examples/decoding_encoding.c</tt>&rsquo; to see how to use
+it.
 
 </li><li> libavformat is the library containing the file format handling (mux and
 demux code for several formats). Look at &lsquo;<tt>ffplay.c</tt>&rsquo; to use it in a
-player. See &lsquo;<tt>libavformat/output-example.c</tt>&rsquo; to use it to generate
-audio or video streams.
+player. See &lsquo;<tt>doc/examples/muxing.c</tt>&rsquo; to use it to generate audio or video
+streams.
 
 </li></ul>
 
@@ -88,21 +215,84 @@ to send your patches to the FFmpeg mailing list.
 
 <p>There are 3 ways by which code gets into ffmpeg.
 </p><ul>
-<li> Submiting Patches to the main developer mailing list
+<li> Submitting Patches to the main developer mailing list
       see <a href="#Submitting-patches">Submitting patches</a> for details.
-</li><li> Directly commiting changes to the main tree.
-</li><li> Commiting changes to a git clone, for example on github.com or
+</li><li> Directly committing changes to the main tree.
+</li><li> Committing changes to a git clone, for example on github.com or
       gitorious.org. And asking us to merge these changes.
 </li></ul>
 
 <p>Whichever way, changes should be reviewed by the maintainer of the code
-before they are commited. And they should follow the <a href="#Coding-Rules">Coding Rules</a>.
+before they are committed. And they should follow the <a href="#Coding-Rules">Coding Rules</a>.
 The developer making the commit and the author are responsible for their changes
 and should try to fix issues their commit causes.
 </p>
 <p><a name="Coding-Rules"></a>
 </p><a name="Coding-Rules-1"></a>
 <h2 class="section"><a href="developer.html#toc-Coding-Rules-1">1.4 Coding Rules</a></h2>
+
+<a name="Code-formatting-conventions"></a>
+<h3 class="subsection"><a href="developer.html#toc-Code-formatting-conventions">1.4.1 Code formatting conventions</a></h3>
+
+<p>There are the following guidelines regarding the indentation in files:
+</p><ul>
+<li>
+Indent size is 4.
+</li><li>
+The TAB character is forbidden outside of Makefiles as is any
+form of trailing whitespace. Commits containing either will be
+rejected by the git repository.
+</li><li>
+You should try to limit your code lines to 80 characters; however, do so if
+and only if this improves readability.
+</li></ul>
+<p>The presentation is one inspired by &rsquo;indent -i4 -kr -nut&rsquo;.
+</p>
+<p>The main priority in FFmpeg is simplicity and small code size in order to
+minimize the bug count.
+</p>
+<a name="Comments"></a>
+<h3 class="subsection"><a href="developer.html#toc-Comments">1.4.2 Comments</a></h3>
+<p>Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
+can be generated automatically. All nontrivial functions should have a comment
+above them explaining what the function does, even if it is just one sentence.
+All structures and their member variables should be documented, too.
+</p>
+<p>Avoid Qt-style and similar Doxygen syntax with <code>!</code> in it, i.e. replace
+<code>//!</code> with <code>///</code> and similar.  Also @ syntax should be employed
+for markup commands, i.e. use <code>@param</code> and not <code>\param</code>.
+</p>
+<table><tr><td>&nbsp;</td><td><pre class="example">/**
+ * @file
+ * MPEG codec.
+ * @author ...
+ */
+
+/**
+ * Summary sentence.
+ * more text ...
+ * ...
+ */
+typedef struct Foobar{
+    int var1; /**&lt; var1 description */
+    int var2; ///&lt; var2 description
+    /** var3 description */
+    int var3;
+} Foobar;
+
+/**
+ * Summary sentence.
+ * more text ...
+ * ...
+ * @param my_parameter description of my_parameter
+ * @return return value description
+ */
+int myfunc(int my_parameter)
+...
+</pre></td></tr></table>
+
+<a name="C-language-features"></a>
+<h3 class="subsection"><a href="developer.html#toc-C-language-features">1.4.3 C language features</a></h3>
 
 <p>FFmpeg is programmed in the ISO C90 language with a few additional
 features from ISO C99, namely:
@@ -135,55 +325,74 @@ mixing statements and declarations;
 GCC statement expressions (&lsquo;<samp>(x = ({ int y = 4; y; })</samp>&rsquo;).
 </li></ul>
 
-<p>Indent size is 4.
-The presentation is one inspired by &rsquo;indent -i4 -kr -nut&rsquo;.
-The TAB character is forbidden outside of Makefiles as is any
-form of trailing whitespace. Commits containing either will be
-rejected by the git repository.
+<a name="Naming-conventions"></a>
+<h3 class="subsection"><a href="developer.html#toc-Naming-conventions">1.4.4 Naming conventions</a></h3>
+<p>All names are using underscores (_), not CamelCase. For example, &lsquo;<samp>avfilter_get_video_buffer</samp>&rsquo; is
+a valid function name and &lsquo;<samp>AVFilterGetVideo</samp>&rsquo; is not. The exception from this are type names, like
+for example structs and enums; they should always be in the CamelCase
 </p>
-<p>The main priority in FFmpeg is simplicity and small code size in order to
-minimize the bug count.
-</p>
-<p>Comments: Use the JavaDoc/Doxygen
-format (see examples below) so that code documentation
-can be generated automatically. All nontrivial functions should have a comment
-above them explaining what the function does, even if it is just one sentence.
-All structures and their member variables should be documented, too.
-</p><table><tr><td>&nbsp;</td><td><pre class="example">/**
- * @file
- * MPEG codec.
- * @author ...
- */
 
-/**
- * Summary sentence.
- * more text ...
- * ...
- */
-typedef struct Foobar{
-    int var1; /**&lt; var1 description */
-    int var2; ///&lt; var2 description
-    /** var3 description */
-    int var3;
-} Foobar;
+<p>There are following conventions for naming variables and functions:
+</p><ul>
+<li>
+For local variables no prefix is required.
+</li><li>
+For variables and functions declared as <code>static</code> no prefixes are required.
+</li><li>
+For variables and functions used internally by the library, <code>ff_</code> prefix
+should be used.
+For example, &lsquo;<samp>ff_w64_demuxer</samp>&rsquo;.
+</li><li>
+For variables and functions used internally across multiple libraries, use
+<code>avpriv_</code>. For example, &lsquo;<samp>avpriv_aac_parse_header</samp>&rsquo;.
+</li><li>
+For exported names, each library has its own prefixes. Just check the existing
+code and name accordingly.
+</li></ul>
 
-/**
- * Summary sentence.
- * more text ...
- * ...
- * @param my_parameter description of my_parameter
- * @return return value description
- */
-int myfunc(int my_parameter)
-...
+<a name="Miscellanous-conventions"></a>
+<h3 class="subsection"><a href="developer.html#toc-Miscellanous-conventions">1.4.5 Miscellanous conventions</a></h3>
+<ul>
+<li>
+fprintf and printf are forbidden in libavformat and libavcodec,
+please use av_log() instead.
+</li><li>
+Casts should be used only when necessary. Unneeded parentheses
+should also be avoided if they don&rsquo;t make the code easier to understand.
+</li></ul>
+
+<a name="Editor-configuration"></a>
+<h3 class="subsection"><a href="developer.html#toc-Editor-configuration">1.4.6 Editor configuration</a></h3>
+<p>In order to configure Vim to follow FFmpeg formatting conventions, paste
+the following snippet into your &lsquo;<tt>.vimrc</tt>&rsquo;:
+</p><table><tr><td>&nbsp;</td><td><pre class="example">&quot; indentation rules for FFmpeg: 4 spaces, no tabs
+set expandtab
+set shiftwidth=4
+set softtabstop=4
+set cindent
+set cinoptions=(0
+&quot; allow tabs in Makefiles
+autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
+&quot; Trailing whitespace and tabs are forbidden, so highlight them.
+highlight ForbiddenWhitespace ctermbg=red guibg=red
+match ForbiddenWhitespace /\s\+$\|\t/
+&quot; Do not highlight spaces at the end of line while typing on that line.
+autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@&lt;!$/
 </pre></td></tr></table>
 
-<p>fprintf and printf are forbidden in libavformat and libavcodec,
-please use av_log() instead.
-</p>
-<p>Casts should be used only when necessary. Unneeded parentheses
-should also be avoided if they don&rsquo;t make the code easier to understand.
-</p>
+<p>For Emacs, add these roughly equivalent lines to your &lsquo;<tt>.emacs.d/init.el</tt>&rsquo;:
+</p><table><tr><td>&nbsp;</td><td><pre class="example">(c-add-style &quot;ffmpeg&quot;
+             '(&quot;k&amp;r&quot;
+               (c-basic-offset . 4)
+               (indent-tabs-mode . nil)
+               (show-trailing-whitespace . t)
+               (c-offsets-alist
+                (statement-cont . (c-lineup-assignments +)))
+               )
+             )
+(setq c-default-style &quot;ffmpeg&quot;)
+</pre></td></tr></table>
+
 <a name="Development-Policy"></a>
 <h2 class="section"><a href="developer.html#toc-Development-Policy">1.5 Development Policy</a></h2>
 
@@ -245,7 +454,7 @@ should also be avoided if they don&rsquo;t make the code easier to understand.
    Always fill out the commit log message. Describe in a few lines what you
    changed and why. You can refer to mailing list postings if you fix a
    particular bug. Comments such as &quot;fixed!&quot; or &quot;Changed it.&quot; are unacceptable.
-   Recommanded format:
+   Recommended format:
    area changed: Short 1 line description
 
 <p>   details describing what and why and giving references.
@@ -280,7 +489,7 @@ should also be avoided if they don&rsquo;t make the code easier to understand.
     always check values read from some untrusted source before using them
     as array index or other risky things.
 </li><li>
-    Remember to check if you need to bump versions for the specific libav
+    Remember to check if you need to bump versions for the specific libav*
     parts (libavutil, libavcodec, libavformat) you are changing. You need
     to change the version integer.
     Incrementing the first component means no backward compatibility to
@@ -327,7 +536,7 @@ for us and greatly increases your chances of getting your patch applied.
 <p>Use the patcheck tool of FFmpeg to check your patch.
 The tool is located in the tools directory.
 </p>
-<p>Run the @ref{Regression Tests} before submitting a patch in order to verify
+<p>Run the <a href="#Regression-tests">Regression tests</a> before submitting a patch in order to verify
 it does not cause unexpected problems.
 </p>
 <p>Patches should be posted as base64 encoded attachments (or any other
@@ -367,9 +576,11 @@ send a reminder by email. Your patch should eventually be dealt with.
 </li><li>
     Did you register it in &lsquo;<tt>allcodecs.c</tt>&rsquo; or &lsquo;<tt>allformats.c</tt>&rsquo;?
 </li><li>
-    Did you add the CodecID to &lsquo;<tt>avcodec.h</tt>&rsquo;?
+    Did you add the AVCodecID to &lsquo;<tt>avcodec.h</tt>&rsquo;?
+    When adding new codec IDs, also add an entry to the codec descriptor
+    list in &lsquo;<tt>libavcodec/codec_desc.c</tt>&rsquo;.
 </li><li>
-    If it has a fourcc, did you add it to &lsquo;<tt>libavformat/riff.c</tt>&rsquo;,
+    If it has a fourCC, did you add it to &lsquo;<tt>libavformat/riff.c</tt>&rsquo;,
     even if it is only a decoder?
 </li><li>
     Did you add a rule to compile the appropriate files in the Makefile?
@@ -464,6 +675,10 @@ send a reminder by email. Your patch should eventually be dealt with.
     Consider to add a regression test for your code.
 </li><li>
     If you added YASM code please check that things still work with &ndash;disable-yasm
+</li><li>
+    Make sure you check the return values of function and return appropriate
+    error codes. Especially memory allocation functions like <code>av_malloc()</code>
+    are notoriously left unchecked, which is a serious problem.
 </li></ol>
 
 <a name="Patch-review-process"></a>
@@ -490,29 +705,34 @@ where its best maintained.
 </p>
 <p>When resubmitting patches, please do not make any significant changes
 not related to the comments received during review. Such patches will
-be rejected. Instead, submit  significant changes or new features as
+be rejected. Instead, submit significant changes or new features as
 separate patches.
 </p>
-<a name="Regression-tests"></a>
-<h2 class="section"><a href="developer.html#toc-Regression-tests">1.10 Regression tests</a></h2>
+<p><a name="Regression-tests"></a>
+</p><a name="Regression-tests-1"></a>
+<h2 class="section"><a href="developer.html#toc-Regression-tests-1">1.10 Regression tests</a></h2>
 
 <p>Before submitting a patch (or committing to the repository), you should at least
 test that you did not break anything.
 </p>
-<p>Running &rsquo;make fate&rsquo; accomplishes this, please see &lsquo;<tt>doc/fate.txt</tt>&rsquo; for details.
+<p>Running &rsquo;make fate&rsquo; accomplishes this, please see <a href="fate.html">fate.html</a> for details.
 </p>
 <p>[Of course, some patches may change the results of the regression tests. In
 this case, the reference results of the regression tests shall be modified
 accordingly].
 </p>
-<div id="footer">
-<p>
- <font size="-1">
-  This document was generated by <em>Kyle</em> on <em>November 21, 2011</em> using <a href="http://www.nongnu.org/texi2html/"><em>texi2html 1.82</em></a>.
- </font>
- <br>
-</div></div>
+<a name="Adding-files-to-the-fate_002dsuite-dataset"></a>
+<h3 class="subsection"><a href="developer.html#toc-Adding-files-to-the-fate_002dsuite-dataset">1.10.1 Adding files to the fate-suite dataset</a></h3>
+
+<p>When there is no muxer or encoder available to generate test media for a
+specific test then the media has to be inlcuded in the fate-suite.
+First please make sure that the sample file is as small as possible to test the
+respective decoder or demuxer sufficiently. Large files increase network
+bandwidth and disk space requirements.
+Once you have a working fate test and fate sample, provide in the commit
+message or introductionary message for the patch series that you post to
+the ffmpeg-devel mailing list, a direct link to download the sample media.
 </p>
-</body>
-</html>
-</div>
+
+<footer class="footer pagination-right">
+<span class="label label-info">This document was generated by <em>Kyle Schwarz</em> on <em>November 13, 2012</em> using <a href="http://www.nongnu.org/texi2html/"><em>texi2html 1.82</em></a>.</span></footer></div>

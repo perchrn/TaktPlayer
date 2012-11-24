@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TaktPlayer"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "Takt Industries AS"
 #define MyAppURL "http://www.taktindustries.com/"
 #define MyAppExeName "PlayerMain.exe"
@@ -28,7 +28,7 @@ Compression=lzma/Max
 SolidCompression=true
 MinVersion=5.1.2600
 AppCopyright=Takt Industries AS 2012
-AppVerName=1.0.3
+AppVerName=1.0.4
 PrivilegesRequired=none
 
 [Languages]
@@ -42,7 +42,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\PlayerMain.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\documentation\Output\PlayerMain_debug.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\VersionInfo.log"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Program Files (x86)\ffmpeg\bin\*"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\ffmpeg\bin\ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\OpenCV\bin\*"; DestDir: {app}; Flags: IgnoreVersion; 
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\*"; DestDir: "{app}"; Excludes: "avicap32.dll,avifil32.dll,msacm32.dll,msvfw32.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\graphics\*; DestDir: {app}\graphics; Flags: ignoreversion recursesubdirs createallsubdirs; 

@@ -1,8 +1,5 @@
-commit af36d0daff9ee68d8e895bfffbbfe206acddadff
+commit 03c56ec11748686f6ffced5469f5759b9004bcca
 Author: unknown <pcn@.(none)>
-Date:   Fri Nov 23 13:28:32 2012 +0100
+Date:   Sat Nov 24 11:54:12 2012 +0100
 
-    Added debug binary to windows version (prints to console.)
-    Fixed template move dialog.
-    Track doubble click and effect now selects track and MIDI channel.
-    Now resetting gui controllers when track effect start values are updated.
+    Updated ffmpeg (used bad version) now we usa a static compiled 32bit ffmpeg.

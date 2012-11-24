@@ -73,4 +73,5 @@ Name: testFiles;
 Name: config;
 
 [InnoIDE_PreCompile]
+Name: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\TaktPlayer_pcUpdateVersionInfo.bat; Flags: AbortOnError CmdPrompt;
 Name: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\TaktPlayer_pcMake.bat; Flags: AbortOnError CmdPrompt;

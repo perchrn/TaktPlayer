@@ -1,5 +1,5 @@
-commit 03c56ec11748686f6ffced5469f5759b9004bcca
+commit 476ae089e63dbf0b5feba7f9edc9c32b90e5a57b
 Author: unknown <pcn@.(none)>
-Date:   Sat Nov 24 11:54:12 2012 +0100
+Date:   Mon Nov 26 13:24:13 2012 +0100
 
-    Updated ffmpeg (used bad version) now we usa a static compiled 32bit ffmpeg.
+    Added fullscreen shortcut.

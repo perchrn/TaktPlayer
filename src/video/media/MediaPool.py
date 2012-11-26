@@ -12,6 +12,7 @@ from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
 from midi.MidiStateHolder import GenericModulationHolder
+import sys
 
 class MediaPool(object):
     def __init__(self, midiTiming, midiStateHolder, specialModulationHolder, mediaMixer, timeModulationConfiguration, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir, appDataDir):
@@ -362,10 +363,15 @@ class MediaPool(object):
                 activeMedia = self._mediaTracks[midiChannel]
                 activeMediaState = self._mediaTrackStateHolders[midiChannel]
             if(activeMedia != None):
-                noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, midiChannelState)
-                if(noteIsDone == True):
-                    midiChannelState.removeDoneActiveNote()
-                self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
+                try:
+                    noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, midiChannelState)
+                    if(noteIsDone == True):
+                        midiChannelState.removeDoneActiveNote()
+                    self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
+                except:
+                    print "Error! SkipFrames raised exception: ", sys.exc_info()[0]
+                    midiChannelState.removeAllNotes()
+                    raise
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
                 if(self._mediaTracks[midiChannel] != None):

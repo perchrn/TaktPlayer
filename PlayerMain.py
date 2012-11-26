@@ -174,8 +174,10 @@ class PlayerMain(wx.Frame):
         self.Bind(wx.EVT_SIZE, self._onSize) #@UndefinedVariable
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda evt: None)
         self.Bind(wx.EVT_CLOSE, self._onWindowClose) #@UndefinedVariable
+        self._cmdDown = False
         self._ctrlDown = False
         self._altDown = False
+        self._shiftDown = False
         self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
         self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
 
@@ -256,6 +258,18 @@ class PlayerMain(wx.Frame):
         self._guiProcess = None
 
     def _onSize(self, event):
+        showWindowTitle = True
+        if(self.IsTopLevel() == True):
+            if(self.IsMaximized() == True):
+                print "MAXIMIZED " *12
+                showWindowTitle = False
+            elif(self.IsFullScreen() == True):
+                print "FULLSCREEN " *12
+#                showWindowTitle = False
+        if(showWindowTitle == True):
+            self.SetWindowStyle(wx.DEFAULT_FRAME_STYLE)
+        else:
+            self.SetWindowStyle(wx.FRAME_NO_TASKBAR)
         bufferSize  = self.ClientSize
         print "DEBUG bufferSize: " + str(bufferSize)
         bufferSizeX, bufferSizeY = bufferSize
@@ -281,11 +295,16 @@ class PlayerMain(wx.Frame):
         drawContext.DrawBitmap(wx.BitmapFromImage(self._wxImageBuffer), self._imagePosX, self._imagePosY)
 
     def _onKeyPress(self, event):
+        toggleFullscreen = False
         keyCode = event.GetKeyCode()
-        if(keyCode == 308): #Ctrl.
+        if(keyCode == 396): #Cmd.
+            self._cmdDown = True
+        elif(keyCode == 308): #Ctrl.
             self._ctrlDown = True
         elif(keyCode == 307): #Alt.
             self._altDown = True
+        elif(keyCode == 306): #Shift.
+            self._shiftDown = True
         elif(keyCode == 27): #ESC
             print "User has pressed ESC!"
             self._stopPlayer()
@@ -296,23 +315,67 @@ class PlayerMain(wx.Frame):
         elif((self._ctrlDown == True) and (keyCode == 81)): #ctrl q
             print "User has pressed CTRL-Q!"
             self._stopPlayer()
+        elif((self._cmdDown == True) and (keyCode == 81)): #cmd q
+            print "User has pressed CMD-Q!"
+            self._stopPlayer()
         elif((self._ctrlDown == True) and (keyCode == 67)): #ctrl c
             print "User has pressed CTRL-C!"
             self._stopPlayer()
+        elif((self._altDown == True) and (keyCode == 13)): #alt enter
+            if(sys.platform != "darwin"):
+                print "User has pressed ALT-ENTER!"
+                toggleFullscreen = True
+        elif((self._altDown == True) and (keyCode == 13)): #alt enter
+            if(sys.platform != "darwin"):
+                print "User has pressed ALT-ENTER!"
+                toggleFullscreen = True
+        elif((self._shiftDown == True) and (self._cmdDown == True) and (keyCode == 70)): #shift cmd f
+            if(sys.platform == "darwin"):
+                print "User has pressed SHIFT-CMD-F!"
+                toggleFullscreen = True
         else:
-            if(self._ctrlDown == True):
+            if(self._cmdDown == True):
+                print "DEBUG key pressed: cmd + " + str(keyCode)
+            elif(self._ctrlDown == True):
                 print "DEBUG key pressed: ctrl + " + str(keyCode)
             elif(self._altDown == True):
                 print "DEBUG key pressed: alt + " + str(keyCode)
+            elif(self._shiftDown == True):
+                print "DEBUG key pressed: shift + " + str(keyCode)
             else:
                 print "DEBUG key pressed: " + str(keyCode)
+        if(toggleFullscreen == True):
+            maximize = True
+            fullScreenMode = True
+            configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
+            if(configFullscreenmode == "off"):
+                fullScreenMode = False
+            if(self.IsTopLevel() == True):
+                if(self.IsMaximized() == True):
+                    maximize = False
+                elif(self.IsFullScreen() == True):
+                    maximize = False
+            if(fullScreenMode == False):
+                if(maximize == True):
+                    self.Maximize(True)
+                else:
+                    self.Restore()
+            else:
+                if(maximize == True):
+                    self.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
+                else:
+                    self.ShowFullScreen(False, style=wx.FULLSCREEN_ALL)
 
     def _onKeyRelease(self, event):
         keyCode = event.GetKeyCode()
-        if(keyCode == 308): #Ctrl.
+        if(keyCode == 396): #Cmd.
+            self._cmdDown = False
+        elif(keyCode == 308): #Ctrl.
             self._ctrlDown = False
         elif(keyCode == 307): #Alt.
             self._altDown = False
+        elif(keyCode == 306): #Shift.
+            self._shiftDown = False
 
     def _onWindowClose(self, event = None):
         print "User has closed window!"

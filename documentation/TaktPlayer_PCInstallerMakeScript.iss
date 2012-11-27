@@ -2,10 +2,11 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TaktPlayer"
-#define MyAppVersion "1.0.5"
+#define MyAppVersion "1.0.6"
+#define MyAppVersionForFlie "1_0_6"
 #define MyAppPublisher "Takt Industries AS"
 #define MyAppURL "http://www.taktindustries.com/"
-#define MyAppExeName "PlayerMain.exe"
+#define MyAppExeName "TaktPlayer.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -22,13 +23,13 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=true
-OutputBaseFilename=TaktPlayerSetup
+OutputBaseFilename={#MyAppName}_Setup_V{#MyAppVersionForFlie}
 SetupIconFile=C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\graphics\TaktPlayerNoGUI.ico
 Compression=lzma/Max
 SolidCompression=true
 MinVersion=5.1.2600
 AppCopyright=Takt Industries AS 2012
-AppVerName=1.0.5
+AppVerName={#MyAppVersion}
 PrivilegesRequired=none
 
 [Languages]
@@ -39,12 +40,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\PlayerMain.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\documentation\Output\PlayerMain_debug.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\TaktPlayer\TaktPlayer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\documentation\Output\TaktPlayer_debug.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\VersionInfo.log"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\outOfMemoryPreview.jpg"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\ffmpeg\bin\ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\OpenCV\bin\*"; DestDir: {app}; Flags: IgnoreVersion; 
-Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\PlayerMain\*"; DestDir: "{app}"; Excludes: "avicap32.dll,avifil32.dll,msacm32.dll,msvfw32.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\TaktPlayer\*"; DestDir: "{app}"; Excludes: "avicap32.dll,avifil32.dll,msacm32.dll,msvfw32.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\graphics\*; DestDir: {app}\graphics; Flags: ignoreversion recursesubdirs createallsubdirs; 
 Source: C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\licenses\*; DestDir: {app}\liceses; Flags: ignoreversion recursesubdirs createallsubdirs; 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files

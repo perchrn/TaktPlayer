@@ -12,6 +12,8 @@ import multiprocessing
 from multiprocessing import Process, Queue
 from configuration.ConfigurationHolder import getDefaultDirectories
 from configuration.PlayerConfiguration import PlayerConfiguration
+from taktVersion import getVersionNumberString, getVersionDateString,\
+    getVersionGitIdString
 import sys
 import shutil
 import os
@@ -520,6 +522,10 @@ if __name__ in ('__android__', '__main__'):
                 print "\t--guionly\t\tRun without Player (not on mac)"
                 print "\t--configDir=DIR_NAME\tSet config file to start with"
                 print "\t--configFile=FILE_NAME\tSet configuration directory"
+            print ""
+            print "    TaktPlayer version: " + getVersionNumberString()
+            print "        Build date:\t" + getVersionDateString()
+            print "        Build id:\t" + getVersionGitIdString()
             helpMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False

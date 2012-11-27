@@ -22,7 +22,7 @@ def getVersionNumberString():
 def getVersionDateString():
     infoFileString = getTaktInfoFileContentString()
     for line in infoFileString.split("\n", 10):
-        print line
+#        print line
         if(line.startswith("Date:")):
             return line[5:]
     return "Unknown"

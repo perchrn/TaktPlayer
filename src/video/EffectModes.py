@@ -246,5 +246,11 @@ class TVNoizeModes():
     Star, Round, Clean = range(3)
 
     def getChoices(self):
-        return ["Star", "Round", "Clean"]
+        return ["Clean", "Round", "Star"]
+
+class BlurModes():
+    Blur, Bilateral = range(2)
+
+    def getChoices(self):
+        return ["Blur", "Bilateral"]
 

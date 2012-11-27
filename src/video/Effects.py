@@ -43,6 +43,25 @@ def createMask(width, heigth):
     except cv2.error:
         raise MediaError("createMask() Out of memory! Message: " + sys.exc_info()[1].message)
 
+def create16bitMat(width, heigth):
+    try:
+        return cv.CreateMat(heigth, width, cv.CV_16SC1)
+    except cv2.error:
+        raise MediaError("create16bitMat() Out of memory! Message: " + sys.exc_info()[1].message)
+
+def createNoizeMatAndMask(width, heigth):
+    try:
+        randomState = numpy.random.RandomState(int(time.time()))
+        noizeMat = createMat(width, heigth)
+        randomArray = randomState.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
+        tmpNoizeMask = cv.fromarray(randomArray)
+        cv.Merge(tmpNoizeMask, tmpNoizeMask, tmpNoizeMask, None, noizeMat)
+        randomArray = randomState.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
+        noizeMask = cv.fromarray(randomArray)
+        return noizeMat, noizeMask
+    except cv2.error:
+        raise MediaError("createNoizeMatAndMask() Out of memory! Message: " + sys.exc_info()[1].message)
+
 def copyImage(image):
     try:
         if(type(image) is cv.cvmat):
@@ -178,17 +197,34 @@ effectMat1 = None
 effectMat2 = None
 effectMask1 = None
 effectMask2 = None
+effectMask3 = None
+effectMask4 = None
+effectMask5 = None
+effect16bitMask = None
+bigNoizeMat = None
+bigNoizeMask = None
 
 def setupEffectMemory(width, heigth):
     global effectMat1
     global effectMat2
     global effectMask1
     global effectMask2
+    global effectMask3
+    global effectMask4
+    global effectMask5
+    global effect16bitMask
+    global bigNoizeMat
+    global bigNoizeMask
     if(effectMat1 == None):
         effectMat1 = createMat(width, heigth)
         effectMat2 = createMat(width, heigth)
         effectMask1 = createMask(width, heigth)
         effectMask2 = createMask(width, heigth)
+        effectMask3 = createMask(width, heigth)
+        effectMask4 = createMask(width, heigth)
+        effectMask5 = createMask(width, heigth)
+        effect16bitMask = create16bitMat(width, heigth)
+        bigNoizeMat, bigNoizeMask = createNoizeMatAndMask(width*2, heigth*2)
 
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -197,8 +233,6 @@ class ZoomEffect(object):
 
         self._setZoomRange(0.25, 4.0)
 
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
         self._zoomMat = effectMat1
 
     def findMode(self, value):
@@ -457,10 +491,9 @@ class BlobDetectEffect(object):
         self._maxSizeRoot = math.sqrt(self._internalResolutionX * self._internalResolutionY)
         self._thresholdRootSize = math.sqrt((self._internalResolutionX * self._internalResolutionY) / 2)
 
-        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._blankMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._splitMask = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._thersholdMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._colorMat = effectMat1
+        self._splitMask = effectMask1
+        self._thersholdMask = effectMask2
 
     def getName(self):
         return "BlobDetect"
@@ -560,17 +593,12 @@ class TVNoizeEffect(object):
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-
         self._randomState = numpy.random.RandomState(int(time.time()))
-        self._bigNoizeMat = createMat(self._internalResolutionX * 2, self._internalResolutionY * 2)
-        randomArray = self._randomState.randint(0, 255, size=(self._internalResolutionY * 2, self._internalResolutionX * 2)).astype(numpy.uint8)
-        tmpNoizeMask = cv.fromarray(randomArray)
-        cv.Merge(tmpNoizeMask, tmpNoizeMask, tmpNoizeMask, None, self._bigNoizeMat)
-        randomArray = self._randomState.randint(0, 255, size=(self._internalResolutionY * 2, self._internalResolutionX * 2)).astype(numpy.uint8)
-        self._bigNoizeMask = cv.fromarray(randomArray)
-        self._noizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._noizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._bigNoizeMask = bigNoizeMask
+        self._bigNoizeMat = bigNoizeMat
+        self._resizeMat = effectMat2
+        self._noizeMask = effectMask1
 
     def getName(self):
         return "TVNoize"
@@ -604,11 +632,11 @@ class TVNoizeEffect(object):
         src_region = cv.GetSubRect(self._bigNoizeMask, (posX, posY, srcWidth, srcHeight))
         if(useResize == True):
             if(mode < 0.33):
-                upScaler = cv.CV_INTER_LINEAR #Blobby star
+                upScaler = cv.CV_INTER_NN #Clean
             elif(mode < 0.66):
                 upScaler = cv.CV_INTER_CUBIC #Blobby roundish
             else:
-                upScaler = cv.CV_INTER_NN #Clean
+                upScaler = cv.CV_INTER_LINEAR #Blobby star
             cv.Resize(src_region, self._noizeMask, upScaler)
         else:
             cv.Copy(src_region, self._noizeMask)
@@ -617,13 +645,12 @@ class TVNoizeEffect(object):
         posX = self._randomState.randint(0, self._internalResolutionX)
         posY = self._randomState.randint(0, self._internalResolutionY)
         src_region = cv.GetSubRect(self._bigNoizeMat, (posX, posY, srcWidth, srcHeight))
-        cv.Copy(image, self._noizeMat)
         if(useResize == True):
             cv.Resize(src_region, self._resizeMat, upScaler)
-            cv.Copy(self._resizeMat, self._noizeMat, self._noizeMask)
+            cv.Copy(self._resizeMat, image, self._noizeMask)
         else:
-            cv.Copy(src_region, self._noizeMat, self._noizeMask)
-        return self._noizeMat
+            cv.Copy(src_region, image, self._noizeMask)
+        return image
 
 class PixelateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -637,8 +664,7 @@ class PixelateEffect(object):
 
         self._oldAmount = -1.0
 
-        self._blockMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._bigMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._blockMat = effectMat1
 
     def getName(self):
         return "Pixelate"
@@ -668,8 +694,8 @@ class PixelateEffect(object):
         else:
             upScaler = cv.CV_INTER_LINEAR #Blobby star
         cv.Resize(image, self._blockMat, downScaler)
-        cv.Resize(self._blockMat, self._bigMat, upScaler)
-        return self._bigMat
+        cv.Resize(self._blockMat, image, upScaler)
+        return image
 
 class ScrollEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -678,8 +704,7 @@ class ScrollEffect(object):
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-        self._scrollMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        self._scrollMat = effectMat1
         self._flipMat = None
 
     def findMode(self, value):
@@ -708,7 +733,7 @@ class ScrollEffect(object):
         width = self._internalResolutionX
         height = self._internalResolutionY
         if(isNotRepeat == True):
-            print "NO REPEAT! " * 20
+#            print "NO REPEAT! " * 20
             left = int((originalWidth - width) * xcenter * 2.0)
             top = int((originalHeight - height) * ycenter * 2.0)
         elif(flipMode == ScrollModes.Flip):
@@ -890,15 +915,13 @@ class ScrollEffect(object):
                     src_region = cv.GetSubRect(image, (0, 0, newWidth, newHeight) )
                     dst_region = cv.GetSubRect(self._scrollMat, (originalW-left, originalH-top, newWidth, newHeight) )
                     cv.Copy(src_region, dst_region)
-        return self._scrollMat
+        cv.Copy(self._scrollMat, image)
+        return image
 
 class FlipEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._flipMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def findMode(self, value):
         modeSelected = int(value*3.99)
@@ -936,16 +959,15 @@ class FlipEffect(object):
             return self.flipImage(image, flipValue)
 
     def flipImage(self, image, flipMode):
-        cv.Flip(image, self._flipMat, flipMode)
-        return self._flipMat
+        cv.Flip(image, image, flipMode)
+        return image
 
 class BlurEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._blurMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+        self._blurMat = effectMat1
 
     def getName(self):
         return "Blur"
@@ -953,25 +975,28 @@ class BlurEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
-        return self.blurImage(image, amount)
+    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
+        return self.blurImage(image, amount, mode)
 
-    def blurImage(self, image, value):
+    def blurImage(self, image, value, mode):
         if(value < 0.01):
             return image
         xSize = 2 + int(value * 8)
         ySize = 2 + int(value * 6)
-        cv.Smooth(image, self._blurMat, cv.CV_BLUR, xSize, ySize)
-        return self._blurMat
+        if(mode < 0.5):
+            smoothMode = cv.CV_BLUR
+        else:
+            smoothMode = cv.CV_BILATERAL
+        cv.Smooth(image, self._blurMat, smoothMode, xSize, ySize)
+        cv.Copy(self._blurMat, image)
+        return image
 
 class BluredContrastEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._blurMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._blurMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+
+        self._blurMat1 = effectMat1
 
     def getName(self):
         return "BluredContrast"
@@ -988,22 +1013,20 @@ class BluredContrastEffect(object):
         xSize = 2 + int(value * 8)
         ySize = 2 + int(value * 6)
         cv.Smooth(image, self._blurMat1, cv.CV_BLUR, xSize, ySize)
-        #TODO: cv.CV_BILATERAL blur mode?
-        cv.Mul(image, self._blurMat1, self._blurMat2, 0.005)
-        return self._blurMat2
+        cv.Mul(image, self._blurMat1, image, 0.005)
+        return image
 
 class FeedbackEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
+
         self._radians360 = math.radians(360)
         self._gotMemory = False
-        self._memoryMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._memoryMat = createMat(internalResX, internalResY)
         cv.SetZero(self._memoryMat)
-        self._tmpMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._replaceMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMat = effectMat1
+        self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
     def getName(self):
@@ -1032,20 +1055,20 @@ class FeedbackEffect(object):
             ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
             addImage = self._zoomEffect.zoomImage(addImage, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
         cv.Add(image, addImage, self._memoryMat)
-        return copyImage(self._memoryMat)
+        cv.Copy(self._memoryMat, image)
+        return image
 
 class DelayEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
+
         self._radians360 = math.radians(360)
         self._gotMemory = False
-        self._memoryMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._memoryMat = createMat(internalResX, internalResY)
         cv.SetZero(self._memoryMat)
-        self._tmpMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._replaceMask = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._tmpMat = effectMat1
+        self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
     def getName(self):
@@ -1081,21 +1104,20 @@ class DelayEffect(object):
             lumaThreshold = int(512 * (lumaKey - 0.5))
             cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_LT)
             cv.Copy(image, self._memoryMat, self._replaceMask)
-        return copyImage(self._memoryMat)
+        cv.Copy(self._memoryMat, image)
+        return image
 
 class SelfDifferenceEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
+
         self._currentPos = 0
         self._memoryLength = 10
         self._memoryArray = []
         for _ in range(self._memoryLength):
-            self._memoryArray.append(getEmptyImage(self._internalResolutionX, self._internalResolutionY))
-        self._diffMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._contrastMat = createMat(self._internalResolutionX, self._internalResolutionY)
+            self._memoryArray.append(getEmptyImage(internalResX, internalResY))
+        self._diffMat = effectMat1
 
     def getName(self):
         return "SelfDifference"
@@ -1130,17 +1152,17 @@ class SelfDifferenceEffect(object):
         if((contrast > 0.02) or (invert > 0.02)):
             contrastVal = 1.0 + (9.0 * contrast)
             invertVal = int(-256.0 * invert)
-            cv.ConvertScaleAbs(self._diffMat, self._contrastMat, contrastVal, invertVal)
-            return self._contrastMat
-        return copyImage(self._diffMat)
+            cv.ConvertScaleAbs(self._diffMat, image, contrastVal, invertVal)
+        else:
+            cv.Copy(self._diffMat, image)
+        return image
 
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._distortMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+        self._distortMat = effectMat1
 
     def getName(self):
         return "Distortion"
@@ -1174,18 +1196,18 @@ class DistortionEffect(object):
             cv.Erode(image, self._distortMat, None, -itterations)
         else:
             cv.Dilate(image, self._distortMat, None, itterations)
-        return self._distortMat
+        cv.Copy(self._distortMat, image)
+        return image
 
 class EdgeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._maskMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._splitMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._edgeMat = cv.CreateMat(self._internalResolutionY, self._internalResolutionX, cv.CV_16SC1)
+
+        self._colorMat = effectMat1
+        self._maskMat = effectMask1
+        self._splitMat = effectMask2
+        self._edgeMat = effect16bitMask
 
 
     def getName(self):
@@ -1268,21 +1290,20 @@ class EdgeEffect(object):
                 aparture = 1 + (2 * int(value * 5.99))
                 cv.Laplace(self._splitMat, self._edgeMat, aparture)                
             cv.ConvertScale(self._edgeMat, self._maskMat, 0.5)
-            cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
-            return self._colorMat
+            cv.CvtColor(self._maskMat, image, cv.CV_GRAY2RGB)
+            return image
 
 class DesaturateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._maskMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._hueMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._sat1Mat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._sat2Mat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._valMat = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._colorMat = effectMat1
+        self._maskMat = effectMask1
+        self._hueMat = effectMask2
+        self._sat1Mat = effectMask3
+        self._sat2Mat = effectMask4
+        self._valMat = effectMask5
 
     def findMode(self, value):
         modeSelected = int(value*2.99)
@@ -1318,19 +1339,16 @@ class DesaturateEffect(object):
             else: # Minus
                 cv.Sub(self._sat1Mat, self._maskMat, self._sat2Mat)
             cv.Smooth(self._sat2Mat, self._sat1Mat, cv.CV_BLUR, 8, 6)
-            cv.Merge(self._hueMat, self._sat1Mat, self._valMat, None, image)
-            cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
+            cv.Merge(self._hueMat, self._sat1Mat, self._valMat, None, self._colorMat)
+            cv.CvtColor(self._colorMat, image, cv.CV_HSV2RGB)
         else:
-            cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
-        return self._colorMat
+            cv.CvtColor(self._maskMat, image, cv.CV_GRAY2RGB)
+        return image
 
 class ContrastBrightnessEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._processMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def findMode(self, value):
         modeSelected = int(value*3.99)
@@ -1374,16 +1392,15 @@ class ContrastBrightnessEffect(object):
         if((contrast > -0.01) and (contrast < 0.01) and (brightness < 0.1) and (brightness > -0.1)):
             return image
         else:
-            cv.ConvertScaleAbs(image, self._processMat, contrastVal, brightnessVal)
-            return self._processMat
+            cv.ConvertScaleAbs(image, image, contrastVal, brightnessVal)
+            return image
 
 class HueSaturationEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+        self._colorMat = effectMat1
 
     def findMode(self, value):
         modeSelected = int(value*2.99)
@@ -1421,21 +1438,19 @@ class HueSaturationEffect(object):
             brightCalc = 0
 #        print "DEBUG hueSat: rot: " + str(rotCalc) + " sat: " + str(satCalc) + " bright: " + str(brightCalc)
         rgbColor = cv.CV_RGB(brightCalc, satCalc, rotCalc)
-        cv.SubS(self._colorMat, rgbColor, image)
-        cv.CvtColor(image, self._colorMat, cv.CV_HSV2RGB)
+        cv.SubS(self._colorMat, rgbColor, self._colorMat)
+        cv.CvtColor(self._colorMat, image, cv.CV_HSV2RGB)
         if(darkCalc != None):
             cv.ConvertScaleAbs(self._colorMat, image, darkCalc, 0)
-            return image
-        return self._colorMat
+        return image
 
 
 class ColorizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
+        self._colorMat = effectMat1
 
     def getName(self):
         return "Colorize"
@@ -1472,25 +1487,22 @@ class ColorizeEffect(object):
     #    print "DEBUG color: " + str((red, green, blue)) + " amount: " + str(amount)
     
         if(mode == ColorizeModes.Add):
-            cv.AddS(image, rgbColor, self._colorMat)
+            cv.AddS(image, rgbColor, image)
         elif(mode == ColorizeModes.Subtract):
-            cv.SubS(image, rgbColor, self._colorMat)
+            cv.SubS(image, rgbColor, image)
         elif(mode == ColorizeModes.SubtractFrom):
-            cv.SubRS(image, rgbColor, self._colorMat)
+            cv.SubRS(image, rgbColor, image)
         elif(mode == ColorizeModes.Multiply):
             cv.Set(self._colorMat, rgbColor)
-            cv.Mul(image, self._colorMat, self._colorMat, 0.004)
+            cv.Mul(image, self._colorMat, image, 0.004)
         else:
-            cv.AddS(image, rgbColor, self._colorMat)
-        return self._colorMat
+            cv.AddS(image, rgbColor, image)
+        return image
 
 class InvertEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._invertMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def getName(self):
         return "Invert"
@@ -1508,8 +1520,8 @@ class InvertEffect(object):
             return image
         else:
 #            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
-            cv.ConvertScaleAbs(image, self._invertMat, 1.0, brightnessVal)
-            return self._invertMat
+            cv.ConvertScaleAbs(image, image, 1.0, brightnessVal)
+            return image
 
 class ValueToHueEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -1517,10 +1529,10 @@ class ValueToHueEffect(object):
         setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-        self._colourMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._hueMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._satMat = createMask(self._internalResolutionX, self._internalResolutionY)
-        self._valMat = createMask(self._internalResolutionX, self._internalResolutionY)
+        self._colourMat = effectMat1
+        self._hueMat = effectMask1
+        self._satMat = effectMask2
+        self._valMat = effectMask3
 
     def getName(self):
         return "ValueToHue"
@@ -1552,7 +1564,7 @@ class ValueToHueEffect(object):
         elif(mode == ValueToHueModes.Saturation):
             cv.Split(self._colourMat, None, self._valMat, None, None)
         else:
-            cv.Split(self._colourMat, None, None, self._valMat, None)
+            cv.Split(self._colourMat, self._valMat, None, None, None)
         if(rotate > 0.02):
             rotateVal = int(256.0 * rotate)
             cv.SubS(self._valMat, rotateVal, self._hueMat)
@@ -1565,18 +1577,16 @@ class ValueToHueEffect(object):
             satMat = self._satMat
         else:
             satMat = self._valMat
-        cv.Merge(hueMat, satMat, self._valMat, None, image)
-        cv.CvtColor(image, self._colourMat, cv.CV_HSV2RGB)
-        return self._colourMat
+        cv.Merge(hueMat, satMat, self._valMat, None, self._colourMat)
+        cv.CvtColor(self._colourMat, image, cv.CV_HSV2RGB)
+        return image
 
 class ThresholdEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._internalResolutionX = internalResX
-        self._internalResolutionY = internalResY
-        self._thersholdMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._thersholdMask = createMask(self._internalResolutionX, self._internalResolutionY)
+
+        self._thersholdMask = effectMask1
 
     def getName(self):
         return "Threshold"
@@ -1591,8 +1601,8 @@ class ThresholdEffect(object):
         threshold = 256 - (256 * threshold)
         cv.CvtColor(image, self._thersholdMask, cv.CV_BGR2GRAY);
         cv.CmpS(self._thersholdMask, threshold, self._thersholdMask, cv.CV_CMP_GT)
-        cv.Merge(self._thersholdMask, self._thersholdMask, self._thersholdMask, None, self._thersholdMat)
-        return self._thersholdMat
+        cv.Merge(self._thersholdMask, self._thersholdMask, self._thersholdMask, None, image)
+        return image
 
 class ImageAddEffect(object):
     def __init__(self, configurationTree, effectImagesConfiguration, internalResX, internalResY):
@@ -1608,8 +1618,6 @@ class ImageAddEffect(object):
         self._maskImage = None
         self._addId = 0
         self._addImage = None
-        self._maskMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._addMask = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def loadImage(self, fileName):
         image = None
@@ -1678,16 +1686,13 @@ class ImageAddEffect(object):
     def mask(self, image, maskId, imageId, mode):
         maskId = int(maskId * 63)
         self._updateMask(maskId)
-        returnImage = image
         if(self._maskImage != None):
-            cv.Mul(image, self._maskImage, self._maskMat, 0.004)
-            returnImage = self._maskMat
+            cv.Mul(image, self._maskImage, image, 0.004)
         imageId = int(imageId * 63)
         self._updateAddImage(imageId)
         if(self._addImage != None):
-            cv.Add(returnImage, self._addImage, self._addMask)
-            returnImage = self._addMask
-        return returnImage
+            cv.Add(image, self._addImage, image)
+        return image
 
 #TODO: add effects
 #class SliceEffect(object):

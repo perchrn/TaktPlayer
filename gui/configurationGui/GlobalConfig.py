@@ -14,7 +14,7 @@ from video.media.MediaFileModes import FadeMode, TimeModulationMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
-    MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes
+    MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -468,7 +468,8 @@ class EffectsGui(object):
         self._mainEffectsGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._flipModes = FlipModes()
-        self._mirrorMode = MirrorModes()
+        self._mirrorModes = MirrorModes()
+        self._blurModes = BlurModes()
         self._zoomModes = ZoomModes()
         self._scrollModes = ScrollModes()
         self._distortionModes = DistortionModes()
@@ -1330,13 +1331,13 @@ A list of start values for the effect modulation.
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Mirror):
             self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
-            self._setupValueLabels(self._mirrorMode.getChoices(), None, None, None, None)
+            self._setupValueLabels(self._mirrorModes.getChoices(), None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rotate):
             self._setLabels("Angle", "Move center", "Move angle", "Zoom", None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Blur):
             self._setLabels("Amount:", None, None, None, None)
-            self._setupValueLabels(None, None, None, None, None)
+            self._setupValueLabels(None, None, None, None, None)#self._blurModes.getChoices()
         elif(self._chosenEffectId == EffectTypes.BlurContrast):
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)

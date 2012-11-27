@@ -20,7 +20,7 @@ else
     mkdir thumbs
 fi
 rm thumbs/*
-arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config/Default.cfg,config/EffectsDemo.cfg,config/PlaybackModesDemo.cfg,thumbs,testFiles,graphics/TaktPlayer.ico,VersionInfo.log,licenses
+arch -i386 /opt/local/bin/python2.7 setup.py py2app --includes ntpath --resources config/Default.cfg,config/EffectsDemo.cfg,config/PlaybackModesDemo.cfg,thumbs,testFiles,graphics/TaktPlayer.ico,outOfMemoryPreview.jpg,VersionInfo.log,licenses
 
 mkdir dist/TaktPlayer.app/Contents/Resources/config
 chmod 775 dist/TaktPlayer.app/Contents/Resources/config

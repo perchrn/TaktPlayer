@@ -3,6 +3,7 @@ Created on 24. jan. 2012
 
 @author: pcn
 '''
+import cv2
 from cv2 import cv
 import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
@@ -11,42 +12,69 @@ from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes
 import math
 import os
 import time
+import sys
+import traceback
 
 effectImageList = []
 effectImageFileNameList = []
 
+class MediaError(Exception):
+    def __init__(self, value):
+        self.value = value.encode("utf-8")
+
+    def __str__(self):
+        return repr(self.value)
+
 def getEmptyImage(x, y):
-    resizeMat = createMat(x,y)
-    return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
+    try:
+        resizeMat = createMat(x,y)
+        return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
+    except cv2.error:
+        raise MediaError("getEmptyImage() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def createMat(width, heigth):
-    return cv.CreateMat(heigth, width, cv.CV_8UC3)
+    try:
+        return cv.CreateMat(heigth, width, cv.CV_8UC3)
+    except cv2.error:
+        raise MediaError("createMat() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def createMask(width, heigth):
-    return cv.CreateMat(heigth, width, cv.CV_8UC1)
+    try:
+        return cv.CreateMat(heigth, width, cv.CV_8UC1)
+    except cv2.error:
+        raise MediaError("createMask() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def copyImage(image):
-    if(type(image) is cv.cvmat):
-        return cv.CloneMat(image)
-    return cv.CloneImage(image)
+    try:
+        if(type(image) is cv.cvmat):
+            return cv.CloneMat(image)
+        return cv.CloneImage(image)
+    except cv2.error:
+        raise MediaError("copyImage() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def pilToCvImage(pilImage):
-    cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
-    cv.SetData(cvImage, pilImage.tostring())
-#    resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-#    cv.Resize(cvImage, resizeMat)
-    return cvImage
+    try:
+        cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
+        cv.SetData(cvImage, pilImage.tostring())
+#        resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+#        cv.Resize(cvImage, resizeMat)
+        return cvImage
+    except cv2.error:
+        raise MediaError("pilToCvImage() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def pilToCvMask(pilImage, maskThreshold = -1):
-    pilSize = pilImage.size
-    cvMask = cv.CreateImageHeader(pilSize, cv.IPL_DEPTH_8U, 1)
-    cv.SetData(cvMask, pilImage.tostring())
-    if(maskThreshold > 0):
-        filterMask = createMask(pilSize[0], pilSize[1])
-        cv.CmpS(cvMask, maskThreshold, filterMask, cv.CV_CMP_GE)
-        return filterMask
-    else:
-        return cvMask
+    try:
+        pilSize = pilImage.size
+        cvMask = cv.CreateImageHeader(pilSize, cv.IPL_DEPTH_8U, 1)
+        cv.SetData(cvMask, pilImage.tostring())
+        if(maskThreshold > 0):
+            filterMask = createMask(pilSize[0], pilSize[1])
+            cv.CmpS(cvMask, maskThreshold, filterMask, cv.CV_CMP_GE)
+            return filterMask
+        else:
+            return cvMask
+    except cv2.error:
+        raise MediaError("pilToCvMask() Out of memory! Message: " + sys.exc_info()[1].message)
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)

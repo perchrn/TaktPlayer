@@ -9,7 +9,7 @@ from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
-    copyImage, pilToCvImage, pilToCvMask, ZoomEffect
+    copyImage, pilToCvImage, pilToCvMask, ZoomEffect, MediaError
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
@@ -20,6 +20,7 @@ import PIL.Image as Image
 from midi.MidiUtilities import noteStringToNoteNumber
 from video.media.TextRendrer import generateTextImageAndMask, findOsFontPath
 from midi.MidiStateHolder import NoteState
+import traceback
 try:
     import freenect
 except:
@@ -156,6 +157,7 @@ def imageToArray(image):
 
 def imageFromArray(array):
     return cv.fromarray(array)
+
 
 class MediaFile(object):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -342,10 +344,16 @@ class MediaFile(object):
         mediaSettingsHolder = self._mediaSettingsHolder.getSettings()
         if(mediaSettingsHolder.isNew() == True):
 #            print "DEBUG pcn: getMediaStateHolder() -> new holder with id: " + str(mediaSettingsHolder._uid) + " in: " + self.getType()
-            self._setupMediaSettingsHolder(mediaSettingsHolder)
-            mediaSettingsHolder.captureImage = self._firstImage
-            mediaSettingsHolder.captureMask = self._firstImageMask
-            self._updateMediaSettingsHolder(mediaSettingsHolder)
+            try:
+                self._setupMediaSettingsHolder(mediaSettingsHolder)
+                mediaSettingsHolder.captureImage = self._firstImage
+                mediaSettingsHolder.captureMask = self._firstImageMask
+                self._updateMediaSettingsHolder(mediaSettingsHolder)
+            except MediaError, mediaError:
+                self._mediaSettingsHolder.delete(mediaSettingsHolder)
+                traceback.print_exc()
+                raise mediaError
+                return None
         return mediaSettingsHolder
 
     def close(self):
@@ -822,6 +830,13 @@ class MediaSettings(object):
         if(self._subSettings == None):
             self._subSettings = MediaSettings(self._uid+1)
         return self._subSettings.getSettings()
+
+    def delete(self, mediaSettings):
+        if(self._subSettings != None):
+            if(self._subSettings == mediaSettings):
+                self._subSettings = None
+            else:
+                self._subSettings.delete(mediaSettings)
 
     def release(self):
         self._inUse = False
@@ -2724,10 +2739,3 @@ class ModulationMedia(MediaFile):
 
     def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
         return (image, None, None, None, None)
-
-class MediaError(Exception):
-    def __init__(self, value):
-        self.value = value.encode("utf-8")
-
-    def __str__(self):
-        return repr(self.value)

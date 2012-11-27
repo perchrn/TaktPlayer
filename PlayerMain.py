@@ -48,6 +48,7 @@ class PlayerMain(wx.Frame):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
         self._debugModeOn = debugMode
         self._configDirArgument = configDir
+        self._baseTitle = title
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -84,6 +85,9 @@ class PlayerMain(wx.Frame):
 
         self.Show()
         if(self._fullscreenMode == True):
+            if(configFullscreenmode != "auto"):
+                if((configPositionX >= 0) and (configPositionY >= 0)):
+                    self.SetPosition((configPositionX, configPositionY))
             self.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
         else:
             startupSizeX, startupSizeY = self.ClientSize
@@ -180,9 +184,17 @@ class PlayerMain(wx.Frame):
         self._shiftDown = False
         self.Bind(wx.EVT_KEY_DOWN, self._onKeyPress) #@UndefinedVariable
         self.Bind(wx.EVT_KEY_UP, self._onKeyRelease) #@UndefinedVariable
+        self._outOfMemory = False
 
     def _getConfiguration(self):
         pass
+
+    def _updateTitle(self, message = None):
+        if(message == None):
+            self.SetTitle(self._baseTitle)
+        else:
+            self.SetTitle(self._baseTitle + "   *** " + message + " ***")
+
 
     def _configLoadCallback(self, programName):
         if(programName != ""):
@@ -387,33 +399,43 @@ class PlayerMain(wx.Frame):
             self.ShowFullScreen(False, style=0)
         self._updateTimer.Stop()
 
-        self._guiServer.requestGuiServerProcessToStop()
-        self._midiListner.requestTcpMidiListnerProcessToStop()
-        self._requestGuiProcessToStop()
+        try:
+            self._guiServer.requestGuiServerProcessToStop()
+            self._midiListner.requestTcpMidiListnerProcessToStop()
+            self._requestGuiProcessToStop()
 
-        self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
-        self._shutdownTimer.Start(100)#10 times a second
-        self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
-        self._shutdownTimerCounter = 0
+            self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
+            self._shutdownTimer.Start(100)#10 times a second
+            self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
+            self._shutdownTimerCounter = 0
+        except:
+            self._shutdownTimerCounter = 1000
+            self._onShutdownTimer(None)
 
     def _onShutdownTimer(self, event):
         allDone = False
-        if(self._guiServer.hasGuiServerProcessShutdownNicely()):
-            if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
-                if(self.hasGuiProcessProcessShutdownNicely()):
-                    print "All done. (shutdown timer counter: " + str(self._shutdownTimerCounter) + " )"
-                    allDone = True
+        if(self._shutdownTimerCounter >= 1000):
+            self._guiServer.forceGuiServerProcessToStop()
+            self._midiListner.forceTcpMidiListnerProcessToStop()
+            self.forceGuiProcessProcessToStop()
+            allDone = True
         else:
-            self._shutdownTimerCounter += 1
-            if(self._shutdownTimerCounter > 200):
-                print "Shutdown timeout!!! Force killing rest..."
-                if(self._guiServer.hasGuiServerProcessShutdownNicely() != False):
-                    self._guiServer.forceGuiServerProcessToStop()
-                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
-                    self._midiListner.forceTcpMidiListnerProcessToStop()
-                if(self.hasGuiProcessProcessShutdownNicely() != False):
-                    self.forceGuiProcessProcessToStop()
-                allDone = True
+            if(self._guiServer.hasGuiServerProcessShutdownNicely()):
+                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
+                    if(self.hasGuiProcessProcessShutdownNicely()):
+                        print "All done. (shutdown timer counter: " + str(self._shutdownTimerCounter) + " )"
+                        allDone = True
+            else:
+                self._shutdownTimerCounter += 1
+                if(self._shutdownTimerCounter > 200):
+                    print "Shutdown timeout!!! Force killing rest..."
+                    if(self._guiServer.hasGuiServerProcessShutdownNicely() != False):
+                        self._guiServer.forceGuiServerProcessToStop()
+                    if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
+                        self._midiListner.forceTcpMidiListnerProcessToStop()
+                    if(self.hasGuiProcessProcessShutdownNicely() != False):
+                        self.forceGuiProcessProcessToStop()
+                    allDone = True
         if(allDone == True):
             if(sys.platform != "darwin"):
                 self.Destroy()
@@ -437,10 +459,16 @@ class PlayerMain(wx.Frame):
             self._configCheckCounter = self._configCheckEveryNRound + 1
 
         #Show frame:
-        mixedImage = self._mediaMixer.getImage()
-        self._wxImageBuffer.SetData(mixedImage.tostring())
-        self._updateBuffer()
-#        self._frameWidget.SetBitmap(wx.BitmapFromImage(self._wxImageBuffer))
+        mixedImage = self._mediaMixer.getImage(self._outOfMemory)
+        try:
+            self._wxImageBuffer.SetData(mixedImage.tostring())
+            self._updateBuffer()
+            if(self._outOfMemory == True):
+                self._updateTitle(None)
+                self._outOfMemory = False
+        except MemoryError:
+            self._updateTitle("Out of memory error!")
+            self._outOfMemory = True
 
         #Check for quit conditions...
         guiStatus = self._checkStatusQueue()

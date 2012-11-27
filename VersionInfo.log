@@ -1,5 +1,6 @@
-commit 476ae089e63dbf0b5feba7f9edc9c32b90e5a57b
+commit 9d37d095af15c6c7b0cc6e87307e3ad6f7046a47
 Author: unknown <pcn@.(none)>
-Date:   Mon Nov 26 13:24:13 2012 +0100
+Date:   Mon Nov 26 14:06:46 2012 +0100
 
-    Added fullscreen shortcut.
+    Trying to catch out of memory exception.
+    Increasing version.

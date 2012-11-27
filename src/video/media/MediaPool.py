@@ -12,7 +12,7 @@ from midi import MidiUtilities
 from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
 from midi.MidiStateHolder import GenericModulationHolder
-import sys
+import traceback
 
 class MediaPool(object):
     def __init__(self, midiTiming, midiStateHolder, specialModulationHolder, mediaMixer, timeModulationConfiguration, effectsConfiguration, effectImagesConfiguration, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir, appDataDir):
@@ -157,15 +157,17 @@ class MediaPool(object):
             keepOld = False
             if(oldMedia != None):
                 if(oldMedia.equalFileName(fileName)):
-                    print "FileName OK"
                     if((oldMedia.getType() == mediaType)):
-                        print "MediaType OK"
-                        keepOld= True
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
                         if(midiLength != None):
                             oldMedia.setMidiLengthInBeats(midiLength)
-                        oldMedia.checkAndUpdateFromConfiguration()
-                        mediaFile = oldMedia
+                        try:
+                            oldMedia.checkAndUpdateFromConfiguration()
+                            mediaFile = oldMedia
+                            keepOld= True
+                        except MediaError:
+                            traceback.print_exc()
+                            mediaFile = None
             if(keepOld == False):
                 if(oldMedia != None):
                     print "Removing old media. " + noteLetter + " filename: " + str(oldMedia.getFileName().encode("utf-8"))
@@ -226,6 +228,7 @@ class MediaPool(object):
                         mediaFile.openFile(midiLength)
                 except MediaError, mediaError:
                     print "Error opening media file: %s Message: %s" % (fileName.encode("utf-8"), str(mediaError))
+                    traceback.print_exc()
                     mediaFile = None
 
         self._mediaPool[midiNote] = mediaFile
@@ -335,24 +338,40 @@ class MediaPool(object):
 #                    if(newMedia != None):
 #                        print "DEBUG pcn: newMedia noteId: " + str(newNoteId),
 #                        midiNoteState.printState(midiChannel)
-                    self._mediaTracks[midiChannel] = newMedia
-                    if(newMedia != None):
-                        activeMediaState = newMedia.getMediaStateHolder()
-                        self._mediaTrackIds[midiChannel] = newNoteId
-                    else:
+                    try:
+                        if(newMedia != None):
+                            activeMediaState = newMedia.getMediaStateHolder()
+                            self._mediaTrackIds[midiChannel] = newNoteId
+                        else:
+                            self._mediaTrackIds[midiChannel] = -1
+                        self._mediaTrackStateHolders[midiChannel] = activeMediaState
+                    except MediaError:
+                        traceback.print_exc()
+                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                        newMedia = None
+                        activeMediaState = None
                         self._mediaTrackIds[midiChannel] = -1
-                    self._mediaTrackStateHolders[midiChannel] = activeMediaState
+                        midiChannelState.removeAllNotes()
+                    self._mediaTracks[midiChannel] = newMedia
                 elif(oldMedia != newMedia):
 #                    print "DEBUG pcn: newMedia noteId: " + str(newNoteId),
 #                    midiNoteState.printState(midiChannel)
                     oldMedia.releaseMedia(oldMediaState)
                     self._mediaTracks[midiChannel] = newMedia
-                    if(newMedia != None):
-                        activeMediaState = newMedia.getMediaStateHolder()
-                        self._mediaTrackIds[midiChannel] = newNoteId
-                    else:
+                    try:
+                        if(newMedia != None):
+                            activeMediaState = newMedia.getMediaStateHolder()
+                            self._mediaTrackIds[midiChannel] = newNoteId
+                        else:
+                            self._mediaTrackIds[midiChannel] = -1
+                        self._mediaTrackStateHolders[midiChannel] = activeMediaState
+                    except MediaError:
+                        traceback.print_exc()
+                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                        newMedia = None
+                        activeMediaState = None
                         self._mediaTrackIds[midiChannel] = -1
-                    self._mediaTrackStateHolders[midiChannel] = activeMediaState
+                        midiChannelState.removeAllNotes()
                 else:
                     activeMediaState = oldMediaState
                 if(newMedia != None):
@@ -368,10 +387,11 @@ class MediaPool(object):
                     if(noteIsDone == True):
                         midiChannelState.removeDoneActiveNote()
                     self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
-                except:
-                    print "Error! SkipFrames raised exception: ", sys.exc_info()[0]
+                except MediaError:
+                    print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                    traceback.print_exc()
                     midiChannelState.removeAllNotes()
-                    raise
+                    self._mediaMixer.gueueImage(None, None, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
                 if(self._mediaTracks[midiChannel] != None):

@@ -72,8 +72,11 @@ class MediaMixer(object):
         self.loadMediaFromConfiguration()
 
         self._imagesSinceLastPreviewSave = 0
+        self._outOfMemory = False
+        self._outOfMemoryToggle = False
         self._imagesToSkipBetweenPreviewSave = 20
         self._tempPreviewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview_tmp.jpg"))
+        self._outOfMemoryFileName = os.path.normpath(os.path.join(os.getcwd(), "outOfMemoryPreview.jpg"))
         self._previewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview.jpg"))
 
     def _getConfiguration(self):
@@ -202,7 +205,8 @@ class MediaMixer(object):
         postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, preEffectStartValues, postEffect, postEffectSettings, postEffectStartValues)
 
-    def getImage(self):
+    def getImage(self, outOfMemory):
+        self._outOfMemory = outOfMemory
         cv.ConvertImage(self._currentImage, self._convertedMat, cv.CV_CVTIMG_SWAP_RB)
         return self._convertedMat
 
@@ -274,9 +278,16 @@ class MediaMixer(object):
         self._nextImageId += 1
         self._updateImage()
 
+        if((self._outOfMemory == True) and (self._outOfMemoryToggle == False)):
+            self._outOfMemoryToggle = True
+        else:
+            self._outOfMemoryToggle = False
         if(self._imagesSinceLastPreviewSave >= self._imagesToSkipBetweenPreviewSave):
             self._imagesSinceLastPreviewSave = 0
-            scaleAndSave(self._currentImage, self._tempPreviewName, self._previewMat)
+            if(self._outOfMemoryToggle == True):
+                shutil.copy(self._outOfMemoryFileName, self._tempPreviewName)
+            else:
+                scaleAndSave(self._currentImage, self._tempPreviewName, self._previewMat)
             try:
                 shutil.move(self._tempPreviewName, self._previewName)
             except:

@@ -1332,7 +1332,7 @@ A list of start values for the effect modulation.
             self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
             self._setupValueLabels(self._mirrorMode.getChoices(), None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rotate):
-            self._setLabels("Angle", "Move center", "Move angle", None, None)
+            self._setLabels("Angle", "Move center", "Move angle", "Zoom", None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Blur):
             self._setLabels("Amount:", None, None, None, None)

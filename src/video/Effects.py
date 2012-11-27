@@ -13,7 +13,6 @@ import math
 import os
 import time
 import sys
-import traceback
 
 effectImageList = []
 effectImageFileNameList = []
@@ -175,16 +174,32 @@ def getEffectByName(name, templateName, configurationTree, effectImagesConfigura
     fxid = getEffectId(name)
     return getEffectById(fxid, templateName, configurationTree, effectImagesConfiguration, specialModulationHolder, internalResX, internalResY)
 
+effectMat1 = None
+effectMat2 = None
+effectMask1 = None
+effectMask2 = None
+
+def setupEffectMemory(width, heigth):
+    global effectMat1
+    global effectMat2
+    global effectMask1
+    global effectMask2
+    if(effectMat1 == None):
+        effectMat1 = createMat(width, heigth)
+        effectMat2 = createMat(width, heigth)
+        effectMask1 = createMask(width, heigth)
+        effectMask2 = createMask(width, heigth)
+
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._setZoomRange(0.25, 4.0)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
-        self._zoomMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        self._zoomMat = effectMat1
 
     def findMode(self, value):
         modeSelected = int(value*3.99)
@@ -282,38 +297,44 @@ class ZoomEffect(object):
             height = int(originalHeight - top)
             outputRect = True
         if((height < 1) or (width < 1)):
-            return self._blankImage
+            cv.SetZero(image)
+            return image
 #        print "Zoom src: " + str(zoomXFraction) + " Y: " + str(zoomYFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
         src_region = cv.GetSubRect(image, (left, top, width, height) )
         if(outputRect):
             if(outPutWidth < 0):
                 outPutWidth = int(originalWidth - outPutLeft)
                 if(outPutWidth < 0):
-                    return self._blankImage
+                    cv.SetZero(image)
+                    return image
             if(outPutHeight < 0):
                 outPutHeight = int(originalHeight - outPutTop)
                 if(outPutHeight < 0):
-                    return self._blankImage
+                    cv.SetZero(image)
+                    return image
 #            print "Zoom OUT: " + str(outPutWidth) + " h: " + str(outPutHeight) + " l: " + str(outPutLeft) + " t: " + str(outPutTop)
             tmpMat = createMat(outPutWidth, outPutHeight)
             cv.Resize(src_region, tmpMat)
-            cv.SetZero(self._zoomMat)
-            dst_region = cv.GetSubRect(self._zoomMat, (outPutLeft, outPutTop, outPutWidth, outPutHeight) )
+            cv.SetZero(image)
+            dst_region = cv.GetSubRect(image, (outPutLeft, outPutTop, outPutWidth, outPutHeight) )
             cv.Copy(tmpMat, dst_region)
-            return self._zoomMat
+            return image
         cv.Resize(src_region, self._zoomMat)
-        return self._zoomMat
+        cv.Copy(self._zoomMat, image)
+        return image
 
 class MirrorEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
+        self._halfResX = int(self._internalResolutionX / 2)
+        self._halfResY = int(self._internalResolutionY / 2)
         self._radians360 = math.radians(360)
 
-        self._rotateMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._rotateMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._mirrorMat = effectMat1
 
     def getName(self):
         return "Mirror"
@@ -326,54 +347,48 @@ class MirrorEffect(object):
 
     def mirrorImage(self, image, mode, rotate, move, direction):
         rotateMatrix1 = cv.CreateMat(2,3,cv.CV_32F)
-        rotateMatrix2 = cv.CreateMat(2,3,cv.CV_32F)
 
-        halfResX = int(self._internalResolutionX / 2)
-        halfResY = int(self._internalResolutionY / 2)
         if(rotate >= 0.01):
-            xCenter = halfResX
-            yCenter = halfResY
+            xCenter = self._halfResX
+            yCenter = self._halfResY
             if(move > 0.02):
-                xCenter -= halfResX * move * math.cos(self._radians360 * -direction)
-                yCenter += halfResY * move * math.sin(self._radians360 * -direction)
+                xCenter -= self._halfResX * move * math.cos(self._radians360 * -direction)
+                yCenter += self._halfResY * move * math.sin(self._radians360 * -direction)
             angle = rotate * 360
     #        print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
             cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix1)
-            cv.SetZero(self._rotateMat1)
-            cv.WarpAffine(image, self._rotateMat1, rotateMatrix1)
-            cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix2)
-            cv.SetZero(self._rotateMat2)
-            cv.WarpAffine(image, self._rotateMat2, rotateMatrix2)
+            cv.SetZero(self._mirrorMat)
+            cv.WarpAffine(image, self._mirrorMat, rotateMatrix1)
+            cv.Copy(self._mirrorMat, image)
             if(mode < 0.5):
-                cv.Flip(self._rotateMat2, self._rotateMat2, 1)
+                cv.Flip(self._mirrorMat, self._mirrorMat, 1)
             else:
-                cv.Flip(self._rotateMat2, self._rotateMat2, 0)
-            image1 = self._rotateMat1
+                cv.Flip(self._mirrorMat, self._mirrorMat, 0)
         else:
             if(mode < 0.5):
-                cv.Flip(image, self._rotateMat2, 1)
+                cv.Flip(image, self._mirrorMat, 1)
             else:
-                cv.Flip(image, self._rotateMat2, 0)
-            image1 = image            
+                cv.Flip(image, self._mirrorMat, 0)
         if(mode < 0.5):
-            src_region = cv.GetSubRect(image1, (0, 0, halfResX, self._internalResolutionY))
-            dst_region = cv.GetSubRect(self._rotateMat2, (0, 0, halfResX, self._internalResolutionY))
+            src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, 0, self._halfResX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(image, (self._halfResX, 0, self._halfResX, self._internalResolutionY))
         else:
-            src_region = cv.GetSubRect(image1, (0, 0, self._internalResolutionX, halfResY))
-            dst_region = cv.GetSubRect(self._rotateMat2, (0, 0, self._internalResolutionX, halfResY))
+            src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
         cv.Copy(src_region, dst_region)
 
-        return self._rotateMat2
+        return image
 
 class RotateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._radians360 = math.radians(360)
 
-        self._rotateMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._rotateMat = effectMat1
 
     def getName(self):
         return "Rotate"
@@ -381,30 +396,45 @@ class RotateEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, move, direction, unused1, unused2):
-        return self.rotateImage(image, amount, move, direction)
+    def applyEffect(self, image, amount, move, direction, zoom, unused1):
+        return self.rotateImage(image, amount, move, direction, zoom)
 
-    def rotateImage(self, image, amount, move, direction):
+    def rotateImage(self, image, amount, move, direction, zoom):
         if((amount < 0.02) or (amount > 0.99)):
-            return image
-        xCenter = int(self._internalResolutionX / 2)
-        yCenter = int(self._internalResolutionY / 2)
-        if(move > 0.02):
-            xCenter -= self._internalResolutionX *  0.5 * move * math.cos(self._radians360 * -direction)
-            yCenter -= self._internalResolutionY * -0.5 * move * math.sin(self._radians360 * -direction)
-        angle = amount * 360
-#        print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
-        rotateMatrix = cv.CreateMat(2,3,cv.CV_32F)
-        cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix)
-        cv.SetZero(self._rotateMat)
-        cv.WarpAffine(image, self._rotateMat, rotateMatrix)
-        return self._rotateMat
+            if(zoom < 0.02):
+                return image
+            else:
+                cv.Copy(image, self._rotateMat)
+        else:
+            xCenter = int(self._internalResolutionX / 2)
+            yCenter = int(self._internalResolutionY / 2)
+            if(move > 0.02):
+                xCenter -= self._internalResolutionX *  0.5 * move * math.cos(self._radians360 * -direction)
+                yCenter -= self._internalResolutionY * -0.5 * move * math.sin(self._radians360 * -direction)
+            angle = amount * 360
+#            print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
+            rotateMatrix = cv.CreateMat(2,3,cv.CV_32F)
+            cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix)
+            cv.SetZero(self._rotateMat)
+            cv.WarpAffine(image, self._rotateMat, rotateMatrix)
+        if(zoom < 0.02):
+            cv.Copy(self._rotateMat, image)
+        else:
+            zoomMultiplier = 0.60 + ((1.0 - zoom) * 0.4)
+            xSize = int(self._internalResolutionX * zoomMultiplier)
+            ySize = int(self._internalResolutionY * zoomMultiplier)
+            xPos = int((self._internalResolutionX - xSize) / 2)
+            yPos = int((self._internalResolutionY - ySize) / 2)
+            src_region = cv.GetSubRect(self._rotateMat, (xPos, yPos, xSize, ySize))
+            cv.Resize(src_region, image)
+        return image
 
 class BlobDetectEffect(object):
     def __init__(self, configurationTree, specialModulationHolder, templateName, internalResX, internalResY):
         self._configurationTree = configurationTree
         self._specialModulationHolder = specialModulationHolder
         self._effectTemplateName = templateName
+        setupEffectMemory(internalResX, internalResY)
         self._effectModulationHolder = None
         if(self._specialModulationHolder != None):
             self._effectModulationHolder = self._specialModulationHolder.getSubHolder("Effect")
@@ -526,6 +556,7 @@ class BlobDetectEffect(object):
 class TVNoizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
@@ -597,6 +628,7 @@ class TVNoizeEffect(object):
 class PixelateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
@@ -642,6 +674,7 @@ class PixelateEffect(object):
 class ScrollEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
 
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
@@ -862,6 +895,7 @@ class ScrollEffect(object):
 class FlipEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._flipMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -908,6 +942,7 @@ class FlipEffect(object):
 class BlurEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._blurMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -932,6 +967,7 @@ class BlurEffect(object):
 class BluredContrastEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._blurMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -959,6 +995,7 @@ class BluredContrastEffect(object):
 class FeedbackEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._radians360 = math.radians(360)
@@ -1000,6 +1037,7 @@ class FeedbackEffect(object):
 class DelayEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._radians360 = math.radians(360)
@@ -1048,6 +1086,7 @@ class DelayEffect(object):
 class SelfDifferenceEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._currentPos = 0
@@ -1098,6 +1137,7 @@ class SelfDifferenceEffect(object):
 class DistortionEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._distortMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1139,6 +1179,7 @@ class DistortionEffect(object):
 class EdgeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1233,6 +1274,7 @@ class EdgeEffect(object):
 class DesaturateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1285,6 +1327,7 @@ class DesaturateEffect(object):
 class ContrastBrightnessEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._processMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1337,6 +1380,7 @@ class ContrastBrightnessEffect(object):
 class HueSaturationEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1388,6 +1432,7 @@ class HueSaturationEffect(object):
 class ColorizeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._colorMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1442,6 +1487,7 @@ class ColorizeEffect(object):
 class InvertEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._invertMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1468,6 +1514,7 @@ class InvertEffect(object):
 class ValueToHueEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._colourMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1525,6 +1572,7 @@ class ValueToHueEffect(object):
 class ThresholdEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._thersholdMat = createMat(self._internalResolutionX, self._internalResolutionY)
@@ -1553,6 +1601,7 @@ class ImageAddEffect(object):
         self._videoDirectory = self._imageConfiguration.getVideoDir()
         if(self._videoDirectory == None):
             self._videoDirectory = ""
+        setupEffectMemory(internalResX, internalResY)
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
         self._maskId = 0

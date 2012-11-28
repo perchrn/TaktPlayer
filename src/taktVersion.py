@@ -17,7 +17,7 @@ def getTaktInfoFileContentString():
 
 
 def getVersionNumberString():
-    return "1.0.5"
+    return "1.0.6"
 
 def getVersionDateString():
     infoFileString = getTaktInfoFileContentString()
@@ -33,3 +33,6 @@ def getVersionGitIdString():
         if(line.startswith("commit ")):
             return line[7:]
     return "Unknown"
+
+if __name__ == '__main__':
+    print getVersionNumberString()

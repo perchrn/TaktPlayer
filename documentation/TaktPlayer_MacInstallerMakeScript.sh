@@ -1,3 +1,5 @@
+cd /Users/pcn/Workspace/MusicalVideoPlayer_Player
+
 ./TaktPlayer.macMake
 mv dist/TaktPlayer.app .
 ./TaktGui.macMake
@@ -13,7 +15,15 @@ echo ""
 read -p "Fix folderlayout and press [enter] to continiue... "
 echo ""
 
-mv TaktPlayer.dmg TaktPlayer.dmg.old
-hdiutil create TaktPlayer.dmg -volname "Takt Player" -fs HFS+ -srcfolder "dist"
+VERSION_STRING=`python src/taktVersion.py | tr "." "_"`
+
+if [ -f TaktPlayer_V$VERSION_STRING.dmg ] ; then
+    mv TaktPlayer_V$VERSION_STRING.dmg TaktPlayer_V$VERSION_STRING.dmg.old
+fi
+echo "Making TaktPlayer_V$VERSION_STRING.dmg ..."
+hdiutil create TaktPlayer_V$VERSION_STRING.dmg -volname "Takt Player" -fs HFS+ -srcfolder "dist"
+echo ""
+echo ""
 echo "All done."
+echo ""
 

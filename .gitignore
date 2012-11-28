@@ -26,3 +26,4 @@ documentation/Output
 VersionInfo.log
 TaktPlayer.spec
 warnTaktPlayer.txt
+*.dmg

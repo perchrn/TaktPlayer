@@ -79,6 +79,9 @@ class MediaMixer(object):
         self._outOfMemoryFileName = os.path.normpath(os.path.join(os.getcwd(), "outOfMemoryPreview.jpg"))
         self._previewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview.jpg"))
 
+    def getMixMatBuffers(self):
+        return self._mixMat1, self._mixMat2, self._mixMask
+
     def _getConfiguration(self):
         self.loadMediaFromConfiguration()
 

@@ -9,7 +9,8 @@ from cv2 import cv #@UnresolvedImport
 import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
-    copyImage, pilToCvImage, pilToCvMask, ZoomEffect, MediaError
+    copyOrResizeImage, pilToCvImage, pilToCvMask, ZoomEffect, MediaError,\
+    copyImage
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
     FadeMode, getMixModeFromName, ModulationValueMode,\
@@ -69,12 +70,12 @@ def scaleAndSave(image, osFileName, resizeMat):
     cv.Resize(image, resizeMat)
     cv.SaveImage(osFileName, resizeMat)
 
-def fadeImage(image, value, mode, tmpMat):
+def fadeImage(image, value, mode):
     if(mode == FadeMode.White):
-        cv.ConvertScaleAbs(image, tmpMat, value, (1.0-value) * 256)
+        cv.ConvertScaleAbs(image, image, value, (1.0-value) * 256)
     else: #FadeMode.Black
-        cv.ConvertScaleAbs(image, tmpMat, value, 0.0)
-    return tmpMat
+        cv.ConvertScaleAbs(image, image, value, 0.0)
+    return image
 
 def mixImageSelfMask(level, image1, image2, mixMask, mixMat1, whiteMode):
     cv.Copy(image2, mixMat1)
@@ -196,13 +197,11 @@ class MediaFile(object):
         self._setupMediaSettingsHolder(self._mediaSettingsHolder)
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
-        mediaSettingsHolder.resizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        mediaSettingsHolder.fadeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.image = None
         mediaSettingsHolder.imageMask = None
-        mediaSettingsHolder.captureImage = None
+        mediaSettingsHolder.captureImage = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.captureMask = None
-        mediaSettingsHolder.currentFrame = 0;
+        mediaSettingsHolder.currentFrame = 0
         mediaSettingsHolder.startSongPosition = 0.0
 
         mediaSettingsHolder.lastFramePos = 0.0
@@ -240,6 +239,7 @@ class MediaFile(object):
             mediaSettingsHolder.resetEffect = True
 
     def _updateMediaSettingsHolder(self, mediaSettingsHolder):
+        mediaSettingsHolder.image = None
         if(self.getType() != "Modulation"):
             if((mediaSettingsHolder.effect1 == None) or (mediaSettingsHolder.effect1.getName() != self._effect1Settings.getEffectName())):
                 mediaSettingsHolder.effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
@@ -346,14 +346,17 @@ class MediaFile(object):
 #            print "DEBUG pcn: getMediaStateHolder() -> new holder with id: " + str(mediaSettingsHolder._uid) + " in: " + self.getType()
             try:
                 self._setupMediaSettingsHolder(mediaSettingsHolder)
-                mediaSettingsHolder.captureImage = self._firstImage
-                mediaSettingsHolder.captureMask = self._firstImageMask
+                copyOrResizeImage(self._firstImage, mediaSettingsHolder.captureImage)
+                if(self._firstImageMask != None):
+                    mediaSettingsHolder.captureMask = self._firstImageMask
                 self._updateMediaSettingsHolder(mediaSettingsHolder)
             except MediaError, mediaError:
                 self._mediaSettingsHolder.delete(mediaSettingsHolder)
                 traceback.print_exc()
                 raise mediaError
                 return None
+#        else:
+#            print "DEBUG pcn: getMediaStateHolder() -> old holder with id: " + str(mediaSettingsHolder._uid) + " in: " + self.getType()
         return mediaSettingsHolder
 
     def close(self):
@@ -441,6 +444,7 @@ class MediaFile(object):
             mediaSettingsHolder.guiCtrlStateHolder = None
             mediaSettingsHolder.noteId = -1
             mediaSettingsHolder.midiChannel = -1
+        mediaSettingsHolder.image = None
         mediaSettingsHolder.noteTriggerCounter = 0
         mediaSettingsHolder.lastTriggerCount = 0
         mediaSettingsHolder.firstNoteTrigger = True
@@ -558,17 +562,16 @@ class MediaFile(object):
         if(mediaSettingsHolder.resetEffect == True):
             mediaSettingsHolder.resetEffect = False
             self._resetEffects(mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState)
-        imageSize = cv.GetSize(mediaSettingsHolder.captureImage)
-        if((imageSize[0] != self._internalResolutionX) or (imageSize[1] != self._internalResolutionY)):
-            mediaSettingsHolder.image = resizeImage(mediaSettingsHolder.captureImage, mediaSettingsHolder.resizeMat)
-        else:
+        if(mediaSettingsHolder.image == None):
             mediaSettingsHolder.image = copyImage(mediaSettingsHolder.captureImage)
+        else:
+            copyOrResizeImage(mediaSettingsHolder.captureImage, mediaSettingsHolder.image)
 
         (mediaSettingsHolder.image, mediaSettingsHolder.effect1OldValues, mediaSettingsHolder.effect1StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect1, self._effect1Settings, mediaSettingsHolder.effect1StartSumValues, mediaSettingsHolder.effect1StartMidiValues, mediaSettingsHolder.effect1StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 0)
         (mediaSettingsHolder.image, mediaSettingsHolder.effect2OldValues, mediaSettingsHolder.effect2StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect2, self._effect2Settings, mediaSettingsHolder.effect2StartSumValues, mediaSettingsHolder.effect2StartMidiValues, mediaSettingsHolder.effect2StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 5)
 
         if(fadeValue < 0.99):
-            mediaSettingsHolder.image = fadeImage(mediaSettingsHolder.image, fadeValue, fadeMode, mediaSettingsHolder.fadeMat)
+            mediaSettingsHolder.image = fadeImage(mediaSettingsHolder.image, fadeValue, fadeMode)
 
     def _timeModulatePos(self, unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, syncLength):
         self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
@@ -699,16 +702,16 @@ class MediaFile(object):
             raise MediaError("File does not exist!")
         self._videoFile = cv.CaptureFromFile(filePath.encode("utf-8"))
         try:
-            self._mediaSettingsHolder.captureImage = cv.QueryFrame(self._videoFile)
-            self._firstImage = copyImage(self._mediaSettingsHolder.captureImage)
-            self._mediaSettingsHolder.captureImage = cv.QueryFrame(self._videoFile)
-            self._secondImage = copyImage(self._mediaSettingsHolder.captureImage)
-            self._mediaSettingsHolder.captureImage = self._firstImage
+            captureFrame = cv.QueryFrame(self._videoFile)
+            self._firstImage = copyImage(captureFrame)
+            copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
+            captureFrame = cv.QueryFrame(self._videoFile)
+            self._secondImage = copyImage(captureFrame)
         except:
             self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
-        if (self._mediaSettingsHolder.captureImage == None):
+        if (captureFrame == None):
             self._log.warning("Could not read frames from: %s", os.path.basename(self._cfgFileName))
             print "Could not read frames from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
@@ -724,9 +727,8 @@ class MediaFile(object):
                 self._bufferedImageList.append(self._firstImage)
                 self._bufferedImageList.append(self._secondImage)
                 for i in range(self._numberOfFrames - 2): #@UnusedVariable
-                    self._mediaSettingsHolder.captureImage = cv.QueryFrame(self._videoFile)
-                    self._bufferedImageList.append(copyImage(self._mediaSettingsHolder.captureImage))
-                self._mediaSettingsHolder.captureImage = self._firstImage
+                    captureFrame = cv.QueryFrame(self._videoFile)
+                    self._bufferedImageList.append(copyImage(captureFrame))
             except:
                 self._log.warning("Exception while reading: %s", os.path.basename(self._cfgFileName))
                 print "Exception while reading: " + os.path.basename(self._cfgFileName)
@@ -817,6 +819,12 @@ class MediaSettings(object):
         self._isNew = True
         self._uid = uid
 
+    def needsUpdate(self):
+        if(self._isNew == False):
+            return True
+        else:
+            return False
+
     def isNew(self):
         if(self._isNew == True):
             self._isNew = False
@@ -858,13 +866,12 @@ class MediaGroup(MediaFile):
         self._noteList = fileName.split(",")
         self._groupName = fileName
 
-        self._blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
-
-        self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
-
         self._getConfiguration()
+
+    def setMixMatBuffers(self, buffers):
+        self._mixMat1 = buffers[0]
+        self._mixMat2 = buffers[1]
+        self._mixMask = buffers[2]
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
@@ -949,10 +956,11 @@ class MediaGroup(MediaFile):
                 else:
                     imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
 
-        if(imageMix == None):
-            imageMix = self._blankImage
+        if(imageMix != None):
+            copyOrResizeImage(imageMix, mediaSettingsHolder.captureImage)
+        else:
+            cv.SetZero(mediaSettingsHolder.captureImage)
 
-        mediaSettingsHolder.captureImage = imageMix
         self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
 
         return False
@@ -964,7 +972,8 @@ class MediaGroup(MediaFile):
         self._mediaList = []
         fontPath = findOsFontPath()
         fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
-        self._mediaSettingsHolder.captureImage = pilToCvImage(fontPILImage)
+        labelImage = pilToCvImage(fontPILImage)
+        copyOrResizeImage(labelImage, self._mediaSettingsHolder.captureImage)
         self._firstImage = self._mediaSettingsHolder.captureImage
         self._fileOk = True
 
@@ -992,9 +1001,12 @@ class MediaGroup(MediaFile):
                     media.releaseMedia(mediaSettings.mediaSettingsList[j])
             self._mediaList = newMediaList
             for mediaSettings in self._mediaSettingsHolder.getSettingsList():
-                mediaSettings.mediaSettingsList = []
-                for media in self._mediaList:
-                    mediaSettings.mediaSettingsList.append(media.getMediaStateHolder())
+                if(mediaSettings.needsUpdate() == True):
+                    for mediaSettingsSettings in mediaSettings.mediaSettingsList:
+                        mediaSettingsSettings.release()
+                    mediaSettings.mediaSettingsList = []
+                    for media in self._mediaList:
+                        mediaSettings.mediaSettingsList.append(media.getMediaStateHolder())
         MediaFile.doPostConfigurations(self)
 
 class ImageFile(MediaFile):
@@ -1012,11 +1024,12 @@ class ImageFile(MediaFile):
         self._endX, self._endY = self._angleAndMoveToXY(self._endAngle, self._endMove)
         self._cropMode = "Crop"
 
+        self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
         self._getConfiguration()
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
-        mediaSettingsHolder.zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.oldZoom = -1.0
         mediaSettingsHolder.oldMoveX = -1.0
         mediaSettingsHolder.oldMoveY = -1.0
@@ -1099,7 +1112,7 @@ class ImageFile(MediaFile):
             else:
                 multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) * 4))
 #            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
-            dst_region = cv.GetSubRect(mediaSettingsHolder.zoomResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._zoomResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY))
             if(self._cropMode == "Crop"):
                 sourceRectangleX = int(self._source100percentCropX * multiplicator)
                 sourceRectangleY = int(self._source100percentCropY * multiplicator)
@@ -1124,9 +1137,9 @@ class ImageFile(MediaFile):
                     destLeft = (self._internalResolutionX - destRectangleX) / 2
                 if(destRectangleY < self._internalResolutionY):
                     destTop = (self._internalResolutionY - destRectangleY) / 2
-                cv.SetZero(mediaSettingsHolder.zoomResizeMat)
+                cv.SetZero(self._zoomResizeMat)
 #                print "DEBUG pcn: scale: left: " + str(destLeft) + " top: " + str(destTop)
-                dst_region = cv.GetSubRect(mediaSettingsHolder.zoomResizeMat, (destLeft, destTop, destRectangleX, destRectangleY))
+                dst_region = cv.GetSubRect(self._zoomResizeMat, (destLeft, destTop, destRectangleX, destRectangleY))
             else:
                 sourceRectangleX = int(self._sourceX * multiplicator)
                 sourceRectangleY = int(self._sourceY * multiplicator)                
@@ -1157,9 +1170,8 @@ class ImageFile(MediaFile):
 #            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, dst_region)
-            mediaSettingsHolder.captureImage = mediaSettingsHolder.zoomResizeMat
+            copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
         self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
-#        mediaSettingsHolder.image = mediaSettingsHolder.captureImage
         return False
 
     def _angleAndMoveToXY(self, angle, move):
@@ -1208,12 +1220,12 @@ class ImageFile(MediaFile):
                 pilRgb = Image.merge("RGB", (pilSplit[0], pilSplit[0], pilSplit[0]))
         if(pilDepth > 2):
             pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
-        self._mediaSettingsHolder.captureImage = pilToCvImage(pilRgb)
-        if(self._mediaSettingsHolder.captureImage == None):
+        self._firstImage = pilToCvImage(pilRgb)
+        if(self._firstImage == None):
             self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
             print "Could not read image from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
-        self._firstImage = self._mediaSettingsHolder.captureImage
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._originalTime = 1.0
         self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
         self._sourceAspect = float(self._sourceX) / self._sourceY
@@ -1243,11 +1255,12 @@ class ScrollImageFile(MediaFile):
         self._midiModulation.setModulationReceiver("ScrollModulation", "None")
         self._scrollModulationId = None
 
+        self._scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
         self._getConfiguration()
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
-        mediaSettingsHolder.scrollResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.scrollResizeMask = createMask(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.oldScrollLength = -1.0
         mediaSettingsHolder.oldScrollMode = False
@@ -1302,7 +1315,7 @@ class ScrollImageFile(MediaFile):
                 left = int(scrollLength * (self._sourceX - 1))
                 if((left + self._source100percentCropX) <= self._sourceX):
                     srcRegion = cv.GetSubRect(self._firstImage, (left, 0, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, self._source100percentCropX, self._source100percentCropY) )
                         dstRegionMask = cv.GetSubRect(mediaSettingsHolder.scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
@@ -1311,7 +1324,7 @@ class ScrollImageFile(MediaFile):
                     destinationWidth = int((extraWidth * self._internalResolutionX) / self._source100percentCropX)
                     #Rest:
                     srcRegion = cv.GetSubRect(self._firstImage, (0, 0, extraWidth, self._source100percentCropY))
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (self._internalResolutionX - destinationWidth, 0, destinationWidth, self._internalResolutionY) )
                     cv.Resize(srcRegion, dstRegion)
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, extraWidth, self._source100percentCropY))
@@ -1320,12 +1333,12 @@ class ScrollImageFile(MediaFile):
                     #Main:
                     width = self._sourceX - left
                     srcRegion = cv.GetSubRect(self._firstImage, (left, 0, width, self._source100percentCropY))
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (left, 0, width, self._source100percentCropY))
                         dstRegionMask = cv.GetSubRect(mediaSettingsHolder.scrollResizeMask, (0, 0, self._internalResolutionX - destinationWidth, self._internalResolutionY) )
                 cv.Resize(srcRegion, dstRegion)
-                mediaSettingsHolder.captureImage = mediaSettingsHolder.scrollResizeMat
+                copyOrResizeImage(self._scrollResizeMat, mediaSettingsHolder.captureImage)
                 if(self._firstImageMask != None):
                     cv.Resize(srcRegionMask, dstRegionMask)
                     mediaSettingsHolder.captureMask = mediaSettingsHolder.scrollResizeMask
@@ -1335,7 +1348,7 @@ class ScrollImageFile(MediaFile):
                 top = int(scrollLength * (self._sourceY - 1))
                 if((top + self._source100percentCropY) <= self._sourceY):
                     srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, self._source100percentCropY) )
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY) )
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, self._source100percentCropY) )
                         dstRegionMask = cv.GetSubRect(mediaSettingsHolder.scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY) )
@@ -1344,7 +1357,7 @@ class ScrollImageFile(MediaFile):
                     destinationHeight = int((extraHeight * self._internalResolutionY) / self._source100percentCropY)
                     #Rest:
                     srcRegion = cv.GetSubRect(self._firstImage, (0, 0, self._source100percentCropX, extraHeight))
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, self._internalResolutionY - destinationHeight, self._internalResolutionX, destinationHeight) )
                     cv.Resize(srcRegion, dstRegion)
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, 0, self._source100percentCropX, extraHeight))
@@ -1353,12 +1366,12 @@ class ScrollImageFile(MediaFile):
                     #Main:
                     height = self._sourceY - top
                     srcRegion = cv.GetSubRect(self._firstImage, (0, top, self._source100percentCropX, height))
-                    dstRegion = cv.GetSubRect(mediaSettingsHolder.scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
+                    dstRegion = cv.GetSubRect(self._scrollResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
                     if(self._firstImageMask != None):
                         srcRegionMask = cv.GetSubRect(self._firstImageMask, (0, top, self._source100percentCropX, height))
                         dstRegionMask = cv.GetSubRect(mediaSettingsHolder.scrollResizeMask, (0, 0, self._internalResolutionX, self._internalResolutionY - destinationHeight) )
                 cv.Resize(srcRegion, dstRegion)
-                mediaSettingsHolder.captureImage = mediaSettingsHolder.scrollResizeMat
+                copyOrResizeImage(self._scrollResizeMat, mediaSettingsHolder.captureImage)
                 if(self._firstImageMask != None):
                     cv.Resize(srcRegionMask, dstRegionMask)
                     mediaSettingsHolder.captureMask = mediaSettingsHolder.scrollResizeMask
@@ -1407,16 +1420,16 @@ class ScrollImageFile(MediaFile):
                 pilMask = pilSplit[3]
             else:
                 pilMask = None
-        self._mediaSettingsHolder.captureImage = pilToCvImage(pilRgb)
+        self._firstImage = pilToCvImage(pilRgb)
         if(pilMask != None):
             self._mediaSettingsHolder.captureMask = pilToCvMask(pilMask, maskThreshold)
         else:
             self._mediaSettingsHolder.captureMask = None
-        if (self._mediaSettingsHolder.captureImage == None):
+        if (self._firstImage == None):
             self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
             print "Could not read image from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
-        self._firstImage = self._mediaSettingsHolder.captureImage
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._firstImageMask = self._mediaSettingsHolder.captureMask
         self._originalTime = 1.0
         self._sourceX, self._sourceY = cv.GetSize(self._firstImage)
@@ -1448,11 +1461,12 @@ class SpriteMediaBase(MediaFile):
         self._bufferedImageList = []
         self._bufferedImageMasks = []
 
+        self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
+
         self._getConfiguration()
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
-        mediaSettingsHolder.spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.oldX = -2.0
         mediaSettingsHolder.oldY = -2.0
@@ -1532,7 +1546,7 @@ class SpriteMediaBase(MediaFile):
             mediaSettingsHolder.oldX = posX
             mediaSettingsHolder.oldY = posY
             mediaSettingsHolder.oldCurrentFrame = mediaSettingsHolder.currentFrame
-            cv.SetZero(mediaSettingsHolder.spritePlacementMat)
+            cv.SetZero(self._spritePlacementMat)
             cv.SetZero(mediaSettingsHolder.spritePlacementMask)
             currentSource = self._bufferedImageList[mediaSettingsHolder.currentFrame]
             currentSourceMask = self._bufferedImageMasks[mediaSettingsHolder.currentFrame]
@@ -1581,12 +1595,12 @@ class SpriteMediaBase(MediaFile):
                 height = height - overflow
             if((width > 0) and (height > 0)):
                 srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
-                dstRegion = cv.GetSubRect(mediaSettingsHolder.spritePlacementMat, (left, top, width, height))
+                dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
                 cv.Resize(srcRegion, dstRegion)
                 srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
                 dstRegion = cv.GetSubRect(mediaSettingsHolder.spritePlacementMask, (left, top, width, height))
                 cv.Resize(srcRegion, dstRegion)
-            mediaSettingsHolder.captureImage = mediaSettingsHolder.spritePlacementMat
+            copyOrResizeImage(self._spritePlacementMat, mediaSettingsHolder.captureImage)
             mediaSettingsHolder.captureMask = mediaSettingsHolder.spritePlacementMask
 
         mediaSettingsHolder.imageMask = mediaSettingsHolder.captureMask
@@ -1658,19 +1672,19 @@ class SpriteImageFile(SpriteMediaBase):
                 pilMask = pilSplit[3]
             else:
                 pilMask = None
-        self._mediaSettingsHolder.captureImage = pilToCvImage(pilRgb)
+        self._firstImage = pilToCvImage(pilRgb)
         if(pilMask != None):
             self._mediaSettingsHolder.captureMask = pilToCvMask(pilMask, maskThreshold)
         else:
-            sizeX, sizeY = cv.GetSize(self._captureImage)
+            sizeX, sizeY = cv.GetSize(self._firstImage)
             captureMask = createMask(sizeX, sizeY)
             cv.Set(captureMask, 255)
             self._mediaSettingsHolder.captureMask = captureMask
-        if (self._mediaSettingsHolder.captureImage == None):
+        if (self._firstImage == None):
             self._log.warning("Could not read image from: %s", os.path.basename(self._cfgFileName))
             print "Could not read image from: " + os.path.basename(self._cfgFileName)
             raise MediaError("File could not be read!")
-        self._bufferedImageList.append(self._mediaSettingsHolder.captureImage)
+        self._bufferedImageList.append(self._firstImage)
         self._bufferedImageMasks.append(self._mediaSettingsHolder.captureMask)
         try:
             while(True):
@@ -1704,7 +1718,7 @@ class SpriteImageFile(SpriteMediaBase):
                     self._bufferedImageMasks.append(self._mediaSettingsHolder.captureMask)
         except EOFError:
             pass
-        self._firstImage = self._mediaSettingsHolder.captureImage
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._firstImageMask = self._mediaSettingsHolder.captureMask
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
@@ -1766,15 +1780,15 @@ class TextMedia(SpriteMediaBase):
         startBlue = int(startColour[startPos+4:startPos+6], 16)
 
         fontPILImage, textPILMask = generateTextImageAndMask(text, startFont, self._fontPath, startSize, startRed, startGreen, startBlue)
-        self._mediaSettingsHolder.captureImage = pilToCvImage(fontPILImage)
+        self._firstImage = pilToCvImage(fontPILImage)
         self._mediaSettingsHolder.captureMask = pilToCvMask(textPILMask, 2)
 
-        self._firstImage = self._mediaSettingsHolder.captureImage
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._firstImageMask = self._mediaSettingsHolder.captureMask
         self._bufferedImageList = []
         self._bufferedImageMasks = []
-        self._bufferedImageList.append(self._mediaSettingsHolder.captureImage)
-        self._bufferedImageMasks.append(self._mediaSettingsHolder.captureMask)
+        self._bufferedImageList.append(self._firstImage)
+        self._bufferedImageMasks.append(self._firstImageMask)
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
 
@@ -1784,11 +1798,11 @@ class TextMedia(SpriteMediaBase):
 
     def openFile(self, midiLength):
 #        print "DEBUG pcn: openFile -> _getConfiguration()"
-        self._getConfiguration()
         if(midiLength != None): # Else we get length from configuration or default.
             if(midiLength > 0.0):
                 self.setMidiLengthInBeats(midiLength)
         self._fileOk = True
+        self._getConfiguration()
 
 class VideoCaptureCameras(object):
     def __init__(self):
@@ -1830,10 +1844,9 @@ class VideoCaptureCameras(object):
             if(pilImage != None):
                 cvImage = cv.CreateImageHeader(pilImage.size, cv.IPL_DEPTH_8U, 3)
                 cv.SetData(cvImage, pilImage.tostring())
-                rotatedImage = createMat(pilImage.size[0], pilImage.size[1])
-                cv.CvtColor(cvImage, rotatedImage, cv.CV_BGR2RGB)
-#                rezizedImage = createMat(self._internalResolutionX, self._internalResolutionY)
-                self._bufferdImages[cameraId] = rotatedImage#resizeImage(rotatedImage, rezizedImage)
+                colourRotatedImage = createMat(pilImage.size[0], pilImage.size[1])
+                cv.CvtColor(cvImage, colourRotatedImage, cv.CV_BGR2RGB)
+                self._bufferdImages[cameraId] = colourRotatedImage
                 self._cameraTimeStamps[cameraId] = timeStamp
 #        else:
 #            print "DEBUG: using buffered image!!!"
@@ -1898,11 +1911,12 @@ class CameraInput(MediaFile):
         self._cameraMode = self.CameraModes.OpenCV
         self._cropMode = "Crop"
         self._configurationTree.addTextParameter("DisplayMode", "Crop")
+
+        self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
         self._getConfiguration()
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
-        mediaSettingsHolder.zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
@@ -1926,51 +1940,52 @@ class CameraInput(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
         if(self._cameraMode == self.CameraModes.OpenCV):
-            mediaSettingsHolder.captureImage = openCvCameras.getCameraImage(self._cameraId, currentSongPosition)
+            captureImage = openCvCameras.getCameraImage(self._cameraId, currentSongPosition)
         else:
-            mediaSettingsHolder.captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
+            captureImage = videoCaptureCameras.getCameraImage(self._cameraId, currentSongPosition)
 
         if(mediaSettingsHolder.guiCtrlStateHolder == None):
             self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
 
-        if(self._cropMode != "Stretch"):
-            imageSize = cv.GetSize(mediaSettingsHolder.captureImage)
-            xRatio = float(imageSize[0]) / self._internalResolutionX
-            yRatio = float(imageSize[1]) / self._internalResolutionY
-            if(self._cropMode == "Crop"):
-                left = 0
-                top = 0
-                if(xRatio > yRatio):
-                    xSize = int(imageSize[0] / xRatio * yRatio)
-                    ySize = imageSize[1]
-                else:
-                    xSize = imageSize[0]
-                    ySize = int(imageSize[1] / yRatio * xRatio)
-                if(xSize < imageSize[0]):
-                    left = int((imageSize[0] - xSize) / 2)
-                if(ySize < imageSize[1]):
-                    top = int((imageSize[1] - ySize) / 2)
-                src_region = cv.GetSubRect(mediaSettingsHolder.captureImage, (left, top, xSize, ySize) )
-                cv.Resize(src_region, mediaSettingsHolder.resizeMat)
-                mediaSettingsHolder.captureImage = mediaSettingsHolder.resizeMat
-            elif(self._cropMode == "Scale"):
-                left = 0
-                top = 0
-                if(xRatio > yRatio):
-                    xSize = self._internalResolutionX
-                    ySize = int(self._internalResolutionY / xRatio * yRatio)
-                else:
-                    xSize = int(self._internalResolutionX / yRatio * xRatio)
-                    ySize = self._internalResolutionY
-                if(xSize < self._internalResolutionX):
-                    left = int((self._internalResolutionX - xSize) / 2)
-                if(ySize < self._internalResolutionY):
-                    top = int((self._internalResolutionY - ySize) / 2)
-#                print "DEBUG pcn: Scale: dst_region: " + str((left, top, xSize, ySize))
-                dst_region = cv.GetSubRect(mediaSettingsHolder.resizeMat, (left, top, xSize, ySize) )
-                cv.SetZero(mediaSettingsHolder.resizeMat)
-                cv.Resize(mediaSettingsHolder.captureImage, dst_region)
-                mediaSettingsHolder.captureImage = mediaSettingsHolder.resizeMat
+        if(captureImage != None):
+            if(self._cropMode != "Stretch"):
+                imageSize = cv.GetSize(captureImage)
+                xRatio = float(imageSize[0]) / self._internalResolutionX
+                yRatio = float(imageSize[1]) / self._internalResolutionY
+                if(self._cropMode == "Crop"):
+                    left = 0
+                    top = 0
+                    if(xRatio > yRatio):
+                        xSize = int(imageSize[0] / xRatio * yRatio)
+                        ySize = imageSize[1]
+                    else:
+                        xSize = imageSize[0]
+                        ySize = int(imageSize[1] / yRatio * xRatio)
+                    if(xSize < imageSize[0]):
+                        left = int((imageSize[0] - xSize) / 2)
+                    if(ySize < imageSize[1]):
+                        top = int((imageSize[1] - ySize) / 2)
+                    src_region = cv.GetSubRect(captureImage, (left, top, xSize, ySize) )
+                    cv.Resize(src_region, self._zoomResizeMat)
+                    copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
+                elif(self._cropMode == "Scale"):
+                    left = 0
+                    top = 0
+                    if(xRatio > yRatio):
+                        xSize = self._internalResolutionX
+                        ySize = int(self._internalResolutionY / xRatio * yRatio)
+                    else:
+                        xSize = int(self._internalResolutionX / yRatio * xRatio)
+                        ySize = self._internalResolutionY
+                    if(xSize < self._internalResolutionX):
+                        left = int((self._internalResolutionX - xSize) / 2)
+                    if(ySize < self._internalResolutionY):
+                        top = int((self._internalResolutionY - ySize) / 2)
+    #                print "DEBUG pcn: Scale: dst_region: " + str((left, top, xSize, ySize))
+                    dst_region = cv.GetSubRect(self._zoomResizeMat, (left, top, xSize, ySize) )
+                    cv.SetZero(self._zoomResizeMat)
+                    cv.Resize(captureImage, dst_region)
+                    copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
 
         self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
         return False
@@ -1984,20 +1999,20 @@ class CameraInput(MediaFile):
                 raise MediaError("Could not open VideoCapture camera with ID: %d!" %(self._cameraId))
         try:
             if(self._cameraMode == self.CameraModes.OpenCV):
-                self._mediaSettingsHolder.captureImage = openCvCameras.getFirstImage(self._cameraId)
+                self._firstImage = copyImage(openCvCameras.getFirstImage(self._cameraId))
             else:
-                self._mediaSettingsHolder.captureImage = videoCaptureCameras.getFirstImage(self._cameraId)
+                self._firstImage = copyImage(videoCaptureCameras.getFirstImage(self._cameraId))
         except:
             self._log.warning("Exception while opening camera with ID: %d" % (self._cameraId))
             print "Exception while opening camera with ID: %s" % (self._cameraId)
             raise MediaError("File caused exception!")
-        if (self._mediaSettingsHolder.captureImage == None):
+        if (self._firstImage == None):
             self._log.warning("Could not read frames from camera with ID: %d" % (self._cameraId))
             print "Could not read frames from camera with ID: %d" % (self._cameraId)
             raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
         if(self._cameraMode == self.CameraModes.OpenCV):
             self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
-        self._firstImage = self._mediaSettingsHolder.captureImage
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._log.warning("Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
@@ -2195,13 +2210,12 @@ class KinectCameraInput(MediaFile):
         displayModeVal, blackThreshold, diffThreshold, erodeValue = self._getFilterValues(mediaSettingsHolder)
         kinectMode = self.findKinectMode(displayModeVal, currentSongPosition, midiNoteState, midiChannelState)
         if(kinectMode == KinectMode.RGBImage):
-            mediaSettingsHolder.captureImage = copyImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.RGB, currentSongPosition))
+            copyOrResizeImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.RGB, currentSongPosition), mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.IRImage):
-            mediaSettingsHolder.captureImage = copyImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.IR, currentSongPosition))
+            copyOrResizeImage(kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.IR, currentSongPosition), mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.DepthImage):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
             cv.Merge(depthImage, depthImage, depthImage, None, mediaSettingsHolder.captureImage)
-            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.DepthMask):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
             cv.CmpS(depthImage, 10 + (50 * blackThreshold), mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
@@ -2214,7 +2228,6 @@ class KinectCameraInput(MediaFile):
                 cv.Merge(mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat2, None, mediaSettingsHolder.captureImage)
             else:
                 cv.Merge(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, None, mediaSettingsHolder.captureImage)
-            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         elif(kinectMode == KinectMode.DepthThreshold):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
             darkFilterValue = 256 - int(blackThreshold * 256)
@@ -2223,14 +2236,12 @@ class KinectCameraInput(MediaFile):
             cv.CmpS(depthImage, lightFilterValue, mediaSettingsHolder.tmpMat2, cv.CV_CMP_GE)
             cv.Mul(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat2, mediaSettingsHolder.tmpMat1)
             cv.Merge(mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat1, None, mediaSettingsHolder.captureImage)
-            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
         else: # (kinectMode == KinectMode.Reset):
             depthImage = kinectCameras.getCameraImage(kinectCameras.KinectImageTypes.Depth, currentSongPosition)
             cv.CmpS(depthImage, 10 + (50 * blackThreshold), mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
             cv.Add(depthImage, mediaSettingsHolder.tmpMat2, self._startDepthMat)
             cv.Zero(mediaSettingsHolder.tmpMat1)
             cv.Merge(self._startDepthMat, mediaSettingsHolder.tmpMat1, mediaSettingsHolder.tmpMat2, None, mediaSettingsHolder.captureImage)
-            mediaSettingsHolder.captureImage = copyImage(mediaSettingsHolder.captureImage)
 
         zoomAmount, xyrate, xcenter, ycenter = self._getZoomValues(mediaSettingsHolder)
         if((zoomAmount != 0.5) or (xyrate != 0.5)):
@@ -2252,7 +2263,10 @@ class KinectCameraInput(MediaFile):
         self._startDepthMat = cv.CloneMat(depthMat)
         cv.CmpS(depthMat, 20, self._mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
         cv.Add(depthMat, self._mediaSettingsHolder.tmpMat2, self._startDepthMat)
-        self._mediaSettingsHolder.captureImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        fontPath = findOsFontPath()
+        fontPILImage, _ = generateTextImageAndMask("Freenect\\n" + str(self._cameraId), "Arial", fontPath, 12, 255, 255, 255)
+        labelImage = pilToCvImage(fontPILImage)
+        copyOrResizeImage(labelImage, self._mediaSettingsHolder.captureImage)
         self._firstImage = self._mediaSettingsHolder.captureImage
         self._log.warning("Opened kinect camera %d with framerate %d",self._cameraId, self._originalFrameRate)
         self._fileOk = True
@@ -2326,25 +2340,26 @@ class ImageSequenceFile(MediaFile):
 
         if(lastFrame != mediaSettingsHolder.currentFrame):
             if(self._bufferedImageList != None):
-                mediaSettingsHolder.captureImage = self._bufferedImageList[mediaSettingsHolder.currentFrame]
+                copyOrResizeImage(self._bufferedImageList[mediaSettingsHolder.currentFrame], mediaSettingsHolder.captureImage)
 #                print "Buffered image!!!"
             else:
                 cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, mediaSettingsHolder.currentFrame)
                 if(mediaSettingsHolder.currentFrame == 0):
-                    mediaSettingsHolder.captureImage = self._firstImage
-                    self._log.debug("Setting firstframe %d", mediaSettingsHolder.currentFrame)
+                    copyOrResizeImage(self._firstImage, mediaSettingsHolder.captureImage)
+#                    self._log.debug("Setting firstframe %d", mediaSettingsHolder.currentFrame)
                 elif(mediaSettingsHolder.currentFrame == 1):
-                    mediaSettingsHolder.captureImage = self._secondImage
-                    self._log.debug("Setting secondframe %d", mediaSettingsHolder.currentFrame)
+                    copyOrResizeImage(self._secondImage, mediaSettingsHolder.captureImage)
+#                    self._log.debug("Setting secondframe %d", mediaSettingsHolder.currentFrame)
                 else:
-                    mediaSettingsHolder.captureImage = cv.CloneImage(cv.QueryFrame(self._videoFile))
-#                    mediaSettingsHolder.captureImage = cv.QueryFrame(self._videoFile)
-                    if(mediaSettingsHolder.captureImage == None):
-                        mediaSettingsHolder.captureImage = self._firstImage
+                    captureFrame = cv.QueryFrame(self._videoFile)
+                    if(captureFrame != None):
+                        copyOrResizeImage(captureFrame, mediaSettingsHolder.captureImage)
+                    else:
+                        print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
             self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
             return False
         else:
-            self._log.debug("Same frame %d currentSongPosition %f", mediaSettingsHolder.currentFrame, currentSongPosition)
+#            self._log.debug("Same frame %d currentSongPosition %f", mediaSettingsHolder.currentFrame, currentSongPosition)
             self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
             return False
 
@@ -2427,22 +2442,15 @@ class VideoLoopFile(MediaFile):
         if(lastFrame != mediaSettingsHolder.currentFrame):
             cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, mediaSettingsHolder.currentFrame)
             if(mediaSettingsHolder.currentFrame == 0):
-                mediaSettingsHolder.captureImage = self._firstImage
-#                cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, -1)
-#                self._log.debug("Setting firstframe %d", mediaSettingsHolder.currentFrame)
+                copyOrResizeImage(self._firstImage, mediaSettingsHolder.captureImage)
             elif(mediaSettingsHolder.currentFrame == 1):
-                mediaSettingsHolder.captureImage = self._secondImage
-#                self._log.debug("Setting secondframe %d", mediaSettingsHolder.currentFrame)
+                copyOrResizeImage(self._secondImage, mediaSettingsHolder.captureImage)
             else:
-                captureImage = cv.QueryFrame(self._videoFile)
-                if(captureImage == None):
-                    if(mediaSettingsHolder.captureImage == None):
-                        print "Warning! Bad capture! Setting first frame not frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-                        captureImage = self._firstImage
-                    else:
-                        print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-                        captureImage = mediaSettingsHolder.captureImage
-                mediaSettingsHolder.captureImage = copyImage(captureImage)
+                captureFrame = cv.QueryFrame(self._videoFile)
+                if(captureFrame != None):
+                    copyOrResizeImage(captureFrame, mediaSettingsHolder.captureImage)
+                else:
+                    print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
             self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
             return False
         else:
@@ -2454,62 +2462,62 @@ class VideoLoopFile(MediaFile):
     def openFile(self, midiLength):
         self.openVideoFile(midiLength)
 
-class VideoRecorderMedia(MediaFile):
-    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
-        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
-        self._videoWriter = None
-        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._midiModulation.setModulationReceiver("RecordingOnModulation", "None")
-        self._autoLoadStartNote = "C1"
-        self._saveSubDir = "Recorder"
-        self._getConfiguration()
-
-    def _getConfiguration(self):
-        MediaFile._getConfiguration(self)
-        self._recOnModulationId = self._midiModulation.connectModulation("RecordingOnModulation")
-
-    def close(self):
-        pass
-
-    def getType(self):
-        return "VideoRecorder"
-
-    def releaseMedia(self, mediaSettingsHolder):
-        pass
-
-    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
-        pass
-
-    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        if(mediaSettingsHolder.guiCtrlStateHolder == None):
-            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
-
-        recOnValue = self._midiModulation.getModlulationValue(self._recOnModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
-        if(recOnValue > 0.5):
-            recOn = True
-        else:
-            recOn = False
-        if((recOn) and (self._videoWriter != None) and (mediaSettingsHolder.currentFrame != None)):
-            cv.WriteFrame(self._videoWriter, mediaSettingsHolder.currentFrame)
-
-        mediaSettingsHolder.currentFrame = None
-        return False
-
-    def openFile(self, midiLength):
-        fourcc = cv.CV_FOURCC('M','J','P','G')
-        self._videoWriter = cv.CreateVideoWriter("test.avi", fourcc, 30, (self._internalResolutionX, self._internalResolutionY))
-
-    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
-        if(mixMode == MixMode.Default):
-            mixMode = self._mixMode
-        emptyStartValues = (None, None, None, None, None)
-        if(effects != None):
-            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = effects
-        else:
-            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = (None, None, None, None, None, None)
-        (self._captureImage, currentPreValues, preEffectStartSumValues) = self._applyOneEffect(image, preFx, preFxSettings, preCtrlValues, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0)
-        (self._captureImage, currentPostValues, postEffectStartSumValues) = self._applyOneEffect(image, postFx, postFxSettings, postCtrlValues, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5)
-        return (self._captureImage, currentPreValues, currentPostValues, preEffectStartSumValues, postEffectStartSumValues)
+#class VideoRecorderMedia(MediaFile):
+#    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+#        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+#        self._videoWriter = None
+#        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+#        self._midiModulation.setModulationReceiver("RecordingOnModulation", "None")
+#        self._autoLoadStartNote = "C1"
+#        self._saveSubDir = "Recorder"
+#        self._getConfiguration()
+#
+#    def _getConfiguration(self):
+#        MediaFile._getConfiguration(self)
+#        self._recOnModulationId = self._midiModulation.connectModulation("RecordingOnModulation")
+#
+#    def close(self):
+#        pass
+#
+#    def getType(self):
+#        return "VideoRecorder"
+#
+#    def releaseMedia(self, mediaSettingsHolder):
+#        pass
+#
+#    def setStartPosition(self, startSpp, songPosition, midiNoteStateHolder, midiChannelStateHolder, noteIsNew):
+#        pass
+#
+#    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
+#        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+#            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, midiChannelState)
+#
+#        recOnValue = self._midiModulation.getModlulationValue(self._recOnModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+#        if(recOnValue > 0.5):
+#            recOn = True
+#        else:
+#            recOn = False
+#        if((recOn) and (self._videoWriter != None) and (mediaSettingsHolder.currentFrame != None)):
+#            cv.WriteFrame(self._videoWriter, mediaSettingsHolder.currentFrame)
+#
+#        mediaSettingsHolder.currentFrame = None
+#        return False
+#
+#    def openFile(self, midiLength):
+#        fourcc = cv.CV_FOURCC('M','J','P','G')
+#        self._videoWriter = cv.CreateVideoWriter("test.avi", fourcc, 30, (self._internalResolutionX, self._internalResolutionY))
+#
+#    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+#        if(mixMode == MixMode.Default):
+#            mixMode = self._mixMode
+#        emptyStartValues = (None, None, None, None, None)
+#        if(effects != None):
+#            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = effects
+#        else:
+#            preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = (None, None, None, None, None, None)
+#        (self._captureImage, currentPreValues, preEffectStartSumValues) = self._applyOneEffect(image, preFx, preFxSettings, preCtrlValues, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0)
+#        (self._captureImage, currentPostValues, postEffectStartSumValues) = self._applyOneEffect(image, postFx, postFxSettings, postCtrlValues, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5)
+#        return (self._captureImage, currentPreValues, currentPostValues, preEffectStartSumValues, postEffectStartSumValues)
 
 class ModulationMedia(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):

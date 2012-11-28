@@ -213,6 +213,7 @@ class MediaPool(object):
                     elif(mediaType == "Group"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
                         mediaFile = MediaGroup(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile.setMixMatBuffers(self._mediaMixer.getMixMatBuffers())
                         mediaFile.setGetMediaCallback(self.getMedia)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Modulation"):

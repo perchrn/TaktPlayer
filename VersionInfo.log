@@ -1,5 +1,5 @@
-commit 3026f390553a7b7f3320aaa336b0d9c97cf15d9f
+commit 85bd57d5a48e0e3c87a88c296fc927ff8060ed5e
 Author: unknown <pcn@.(none)>
-Date:   Tue Nov 27 15:19:52 2012 +0100
+Date:   Tue Nov 27 18:53:34 2012 +0100
 
-    Mere effects memory fixes.
+    Cleanup after exe file rename.

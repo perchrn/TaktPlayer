@@ -62,6 +62,14 @@ def createNoizeMatAndMask(width, heigth):
     except cv2.error:
         raise MediaError("createNoizeMatAndMask() Out of memory! Message: " + sys.exc_info()[1].message)
 
+def copyOrResizeImage(image, destination):
+    imageSize = cv.GetSize(image)
+    destSize = cv.GetSize(destination)
+    if((imageSize[0] == destSize[0]) and (imageSize[1] == destSize[1])):
+        cv.Copy(image, destination)
+    else:
+        cv.Resize(image, destination)
+
 def copyImage(image):
     try:
         if(type(image) is cv.cvmat):
@@ -1137,7 +1145,7 @@ class SelfDifferenceEffect(object):
                 ySize = 2 + int(smooth * 6)
                 cv.Smooth(image, self._memoryArray[self._currentPos], cv.CV_BLUR, xSize, ySize)
             else:
-                self._memoryArray[self._currentPos] = copyImage(image)
+                copyOrResizeImage(image, self._memoryArray[self._currentPos])
             return image
         self._currentPos = (self._currentPos + 1) % self._memoryLength
         delayPos = (self._currentPos - delayFrames) % self._memoryLength
@@ -1147,7 +1155,7 @@ class SelfDifferenceEffect(object):
             ySize = 2 + int(smooth * 6)
             cv.Smooth(image, self._memoryArray[self._currentPos], cv.CV_BLUR, xSize, ySize)
         else:
-            self._memoryArray[self._currentPos] = copyImage(image)
+            copyOrResizeImage(image, self._memoryArray[self._currentPos])
 #        print "DEBUG diffImage: currPos: " + str(self._currentPos) + " delayPos: " + str(delayPos) + " delayLength: " + str(delayFrames)
         if((contrast > 0.02) or (invert > 0.02)):
             contrastVal = 1.0 + (9.0 * contrast)
@@ -1744,6 +1752,7 @@ class ImageAddEffect(object):
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #Media:
+#Video with alpha channel
 #Sprite size / zoom (Text media also)
 #TextMedia font directory config.
 #Recording / resampler.

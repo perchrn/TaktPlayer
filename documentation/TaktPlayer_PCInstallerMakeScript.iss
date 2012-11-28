@@ -37,7 +37,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
 Source: "C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\dist\TaktPlayer\TaktPlayer.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -63,10 +62,6 @@ Name: "{group}\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\graphics\TaktPlayer.ico"; Tasks: desktopicon
 Name: "{commondesktop}\{#MyAppName} No GUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktPlayerNoGui.ico"; Parameters: "--nogui"; Tasks: desktopicon
 Name: "{commondesktop}\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktGui.ico"; Parameters: "--guionly"; Tasks: desktopicon
-Name: "{userappdata\Microsoft\Internet Explorer\Quick Launch}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\graphics\TaktPlayer.ico"; Tasks: quicklaunchicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} No GUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktPlayerNoGui.ico"; Parameters: "--nogui"; Tasks: quicklaunchicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktGui.ico"; Parameters: "--guionly"; Tasks: quicklaunchicon
-
 
 [Dirs]
 Name: graphics;

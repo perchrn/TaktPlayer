@@ -1731,6 +1731,7 @@ class ImageAddEffect(object):
 #Tap tempo
 #Playback GUI
 #UDP -> multicast
+#Improve thumb requests (bulk thumb requests?)
 
 #install gimp on mac
 
@@ -1743,7 +1744,7 @@ class ImageAddEffect(object):
 #Redo baertur with time modulation (started)
 #Make Rygg I Rand project (started)
 #Make Elg project (started)
-#Try to recreate Einar bug when doubble clikking on Player window on a 1080*1900 screen (1900x1080?)
+
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!

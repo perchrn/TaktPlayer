@@ -63,9 +63,9 @@ Name: "{group}\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\graphics\TaktPlayer.ico"; Tasks: desktopicon
 Name: "{commondesktop}\{#MyAppName} No GUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktPlayerNoGui.ico"; Parameters: "--nogui"; Tasks: desktopicon
 Name: "{commondesktop}\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktGui.ico"; Parameters: "--guionly"; Tasks: desktopicon
-Name: "{userappdata}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\graphics\TaktPlayer.ico"; Tasks: quicklaunchicon
-Name: "{userappdata}\{#MyAppName} No GUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktPlayerNoGui.ico"; Parameters: "--nogui"; Tasks: quicklaunchicon
-Name: "{userappdata}\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktGui.ico"; Parameters: "--guionly"; Tasks: quicklaunchicon
+Name: "{userappdata\Microsoft\Internet Explorer\Quick Launch}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\graphics\TaktPlayer.ico"; Tasks: quicklaunchicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} No GUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktPlayerNoGui.ico"; Parameters: "--nogui"; Tasks: quicklaunchicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\TaktGUI"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}";  IconFilename: "{app}\graphics\TaktGui.ico"; Parameters: "--guionly"; Tasks: quicklaunchicon
 
 
 [Dirs]

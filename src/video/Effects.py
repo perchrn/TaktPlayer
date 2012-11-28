@@ -1432,24 +1432,24 @@ class HueSaturationEffect(object):
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
         rotCalc = (((rotate * 512) + 256) % 512) - 256
         if(mode == HueSatModes.Increase):
-            satCalc = saturation * -256
-            brightCalc = brightness * -256
+            satCalc = int(saturation * -256)
+            brightCalc = int(brightness * -256)
         elif(mode == HueSatModes.Decrease):
-            satCalc = saturation * 256
-            brightCalc = brightness * 256
+            satCalc = int(saturation * 256)
+            brightCalc = int(brightness * 256)
         else: #(mode == HueSatModes.Full):
-            satCalc = (saturation * -512) + 256
-            brightCalc = (brightness * -512) + 256
+            satCalc = int(saturation * -512) + 256
+            brightCalc = int(brightness * -512) + 256
         darkCalc = None
         if(brightCalc < 0):
             darkCalc = float(256 - brightCalc) / 256.0
             brightCalc = 0
-#        print "DEBUG hueSat: rot: " + str(rotCalc) + " sat: " + str(satCalc) + " bright: " + str(brightCalc)
+#        print "DEBUG hueSat: rot: " + str(rotCalc) + " sat: " + str(satCalc) + " bright: " + str((brightness, brightCalc)) + " dark: " + str(darkCalc)
         rgbColor = cv.CV_RGB(brightCalc, satCalc, rotCalc)
         cv.SubS(self._colorMat, rgbColor, self._colorMat)
         cv.CvtColor(self._colorMat, image, cv.CV_HSV2RGB)
         if(darkCalc != None):
-            cv.ConvertScaleAbs(self._colorMat, image, darkCalc, 0)
+            cv.ConvertScaleAbs(image, image, darkCalc, 0)
         return image
 
 

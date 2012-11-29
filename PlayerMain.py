@@ -69,6 +69,10 @@ class PlayerMain(wx.Frame):
         print "DEBUG screensize: " + str((screenWidth, screenHeight))
 
         self._playerConfiguration = PlayerConfiguration(configDir)
+        if(sys.platform == "darwin"):
+            self._wiggleMouse = False
+        else:
+            self._wiggleMouse = self._playerConfiguration.isAvoidScreensaverEnabled()
         configFullscreenmode = self._playerConfiguration.getFullscreenMode().lower()
         configResolution = self._playerConfiguration.getResolution()
         configPositionX, configPositionY = self._playerConfiguration.getPosition()
@@ -452,7 +456,12 @@ class PlayerMain(wx.Frame):
 #                self._log.info("Too slow main schedule " + str(dt))
         #Prepare frame
         timeStamp = time.time()
-        self._midiListner.getData(False)
+        gotMidiNote = self._midiListner.getData(False)
+        if((gotMidiNote == True) and (self._wiggleMouse == True)):
+#            print "DEBUG pcn: wiggle wiggle"
+            mousePos = wx.GetMousePosition()
+            screenPos = self.ClientToScreen((0,0))
+            self.WarpPointer(mousePos[0] - screenPos[0], mousePos[1] - screenPos[1])
         self._mediaPool.updateVideo(timeStamp)
         self._multiprocessLogger.handleQueuedLoggs()
         self.checkAndUpdateFromConfiguration()

@@ -36,6 +36,10 @@ class PlayerConfiguration(object):
         self._screenConfig.addIntParameter("ResolutionY", 600)
         self._screenConfig.addTextParameter("FullscreenMode", "off") #on, off, auto
         self._screenConfig.addTextParameter("Position", "auto") #auto, xpos,ypos, 0,0 etc.
+        if(sys.platform == "darwin"):
+            self._screenConfig.addBoolParameter("AvoidScreensaver", False)
+        else:
+            self._screenConfig.addBoolParameter("AvoidScreensaver", True)
         self._updateScrrenValues()
 
         self._serverConfig = self._playerConfigurationTree.addChildUnique("Server")
@@ -52,6 +56,7 @@ class PlayerConfiguration(object):
         self._internalResolutionX =  self._screenConfig.getValue("ResolutionX")
         self._internalResolutionY =  self._screenConfig.getValue("ResolutionY")
         self._fullscreenMode =  self._screenConfig.getValue("FullscreenMode")
+        self._avoidScreensaverMode =  self._screenConfig.getValue("AvoidScreensaver")
         self._positionAutoMode = True
         self._positionTuplet = (-1, -1)
         positionString = self._screenConfig.getValue("Position")
@@ -85,10 +90,11 @@ class PlayerConfiguration(object):
         self._startupConfig.setValue("VideoDir", videoDir)
         self._startupConfig.setValue("ConfigDir", configDir)
 
-    def setScreenConfig(self, resX, resY, fullscreenMode, isAutoPos, posX, posY):
+    def setScreenConfig(self, resX, resY, fullscreenMode, isAutoPos, posX, posY, isAvoidScreensaver):
         self._screenConfig.setValue("ResolutionX", resX)
         self._screenConfig.setValue("ResolutionY", resY)
         self._screenConfig.setValue("FullscreenMode", fullscreenMode)
+        self._screenConfig.setValue("AvoidScreensaver", isAvoidScreensaver)
         if(isAutoPos == True):
             self._screenConfig.setValue("Position", "auto")
         else:
@@ -109,6 +115,9 @@ class PlayerConfiguration(object):
 
     def isAutoPositionEnabled(self):
         return self._positionAutoMode
+
+    def isAvoidScreensaverEnabled(self):
+        return self._avoidScreensaverMode
 
     def getPosition(self):
         return self._positionTuplet

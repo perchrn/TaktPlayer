@@ -133,6 +133,7 @@ class TcpMidiListner(object):
         self._midiListnerProcess = None
 
     def _decodeMidiEvent(self, dataTimeStamp, command, data1, data2, data3 = 0x00):
+        isMidiNote = False
         sysexEvent = False
         if(self._midiInsideSysExMessage):
             print "inside sysex"
@@ -148,7 +149,7 @@ class TcpMidiListner(object):
                 sysexEvent = False
         if(sysexEvent):
             #Skip non commands
-            return
+            return isMidiNote
         #Realtime Messages
         elif(command == 0xf0):
             if(data1 & 0x80 or data2 & 0x80 or data3 & 0x80):
@@ -197,6 +198,7 @@ class TcpMidiListner(object):
                 self._midiStateHolder.noteOff(midiChannel, data1, data2, self._midiTiming.getSongPosition(dataTimeStamp))
                 #print "Note off: " + noteLetter + str(octav) + " vel: " + str(velocity) + " channel: " + str(midiChannel)
             if((command > 0x8f) and (command < 0xa0)):
+                isMidiNote = True
                 midiChannel = int(command & 0x0f)
                 decodeOk = True
                 self._midiStateHolder.noteOn(midiChannel, data1, data2, self._midiTiming.getSongPosition(dataTimeStamp))
@@ -231,14 +233,16 @@ class TcpMidiListner(object):
                 #print "Pitch bend: " + str(data1) + " value: " + str(data2) + " channel: " + str(midiChannel)
             if(decodeOk != True):
                 print "Unknown message: %02x %02x %02x %02x" % (command, data1, data2, data3)
+        return isMidiNote
 
     def getData(self, clockOnly):
+        gotMidiNote = False
         while(True):
             try:
                 dataTimeStamp, self._conectedAddress, data = self._midiQueue.get_nowait()
 #                data, self._conectedAddress = self._socket.recvfrom(1024)
             except:
-                return
+                return gotMidiNote
             if data:
                 dataLen = len(data)
 #                if(dataLen > 8): # Midi over Ethernet header
@@ -290,8 +294,10 @@ class TcpMidiListner(object):
                         data1 = ord(data[1:2])
                         data2 = ord(data[2:3])
                         data3 = ord(data[3:4])
-                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2, data3)
+                        isMidiNote = self._decodeMidiEvent(dataTimeStamp, command, data1, data2, data3)
+                        if(isMidiNote == True):
+                            gotMidiNote = True
                     else:
                         print "Short: " + str(len(data))
             else:
-                return
+                return gotMidiNote

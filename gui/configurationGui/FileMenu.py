@@ -6,6 +6,7 @@ Created on 27. juni 2012
 import wx
 from configuration.PlayerConfiguration import PlayerConfiguration
 from midi.MidiUtilities import noteToNoteString
+import sys
 
 class ConfigOpenDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, sendOpenCommandCallback, configList, lastSelectedConfig):
@@ -404,6 +405,16 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         positionYSizer.Add(self._positionYField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(positionYSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        avoidScreensaver = self._configurationClass.isAvoidScreensaverEnabled()
+        avoidScreensaverSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        avoidScreensaverLabel = wx.StaticText(self, wx.ID_ANY, "Screensaver:") #@UndefinedVariable
+        self._avoidScreensaverField = wx.CheckBox(self, wx.ID_ANY, "Try to avoid screensaver.") #@UndefinedVariable
+        self._avoidScreensaverField.SetValue(avoidScreensaver)
+        avoidScreensaverSizer.Add(avoidScreensaverLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        avoidScreensaverSizer.Add(self._avoidScreensaverField, 2, wx.ALL, 5) #@UndefinedVariable
+        if(sys.platform != "darwin"):
+            dialogSizer.Add(avoidScreensaverSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         infoText = wx.StaticText(self, wx.ID_ANY, "Startup:") #@UndefinedVariable
         infoText.SetFont(boldFont)
         dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -469,7 +480,8 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         isAutoPos = self._autopositionField.GetValue()
         posX = self._positionXField.GetValue()
         posY = self._positionYField.GetValue()
-        self._configurationClass.setScreenConfig(resX, resY, fullscreenMode, isAutoPos, posX, posY)
+        isAvoidScreensaver = self._avoidScreensaverField.GetValue()
+        self._configurationClass.setScreenConfig(resX, resY, fullscreenMode, isAutoPos, posX, posY, isAvoidScreensaver)
 
 
         midiBcast = self._playerMidiBcastOnField.GetValue()

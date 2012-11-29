@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TaktPlayer"
-#define MyAppVersion "1.0.7"
-#define MyAppVersionForFlie "1_0_7"
+#define MyAppVersion "1.0.8"
+#define MyAppVersionForFlie "1_0_8"
 #define MyAppPublisher "Takt Industries AS"
 #define MyAppURL "http://www.taktindustries.com/"
 #define MyAppExeName "TaktPlayer.exe"

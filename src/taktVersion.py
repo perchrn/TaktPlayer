@@ -17,7 +17,7 @@ def getTaktInfoFileContentString():
 
 
 def getVersionNumberString():
-    return "1.0.7"
+    return "1.0.8"
 
 def getVersionDateString():
     infoFileString = getTaktInfoFileContentString()

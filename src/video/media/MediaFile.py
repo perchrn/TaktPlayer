@@ -2152,7 +2152,7 @@ class KinectCameraInput(MediaFile):
                     if(guiStates[4] != self._lastGuiModesValue):
                         self._lastGuiModesValue = guiStates[4]
                         mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
-                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 0, 14)
+                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 14)
                         guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
                     if(guiStates[0] != None):
                         if(guiStates[0] > -0.5):
@@ -2178,7 +2178,7 @@ class KinectCameraInput(MediaFile):
                     if(guiStates[4] != self._lastGuiModesValue):
                         self._lastGuiModesValue = guiStates[4]
                         mediaSettingsHolder.guiCtrlStateHolder.resetState(10)
-                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(0, 127, 14)
+                        mediaSettingsHolder.guiCtrlStateHolder.controllerChange(127, 14)
                         guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
                     if(guiStates[0] != None):
                         if(guiStates[0] > -0.5):

@@ -192,7 +192,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
 
         sizeX, sizeY = self._configurationClass.getWindowSize()
         windowSizeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
-        windowSizeLabel = wx.StaticText(self, wx.ID_ANY, "Input address:") #@UndefinedVariable
+        windowSizeLabel = wx.StaticText(self, wx.ID_ANY, "GUI window size:") #@UndefinedVariable
         self._windowSizeField = wx.TextCtrl(self, wx.ID_ANY, str(sizeX) + "," + str(sizeY), size=(120, -1)) #@UndefinedVariable
         windowSizeSizer.Add(windowSizeLabel, 1, wx.ALL, 5) #@UndefinedVariable
         windowSizeSizer.Add(self._windowSizeField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -200,7 +200,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
 
         posX, posY = self._configurationClass.getWindowPosition()
         windowPosSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
-        windowPosLabel = wx.StaticText(self, wx.ID_ANY, "Input address:") #@UndefinedVariable
+        windowPosLabel = wx.StaticText(self, wx.ID_ANY, "GUI window position:") #@UndefinedVariable
         self._windowPosField = wx.TextCtrl(self, wx.ID_ANY, str(posX) + "," + str(posY), size=(120, -1)) #@UndefinedVariable
         windowPosSizer.Add(windowPosLabel, 1, wx.ALL, 5) #@UndefinedVariable
         windowPosSizer.Add(self._windowPosField, 2, wx.ALL, 5) #@UndefinedVariable
@@ -378,7 +378,7 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         resolutionYSizer.Add(self._resolutionYField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(resolutionYSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        autoPosition = self._configurationClass.getMidiServerUsesBroadcast()
+        autoPosition = self._configurationClass.isAutoPositionEnabled()
         autopositionSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         autopositionLabel = wx.StaticText(self, wx.ID_ANY, "Autoposition:") #@UndefinedVariable
         self._autopositionField = wx.CheckBox(self, wx.ID_ANY, "Let OS position window.") #@UndefinedVariable

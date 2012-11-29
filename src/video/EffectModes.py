@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(23)
+    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(24)
 
     def getChoices(self):
         return ["None",
@@ -17,6 +17,7 @@ class EffectTypes():
                 "BlurContrast",
                 "Feedback",
                 "Delay",
+                "Rays",
                 "SelfDifference",
                 "Distortion",
                 "Pixelate",
@@ -42,6 +43,7 @@ class EffectTypes():
                 "Blur and multiply with self.",
                 "Video feedback effect.",
                 "Video delay effect.",
+                "Ray effect.",
                 "Delaying video and subtracting it with self.",
                 "Distort image to black or white.",
                 "Pixelate image",
@@ -77,6 +79,8 @@ def getEffectId(name):
         return EffectTypes.Feedback
     elif(lowername == "delay"):
         return EffectTypes.Delay
+    elif(lowername == "rays"):
+        return EffectTypes.Rays
     elif(lowername == "selfdifference"):
         return EffectTypes.SelfDifference
     elif(lowername == "distortion"):
@@ -127,6 +131,8 @@ def getEffectName(effectId):
         return "Feedback"
     elif(effectId == EffectTypes.Delay):
         return "Delay"
+    elif(effectId == EffectTypes.Rays):
+        return "Rays"
     elif(effectId == EffectTypes.SelfDifference):
         return "SelfDifference"
     elif(effectId == EffectTypes.Distortion):
@@ -253,4 +259,10 @@ class BlurModes():
 
     def getChoices(self):
         return ["Blur", "Bilateral"]
+
+class RayModes():
+    Lower, Upper, Both, Mirror = range(4)
+
+    def getChoices(self):
+        return ["Lower", "Upper", "Both", "Mirror"]
 

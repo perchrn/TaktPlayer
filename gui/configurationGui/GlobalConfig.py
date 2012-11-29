@@ -14,7 +14,8 @@ from video.media.MediaFileModes import FadeMode, TimeModulationMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
-    MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes
+    MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes,\
+    RayModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -273,6 +274,7 @@ class EffectsGui(object):
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
+        self._fxBitmapRays = wx.Bitmap("graphics/fxRays.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
@@ -472,6 +474,7 @@ class EffectsGui(object):
         self._blurModes = BlurModes()
         self._zoomModes = ZoomModes()
         self._scrollModes = ScrollModes()
+        self._rayModes = RayModes()
         self._distortionModes = DistortionModes()
         self._pixelateModes = PixelateModes()
         self._tvNoizeModes = TVNoizeModes()
@@ -524,6 +527,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapDelay)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapDelay)
+        index = self._effectImageList.Add(self._fxBitmapRays)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapRays)
         index = self._effectImageList.Add(self._fxBitmapSelfDiff)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapSelfDiff)
@@ -1347,6 +1353,9 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Delay):
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:")
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Rays):
+            self._setLabels("Amount:", "Mode:", None, None, None)
+            self._setupValueLabels(None, self._rayModes.getChoices(), None, None, None)
         elif(self._chosenEffectId == EffectTypes.SelfDifference):
             self._setLabels("Delay:", "Contrast:", "Invert:", "Smooth:", None)
             self._setupValueLabels(None, None, None, None, None)

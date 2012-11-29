@@ -166,6 +166,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return FeedbackEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Delay):
         return DelayEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Rays):
+        return RaysEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.SelfDifference):
         return SelfDifferenceEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
@@ -970,6 +972,62 @@ class FlipEffect(object):
         cv.Flip(image, image, flipMode)
         return image
 
+class RaysEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._halfY = int(self._internalResolutionY / 2)
+        setupEffectMemory(internalResX, internalResY)
+
+        self._mirrorMat = effectMat1
+
+    def getName(self):
+        return "Rays"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
+        return self.rayEffect(image, amount, mode)
+
+    def rayEffect(self, image, amount, mode):
+        if(mode < 0.75):
+            if(amount < 0.001):
+                return image
+        scaleCalc = 0.9 + ((1.0 - amount) * 0.1)
+        sourceSizeX = int(self._internalResolutionX * scaleCalc)
+        sourceSizeY = int(self._internalResolutionY * scaleCalc)
+        sourcePosX = int((self._internalResolutionX - sourceSizeX) / 2)
+        sourcePosY = int((self._internalResolutionY - sourceSizeY) / 2)
+#        print "DEBUG pcn: amount: " + str(amount) + " mode: " + str(mode)
+        if(mode < 0.25):
+            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, image)
+        elif(mode < 0.5):
+            cv.Flip(image, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, self._mirrorMat)
+            cv.Flip(self._mirrorMat, image, 0)
+        elif(mode < 0.75):
+            cv.Flip(image, self._mirrorMat, 0) #Make flip copy for upper rays
+            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, image)
+            src_region = cv.GetSubRect(self._mirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, self._mirrorMat)
+            cv.Flip(self._mirrorMat, self._mirrorMat, 0) #Flip back
+            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfY))
+            dst_region = cv.GetSubRect(image, (0, 0 , self._internalResolutionX, self._halfY))
+            cv.Copy(src_region, dst_region)
+        else:
+            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, image)
+            cv.Flip(image, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfY))
+            dst_region = cv.GetSubRect(image, (0, 0 , self._internalResolutionX, self._halfY))
+            cv.Copy(src_region, dst_region)
+        return image
+
 class BlurEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -1033,7 +1091,7 @@ class FeedbackEffect(object):
         self._gotMemory = False
         self._memoryMat = createMat(internalResX, internalResY)
         cv.SetZero(self._memoryMat)
-        self._tmpMat = effectMat1
+        self._tmpMat = effectMat2
         self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
@@ -1056,13 +1114,12 @@ class FeedbackEffect(object):
         calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
         invertVal = -256 * invert
         cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, calcValue, invertVal)
-        addImage = self._tmpMat
         if((zoom > 0.003) or (move > 0.003)):
             zoom = 1.0 - zoom
             xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
             ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
-            addImage = self._zoomEffect.zoomImage(addImage, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
-        cv.Add(image, addImage, self._memoryMat)
+            self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
+        cv.Add(image, self._tmpMat, self._memoryMat)
         cv.Copy(self._memoryMat, image)
         return image
 
@@ -1075,7 +1132,7 @@ class DelayEffect(object):
         self._gotMemory = False
         self._memoryMat = createMat(internalResX, internalResY)
         cv.SetZero(self._memoryMat)
-        self._tmpMat = effectMat1
+        self._tmpMat = effectMat2
         self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
@@ -1733,8 +1790,6 @@ class ImageAddEffect(object):
 #UDP -> multicast
 #Improve thumb requests (bulk thumb requests?)
 
-#install gimp on mac
-
 #Lage teaser video
 #Make default config more showoffy/complete (TaktDemo ;-) )
 
@@ -1745,6 +1800,7 @@ class ImageAddEffect(object):
 #Make Rygg I Rand project (started)
 #Make Elg project (started)
 
+#No screensaver fix
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!

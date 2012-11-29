@@ -1293,7 +1293,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onDragStart(self, event):
         self._dragSource = event.GetEventObject().GetId()
-        self._dragTimer.Start(100, oneShot=True)#1/2 sec
+        self._dragTimer.Start(200, oneShot=True)#1/2 sec
         self.Bind(wx.EVT_TIMER, self._onDragTimeout, id=self._dragTimer.GetId()) #@UndefinedVariable
 
     def _onDragTimeout(self, event):

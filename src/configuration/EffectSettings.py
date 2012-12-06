@@ -7,6 +7,7 @@ from midi.MidiModulation import MidiModulation
 from video.media.MediaFileModes import FadeMode, forceUnixPath,\
     TimeModulationMode
 import os
+from utilities.FloatListText import textToFloatValues, floatValuesToString
 
 class ConfigurationTemplates(object):
     def __init__(self, configurationTree, midiTiming, name, templateName = "Template", templateId = "Name"):
@@ -163,6 +164,7 @@ class EffectTemplates(ConfigurationTemplates):
     def createTemplateFromXml(self, name, xmlConfig):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
         newTemplate = EffectSettings(self._templateName, self._specialModulationHolder, name, self, effectConfigTree, self._templateConfig, self._templateId)
+        newTemplate.setupExtraConfig()
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
@@ -217,8 +219,68 @@ class EffectSettings(object):
         arg4Mod = self._configurationTree.getValue("Arg4")
         startValuesString = self.getStartValuesString()
         copyTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+        self.updateWithExtraValues(self.getExtraValues())
         return copyTemplate
 
+    def setupExtraConfig(self):
+        effectName = self._configurationTree.getValue("Effect")
+        if(effectName == "Zoom"):
+            self._configurationTree.addTextParameter("ZoomMode", "In")
+            self._configurationTree.addTextParameter("ZoomRange", "0.25|4.0")
+        else:
+            self._configurationTree.removeParameter("ZoomMode")
+            self._configurationTree.removeParameter("ZoomRange")
+        if((effectName == "Feedback") or (effectName == "Delay")):
+            self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
+        else:
+            self._configurationTree.removeParameter("FeedbackAdvancedZoom")
+        if(effectName == "Edge"):
+            self._configurationTree.addTextParameter("EdgeChannelMode", "Value")
+        else:
+            self._configurationTree.removeParameter("EdgeChannelMode")
+
+    def getExtraValues(self):
+        returnVal1 = None
+        returnVal2 = None
+        effectName = self._configurationTree.getValue("Effect")
+        if(effectName == "Zoom"):
+            returnVal1 = self._configurationTree.getValue("ZoomMode")
+            returnVal2 = self._configurationTree.getValue("ZoomRange")
+        if((effectName == "Feedback") or (effectName == "Delay")):
+            returnVal2 = self._configurationTree.getValue("FeedbackAdvancedZoom")
+        if(effectName == "Edge"):
+            returnVal1 = self._configurationTree.getValue("EdgeChannelMode")
+        return returnVal1, returnVal2
+
+    def updateWithExtraValues(self, extraConfigValues):
+        extraConfig1Value, extraConfig2Value = extraConfigValues
+        effectName = self._configurationTree.getValue("Effect")
+        if(effectName == "Zoom"):
+            self._configurationTree.addTextParameter("ZoomMode", "In")
+            if(extraConfig1Value != None):
+                self._configurationTree.setValue("ZoomMode", extraConfig1Value)
+            self._configurationTree.addTextParameter("ZoomRange", "0.25|4.0")
+            if(extraConfig2Value != None):
+                rangeVal = textToFloatValues(extraConfig2Value, 2)
+                rangeValString = floatValuesToString(rangeVal)
+                self._configurationTree.setValue("ZoomRange", rangeValString)
+        else:
+            self._configurationTree.removeParameter("ZoomMode")
+            self._configurationTree.removeParameter("ZoomRange")
+        if((effectName == "Feedback") or (effectName == "Delay")):
+            self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
+            if(extraConfig2Value != None):
+                advancedVal = textToFloatValues(extraConfig2Value, 4)
+                advancedValString = floatValuesToString(advancedVal)
+                self._configurationTree.setValue("FeedbackAdvancedZoom", advancedValString)
+        else:
+            self._configurationTree.removeParameter("FeedbackAdvancedZoom")
+        if(effectName == "Edge"):
+            self._configurationTree.addTextParameter("EdgeChannelMode", "Value")
+            if(extraConfig1Value != None):
+                self._configurationTree.setValue("EdgeChannelMode", extraConfig1Value)
+        else:
+            self._configurationTree.removeParameter("EdgeChannelMode")
 
     def getName(self):
         return self._name
@@ -319,6 +381,9 @@ class EffectSettings(object):
         valueString += "|" + str(self._effectArg4StartValue)
         return valueString
 
+    def getXmlString(self):
+        return self._configurationTree.getConfigurationXMLString()
+
 class FadeTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming, specialModulationHolder):
         self._specialModulationHolder = specialModulationHolder
@@ -378,6 +443,9 @@ class FadeSettings(object):
         levelModulationString = self._configurationTree.getValue("Level")
         copyTemplate.update(fadeModeString, fadeModulationString, levelModulationString)
         return copyTemplate
+
+    def setupExtraConfig(self):
+        pass
 
     def getName(self):
         return self._name
@@ -494,6 +562,9 @@ class TimeModulationSettings(object):
         copyTemplate.update(modeString, modulationString, rangeValue, rangeQuantize)
         return copyTemplate
 
+    def setupExtraConfig(self):
+        pass
+
     def getName(self):
         return self._name
 
@@ -600,6 +671,9 @@ class ImageSettings(object):
         self._configurationTree = imageConfigTree
         self._setupConfiguration()
         self._getConfiguration()
+
+    def setupExtraConfig(self):
+        pass
 
     def getFileName(self):
         return self._fileName

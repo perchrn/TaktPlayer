@@ -13,6 +13,7 @@ import math
 import os
 import time
 import sys
+from utilities.FloatListText import textToFloatValues
 
 effectImageList = []
 effectImageFileNameList = []
@@ -236,33 +237,91 @@ def setupEffectMemory(width, heigth):
         effect16bitMask = create16bitMat(width, heigth)
         bigNoizeMat, bigNoizeMask = createNoizeMatAndMask(width*2, heigth*2)
 
+radians360 = math.radians(360)
+
+def angleAndMoveToXY(angle, move):
+    angle360 = angle * 360
+    if(angle360 < 45.0):
+        moveX = -move
+        moveY = math.tan(radians360 * angle) * -move
+    elif(angle360 < 135):
+        moveX = math.tan(radians360 * (angle-0.25)) * move
+        moveY = -move
+    elif(angle360 < 225):
+        moveX = move
+        moveY = math.tan(radians360 * (angle-0.5)) * move
+    elif(angle360 < 315):
+        moveX = math.tan(radians360 * (angle-0.75)) * -move
+        moveY = move
+    else:
+        moveX = -move
+        moveY = math.tan(radians360 * angle) * -move
+    return moveX, moveY
+
+def rotatePoint(angle, pointX, pointY, orginX, orginY, angle3d = None):
+    relativeX = pointX - orginX
+    relativeY = pointY - orginY
+    if(angle3d != None):
+        sinVal = math.sin(-angle*0.5*radians360)
+        cosVal = math.cos(-angle*0.5*radians360)
+        xrotated = ((relativeX * cosVal) - (relativeY*sinVal)) * math.cos(angle3d* radians360)
+        yrotated = (relativeX * sinVal) + (relativeY * cosVal)
+        sinVal = math.sin(angle*0.5*radians360)
+        cosVal = math.cos(angle*0.5*radians360)
+        xfinished = ((xrotated * cosVal) - (yrotated * sinVal))
+        yfinished = (xrotated * sinVal) + (yrotated * cosVal)
+        return xfinished + orginX, yfinished + orginY
+    else:
+        sinVal = math.sin(angle*radians360)
+        cosVal = math.cos(angle*radians360)
+        xrotated = ((relativeX * cosVal) - (relativeY * sinVal))
+        yrotated = (relativeX * sinVal) + (relativeY * cosVal)
+        return xrotated + orginX, yrotated + orginY
+
 class ZoomEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._halfResolutionX = internalResX / 2
+        self._halfResolutionY = internalResY / 2
 
+        self._zoomModesHolder = ZoomModes()
+        self._zoomMode = ZoomModes.In
         self._setZoomRange(0.25, 4.0)
 
         self._zoomMat = effectMat1
 
-    def findMode(self, value):
-        modeSelected = int(value*3.99)
-        if(modeSelected == ZoomModes.In):
-            return ZoomModes.In
-        elif(modeSelected == ZoomModes.Out):
-            return ZoomModes.Out
-        elif(modeSelected == ZoomModes.InOut):
-            return ZoomModes.InOut
-        else:
-            return ZoomModes.Full
+    def setExtraConfig(self, values):
+        print("DEBUG pcn: Zoom::setExtraConfig() " + str(values))
+        if(values != None):
+            zoomModeString, zoomRangeString = values
+            if(zoomModeString == None):
+                self._zoomMode = ZoomModes.In
+            else:
+                self._zoomMode = self._zoomModesHolder.findMode(zoomModeString)
+            if(zoomRangeString == None):
+                self._setZoomRange(0.25, 4.0)
+            else:
+                minZoom, maxZoom = textToFloatValues(zoomRangeString, 2)
+                self._setZoomRange(minZoom, maxZoom)
 
     def _setZoomRange(self, minZoom, maxZoom):
-        self._minZoomRange = 1 / maxZoom
-        self._maxZoomRange = 1 / minZoom
-        self._zoomRange = self._maxZoomRange - self._minZoomRange
-        zoomMiddle = (self._minZoomRange + self._maxZoomRange) / 2
-        self._minMoveRange = zoomMiddle - (self._zoomRange / 2)
-        self._moveRange = self._zoomRange
+        if(minZoom < 0.004):
+            maxZoomRange = 256.0
+        elif(minZoom > 1.0):
+            maxZoomRange = 1.0
+        else:
+            maxZoomRange = 1.0 / minZoom
+        if(maxZoom >= 256.0):
+            maxZoom = 256.0
+        elif(maxZoom < 1.0):
+            maxZoom = 1.0
+
+        self._maxZoomTimes = maxZoomRange
+        self._minZoomTimes = maxZoom
+        #maxZoom is a bit confusing since it is flipped in this function. It is used here at the zero zoom point.
 
     def getName(self):
         return "Zoom"
@@ -270,100 +329,70 @@ class ZoomEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, xyrate, xcenter, ycenter, mode, minZoomRange = None, zoomRange = None):
-        zoomMode = self.findMode(mode)
-        xzoom = 1.0 - amount
-        if(zoomMode == ZoomModes.Full):
-            yzoom = 1.0 - amount * (xyrate  * 2)
-            xcentr = (xcenter * -2) + 1
-            ycentr = (ycenter * 2) - 1
+    def calculateZoom(self, zoom, minZoomTimes, maxZoomTimes):
+        if(zoom < 0.5):
+            zoomCalc = 1.0 / (1.0 + (((0.5-zoom) * 2) * (minZoomTimes-1.0)))
         else:
-            yzoom = xzoom
-            xcentr = 0.0
-            ycentr = 0.0
-        if(minZoomRange == None):
-            minZoomRange = self._minZoomRange
-        if(zoomRange == None):
-            zoomRange = self._zoomRange
-        if(zoomMode == ZoomModes.Out):
-            if(minZoomRange < 1.0):
-                minZoomRange = 1.0
-                zoomRange = zoomRange - 1.0 + self._minZoomRange
-                xzoom = 1.0 - xzoom
-                yzoom = 1.0 - yzoom
-        elif(zoomMode == ZoomModes.In):
-            if((minZoomRange + zoomRange) > 1.0):
-                zoomRange = 1.0 - minZoomRange
-        if(zoomRange <= 0):
-            return image
-        return self.zoomImage(image, xcentr, ycentr, xzoom, yzoom, minZoomRange, zoomRange)
+            zoomCalc = 1.0 + (((zoom - 0.5) * 2) * (maxZoomTimes - 1))
+        return zoomCalc
 
-    def zoomImage(self, image, xcenter, ycenter, zoomX, zoomY, minZoomRange, zoomRange):
+    def applyEffect(self, image, amount, xcenter, ycenter, flip, angle, minZoomTimes = None, maxZoomTimes = None):
+        zoom = 1.0 - amount
+
+        if(minZoomTimes == None):
+            minZoomTimes = self._minZoomTimes
+        else:
+            self._zoomMode = ZoomModes.Full
+        if(maxZoomTimes == None):
+            maxZoomTimes = self._maxZoomTimes
+        else:
+            self._zoomMode = ZoomModes.Full
+        if(self._zoomMode != ZoomModes.Full):
+            xcenter = 0.5
+            ycenter = 0.5
+            flip = 0.0
+            angle = 0.0
+        if(self._zoomMode == ZoomModes.Out):
+            zoomCalc = 1.0 + ((maxZoomTimes - 1.0) * (1.0 - zoom))
+        elif(self._zoomMode == ZoomModes.In):
+            zoomCalc = 1.0 / (1.0 + ((minZoomTimes - 1.0) * (1.0 - zoom)))
+        else:
+            zoomCalc = self.calculateZoom(zoom, minZoomTimes, maxZoomTimes)
+
+        return self.zoomImageTransform(image, xcenter, ycenter, zoomCalc, angle, flip, 0.0)
+
+    def zoomImageTransform(self, image, xcenter, ycenter, zoom, xAngle, xRotation, zRotation):
+#        print "DEBUG pcn: zoomImageTransform( " + str((xcenter, ycenter, zoom, xAngle, xRotation, zRotation))
+        ycenter = 1.0 - ycenter
         originalW, originalH = cv.GetSize(image)
         originalWidth = float(originalW)
         originalHeight = float(originalH)
-        zoomXFraction = minZoomRange + (zoomRange * zoomX)
-        zoomYFraction = minZoomRange + (zoomRange * zoomY)
-        if(zoomYFraction < minZoomRange):
-            zoomYFraction = minZoomRange
-        elif(zoomYFraction > self._maxZoomRange):
-            zoomYFraction = self._maxZoomRange
-        width = int(originalWidth * zoomXFraction)
-        height = int(originalHeight * zoomYFraction)
-        moveXFraction = (self._minMoveRange + (self._moveRange * zoomX / 2))
-        moveYFraction = (self._minMoveRange + (self._moveRange * zoomY / 2))
-        left = int((originalWidth / 2) + (originalWidth * xcenter * moveXFraction) - (width / 2))
-        top = int((originalHeight / 2) + (originalHeight * ycenter * moveYFraction) - (height / 2))
-#        print "X: " + str(moveXFraction) + " Y: " + str(moveYFraction) + " Left: " + str(left) + " top: " + str(top) + " xc: " + str(originalWidth * xcenter) + " yc: " + str(originalHeight * ycenter)
-        right = left + width
-        bottom = top + height
-        outputRect = False
-        outPutLeft = 0
-        outPutWidth = -1
-        outPutTop = 0
-        outPutHeight = -1
-        if(left < 0):
-            outPutLeft = -int(float(left) / zoomXFraction)
-            width = width + left
-            left = 0
-            outputRect = True
-        if(right > originalWidth):
-            outPutWidth = int(originalWidth + ((originalWidth - right) / zoomXFraction)) - outPutLeft
-            width = int(originalWidth - left)
-            outputRect = True
-        if(top < 0):
-            outPutTop = -int(float(top) / zoomYFraction)
-            height = height + top
-            top = 0
-            outputRect = True
-        if(bottom > originalHeight):
-            outPutHeight = int(originalHeight + float(originalHeight - bottom) / zoomYFraction) - outPutTop
-            height = int(originalHeight - top)
-            outputRect = True
-        if((height < 1) or (width < 1)):
-            cv.SetZero(image)
-            return image
-#        print "Zoom src: " + str(zoomXFraction) + " Y: " + str(zoomYFraction) + " w: " + str(width) + " h: " + str(height) + " l: " + str(left) + " t: " + str(top)
-        src_region = cv.GetSubRect(image, (left, top, width, height) )
-        if(outputRect):
-            if(outPutWidth < 0):
-                outPutWidth = int(originalWidth - outPutLeft)
-                if(outPutWidth < 0):
-                    cv.SetZero(image)
-                    return image
-            if(outPutHeight < 0):
-                outPutHeight = int(originalHeight - outPutTop)
-                if(outPutHeight < 0):
-                    cv.SetZero(image)
-                    return image
-#            print "Zoom OUT: " + str(outPutWidth) + " h: " + str(outPutHeight) + " l: " + str(outPutLeft) + " t: " + str(outPutTop)
-            tmpMat = createMat(outPutWidth, outPutHeight)
-            cv.Resize(src_region, tmpMat)
-            cv.SetZero(image)
-            dst_region = cv.GetSubRect(image, (outPutLeft, outPutTop, outPutWidth, outPutHeight) )
-            cv.Copy(tmpMat, dst_region)
-            return image
-        cv.Resize(src_region, self._zoomMat)
+        width = int(originalWidth * zoom)
+        height = int(originalHeight * zoom)
+        left = int((originalWidth / 2) - (width / 2))
+        top = int((originalHeight / 2) - (height / 2))
+        extraMultiplyer = 0.6 + (0.4/zoom)
+        xAdd = ((self._internalResolutionX * 2.0 * xcenter) - self._internalResolutionX) * extraMultiplyer
+        yAdd = ((self._internalResolutionY * 2.0 * ycenter) - self._internalResolutionY) * extraMultiplyer
+#        print "Left: " + str(left) + " top: " + str(top) + " xc: " + str(originalWidth * xcenter) + " yc: " + str(originalHeight * ycenter) + " size: " + str((width, height))
+        srcPoints = ((left, top),(left,top+height),(left+width, top))
+        destPoint1 = (0.0, 0.0)
+        destPoint2 = (0.0, self._internalResolutionY)
+        destPoint3 = (self._internalResolutionX, 0.0)
+        if(xRotation != 0.0):
+            xAngle += 0.5
+            destPoint1 = rotatePoint(xAngle, destPoint1[0], destPoint1[1], self._halfResolutionX, self._halfResolutionY, xRotation)
+            destPoint2 = rotatePoint(xAngle, destPoint2[0], destPoint2[1], self._halfResolutionX, self._halfResolutionY, xRotation)
+            destPoint3 = rotatePoint(xAngle, destPoint3[0], destPoint3[1], self._halfResolutionX, self._halfResolutionY, xRotation)
+        if(zRotation != 0.0):
+            destPoint1 = rotatePoint(-zRotation, destPoint1[0], destPoint1[1], self._halfResolutionX, self._halfResolutionY)
+            destPoint2 = rotatePoint(-zRotation, destPoint2[0], destPoint2[1], self._halfResolutionX, self._halfResolutionY)
+            destPoint3 = rotatePoint(-zRotation, destPoint3[0], destPoint3[1], self._halfResolutionX, self._halfResolutionY)
+        dstPoints = ((destPoint1[0]+xAdd, destPoint1[1]+yAdd),(destPoint2[0]+xAdd, destPoint2[1]+yAdd),(destPoint3[0]+xAdd,destPoint3[1]+yAdd))
+        zoomMatrix = cv.CreateMat(2,3,cv.CV_32F)
+#        print "DEBUG pcn: trasform points source: " + str(srcPoints) + " dest: " + str(dstPoints) 
+        cv.GetAffineTransform(srcPoints, dstPoints, zoomMatrix)
+        cv.WarpAffine(image, self._zoomMat, zoomMatrix)
         cv.Copy(self._zoomMat, image)
         return image
 
@@ -1094,6 +1123,31 @@ class FeedbackEffect(object):
         self._tmpMat = effectMat2
         self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
+        self._zoomMultiplyerValue = 1.0
+        self._zRotationValue = 0.0
+        self._xFlipValue = 0.0
+        self._xFlipAngleValue = 0.0
+
+    def setExtraConfig(self, values):
+        print("DEBUG pcn: Feedback::setExtraConfig() " + str(values))
+        if(values != None):
+            _, advancedZoomString = values
+            if(advancedZoomString == None):
+                self._zoomMultiplyerValue = 1.0
+                self._zRotationValue = 0.0
+                self._xFlipValue = 0.0
+                self._xFlipAngleValue = 0.0
+            else:
+                zoomVal, rotZVal, flipXVal, rotFlipVal = textToFloatValues(advancedZoomString, 4)
+                if(zoomVal < -1.0):
+                    self._zoomMultiplyerValue = -1.0
+                elif(zoomVal > 1.0):
+                    self._zoomMultiplyerValue = 1.0
+                else:
+                    self._zoomMultiplyerValue = zoomVal
+                self._zRotationValue = rotZVal
+                self._xFlipValue = flipXVal
+                self._xFlipAngleValue = rotFlipVal
 
     def getName(self):
         return "Feedback"
@@ -1114,12 +1168,34 @@ class FeedbackEffect(object):
         calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
         invertVal = -256 * invert
         cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, calcValue, invertVal)
-        if((zoom > 0.003) or (move > 0.003)):
+        if((zoom != 0.5) or (move > 0.003)):
             zoom = 1.0 - zoom
-            xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
-            ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
-            self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.10)
+            if(move > 0.003):
+                xcenter = (-0.125 * move * math.cos(self._radians360 * -direction)) + 0.5
+                ycenter = (-0.125 * move * math.sin(self._radians360 * -direction)) + 0.5
+            else:
+                xcenter = 0.5
+                ycenter = 0.5
+            if(zoom != 0.5):
+                if(self._zoomMultiplyerValue < 0.0):
+                    zoomValue = ((0.5 - zoom) * -self._zoomMultiplyerValue) + 0.5
+                    zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                elif(self._zoomMultiplyerValue < 0.003):
+                    zoomCalc = 1.0
+                else:
+                    zoomValue = ((zoom - 0.5) * self._zoomMultiplyerValue) + 0.5
+                    zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                flipX = (zoom - 0.5) * self._xFlipValue
+                flipAngle = (zoom - 0.5) * self._xFlipAngleValue
+                rotZ = (zoom - 0.5) * self._zRotationValue
+            else:
+                zoomCalc = 0.0
+                flipX = 0.0
+                flipAngle = 0.0
+                rotZ = 0.0
+            self._zoomEffect.zoomImageTransform(self._tmpMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ)
         cv.Add(image, self._tmpMat, self._memoryMat)
+#        cv.Sub(image, self._tmpMat, self._memoryMat)
         cv.Copy(self._memoryMat, image)
         return image
 
@@ -1135,6 +1211,26 @@ class DelayEffect(object):
         self._tmpMat = effectMat2
         self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
+
+    def setExtraConfig(self, values):
+        if(values != None):
+            _, advancedZoomString = values
+            if(advancedZoomString == None):
+                self._zoomMultiplyerValue = 1.0
+                self._zRotationValue = 0.0
+                self._xFlipValue = 0.0
+                self._xFlipAngleValue = 0.0
+            else:
+                zoomVal, rotZVal, flipXVal, rotFlipVal = textToFloatValues(advancedZoomString, 4)
+                if(zoomVal < -1.0):
+                    self._zoomMultiplyerValue = -1.0
+                elif(zoomVal > 1.0):
+                    self._zoomMultiplyerValue = 1.0
+                else:
+                    self._zoomMultiplyerValue = zoomVal
+                self._zRotationValue = rotZVal
+                self._xFlipValue = flipXVal
+                self._xFlipAngleValue = rotFlipVal
 
     def getName(self):
         return "Delay"
@@ -1153,13 +1249,33 @@ class DelayEffect(object):
         self._gotMemory = True
         #Fade
         cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, value, 0)
-        tmpImage = self._tmpMat
-        if((zoom > 0.003) or (move > 0.003)):
+        if((zoom != 0.5) or (move > 0.003)):
             zoom = 1.0 - zoom
-            xcenter = 0.125 * move * math.cos(self._radians360 * -direction)
-            ycenter =-0.125 * move * math.sin(self._radians360 * -direction)
-            tmpImage = self._zoomEffect.zoomImage(self._tmpMat, xcenter, ycenter, zoom, zoom, 0.90, 0.30) #TODO: Fix the zoom range... Config?
-        cv.Copy(tmpImage, self._memoryMat)
+            if(move > 0.003):
+                xcenter = (-0.125 * move * math.cos(self._radians360 * -direction)) + 0.5
+                ycenter = (-0.125 * move * math.sin(self._radians360 * -direction)) + 0.5
+            else:
+                xcenter = 0.5
+                ycenter = 0.5
+            if(zoom != 0.5):
+                if(self._zoomMultiplyerValue < 0.0):
+                    zoomValue = ((0.5 - zoom) * -self._zoomMultiplyerValue) + 0.5
+                    zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                elif(self._zoomMultiplyerValue < 0.003):
+                    zoomCalc = 1.0
+                else:
+                    zoomValue = ((zoom - 0.5) * self._zoomMultiplyerValue) + 0.5
+                    zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                flipX = (zoom - 0.5) * self._xFlipValue
+                flipAngle = (zoom - 0.5) * self._xFlipAngleValue
+                rotZ = (zoom - 0.5) * self._zRotationValue
+            else:
+                zoomCalc = 0.0
+                flipX = 0.0
+                flipAngle = 0.0
+                rotZ = 0.0
+            self._zoomEffect.zoomImageTransform(self._tmpMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ)
+        cv.Copy(self._tmpMat, self._memoryMat)
         cv.CvtColor(image, self._replaceMask, cv.CV_BGR2GRAY);
         if(lumaKey < 0.5):
             lumaThreshold = int(506 * lumaKey) + 3
@@ -1274,6 +1390,16 @@ class EdgeEffect(object):
         self._splitMat = effectMask2
         self._edgeMat = effect16bitMask
 
+        self._coluorModesHolder = EdgeColourModes()
+        self._coluorMode = EdgeColourModes.Value
+
+    def setExtraConfig(self, values):
+        if(values != None):
+            edgeColourModeString, _ = values
+            if(edgeColourModeString == None):
+                self._coluorMode = EdgeColourModes.Value
+            else:
+                self._coluorMode = self._coluorModesHolder.findMode(edgeColourModeString)
 
     def getName(self):
         return "Distortion"
@@ -1302,39 +1428,36 @@ class EdgeEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, hsv, lineHue, lineSat):
+    def applyEffect(self, image, amount, mode, lineHue, lineSat, lineWidth):
         red, green, blue = modifyHue(getHueColor(lineHue), lineSat)
         edgeMode = self.findMode(mode)
-        return self.drawEdges(image, amount, edgeMode, hsv, red, green, blue)
+        return self.drawEdges(image, amount, edgeMode, self._coluorMode, red, green, blue, lineWidth)
 
-    def drawEdges(self, image, value, edgeMode, hsv, red, green, blue):
-#        print "mode: " + str(mode) + " int: " + str(modeSelected) + " hsv: " + str(hsv) + " red: " + str(red) + " green: " + str(green) + " blue: " + str(blue)
-        if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
-            hsvSelected = self.findColorMode(hsv)
-        else:
-            hsvSelected = EdgeColourModes.Value
+    def drawEdges(self, image, value, edgeMode, hsv, red, green, blue, lineWidth):
+#        print "mode: " + str(edgeMode) + " hsv: " + str(hsv) + " red: " + str(red) + " green: " + str(green) + " blue: " + str(blue)
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
-        if(hsvSelected == EdgeColourModes.Value):
+        if(hsv == EdgeColourModes.Value):
             cv.Split(self._colorMat, None, None, self._splitMat, None)
-        elif(hsvSelected == EdgeColourModes.Saturation):
+        elif(hsv == EdgeColourModes.Saturation):
             cv.Split(self._colorMat, None, self._splitMat, None, None)
         else:
             cv.Split(self._colorMat, self._splitMat, None, None, None)
         if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
-            if((value < 0.01) and (edgeMode == EdgeModes.CannyOnTop)):
-                return image
+            if(value < 0.0):
+                if(edgeMode == EdgeModes.CannyOnTop):
+                    return image
+                else: #Canny
+                    cv.SetZero(image)
+                    return image
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
-#            if(edgeMode == EdgeModes.CannyOnTop):
             storage = cv.CreateMemStorage(0)
             if(edgeMode == EdgeModes.Canny):
                 cv.SetZero(image)
+            lineWidthInt = int(1.0 + (lineWidth * 9.0))
             contour = cv.FindContours(self._maskMat, storage,  cv.CV_RETR_TREE, cv.CV_CHAIN_APPROX_SIMPLE, (0,0))
-            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, thickness=2)
+            cv.DrawContours(image, contour, cv.RGB(red, green, blue), cv.RGB(red, green, blue), 20, thickness=lineWidthInt)
             return image
-#            else: # Canny
-#                cv.CvtColor(self._maskMat, self._colorMat, cv.CV_GRAY2RGB)
-#                return self._colorMat
         else:
             if(edgeMode == EdgeModes.Sobel):
                 mode = int(value * 3.99)
@@ -1581,10 +1704,8 @@ class InvertEffect(object):
     def invert(self, image, amount):
         brightnessVal = -255 * amount
         if((brightnessVal > -1) and (brightnessVal < 1)):
-#            print "DEBUG no invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             return image
         else:
-#            print "DEBUG invert brightnessVal: " + str(brightnessVal) + " amount: " + str(amount)
             cv.ConvertScaleAbs(image, image, 1.0, brightnessVal)
             return image
 
@@ -1812,6 +1933,8 @@ class ImageAddEffect(object):
 #Video with alpha channel
 #Sprite size / zoom (Text media also)
 #TextMedia font directory config.
+#URL image media?
+#Streaming from on player to another media (cameras etc.)
 #Recording / resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?

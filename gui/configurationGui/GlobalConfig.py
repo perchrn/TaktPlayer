@@ -442,6 +442,30 @@ class EffectsGui(object):
         self._arg4Sizer.Add(self._arg4Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._arg4Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._conf1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._conf1Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Config choise:") #@UndefinedVariable
+        self._conf1Field = wx.ComboBox(self._mainEffectsPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._conf1Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._conf1Button = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._conf1HelpText = ""
+        self._conf1Button.Bind(wx.EVT_BUTTON, self._onConf1Help) #@UndefinedVariable
+        self._conf1Sizer.Add(self._conf1Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._conf1Sizer.Add(self._conf1Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._conf1Sizer.Add(self._conf1Button, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(self._conf1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._conf2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._conf2Label = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Config choise:") #@UndefinedVariable
+        self._conf2Field = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "0.0", size=(200, -1)) #@UndefinedVariable
+        self._conf2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._conf2Button = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._conf2HelpText = ""
+        self._conf2Button.Bind(wx.EVT_BUTTON, self._onConf2Help) #@UndefinedVariable
+        self._conf2Sizer.Add(self._conf2Label, 1, wx.ALL, 5) #@UndefinedVariable
+        self._conf2Sizer.Add(self._conf2Field, 2, wx.ALL, 5) #@UndefinedVariable
+        self._conf2Sizer.Add(self._conf2Button, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(self._conf2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         startValuesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         startValuesLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Start values:") #@UndefinedVariable
         self._startValuesField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "0.0|0.0|0.0|0.0|0.0", size=(200, -1)) #@UndefinedVariable
@@ -752,6 +776,16 @@ Selects the effect.
         self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
+    def _onConf1Help(self, event):
+        dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf1HelpText, 'Config dropdown help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onConf2Help(self, event):
+        dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf2HelpText, 'Config field help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onStartValuesHelp(self, event):
         text = """
 A list of start values for the effect modulation.
@@ -948,6 +982,7 @@ A list of start values for the effect modulation.
             else:
                 oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 savedTemplate = oldTemplate
+            savedTemplate.updateWithExtraValues((self._conf1Field.GetValue(), self._conf2Field.GetValue()))
             self.updateGui(savedTemplate, self._midiNote, self._activeEffectId, self._editFieldWidget)
             if(self._editFieldWidget != None):
                 if((self._activeEffectId == "PreEffect") or (self._activeEffectId == "PostEffect")):
@@ -1199,7 +1234,7 @@ A list of start values for the effect modulation.
 #                    if(self._midiNote != None):
 #                        midiSender.sendPolyPreasure(self._mainConfig.getSelectedMidiChannel(), self._midiNote, value)
 
-    def _setLabels(self, amountLabel, arg1Label, arg2Label, arg3Label, arg4Label):
+    def _setLabels(self, amountLabel, arg1Label, arg2Label, arg3Label, arg4Label, config1config = None, config2config = None):
         self._amountLabel.SetLabel(amountLabel)
         self._amountSliderLabel.SetLabel(amountLabel)
         if(arg1Label != None):
@@ -1234,6 +1269,22 @@ A list of start values for the effect modulation.
         else:
             self._mainEffectsGuiSizer.Hide(self._arg4Sizer)
             self._mainSliderSizer.Hide(self._arg4SliderSizer)
+        if(config1config != None):
+            configLabel, configChoisesFunction, configvalue, configdefaultChoise, configHelpText = config1config
+            self._mainEffectsGuiSizer.Show(self._conf1Sizer)
+            self._conf1Label.SetLabel(configLabel)
+            self._updateChoices(self._conf1Field, configChoisesFunction, configvalue, configdefaultChoise)
+            self._conf1HelpText = configHelpText
+        else:
+            self._mainEffectsGuiSizer.Hide(self._conf1Sizer)
+        if(config2config != None):
+            configLabel, configvalue, configHelpText = config2config
+            self._mainEffectsGuiSizer.Show(self._conf2Sizer)
+            self._conf2Label.SetLabel(configLabel)
+            self._conf2Field.SetValue(configvalue)
+            self._conf2HelpText = configHelpText
+        else:
+            self._mainEffectsGuiSizer.Hide(self._conf2Sizer)
         self._fixEffectGuiLayout()
 
     def _updateValueLabels(self, updateSliderValues):
@@ -1325,10 +1376,28 @@ A list of start values for the effect modulation.
         self._arg3ValueLabels = arg3
         self._arg4ValueLabels = arg4
 
+    def _tryToGetConfigValue(self, name, defaultValue):
+        if(self._config != None):
+            value = self._config.getValue(name)
+            if(value != None):
+                return value
+        return defaultValue
+
     def _updateLabels(self):            
         if(self._chosenEffectId == EffectTypes.Zoom):
-            self._setLabels("Amount:", "XY ratio", "X position", "Y position", "Zoom mode")
-            self._setupValueLabels(None, None, None, None, self._zoomModes.getChoices())
+            config1helpText = "Selects zoom mode.\n"
+            config1helpText += "\n"
+            config1helpText += "Full mode enables zoom and movement the rest are just plain zoom modes.\n"
+            config1config = "Zoom mode", self._zoomModes.getChoices, self._tryToGetConfigValue("ZoomMode", "In"), "In", config1helpText
+            config2helpText = "Sets zoom out and zoom in range.\n"
+            config2helpText += "\n"
+            config2helpText += "Default is 0.25|4.0\n"
+            config2helpText += "\n"
+            config2helpText += "0.25 -> zoom out to a quarter of original size.\n"
+            config2helpText += "4.00 -> zoom in to four times the original size.\n"
+            config2config = "Zoom range", self._tryToGetConfigValue("ZoomRange", "0.25|4.0"), config2helpText
+            self._setLabels("Amount:", "X position", "Y position", "Flip", "Flip angle", config1config, config2config)
+            self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Scroll):
             self._setLabels("X amount:", "Y amount", "Scroll mode", None, None)
             self._setupValueLabels(None, None, self._scrollModes.getChoices(), None, None)
@@ -1348,10 +1417,36 @@ A list of start values for the effect modulation.
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Feedback):
-            self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:")
+            config2helpText = "Sets up advanced zoom options.\n"
+            config2helpText += "\n"
+            config2helpText += "Default is 1.0|0.0|0.0|0.0 (Zoom only.)\n"
+            config2helpText += "\n"
+            config2helpText += "First number is zoom amount.\n"
+            config2helpText += "\t1.0 = use full zoom range.\n"
+            config2helpText += "Second number is rotation amount.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2helpText += "Thirt number is flip amount around X-axis.\n"
+            config2helpText += "\t1.0 = flip 360 degrees.\n"
+            config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText
+            self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Delay):
-            self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:")
+            config2helpText = "Sets up advanced zoom options.\n"
+            config2helpText += "\n"
+            config2helpText += "Default is 1.0|0.0|0.0|0.0 (Zoom only.)\n"
+            config2helpText += "\n"
+            config2helpText += "First number is zoom amount.\n"
+            config2helpText += "\t1.0 = use full zoom range.\n"
+            config2helpText += "Second number is rotation amount.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2helpText += "Thirt number is flip amount around X-axis.\n"
+            config2helpText += "\t1.0 = flip 360 degrees.\n"
+            config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText
+            self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rays):
             self._setLabels("Amount:", "Mode:", None, None, None)
@@ -1369,8 +1464,9 @@ A list of start values for the effect modulation.
             self._setLabels("Noize amount:", "Noize scale", "Scale mode", None, None)
             self._setupValueLabels(None, None, self._tvNoizeModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.Edge):
-            self._setLabels("Amount:", "Edge mode", "Value/Hue/Saturation", "Line color:", "Line saturation")
-            self._setupValueLabels(None, self._edgeModes.getChoices(), self._edgeColourModes.getChoices(), None, None)
+            config1config = "Input mode:", self._edgeColourModes.getChoices, self._tryToGetConfigValue("EdgeChannelMode", "Value"), "Value", "Selects value (B/W), saturation or hue (colour) channel as input to edge detector."
+            self._setLabels("Amount:", "Edge mode", "Line color:", "Line saturation", "LineWidth", config1config)
+            self._setupValueLabels(None, self._edgeModes.getChoices(), None, None, None)
         elif(self._chosenEffectId == EffectTypes.BlobDetect):
             self._setLabels("Amount:", "Mode", "Line color:", "Line saturation", "LineWeight")
             self._setupValueLabels(None, self._blobDetectModes.getChoices(), None, None, None)
@@ -1531,6 +1627,9 @@ A list of start values for the effect modulation.
 #            self._oldListHeight = height
 
     def updateGui(self, effectTemplate, midiNote, editFieldName, editFieldWidget = None):
+        print "DEBUG pcn: updateGui() template xml:"
+        print effectTemplate.getXmlString()
+        print "x"*120
         self._midiNote = midiNote
         self._activeEffectId = editFieldName
         self._editFieldWidget = editFieldWidget

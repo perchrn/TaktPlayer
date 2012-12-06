@@ -692,6 +692,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._blankMixBitmap = wx.Bitmap("graphics/mixEmpty.png") #@UndefinedVariable
         self._emptyBitMap = wx.EmptyBitmap (40, 30, depth=3) #@UndefinedVariable
         self._mixBitmapAdd = wx.Bitmap("graphics/mixAdd.png") #@UndefinedVariable
+        self._mixBitmapAlpha = wx.Bitmap("graphics/mixAlpha.png") #@UndefinedVariable
         self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
         self._mixBitmapLumaKey = wx.Bitmap("graphics/mixLumaKey.png") #@UndefinedVariable
         self._mixBitmapWhiteLumaKey = wx.Bitmap("graphics/mixWhiteLumaKey.png") #@UndefinedVariable
@@ -699,8 +700,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mixBitmapReplace = wx.Bitmap("graphics/mixReplace.png") #@UndefinedVariable
         self._mixBitmapSubtract = wx.Bitmap("graphics/mixSubtract.png") #@UndefinedVariable
 
-        self._mixImages = [self._mixBitmapDefault, self._mixBitmapAdd, self._mixBitmapMultiply,
-                            self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapReplace]
+        self._mixImages = [self._mixBitmapDefault, self._mixBitmapAdd, self._mixBitmapSubtract, self._mixBitmapMultiply,
+                            self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapAlpha, self._mixBitmapReplace]
         self._mixLabels = self._mixModes.getChoices()
 
         self._fadeModeImages, self._fadeModeLabels = self._mainConfig.getFadeModeLists()
@@ -2923,6 +2924,8 @@ All notes on events are quantized to this.
         mixModeId = getMixModeFromName(mixMode)
         if(mixModeId == self._mixModes.Add):
             widget.setBitmaps(self._mixBitmapAdd, self._mixBitmapAdd)
+        if(mixModeId == self._mixModes.AlphaMask):
+            widget.setBitmaps(self._mixBitmapAlpha, self._mixBitmapAlpha)
         elif(mixModeId == self._mixModes.Default):
             if(showDefault == True):
                 widget.setBitmaps(self._mixBitmapDefault, self._mixBitmapDefault)#Default is Add!
@@ -2936,8 +2939,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._mixBitmapMultiply, self._mixBitmapMultiply)
         elif(mixModeId == self._mixModes.Replace):
             widget.setBitmaps(self._mixBitmapReplace, self._mixBitmapReplace)
-#        elif(mixModeId == self._mixModes.Subtrackt):
-#            widget.setBitmaps(self._mixBitmapSubtract, self._mixBitmapSubtract)
+        elif(mixModeId == self._mixModes.Subtract):
+            widget.setBitmaps(self._mixBitmapSubtract, self._mixBitmapSubtract)
 
     def updateEffectThumb(self, widget, effectConfigName):
         effectTemplate = self._mainConfig.getEffectTemplate(effectConfigName)

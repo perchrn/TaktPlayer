@@ -14,9 +14,6 @@ from configuration.ConfigurationHolder import getDefaultDirectories
 from configuration.PlayerConfiguration import PlayerConfiguration
 from taktVersion import getVersionNumberString, getVersionDateString,\
     getVersionGitIdString
-import sys
-import shutil
-import os
 
 import wx
 
@@ -37,6 +34,9 @@ from utilities import MultiprocessLogger
 #Python standard
 import time
 import signal
+import sys
+import shutil
+import os
 #Log system
 import logging
 logging.root.setLevel(logging.ERROR)

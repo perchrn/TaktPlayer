@@ -170,6 +170,13 @@ class ZoomModes():
     def getChoices(self):
         return ["In", "Out", "InOut", "Full"]
 
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
+
 class ScrollModes():
     NoFlip, Flip = range(2)
 
@@ -199,6 +206,13 @@ class EdgeColourModes():
 
     def getChoices(self):
         return ["Value", "Saturation", "Hue"]
+
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
 
 class DesaturateModes():
     Plus, Minus, Mask = range(3)

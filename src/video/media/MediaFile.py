@@ -115,6 +115,12 @@ def mixImagesAdd(level, image1, image2, mixMat):
         cv.Add(image1, image2, mixMat)
     return mixMat
 
+def mixImageSubtract(level, image1, image2, mixMat):
+    if(level < 0.99):
+        cv.ConvertScaleAbs(image2, image2, level, 0.0)
+    cv.Sub(image1, image2, mixMat)
+    return mixMat
+
 def mixImagesReplace(level, image1, image2, mixMat):
     if(level < 0.99):
         if(image1 != None):
@@ -128,30 +134,32 @@ def mixImagesReplace(level, image1, image2, mixMat):
     return mixMat
 
 def mixImagesMultiply(level, image1, image2, mixMat):
-    cv.Mul(image1, image2, mixMat, 0.004)
     if(level < 0.99):
-        cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
-        cv.ConvertScaleAbs(mixMat, mixMat, level, 0.0)
-        cv.Add(mixMat, image1, mixMat)
+        cv.ConvertScaleAbs(image2, mixMat, 1.0, 256*(1.0-level))
+        cv.Mul(image1, mixMat, mixMat, 0.004)
+    else:
+        cv.Mul(image1, image2, mixMat, 0.004)
     return mixMat
 
-def mixImages(mode, level, image1, image2, image2mask, mixMat1, mixMask):
+def mixImages(mode, level, image1, image2, image2mask, mixMat, mixMask):
     if(level < 0.01):
         return image1
     if(mode == MixMode.Multiply):
-        return mixImagesMultiply(level, image1, image2, mixMat1)
+        return mixImagesMultiply(level, image1, image2, mixMat)
+    elif(mode == MixMode.Subtract):
+        return mixImageSubtract(level, image1, image2, mixMat)
     elif(mode == MixMode.LumaKey):
-        return mixImageSelfMask(level, image1, image2, mixMask, mixMat1, False)
+        return mixImageSelfMask(level, image1, image2, mixMask, mixMat, False)
     elif(mode == MixMode.WhiteLumaKey):
-        return mixImageSelfMask(level, image1, image2, mixMask, mixMat1, True)
+        return mixImageSelfMask(level, image1, image2, mixMask, mixMat, True)
     elif(mode == MixMode.AlphaMask):
         if(image2mask != None):
-            return mixImageAlphaMask(level, image1, image2, image2mask, mixMat1)
+            return mixImageAlphaMask(level, image1, image2, image2mask, mixMat)
         #Will fall back to Add mode if there is no mask.
     elif(mode == MixMode.Replace):
-        return mixImagesReplace(level, image1, image2, mixMat1)
+        return mixImagesReplace(level, image1, image2, mixMat)
     #Default is Add!
-    return mixImagesAdd(level, image1, image2, mixMat1)
+    return mixImagesAdd(level, image1, image2, mixMat)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -241,10 +249,24 @@ class MediaFile(object):
     def _updateMediaSettingsHolder(self, mediaSettingsHolder):
         mediaSettingsHolder.image = None
         if(self.getType() != "Modulation"):
-            if((mediaSettingsHolder.effect1 == None) or (mediaSettingsHolder.effect1.getName() != self._effect1Settings.getEffectName())):
-                mediaSettingsHolder.effect1 = getEffectByName(self._effect1Settings.getEffectName(), self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
-            if((mediaSettingsHolder.effect2 == None) or (mediaSettingsHolder.effect2.getName() != self._effect2Settings.getEffectName())):
-                mediaSettingsHolder.effect2 = getEffectByName(self._effect2Settings.getEffectName(), self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            effect1Name = self._effect1Settings.getEffectName()
+            if((mediaSettingsHolder.effect1 == None) or (mediaSettingsHolder.effect1.getName() != effect1Name)):
+                mediaSettingsHolder.effect1 = getEffectByName(effect1Name, self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if(effect1Name == "Zoom"):
+                mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
+            elif((effect1Name == "Feedback") or (effect1Name == "Delay")):
+                mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
+            elif(effect1Name == "Edge"):
+                mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
+            effect2Name = self._effect2Settings.getEffectName()
+            if((mediaSettingsHolder.effect2 == None) or (effect2Name != self._effect2Settings.getEffectName())):
+                mediaSettingsHolder.effect2 = getEffectByName(effect2Name, self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+            if(effect2Name == "Zoom"):
+                mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
+            elif((effect2Name == "Feedback") or (effect2Name == "Delay")):
+                mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
+            elif(effect2Name == "Edge"):
+                mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
 
     def _setupConfiguration(self):
         self._configurationTree.addFloatParameter("SyncLength", 4.0) #Default one bar (re calculated on load)
@@ -1192,7 +1214,7 @@ class ImageFile(MediaFile):
             moveX = -move
             moveY = math.tan(self._radians360 * angle) * -move
         return moveX, moveY
-        
+
     def openFile(self, midiLength):
         filePath = self._fullFilePath
         if(os.path.isfile(filePath) == False):

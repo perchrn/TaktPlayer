@@ -158,9 +158,6 @@ class ConfigurationHolder(object):
                         print "="*120
                         for line in difflib.context_diff(a=loadedXml, b=generatedXML):
                             print line
-    #                    differThing = difflib.SequenceMatcher(a=loadedXml, b=generatedXML)
-    #                    for block in differThing.get_matching_blocks():
-    #                        print "match at a[%d] and b[%d] of length %d" % block
                         print "="*120
                         print "DEBUG pcn: generatedXML != loadedXML"
             return self._configId
@@ -273,6 +270,9 @@ class ConfigurationHolder(object):
         return self._unsavedConfig
 
     def setFromXmlString(self, xmlString):
+#        print "l"*120
+#        print xmlString
+#        print "l"*120
         if(self._selfClosingList != None):
             soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
         else:
@@ -429,12 +429,7 @@ class ConfigurationHolder(object):
 
     def getConfigurationXMLString(self):
         root = self.getConfigurationXML()
-        xmlString = ElementTree.tostring(root, encoding="utf-8", method="xml")
-        if(self._selfClosingList != None):
-            soup = BeautifulStoneSoup(xmlString, selfClosingTags=self._selfClosingList)
-        else:
-            soup = BeautifulStoneSoup(xmlString)
-        return soup.prettify()
+        return self._xmlToString(root)
 
     def _xmlToString(self, xml):
         xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")

@@ -1538,6 +1538,25 @@ A list of start values for the effect modulation.
         configStart = self._config.getValue("StartValues")
         if(guiStart != configStart):
             return True
+        if(configEffect == "Zoom"):
+            config1Val = self._config.getValue("ZoomMode")
+            gui1Val = self._conf1Field.GetValue()
+            if(gui1Val != config1Val):
+                return True
+            config2Val = self._config.getValue("ZoomRange")
+            gui2Val = self._conf2Field.GetValue()
+            if(gui2Val != config2Val):
+                return True
+        elif((configEffect == "Feedback") or (configEffect == "Delay")):
+            config2Val = self._config.getValue("FeedbackAdvancedZoom")
+            gui2Val = self._conf2Field.GetValue()
+            if(gui2Val != config2Val):
+                return True
+        elif(configEffect == "Edge"):
+            config1Val = self._config.getValue("EdgeChannelMode")
+            gui1Val = self._conf1Field.GetValue()
+            if(gui1Val != config1Val):
+                return True
         return False
 
     def _onUpdate(self, event):

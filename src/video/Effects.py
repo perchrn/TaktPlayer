@@ -50,14 +50,15 @@ def create16bitMat(width, heigth):
     except cv2.error:
         raise MediaError("create16bitMat() Out of memory! Message: " + sys.exc_info()[1].message)
 
+randomStateHolder  = numpy.random.RandomState(int(time.time()))
+
 def createNoizeMatAndMask(width, heigth):
     try:
-        randomState = numpy.random.RandomState(int(time.time()))
         noizeMat = createMat(width, heigth)
-        randomArray = randomState.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
+        randomArray = randomStateHolder.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
         tmpNoizeMask = cv.fromarray(randomArray)
         cv.Merge(tmpNoizeMask, tmpNoizeMask, tmpNoizeMask, None, noizeMat)
-        randomArray = randomState.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
+        randomArray = randomStateHolder.randint(0, 255, size=(heigth, width)).astype(numpy.uint8)
         noizeMask = cv.fromarray(randomArray)
         return noizeMat, noizeMask
     except cv2.error:
@@ -237,6 +238,26 @@ def setupEffectMemory(width, heigth):
         effect16bitMask = create16bitMat(width, heigth)
         bigNoizeMat, bigNoizeMask = createNoizeMatAndMask(width*2, heigth*2)
 
+def getNoizeMask(level, internalRezX, internalRezY, scaleValue):
+    if(scaleValue <= 1.05):
+        useResize = False
+        scaleX = internalRezX
+        scaleY = internalRezY
+    else:
+        useResize = True
+        scaleX = int(internalRezX / scaleValue)
+        scaleY = int(internalRezY / scaleValue)
+    posX = randomStateHolder.randint(0, internalRezX)
+    posY = randomStateHolder.randint(0, internalRezY)
+    src_region = cv.GetSubRect(bigNoizeMask, (posX, posY, scaleX, scaleY))
+    threshold = int(255 * level)
+    if(useResize == True):
+        cv.Resize(src_region, effectMask1, cv.CV_INTER_NN)
+        cv.CmpS(effectMask1, threshold, effectMask1, cv.CV_CMP_LT)
+    else:
+        cv.CmpS(src_region, threshold, effectMask1, cv.CV_CMP_LT)
+    return effectMask1
+        
 radians360 = math.radians(360)
 
 def angleAndMoveToXY(angle, move):
@@ -294,7 +315,7 @@ class ZoomEffect(object):
         self._zoomMat = effectMat1
 
     def setExtraConfig(self, values):
-        print("DEBUG pcn: Zoom::setExtraConfig() " + str(values))
+#        print("DEBUG pcn: Zoom::setExtraConfig() " + str(values))
         if(values != None):
             zoomModeString, zoomRangeString = values
             if(zoomModeString == None):
@@ -666,8 +687,8 @@ class TVNoizeEffect(object):
             useResize = True
             srcWidth = int(srcWidth / 2)
             srcHeight = int(srcHeight / 2)
-        posX = self._randomState.randint(0, self._internalResolutionX)
-        posY = self._randomState.randint(0, self._internalResolutionY)
+        posX = randomStateHolder.randint(0, self._internalResolutionX)
+        posY = randomStateHolder.randint(0, self._internalResolutionY)
         src_region = cv.GetSubRect(self._bigNoizeMask, (posX, posY, srcWidth, srcHeight))
         if(useResize == True):
             if(mode < 0.33):
@@ -681,8 +702,8 @@ class TVNoizeEffect(object):
             cv.Copy(src_region, self._noizeMask)
         threshold = int(255 * amount)
         cv.CmpS(self._noizeMask, threshold, self._noizeMask, cv.CV_CMP_LT)
-        posX = self._randomState.randint(0, self._internalResolutionX)
-        posY = self._randomState.randint(0, self._internalResolutionY)
+        posX = randomStateHolder.randint(0, self._internalResolutionX)
+        posY = randomStateHolder.randint(0, self._internalResolutionY)
         src_region = cv.GetSubRect(self._bigNoizeMat, (posX, posY, srcWidth, srcHeight))
         if(useResize == True):
             cv.Resize(src_region, self._resizeMat, upScaler)
@@ -1940,3 +1961,5 @@ class ImageAddEffect(object):
 #    Send to locked midi channel?
 #Complex looping (rollin, rollout, keep last?) (Under time modulation?)
 
+#Wipe animations???
+#calculate subframes when really slow...

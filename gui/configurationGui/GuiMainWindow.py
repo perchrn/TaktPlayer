@@ -160,15 +160,15 @@ class TrackOverviewSettings(object):
     def getMixWidget(self):
         return self._trackMixWidget
 
-    def setLvlWidget(self, widget):
-        self._trackLvlWidget = widget
-        self._trackLvlWidgetId = widget.GetId()
+    def setFadeWidget(self, widget):
+        self._trackFadeWidget = widget
+        self._trackFadeWidgetId = widget.GetId()
 
-    def hasLvlWidgetId(self, widgetId):
-        return self._trackLvlWidgetId == widgetId
+    def hasFadeWidgetId(self, widgetId):
+        return self._trackFadeWidgetId == widgetId
 
-    def getLvlWidget(self):
-        return self._trackLvlWidget
+    def getFadeWidget(self):
+        return self._trackFadeWidget
 
     def setPostFxWidget(self, widget):
         self._trackPostFxWidget = widget
@@ -715,7 +715,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             settings.clearThumb()
                             if((settings.getActiveNoteId() == -1)):
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
-                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
+                                self._trackGui.updateTrackFadeThumb(i, trackConfig, None)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             settings.setActiveNoteId(-1)
                         else:
@@ -728,11 +728,17 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             activeNoteConfig = self._configuration.getNoteConfiguration(note)
                             if(activeNoteConfig == None):
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
-                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
+                                self._trackGui.updateTrackFadeThumb(i, trackConfig, None)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             else:
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, activeNoteConfig.getMixMode())
-                                self._trackGui.updateTrackLvlModThumb(i, trackConfig)
+                                fadeConfigName = activeNoteConfig.getFadeConfigName()
+                                fadeConfig = self._configuration.getFadeTemplate(fadeConfigName)
+                                if(fadeConfig):
+                                    noteWipeMode, _, _ = fadeConfig.getWipeConfigValues(False)
+                                else:
+                                    noteWipeMode = None
+                                self._trackGui.updateTrackFadeThumb(i, trackConfig, noteWipeMode)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             settings.setActiveNoteId(note)
                     if(foundTask != None):

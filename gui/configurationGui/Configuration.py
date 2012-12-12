@@ -353,8 +353,8 @@ class Configuration(object):
     def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
         return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
 
-    def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
-        return self._globalConf.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)
+    def makeFadeTemplate(self, saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
+        return self._globalConf.makeFadeTemplate(saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod)
 
     def deleteEffectTemplate(self, configName):
         return self._globalConf.deleteEffectTemplate(configName)
@@ -428,14 +428,14 @@ class Configuration(object):
     def stopSlidersUpdate(self):
         self._globalConf.stopSlidersUpdate()
 
-    def updateFadeGui(self, configName, editFieldName = None, editFieldWidget = None):
-        self._globalConf.updateFadeGui(configName, editFieldName, editFieldWidget)
+    def updateFadeGui(self, configName, editFieldName, editFieldWidget = None, selectedWipeMode = None, selectedWipePrePostString = None):
+        self._globalConf.updateFadeGui(configName, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString)
 
     def updateFadeList(self, selectedName):
         self._globalConf.updateFadeList(selectedName)
 
-    def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
-        self._globalConf.updateFadeGuiButtons(configName, modeWidget, modulationWidget, levelWidget)
+    def updateFadeGuiButtons(self, fadeConf, noteWipeMode, modeWidget, modulationWidget = None, levelWidget = None):
+        self._globalConf.updateFadeGuiButtons(fadeConf, noteWipeMode, modeWidget, modulationWidget, levelWidget)
 
     def getFadeChoices(self):
         return self._globalConf.getFadeChoices()

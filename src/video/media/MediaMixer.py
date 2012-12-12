@@ -4,22 +4,22 @@ Created on 21. des. 2011
 @author: pcn
 '''
 import logging
-from video.Effects import getEmptyImage, createMask, createMat, getEffectByName
+from video.Effects import getEmptyImage, createMat, getEffectByName
 from video.media.MediaFile import MixMode, scaleAndSave
-from video.media.MediaFileModes import getMixModeFromName
+from video.media.MediaFileModes import getMixModeFromName, WipeMode
 import os
 import shutil
 from cv2 import cv
-from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
 
 
 class MediaMixer(object):
-    def __init__(self, configurationTree, midiStateHolder, specialModulationHolder, effectsConfiguration, effectImagesConfig, internalResolutionX, internalResolutionY, appDataDir):
+    def __init__(self, configurationTree, midiStateHolder, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, internalResolutionX, internalResolutionY, appDataDir):
         self._configurationTree = configurationTree
         self._midiStateHolder = midiStateHolder
         self._specialModulationHolder = specialModulationHolder
         self._effectsConfigurationTemplates = effectsConfiguration
+        self._mediaFadeConfigurationTemplates = fadeConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfig
         #Logging etc.
         self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -32,7 +32,6 @@ class MediaMixer(object):
         self._mixMat1 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._mixMat2 = createMat(self._internalResolutionX, self._internalResolutionY)
         self._convertedMat = createMat(self._internalResolutionX, self._internalResolutionY)
-        self._mixMask = createMask(self._internalResolutionX, self._internalResolutionY)
 
         self._previewMat = createMat(160, 120)
 
@@ -45,30 +44,30 @@ class MediaMixer(object):
         self._mediaTracks = []
         self._mediaTrackStateHolders = []
         self._mediaTracksMixMode = []
-        self._mediaTracksMidiModulation = []
-        self._mediaTracksLevelMod = []
+        self._mediaTracksWipeSettings = []
+        self._wipeModeHolder = WipeMode()
         self._mediaTracksEffects = []
         self._mediaTracksCurrentPreEffectValues = []
         self._mediaTracksCurrentPostEffectValues = []
         self._mediaTracksPreEffectControllerValues = []
         self._mediaTracksPostEffectControllerValues = []
+        self._mediaTrackConfigs = []
+        self._mediaTrackFadeConfigHolders = []
         for i in range(16): #@UnusedVariable
             self._mediaTracks.append(None)
             self._mediaTrackStateHolders.append(None)
             self._mediaTracksMixMode.append(MixMode.Default)
-            self._mediaTracksLevelMod.append(None)
+            self._mediaTracksWipeSettings.append((WipeMode.Default, False, (0.0)))
             self._mediaTracksEffects.append(None)
             self._mediaTracksCurrentPreEffectValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
             self._mediaTracksCurrentPostEffectValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
             self._mediaTracksPreEffectControllerValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
             self._mediaTracksPostEffectControllerValues.append((0.0, 0.0, 0.0, 0.0, 0.0))
-        self._mediaTrackConfigs = []
-        for i in range(16):
             trackConfig = self._configurationTree.addChildUniqueId("MediaTrack", "TrackId", str(i+1), i+1)
-            midiModulation = MidiModulation(trackConfig, self._midiTiming, self._specialModulationHolder)
-            self.setupTrackConfig(trackConfig, midiModulation)
+            self.setupTrackConfig(trackConfig)
             self._mediaTrackConfigs.append(trackConfig)
-            self._mediaTracksMidiModulation.append(midiModulation)
+            self._mediaTrackFadeConfigHolders.append(self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+)
         self.loadMediaFromConfiguration()
 
         self._imagesSinceLastPreviewSave = 0
@@ -80,7 +79,7 @@ class MediaMixer(object):
         self._previewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview.jpg"))
 
     def getMixMatBuffers(self):
-        return self._mixMat1, self._mixMat2, self._mixMask
+        return self._mixMat1, self._mixMat2
 
     def _getConfiguration(self):
         self.loadMediaFromConfiguration()
@@ -94,13 +93,14 @@ class MediaMixer(object):
                     mediaTrack.checkAndUpdateFromConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
-    def setupTrackConfig(self, trackConfigHolder, trackMidiModulation):
+    def setupTrackConfig(self, trackConfigHolder):
         trackConfigHolder.addTextParameter("MixMode", "Default")
-        trackMidiModulation.setModulationReceiver("LevelModulation", "None")
         self._defaultPreEffectSettingsName = "MixPreDefault"
         trackConfigHolder.addTextParameter("PreEffectConfig", self._defaultPreEffectSettingsName)#Default MixPreDefault
         self._defaultPostEffectSettingsName = "MixPostDefault"
         trackConfigHolder.addTextParameter("PostEffectConfig", self._defaultPostEffectSettingsName)#Default MixPostDefault
+        self._defaultFadeSettingsName = "Default"
+        trackConfigHolder.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
 
     def loadMediaFromConfiguration(self):
         mediaTrackState = []
@@ -125,8 +125,6 @@ class MediaMixer(object):
         trackConfig.setValue("MixMode", mixMode)
         self._mediaTracksMixMode[trackId] = getMixModeFromName(mixMode)
 
-        self._mediaTracksLevelMod[trackId] = self._mediaTracksMidiModulation[trackId].connectModulation("LevelModulation")
-
         oldEffectSettings = self._mediaTracksEffects[trackId]
         if(oldEffectSettings != None):
             oldPreEffectSettings = oldEffectSettings[1]
@@ -145,10 +143,12 @@ class MediaMixer(object):
             oldPreEffectName = oldPreEffectSettings.getEffectName()
             oldPreEffectValues = oldPreEffectSettings.getStartValuesString()
         preEffectModulationTemplate = xmlConfig.get("preeffectconfig")
+        if(preEffectModulationTemplate == None):
+            preEffectModulationTemplate = self._defaultPreEffectSettingsName
         trackConfig.setValue("PreEffectConfig", preEffectModulationTemplate)
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(preEffectModulationTemplate)
         if(preEffectSettings == None):
-            preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPostEffectSettingsName)
+            preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPreEffectSettingsName)
         if(preEffectSettings != None):
             preEffectSettings.updateConfiguration()
         if((oldPreEffectName != preEffectSettings.getEffectName()) or (oldPreEffectValues != preEffectSettings.getStartValuesString())):
@@ -164,6 +164,8 @@ class MediaMixer(object):
             oldPostEffectName = oldPostEffectSettings.getEffectName()
             oldPostEffectValues = oldPostEffectSettings.getStartValuesString()
         postEffectModulationTemplate = xmlConfig.get("posteffectconfig")
+        if(postEffectModulationTemplate == None):
+            postEffectModulationTemplate = self._defaultPostEffectSettingsName
         trackConfig.setValue("PostEffectConfig", postEffectModulationTemplate)
         postEffectSettings = self._effectsConfigurationTemplates.getTemplate(postEffectModulationTemplate)
         if(postEffectSettings == None):
@@ -180,7 +182,18 @@ class MediaMixer(object):
 
 #        print "DEBUG pcn trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 
+        fadeAndLevelTemplate = xmlConfig.get("fadeconfig")
+        if(fadeAndLevelTemplate == None):
+            fadeAndLevelTemplate = self._defaultFadeSettingsName
+        trackConfig.setValue("FadeConfig", fadeAndLevelTemplate)
+        fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(fadeAndLevelTemplate)
+        if(fadeAndLevelSettings == None):
+            fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+        self._mediaTrackFadeConfigHolders[trackId] = fadeAndLevelSettings
+        self._mediaTracksWipeSettings[trackId] = fadeAndLevelSettings.getWipeSettings()
+
         self._mediaTracksEffects[trackId] = (preEffect, preEffectSettings, preEffectStartValues, postEffect, postEffectSettings, postEffectStartValues)
+
         return trackId
 
     def doPostConfigurations(self):
@@ -191,9 +204,7 @@ class MediaMixer(object):
 
         trackConfig.setValue("MixMode", "Default")
         self._mediaTracksMixMode[trackIndex] = MixMode.Default
-
-        trackConfig.setValue("LevelModulation", "None")
-        self._mediaTracksLevelMod[trackIndex] = self._mediaTracksMidiModulation[trackIndex].connectModulation("LevelModulation")
+        self._mediaTracksWipeSettings[trackIndex] = (WipeMode.Default, False, (0.0))
 
         trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
         preEffectSettings = self._effectsConfigurationTemplates.getTemplate(self._defaultPreEffectSettingsName)
@@ -207,6 +218,13 @@ class MediaMixer(object):
         preEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         postEffectStartValues = (0.0, 0.0, 0.0, 0.0, 0.0)
         self._mediaTracksEffects[trackIndex] = (preEffect, preEffectSettings, preEffectStartValues, postEffect, postEffectSettings, postEffectStartValues)
+
+        trackConfig.setValue("FadeConfig", self._defaultFadeSettingsName)
+        fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+        if(fadeAndLevelSettings == None):
+            fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+        self._mediaTrackFadeConfigHolders[trackIndex] = fadeAndLevelSettings
+        self._mediaTracksWipeSettings[trackIndex] = fadeAndLevelSettings.getWipeSettings()
 
     def getImage(self, outOfMemory):
         self._outOfMemory = outOfMemory
@@ -230,6 +248,11 @@ class MediaMixer(object):
         valuesString += str(self._mediaTracksCurrentPostEffectValues[midiChannel])
         return (valuesString, guiEffectValuesString)
 
+    def _getFadeValue(self, trackId, currentSongPosition, midiNoteState, midiChannelState):
+        _, levelValue = self._mediaTrackFadeConfigHolders[trackId].getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
+        fadeValue = (1.0 - levelValue)
+        return fadeValue
+
     def mixImages(self, midiTime):
         imageMix = None
         for midiChannel in range(16):
@@ -238,10 +261,11 @@ class MediaMixer(object):
             effects = self._mediaTracksEffects[midiChannel]
             if(currenMedia != None):
                 mixMode = self._mediaTracksMixMode[midiChannel]
+                wipeSettings = self._mediaTracksWipeSettings[midiChannel]
                 midiChannelState = self._midiStateHolder.getMidiChannelState(midiChannel)
                 guiCtrlStateHolder = self._midiStateHolder.getMidiChannelControllerStateHolder(midiChannel)
                 midiNoteState = midiChannelState.getActiveNote(midiTime)
-                mixLevel = 1.0 - self._mediaTracksMidiModulation[midiChannel].getModlulationValue(self._mediaTracksLevelMod[midiChannel], midiChannelState, midiNoteState, midiTime, 0.0)
+                mixLevel = self._getFadeValue(midiChannel, midiTime, midiNoteState, midiChannelState)
                 if(mixLevel > 0.0):
                     preCtrlValues = self._mediaTracksPreEffectControllerValues[midiChannel]
                     postCtrlValues = self._mediaTracksPostEffectControllerValues[midiChannel]
@@ -255,17 +279,14 @@ class MediaMixer(object):
                         imageTest = currenMedia.getImage(currenMediaState)
                         if(imageTest != None):
                             # Apply effects and level...
-                            if(imageMix == self._mixMat1):
-                                imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues = currenMedia.mixWithImage(imageMix, MixMode.Replace, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
-                            else:
-                                imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, MixMode.Replace, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                            imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, MixMode.Replace, wipeSettings, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1)
                             self._mediaTracksCurrentPreEffectValues[midiChannel] = preFxSettings
                             self._mediaTracksCurrentPostEffectValues[midiChannel] = postFxSettings
                     else:
                         if(imageMix == self._mixMat1):
-                            imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                            imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, mixMode, wipeSettings, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2)
                         else:
-                            imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                            imageMix, preFxSettings, postFxSettings, preCtrlValues, postCtrlValues  = currenMedia.mixWithImage(imageMix, mixMode, wipeSettings, mixLevel, effects, preCtrlValues, postCtrlValues, currenMediaState, midiTime, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1)
                         self._mediaTracksCurrentPreEffectValues[midiChannel] = preFxSettings
                         self._mediaTracksCurrentPostEffectValues[midiChannel] = postFxSettings
                     self._mediaTracksPreEffectControllerValues[midiChannel] = preCtrlValues

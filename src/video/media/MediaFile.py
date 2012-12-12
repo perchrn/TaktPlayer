@@ -10,11 +10,11 @@ import numpy
 from midi.MidiModulation import MidiModulation
 from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,\
     copyOrResizeImage, pilToCvImage, pilToCvMask, ZoomEffect, MediaError,\
-    copyImage
+    copyImage, setupEffectMemory
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
-    FadeMode, getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName, KinectMode, TimeModulationMode
+    getMixModeFromName, ModulationValueMode,\
+    getModulationValueModeFromName, KinectMode, TimeModulationMode, WipeMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
@@ -22,45 +22,14 @@ from midi.MidiUtilities import noteStringToNoteNumber
 from video.media.TextRendrer import generateTextImageAndMask, findOsFontPath
 from midi.MidiStateHolder import NoteState
 import traceback
+from video.media.ImageMixer import ImageMixer
 try:
     import freenect
 except:
     freenect = None
 
-windowName = "TAKT Player"
-def createCvWindow(fullScreenMode, sizeX, sizeY, posX=-1, posY=-1):
-    if(fullScreenMode == "off"):
-        cv.NamedWindow(windowName, cv.CV_WINDOW_NORMAL)
-        cv.ResizeWindow(windowName, sizeX, sizeY)
-        if(posX >= 0 and posY >=0):
-            cv.MoveWindow(windowName, posX, posY)
-    else:
-        cv.NamedWindow(windowName, cv.CV_WINDOW_FULLSCREEN)
-
-def addCvMouseCallback(callBack):
-    cv.SetMouseCallback(windowName, callBack)
-
-def showCvImage(image):
-    cv.ShowImage(windowName, image)
-
-def hasCvWindowStoped():
-    k = cv.WaitKey(1);
-    if k == 27: #Escape
-        return "Escape"
-    elif k == 3:
-        return "Ctrl c"
-    elif k == 17:
-        return "Ctrl q"
-    elif k == 24:
-        return "Ctrl x"
-    elif k == 113:
-        return "q"
-    elif k == 81:
-        return "Q"
-    else:
-        if k != -1:
-            print "DEBUG WaitKey: " + str(k)
-    return None
+def showCvImage(image, num = 1):
+    cv.ShowImage("TAKT debug " + str(num), image)
 
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
@@ -70,96 +39,6 @@ def scaleAndSave(image, osFileName, resizeMat):
     cv.Resize(image, resizeMat)
     cv.SaveImage(osFileName, resizeMat)
 
-def fadeImage(image, value, mode):
-    if(mode == FadeMode.White):
-        cv.ConvertScaleAbs(image, image, value, (1.0-value) * 256)
-    else: #FadeMode.Black
-        cv.ConvertScaleAbs(image, image, value, 0.0)
-    return image
-
-def mixImageSelfMask(level, image1, image2, mixMask, mixMat1, whiteMode):
-    cv.Copy(image2, mixMat1)
-    cv.CvtColor(image2, mixMask, cv.CV_BGR2GRAY);
-    if(whiteMode == True):
-        cv.CmpS(mixMask, 250, mixMask, cv.CV_CMP_LT)
-    else:
-        cv.CmpS(mixMask, 5, mixMask, cv.CV_CMP_GT)
-    return mixImageAlphaMask(level, image1, mixMat1, mixMask, image2)
-    mixImageAlphaMask(level, mixMat1, image1, mixMask, image2)
-    cv.Copy(mixMat1, image1, mixMask)
-    return image1
-
-def mixImageAlphaMask(level, image1, image2, image2mask, mixMat1):
-    if(level < 0.99):
-        valueCalc = int(256 * (1.0 - level))
-        rgbColor = cv.CV_RGB(valueCalc, valueCalc, valueCalc)
-        whiteColor = cv.CV_RGB(255, 255, 255)
-        cv.Set(mixMat1, whiteColor)
-        cv.Set(mixMat1, rgbColor, image2mask)
-        cv.Mul(image1, mixMat1, image1, 0.004)
-        valueCalc = int(256 * level)
-        rgbColor = cv.CV_RGB(valueCalc, valueCalc, valueCalc)
-        cv.Zero(mixMat1)
-        cv.Set(mixMat1, rgbColor, image2mask)
-        cv.Mul(image2, mixMat1, image2, 0.004)
-        cv.Add(image1, image2, image1)
-    else:
-        cv.Copy(image2, image1, image2mask)
-    return image1
-
-def mixImagesAdd(level, image1, image2, mixMat):
-    if(level < 0.99):
-        cv.ConvertScaleAbs(image2, image2, level, 0.0)
-        cv.Add(image1, image2, mixMat)
-    else:
-        cv.Add(image1, image2, mixMat)
-    return mixMat
-
-def mixImageSubtract(level, image1, image2, mixMat):
-    if(level < 0.99):
-        cv.ConvertScaleAbs(image2, image2, level, 0.0)
-    cv.Sub(image1, image2, mixMat)
-    return mixMat
-
-def mixImagesReplace(level, image1, image2, mixMat):
-    if(level < 0.99):
-        if(image1 != None):
-            cv.ConvertScaleAbs(image2, image2, level, 0.0)
-            cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
-            cv.Add(image1, image2, mixMat)
-        else:
-            cv.ConvertScaleAbs(image2, mixMat, level, 0.0)
-    else:
-        return image2
-    return mixMat
-
-def mixImagesMultiply(level, image1, image2, mixMat):
-    if(level < 0.99):
-        cv.ConvertScaleAbs(image2, mixMat, 1.0, 256*(1.0-level))
-        cv.Mul(image1, mixMat, mixMat, 0.004)
-    else:
-        cv.Mul(image1, image2, mixMat, 0.004)
-    return mixMat
-
-def mixImages(mode, level, image1, image2, image2mask, mixMat, mixMask):
-    if(level < 0.01):
-        return image1
-    if(mode == MixMode.Multiply):
-        return mixImagesMultiply(level, image1, image2, mixMat)
-    elif(mode == MixMode.Subtract):
-        return mixImageSubtract(level, image1, image2, mixMat)
-    elif(mode == MixMode.LumaKey):
-        return mixImageSelfMask(level, image1, image2, mixMask, mixMat, False)
-    elif(mode == MixMode.WhiteLumaKey):
-        return mixImageSelfMask(level, image1, image2, mixMask, mixMat, True)
-    elif(mode == MixMode.AlphaMask):
-        if(image2mask != None):
-            return mixImageAlphaMask(level, image1, image2, image2mask, mixMat)
-        #Will fall back to Add mode if there is no mask.
-    elif(mode == MixMode.Replace):
-        return mixImagesReplace(level, image1, image2, mixMat)
-    #Default is Add!
-    return mixImagesAdd(level, image1, image2, mixMat)
 
 def imageToArray(image):
     return numpy.asarray(image)
@@ -167,6 +46,7 @@ def imageToArray(image):
 def imageFromArray(array):
     return cv.fromarray(array)
 
+imageMixerClass = None
 
 class MediaFile(object):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -181,6 +61,12 @@ class MediaFile(object):
         self._midiTiming = midiTimingClass
         self._internalResolutionX =  internalResolutionX
         self._internalResolutionY =  internalResolutionY
+
+        global imageMixerClass
+        if(imageMixerClass == None):
+            imageMixerClass = ImageMixer(self._internalResolutionX, self._internalResolutionY)
+            setupEffectMemory(self._internalResolutionX, self._internalResolutionY)
+        self._imageMixerClass = imageMixerClass
 
         self._firstImage = None
         self._firstImageMask = None
@@ -207,6 +93,7 @@ class MediaFile(object):
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         mediaSettingsHolder.image = None
         mediaSettingsHolder.imageMask = None
+        mediaSettingsHolder.imageLevel = 1.0
         mediaSettingsHolder.captureImage = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.captureMask = None
         mediaSettingsHolder.currentFrame = 0
@@ -286,10 +173,13 @@ class MediaFile(object):
         self._syncLength = -1.0
         self._quantizeLength = -1.0
         self._mixMode = MixMode.Add
+        self._wipeModeHolder = WipeMode()
+        self._wipeSettings = WipeMode.Fade , False, (0.0)
 
         self._modulationRestartMode = ModulationValueMode.KeepOld
         self._effect1Settings = None
         self._effect2Settings = None
+        self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
         self._timeModulationSettings = None
 
     def _getConfiguration(self):
@@ -337,10 +227,11 @@ class MediaFile(object):
                     mediaSettingsHolder.effect2OldValues = mediaSettingsHolder.effect2StartValues
                     mediaSettingsHolder.resetEffect = True
 
-            self._fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
-            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._fadeAndLevelTemplate)
+            fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
+            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(fadeAndLevelTemplate)
             if(self._fadeAndLevelSettings == None):
                 self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
+            self._wipeSettings = self._fadeAndLevelSettings.getWipeSettings()
 
             mixMode = self._configurationTree.getValue("MixMode")
             self._mixMode = getMixModeFromName(mixMode)
@@ -502,11 +393,11 @@ class MediaFile(object):
 
     def _getFadeValue(self, currentSongPosition, midiNoteState, midiChannelState):
         noteDone = False
-        fadeMode, fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
+        fadeValue, levelValue = self._fadeAndLevelSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
         if(fadeValue > 0.999999):
             noteDone = True
         fadeValue = (1.0 - fadeValue) * (1.0 - levelValue)
-        return fadeMode, fadeValue, noteDone
+        return fadeValue, noteDone
 
     def getEffectState(self, mediaSettingsHolder):
         if(mediaSettingsHolder == None):
@@ -580,7 +471,7 @@ class MediaFile(object):
         else:
             return (image, (0.0, 0.0, 0.0, 0.0, 0.0), (None, None, None, None, None))
 
-    def _applyEffects(self, mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue):
+    def _applyEffects(self, mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, wipeSettings, fadeValue):
         if(mediaSettingsHolder.resetEffect == True):
             mediaSettingsHolder.resetEffect = False
             self._resetEffects(mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState)
@@ -592,8 +483,8 @@ class MediaFile(object):
         (mediaSettingsHolder.image, mediaSettingsHolder.effect1OldValues, mediaSettingsHolder.effect1StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect1, self._effect1Settings, mediaSettingsHolder.effect1StartSumValues, mediaSettingsHolder.effect1StartMidiValues, mediaSettingsHolder.effect1StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 0)
         (mediaSettingsHolder.image, mediaSettingsHolder.effect2OldValues, mediaSettingsHolder.effect2StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect2, self._effect2Settings, mediaSettingsHolder.effect2StartSumValues, mediaSettingsHolder.effect2StartMidiValues, mediaSettingsHolder.effect2StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 5)
 
-        if(fadeValue < 0.99):
-            mediaSettingsHolder.image = fadeImage(mediaSettingsHolder.image, fadeValue, fadeMode)
+        self._wipeSettings = wipeSettings
+        mediaSettingsHolder.imageLevel = fadeValue
 
     def _timeModulatePos(self, unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, syncLength):
         self._loopModulationMode, modulation, speedRange, speedQuantize = self._timeModulationSettings.getValues(currentSongPosition, midiChannelState, midiNoteState, self._specialModulationHolder)
@@ -818,19 +709,23 @@ class MediaFile(object):
         if(self._fileOk):
             self._getConfiguration() #Make sure we can connect to any loaded ModulationMedia
 
-    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, wipeSettings, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat):
         if(mediaSettingsHolder.image == None):
             return (image, None, None, None, None)
         else:
             emptyStartValues = (None, None, None, None, None)
             if(mixMode == MixMode.Default):
                 mixMode = self._mixMode
+            wipeMode, _, _ = wipeSettings
+            if(wipeMode == WipeMode.Default):
+                wipeSettings = self._wipeSettings
+            mixLevel = mixLevel * mediaSettingsHolder.imageLevel #update with note level
             if(effects != None):
                 preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = effects
             else:
                 preFx, preFxSettings, preFxStartVal, postFx, postFxSettings, postFxStartVal = (None, None, None, None, None, None)
             (mediaSettingsHolder.image, currentPreValues, preEffectStartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, preFx, preFxSettings, preCtrlValues, emptyStartValues, preFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 0)
-            mixedImage =  mixImages(mixMode, mixLevel, image, mediaSettingsHolder.image, mediaSettingsHolder.imageMask, mixMat1, mixMask)
+            mixedImage =  self._imageMixerClass.mixImages(mixMode, wipeSettings, mixLevel, image, mediaSettingsHolder.image, mediaSettingsHolder.imageMask, mixMat)
             (mixedImage, currentPostValues, postEffectStartSumValues) = self._applyOneEffect(mixedImage, postFx, postFxSettings, postCtrlValues, emptyStartValues, postFxStartVal, currentSongPosition, midiChannelState, midiNoteState, guiCtrlStateHolder, 5)
             return (mixedImage, currentPreValues, currentPostValues, preEffectStartSumValues, postEffectStartSumValues)
 
@@ -893,7 +788,6 @@ class MediaGroup(MediaFile):
     def setMixMatBuffers(self, buffers):
         self._mixMat1 = buffers[0]
         self._mixMat2 = buffers[1]
-        self._mixMask = buffers[2]
 
     def _setupMediaSettingsHolder(self, mediaSettingsHolder):
         MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
@@ -946,8 +840,8 @@ class MediaGroup(MediaFile):
             modifiedMultiplyer = self._timeModulatePos(timeMultiplyer, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, None)
             timeMultiplyer = modifiedMultiplyer * timeMultiplyer
 
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
 
@@ -967,23 +861,22 @@ class MediaGroup(MediaFile):
                 imageTest = media.getImage(mediaSettings)
                 if(imageTest != None):
                     mixMode = MixMode.Replace
-                    if(imageMix == self._mixMat1):
-                        imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
-                    else:
-                        imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                    wipeSettings = WipeMode.Default, False, (0.0)
+                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, wipeSettings, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1)
             else:
                 mixMode = MixMode.Default
+                wipeSettings = WipeMode.Default, False, (0.0)
                 if(imageMix == self._mixMat1):
-                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1, self._mixMask)
+                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, wipeSettings, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2)
                 else:
-                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat2, self._mixMask)
+                    imageMix, _, _, _, _ = media.mixWithImage(imageMix, mixMode, wipeSettings, mixLevel, mixEffects, None, None, mediaSettings, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, self._mixMat1)
 
         if(imageMix != None):
             copyOrResizeImage(imageMix, mediaSettingsHolder.captureImage)
         else:
             cv.SetZero(mediaSettingsHolder.captureImage)
 
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
 
         return False
 
@@ -1074,8 +967,8 @@ class ImageFile(MediaFile):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             self._image = None
             return noteDone
 
@@ -1193,7 +1086,7 @@ class ImageFile(MediaFile):
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, dst_region)
             copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
         return False
 
     def _angleAndMoveToXY(self, angle, move):
@@ -1300,8 +1193,8 @@ class ScrollImageFile(MediaFile):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
 
@@ -1401,7 +1294,7 @@ class ScrollImageFile(MediaFile):
                     mediaSettingsHolder.captureMask = None
 
         mediaSettingsHolder.imageMask = mediaSettingsHolder.captureMask
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
         return False
 
     def openFile(self, midiLength):
@@ -1510,8 +1403,8 @@ class SpriteMediaBase(MediaFile):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
 
@@ -1626,7 +1519,7 @@ class SpriteMediaBase(MediaFile):
             mediaSettingsHolder.captureMask = mediaSettingsHolder.spritePlacementMask
 
         mediaSettingsHolder.imageMask = mediaSettingsHolder.captureMask
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
         return False
 
     def openFile(self, midiLength):
@@ -1957,8 +1850,8 @@ class CameraInput(MediaFile):
         pass
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
         if(self._cameraMode == self.CameraModes.OpenCV):
@@ -2009,7 +1902,7 @@ class CameraInput(MediaFile):
                     cv.Resize(captureImage, dst_region)
                     copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
 
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
         return False
 
     def openFile(self, midiLength):
@@ -2221,8 +2114,8 @@ class KinectCameraInput(MediaFile):
         if(freenect == None):
             mediaSettingsHolder.image = None
             return True
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
 
@@ -2268,7 +2161,7 @@ class KinectCameraInput(MediaFile):
         zoomAmount, xyrate, xcenter, ycenter = self._getZoomValues(mediaSettingsHolder)
         if((zoomAmount != 0.5) or (xyrate != 0.5)):
             mediaSettingsHolder.captureImage = self._zoomEffect.applyEffect(mediaSettingsHolder.captureImage, zoomAmount, xyrate, xcenter, ycenter, 1.0, 0.25, 0.75)
-        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
         return False
 
     def openFile(self, midiLength):
@@ -2337,8 +2230,8 @@ class ImageSequenceFile(MediaFile):
         return self._midiModulation.getModlulationValue(self._playbackModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, self._specialModulationHolder)
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
 
@@ -2378,11 +2271,11 @@ class ImageSequenceFile(MediaFile):
                         copyOrResizeImage(captureFrame, mediaSettingsHolder.captureImage)
                     else:
                         print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
             return False
         else:
 #            self._log.debug("Same frame %d currentSongPosition %f", mediaSettingsHolder.currentFrame, currentSongPosition)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
             return False
 
     def openFile(self, midiLength):
@@ -2421,8 +2314,8 @@ class VideoLoopFile(MediaFile):
         return "VideoLoop"
 
     def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, midiChannelState, timeMultiplyer = None):
-        fadeMode, fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
-        if((fadeMode == FadeMode.Black) and (fadeValue < 0.00001)):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, midiChannelState)
+        if(fadeValue < 0.00001):
             mediaSettingsHolder.image = None
             return noteDone
         lastFrame = mediaSettingsHolder.currentFrame
@@ -2473,12 +2366,12 @@ class VideoLoopFile(MediaFile):
                     copyOrResizeImage(captureFrame, mediaSettingsHolder.captureImage)
                 else:
                     print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
             return False
         else:
 #            print "DEBUG pcn: Same frame %d for holderId %d" % (mediaSettingsHolder.currentFrame, mediaSettingsHolder._uid)
 #            self._log.debug("Same frame %d currentSongPosition %f", mediaSettingsHolder.currentFrame, currentSongPosition)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, fadeMode, fadeValue)
+            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, self._wipeSettings, fadeValue)
             return False
 
     def openFile(self, midiLength):
@@ -2529,7 +2422,7 @@ class VideoLoopFile(MediaFile):
 #        fourcc = cv.CV_FOURCC('M','J','P','G')
 #        self._videoWriter = cv.CreateVideoWriter("test.avi", fourcc, 30, (self._internalResolutionX, self._internalResolutionY))
 #
-#    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+#    def mixWithImage(self, image, mixMode, wipeMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
 #        if(mixMode == MixMode.Default):
 #            mixMode = self._mixMode
 #        emptyStartValues = (None, None, None, None, None)
@@ -2767,5 +2660,5 @@ class ModulationMedia(MediaFile):
         self._firstImage = self._mediaSettingsHolder.captureImage
         self._fileOk = True
 
-    def mixWithImage(self, image, mixMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat1, mixMask):
+    def mixWithImage(self, image, mixMode, wipeMode, mixLevel, effects, preCtrlValues, postCtrlValues, mediaSettingsHolder, currentSongPosition, midiChannelState, guiCtrlStateHolder, midiNoteState, mixMat):
         return (image, None, None, None, None)

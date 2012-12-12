@@ -143,8 +143,9 @@ class PlayerMain(wx.Frame):
         confChild = self._configurationTree.addChildUnique("MediaMixer")
         self._mediaMixer = MediaMixer(confChild, self._midiStateHolder, self._specialModulationHolder,
                                       self._effectsConfiguration, self._effectImagesConfiguration,
+                                      self._mediaFadeConfiguration,
                                       self._internalResolutionX, self._internalResolutionY,
-                                    self._playerConfiguration.getAppDataDirectory())
+                                      self._playerConfiguration.getAppDataDirectory())
         confChild = self._configurationTree.addChildUnique("MediaPool")
         self._mediaPool = MediaPool(self._midiTiming, self._midiStateHolder, self._specialModulationHolder,
                                     self._mediaMixer, self._timeModulationConfiguration,

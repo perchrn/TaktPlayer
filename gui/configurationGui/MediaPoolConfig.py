@@ -367,6 +367,13 @@ class MediaFile(object):
             retValue = self._configurationTree.getValue("MixMode")
         return retValue
 
+    def getFadeConfigName(self):
+        retValue = "None"
+        mediaType = self._configurationTree.getValue("Type")
+        if((mediaType != None) and (mediaType != "Modulation")):
+            retValue = self._configurationTree.getValue("FadeConfig")
+        return retValue
+
     def updateFrom(self, sourceMediaFile, dontChangeNote = True):
         sourceConfigTree = sourceMediaFile.getConfig()
         self._configurationTree.setValue("FileName", sourceConfigTree.getValue("FileName"))
@@ -662,6 +669,9 @@ class MediaFileGui(object): #@UndefinedVariable
 
         self._trackThumbnailBitmap = wx.EmptyBitmap (42, 32, depth=3) #@UndefinedVariable
 
+        self._doubbleBitmap = wx.Bitmap("graphics/timingDoubble.png") #@UndefinedVariable
+        self._halfBitmap = wx.Bitmap("graphics/timingHalf.png") #@UndefinedVariable
+
         self._blankModeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
         self._modeBitmapCamera = wx.Bitmap("graphics/modeCamera.png") #@UndefinedVariable
         self._modeBitmapImage = wx.Bitmap("graphics/modeImage.png") #@UndefinedVariable
@@ -704,8 +714,8 @@ class MediaFileGui(object): #@UndefinedVariable
                             self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapAlpha, self._mixBitmapReplace]
         self._mixLabels = self._mixModes.getChoices()
 
-        self._fadeModeImages, self._fadeModeLabels = self._mainConfig.getFadeModeLists()
-        self._fadeModeLabelsLong = ["FadeToBlack", "FadeToWhite"]
+        self._wipeModeImages, self._wipeModeLabels = self._mainConfig.getFadeModeLists()
+        self._wipeModeLabelsLong = ["Default", "FadeOut", "PushOut", "NoizeDisolve", "ZoomOut", "Flip"]
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
         self._fxBitmapBlobDetect = wx.Bitmap("graphics/fxBlobDetect.png") #@UndefinedVariable
@@ -738,10 +748,9 @@ class MediaFileGui(object): #@UndefinedVariable
         self._editBitmap = wx.Bitmap("graphics/editButton.png") #@UndefinedVariable
         self._editPressedBitmap = wx.Bitmap("graphics/editButtonPressed.png") #@UndefinedVariable
         self._editSelectedBitmap = wx.Bitmap("graphics/editButtonSelected.png") #@UndefinedVariable
-        self._saveBitmap = wx.Bitmap("graphics/saveButton.png") #@UndefinedVariable
-        self._savePressedBitmap = wx.Bitmap("graphics/saveButtonPressed.png") #@UndefinedVariable
-        self._saveGreyBitmap = wx.Bitmap("graphics/saveButtonGrey.png") #@UndefinedVariable
 
+        self._editBigBitmap = wx.Bitmap("graphics/editButtonBig.png") #@UndefinedVariable
+        self._editBigPressedBitmap = wx.Bitmap("graphics/editButtonBigPressed.png") #@UndefinedVariable
         self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
         self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
         self._newThumbButtonBitmap = wx.Bitmap("graphics/newThumbButton.png") #@UndefinedVariable
@@ -1159,38 +1168,57 @@ class MediaFileGui(object): #@UndefinedVariable
         txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE CLIP:", pos=(4, 2)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 16), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
+        self._overviewClipButton = PcnKeyboardButton(self._mainClipOverviewPlane, self._trackThumbnailBitmap, (6, 18), wx.ID_ANY, size=(42, 32), isBlack=False) #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipButton)
         self._overviewClipButton.setFrqameAddingFunction(addTrackButtonFrame)
         self._overviewClipButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
         self._overviewClipButton.setBitmap(self._emptyBitMap)
 
-        self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 15), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Type:", pos=(51, 18)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        self._overviewClipModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipModeButton)
         self._overviewClipModeButtonPopup = PcnPopupMenu(self, self._modeImages, self._modeLabels, self._onClipModeChosen)
-        self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (52, 32), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        cursorWidgetList.append(self._overviewClipMixButton)
-        self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
-        self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "L: N/A", pos=(12, 50)) #@UndefinedVariable
+
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Length:", pos=(12, 54)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        self._overviewClipLengthLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "N/A", pos=(16, 68)) #@UndefinedVariable
         if(isMac == True):
             self._overviewClipLengthLabel.SetFont(font)
-        self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Q: N/A", pos=(10, 62)) #@UndefinedVariable
+        lengthDoubbleButton = PcnImageButton(self._mainClipOverviewPlane, self._doubbleBitmap, self._doubbleBitmap, (48, 69), wx.ID_ANY, size=(16, 12)) #@UndefinedVariable
+        cursorWidgetList.append(lengthDoubbleButton)
+        lengthHalfButton = PcnImageButton(self._mainClipOverviewPlane, self._halfBitmap, self._halfBitmap, (65, 69), wx.ID_ANY, size=(16, 12)) #@UndefinedVariable
+        cursorWidgetList.append(lengthHalfButton)
+        lengthDoubbleButton.Bind(wx.EVT_BUTTON, self._onLengthDoubbleButton) #@UndefinedVariable
+        lengthHalfButton.Bind(wx.EVT_BUTTON, self._onLengthHalfButton) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Quantize:", pos=(12, 82)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        self._overviewClipQuantizeLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "N/A", pos=(16, 98)) #@UndefinedVariable
         if(isMac == True):
             self._overviewClipQuantizeLabel.SetFont(font)
-        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 76)) #@UndefinedVariable
+        syncDoubbleButton = PcnImageButton(self._mainClipOverviewPlane, self._doubbleBitmap, self._doubbleBitmap, (48, 99), wx.ID_ANY, size=(16, 12)) #@UndefinedVariable
+        cursorWidgetList.append(syncDoubbleButton)
+        syncHalfButton = PcnImageButton(self._mainClipOverviewPlane, self._halfBitmap, self._halfBitmap, (65, 99), wx.ID_ANY, size=(16, 12)) #@UndefinedVariable
+        cursorWidgetList.append(syncHalfButton)
+        syncDoubbleButton.Bind(wx.EVT_BUTTON, self._onSyncDoubbleButton) #@UndefinedVariable
+        syncHalfButton.Bind(wx.EVT_BUTTON, self._onSyncHalfButton) #@UndefinedVariable
+
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX1:", pos=(8, 118)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 76)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FX2:", pos=(42, 118)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx1Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (10, 132), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         fxWidgetList.append(self._overviewFx1Button)
-        self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 90), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
+        self._overviewFx2Button = PcnImageButton(self._mainClipOverviewPlane, self._blankFxBitmap, self._blankFxBitmap, (44, 132), wx.ID_ANY, size=(32, 22)) #@UndefinedVariable
         fxWidgetList.append(self._overviewFx2Button)
         self._overviewFx1Button.enableDoubleClick()
         self._overviewFx2Button.enableDoubleClick()
         self._overviewClipModeButton.Bind(wx.EVT_BUTTON, self._onClipModeButton) #@UndefinedVariable
-        self._overviewClipMixButton.Bind(wx.EVT_BUTTON, self._onClipMixButton) #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx1Done)
         self._overviewFx2Button.Bind(EVT_DRAG_DONE_EVENT, self._onDragFx2Done)
         self._overviewFx1Button.Bind(wx.EVT_BUTTON, self._onFxButton) #@UndefinedVariable
@@ -1198,25 +1226,36 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewFx1Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
         self._overviewFx2Button.Bind(EVT_DOUBLE_CLICK_EVENT, self._onFxButtonDouble)
 
-        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "FADE:", pos=(8, 116)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mix:", pos=(8, 164)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 130)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 178)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 146)) #@UndefinedVariable
+        self._overviewClipMixButton = PcnImageButton(self._mainClipOverviewPlane, self._blankMixBitmap, self._blankMixBitmap, (50, 178), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipMixButton)
+        self._overviewClipMixButtonPopup = PcnPopupMenu(self, self._mixImages, self._mixLabels, self._onClipMixChosen)
+        self._overviewClipMixButton.Bind(wx.EVT_BUTTON, self._onClipMixButton) #@UndefinedVariable
+
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Fade/Wipe:", pos=(8, 200)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 130), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Mode:", pos=(12, 217)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        self._overviewClipFadeModeButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (50, 217), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipFadeModeButton)
-        self._overviewClipFadeModeButtonPopup = PcnPopupMenu(self, self._fadeModeImages, self._fadeModeLabelsLong, self._onClipFadeModeChosen)
-        self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        cursorWidgetList.append(self._overviewClipFadeModulationButton)
-        self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 160), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        cursorWidgetList.append(self._overviewClipFadeLevelButton)
         self._overviewClipFadeModeButton.enableDoubleClick()
         self._overviewClipFadeModeButton.Bind(wx.EVT_BUTTON, self._onClipFadeButton) #@UndefinedVariable
         self._overviewClipFadeModeButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
+
+        txt = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "Modulation:", pos=(12, 236)) #@UndefinedVariable
+        if(isMac == True):
+            txt.SetFont(font)
+        self._overviewClipFadeModulationButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (18, 252), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipFadeModulationButton)
+        self._overviewClipFadeLevelButton = PcnImageButton(self._mainClipOverviewPlane, self._blankModeBitmap, self._blankModeBitmap, (46, 252), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(self._overviewClipFadeLevelButton)
         self._overviewClipFadeModulationButton.enableDoubleClick()
         self._overviewClipFadeModulationButton.Bind(wx.EVT_BUTTON, self._onClipFadeModulationButton) #@UndefinedVariable
         self._overviewClipFadeModulationButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
@@ -1224,15 +1263,18 @@ class MediaFileGui(object): #@UndefinedVariable
         self._overviewClipFadeLevelButton.Bind(wx.EVT_BUTTON, self._onClipFadeLevelButton) #@UndefinedVariable
         self._overviewClipFadeLevelButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipFadeButtonDouble)
 
-        self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 180)) #@UndefinedVariable
+        self._overviewClipNoteLabel = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, "NOTE: N/A", pos=(8, 278)) #@UndefinedVariable
         if(isMac == True):
-            self._overviewClipNoteLabel.SetFont(font)
+            boldfont = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT) #@UndefinedVariable
+            boldfont.SetPointSize(12)
+            boldfont.SetWeight(wx.FONTWEIGHT_BOLD) #@UndefinedVariable
+            self._overviewClipNoteLabel.SetFont(boldfont)
 
         self._overviewClipSaveButtonDissabled = True
-        self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBitmap, self._editPressedBitmap, (30, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._overviewClipEditButton = PcnImageButton(self._mainClipOverviewPlane, self._editBigBitmap, self._editBigPressedBitmap, (20, 300), wx.ID_ANY, size=(48, 17)) #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipEditButton)
         self._overviewClipEditButton.Bind(wx.EVT_BUTTON, self._onOverviewClipEditButton) #@UndefinedVariable
-        self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveGreyBitmap, self._saveGreyBitmap, (50, 196), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._overviewClipSaveButton = PcnImageButton(self._mainClipOverviewPlane, self._saveBigGreyBitmap, self._saveBigGreyBitmap, (18, 320), wx.ID_ANY, size=(52, 17)) #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipSaveButton)
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
 
@@ -2112,6 +2154,7 @@ All notes on events are quantized to this.
     def _onFadeEdit(self, event, showFadeGui=True):
         if(showFadeGui == True):
             if(self._selectedEditor != self.EditSelection.Fade):
+                self._configSizer.Hide(self._moulationConfigPanel)
                 self._configSizer.Show(self._fadeConfigPanel)
                 self._selectedEditor = self.EditSelection.Fade
             else:
@@ -2120,11 +2163,10 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._effectConfigPanel)
             self._configSizer.Hide(self._slidersPanel)
-            self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
-        self._mainConfig.updateFadeGui(selectedFadeConfig, None, self._fadeField)
+        self._mainConfig.updateFadeGui(selectedFadeConfig, "Media", self._fadeField)
         self._highlightButton(self._selectedEditor)
 
     def _onCloseButton(self, event):
@@ -3058,9 +3100,9 @@ All notes on events are quantized to this.
     def _updateEditButton(self, isOpen):
         self._noteGuiOpen = isOpen
         if(isOpen == True):
-            self._overviewClipEditButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+            self._overviewClipEditButton.setBitmaps(self._editBigBitmap, self._editBigPressedBitmap)
         else:
-            self._overviewClipEditButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+            self._overviewClipEditButton.setBitmaps(self._editBigBitmap, self._editBigPressedBitmap)
 
     def _onOverviewClipSaveButton(self, event):
         if(self._overviewClipSaveButtonDissabled == False):
@@ -3144,22 +3186,21 @@ All notes on events are quantized to this.
             self._showOrHideSaveButton()
 
     def _onClipFadeModeChosen(self, index):
-        if((index >= 0) and (index < len(self._fadeModeLabels))):
+        if((index >= 0) and (index < len(self._wipeModeLabels))):
             if(self._midiNote != None):
-                fadeMode = self._fadeModeLabels[index]
-                print "fadeMode: " + fadeMode
+                wipeMode = self._wipeModeLabels[index]
                 if(self._config != None):
                     fadeConfigName = self._config.getValue("FadeConfig")
                     fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
                     if(fadeConfig != None):
-                        if(fadeConfig.getFadeMode() != fadeMode):
+                        if(fadeConfig.getFadeMode() != wipeMode):
                             makeNew = False
                             if(fadeConfigName == "Default"):
                                 makeNew = True
                             else:
                                 inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
                                 if(inUseNumber < 2):
-                                    fadeConfig.update(fadeMode, None, None)
+                                    fadeConfig.update(wipeMode, None, None)
                                 else:
                                     makeNew = True
                             if(makeNew == True):
@@ -3174,17 +3215,17 @@ All notes on events are quantized to this.
                                 dlg.Destroy()
                                 if(result == True):
                                     if(oldConfig == None):
-                                        self._mainConfig.makeFadeTemplate(newFadeConfigName, fadeMode, "None", "None")
+                                        self._mainConfig.makeFadeTemplate(newFadeConfigName, wipeMode, False, 0.0, "None", "None")
                                         if(self._config != None):
                                             self._config.setValue("FadeConfig", newFadeConfigName)
                                     else:
-                                        oldConfig.update(fadeMode, None, None)
+                                        oldConfig.update(wipeMode, None, None, None, None)
                                     self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
-                                    self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                                    self._mainConfig.updateFadeGuiButtons(newFadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                                     self._showOrHideSaveButton()
 
     def _onClipFadeButton(self, event):
-        self._clipOverviewGuiPlane.PopupMenu(self._overviewClipFadeModeButtonPopup, (71,128))
+        self._onFadeEdit(event)
 
     def _openModulationEditor(self, name):
         if(self._config != None):
@@ -3213,12 +3254,12 @@ All notes on events are quantized to this.
                             fadeConfig.setName(newFadeConfigName)
                             self._config.setValue("FadeConfig", newFadeConfigName)
                             self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
-                            self._mainConfig.updateFadeGuiButtons(newFadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                            self._mainConfig.updateFadeGuiButtons(newFadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                             self._mainConfig.updateFadeList(newFadeConfigName)
                             self._showOrHideSaveButton()
                     fadeConfigName = newFadeConfigName
                 if(fadeConfig != None):
-                    self._mainConfig.updateFadeGui(fadeConfigName, name)
+                    self._mainConfig.updateFadeGui(fadeConfigName, "Media", self._fadeField)
                     self._configSizer.Hide(self._timeModulationConfigPanel)
                     self._configSizer.Hide(self._effectConfigPanel)
                     self._configSizer.Hide(self._slidersPanel)
@@ -3231,6 +3272,46 @@ All notes on events are quantized to this.
 
     def _onClipFadeLevelButton(self, event):
         self._openModulationEditor("Level")
+
+    def _onLengthDoubbleButton(self, event):
+        if(self._config != None):
+            oldLength = float(self._syncField.GetValue())
+            newLength = oldLength * 2
+            self._syncField.SetValue(str(newLength))
+            if(newLength >= 1000):
+                newLength = int(newLength)
+            self._overviewClipLengthLabel.SetLabel(str(newLength))
+            self._showOrHideSaveButton()
+
+    def _onLengthHalfButton(self, event):
+        if(self._config != None):
+            oldLength = float(self._syncField.GetValue())
+            newLength = oldLength / 2
+            self._syncField.SetValue(str(newLength))
+            if(newLength >= 1000):
+                newLength = int(newLength)
+            self._overviewClipLengthLabel.SetLabel(str(newLength))
+            self._showOrHideSaveButton()
+
+    def _onSyncDoubbleButton(self, event):
+        if(self._config != None):
+            oldLength = float(self._quantizeField.GetValue())
+            newLength = oldLength * 2
+            self._quantizeField.SetValue(str(newLength))
+            if(newLength >= 1000):
+                newLength = int(newLength)
+            self._overviewClipQuantizeLabel.SetLabel(str(newLength))
+            self._showOrHideSaveButton()
+
+    def _onSyncHalfButton(self, event):
+        if(self._config != None):
+            oldLength = float(self._quantizeField.GetValue())
+            newLength = oldLength / 2
+            self._quantizeField.SetValue(str(newLength))
+            if(newLength >= 1000):
+                newLength = int(newLength)
+            self._overviewClipQuantizeLabel.SetLabel(str(newLength))
+            self._showOrHideSaveButton()
 
     def _onDragFx1Done(self, event):
         fxName = self._mainConfig.getDraggedFxName()
@@ -3509,11 +3590,11 @@ All notes on events are quantized to this.
     def _showOrHideSaveButton(self):
         updated = self._checkIfUpdated()
         if(updated == False):
-            self._overviewClipSaveButton.setBitmaps(self._saveGreyBitmap, self._saveGreyBitmap)
+            self._overviewClipSaveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
             self._saveButton.setBitmaps(self._saveBigGreyBitmap, self._saveBigGreyBitmap)
             self._overviewClipSaveButtonDissabled = True
         if(updated == True):
-            self._overviewClipSaveButton.setBitmaps(self._saveBitmap, self._savePressedBitmap)
+            self._overviewClipSaveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
             self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
             self._overviewClipSaveButtonDissabled = False
         
@@ -3548,15 +3629,19 @@ All notes on events are quantized to this.
         self._overviewClipNoteLabel.SetLabel("NOTE: " + noteText)
         length = self._config.getValue("SyncLength")
         self._syncField.SetValue(str(length))
-        self._overviewClipLengthLabel.SetLabel("L: " + str(length))
+        if(length >= 1000):
+            length = int(float(length))
+        self._overviewClipLengthLabel.SetLabel(str(length))
         qLength = self._config.getValue("QuantizeLength")
         self._quantizeField.SetValue(str(qLength))
-        self._overviewClipQuantizeLabel.SetLabel("Q: " + str(qLength))
+        if(qLength >= 1000):
+            qLength = int(float(qLength))
+        self._overviewClipQuantizeLabel.SetLabel(str(qLength))
         if(self._type == "Modulation"):
             self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
             self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
             self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
-            self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+            self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
         else:
             mixMode = self._config.getValue("MixMode")
             self._updateMixModeChoices(self._mixField, mixMode, "Add")
@@ -3569,7 +3654,7 @@ All notes on events are quantized to this.
             self.updateEffectThumb(self._overviewFx2Button, effect2Config)
             fadeConfigName = self._config.getValue("FadeConfig")
             self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
-            self._mainConfig.updateFadeGuiButtons(fadeConfigName, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+            self._mainConfig.updateFadeGuiButtons(fadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.TimeModulation):
@@ -3635,12 +3720,12 @@ All notes on events are quantized to this.
         self._overviewClipButton.setBitmap(self._emptyBitMap)
         self._overviewClipModeButton.setBitmaps(self._blankModeBitmap, self._blankModeBitmap)
         self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
-        self._overviewClipLengthLabel.SetLabel("L: N/A")
-        self._overviewClipQuantizeLabel.SetLabel("Q: N/A")
+        self._overviewClipLengthLabel.SetLabel("N/A")
+        self._overviewClipQuantizeLabel.SetLabel("N/A")
         self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewClipNoteLabel.SetLabel("NOTE: " + midiNoteString)
-        self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+        self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         self._showOrHideSaveButton()
 

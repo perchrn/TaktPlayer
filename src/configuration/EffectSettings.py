@@ -4,8 +4,8 @@ Created on 25. jan. 2012
 @author: pcn
 '''
 from midi.MidiModulation import MidiModulation
-from video.media.MediaFileModes import FadeMode, forceUnixPath,\
-    TimeModulationMode
+from video.media.MediaFileModes import forceUnixPath,\
+    TimeModulationMode, WipeMode
 import os
 from utilities.FloatListText import textToFloatValues, floatValuesToString
 
@@ -391,12 +391,12 @@ class FadeTemplates(ConfigurationTemplates):
         self._templateTypeName = "Fade templates"
 
     def _validateDefault(self):
-        name = "Default"
-        foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
-        if(foundConfig == None):
-            fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-            self._defaultModulationConfig = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
-            self._configurationTemplates.append(self._defaultModulationConfig)
+        for name in "Default", "TrackDefault":
+            foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
+            if(foundConfig == None):
+                fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
+                self._defaultModulationConfig = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+                self._configurationTemplates.append(self._defaultModulationConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
@@ -404,15 +404,15 @@ class FadeTemplates(ConfigurationTemplates):
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
-    def createTemplate(self, saveName, fadeMode, fadeMod, levelMod):
+    def createTemplate(self, saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
         newTemplate = FadeSettings(self._templateName, self._specialModulationHolder, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
-        newTemplate.update(fadeMode, fadeMod, levelMod)
+        newTemplate.update(wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
 
     def checkIfNameIsDefaultName(self, configName):
-        for name in "Default":
+        for name in "Default", "TrackDefault":
             if(configName == name):
                 return True
         return False
@@ -432,16 +432,17 @@ class FadeSettings(object):
         self._parentConfigurationTree = parentConfigurationTree
         self._templateId = templateId
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._wipeModesHolder = WipeMode()
         self._setupConfiguration()
         self._getConfiguration()
 
     def getCopy(self, newName):
+        self._getConfiguration()
         fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
         copyTemplate = FadeSettings(self._templateName, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
-        fadeModeString = self._configurationTree.getValue("Mode")
         fadeModulationString = self._configurationTree.getValue("Modulation")
         levelModulationString = self._configurationTree.getValue("Level")
-        copyTemplate.update(fadeModeString, fadeModulationString, levelModulationString)
+        copyTemplate.update(self._wipeModesHolder.getNames(self._wipeMode), self._wipePostMix, self._wipeSettings, fadeModulationString, levelModulationString)
         return copyTemplate
 
     def setupExtraConfig(self):
@@ -455,15 +456,19 @@ class FadeSettings(object):
         self._configurationTree.setValue(self._templateId, name)
 
     def getFadeMode(self):
-        return self._configurationTree.getValue("Mode")
+        return self._configurationTree.getValue("WipeMode")
 
     def _setupConfiguration(self):
         self._midiModulation.setModulationReceiver("Modulation", "None")
         self._midiModulation.setModulationReceiver("Level", "None")
-        self._configurationTree.addTextParameter("Mode", "Black")
+        self._configurationTree.addTextParameter("WipeMode", "Default")
+        self._configurationTree.addBoolParameter("WipePostMix", False)
+        self._configurationTree.addTextParameter("WipeSettings", "0.0")
         self._fadeModulationId = -1
         self._levelModulationId = -1
-        self._fadeMode = FadeMode.Black
+        self._wipeMode = WipeMode.Default
+        self._wipePostMix = False
+        self._wipeSettings = (0.0)
 
     def getConfigHolder(self):
         return self._configurationTree
@@ -471,20 +476,56 @@ class FadeSettings(object):
     def _getConfiguration(self):
         self._fadeModulationId = self._midiModulation.connectModulation("Modulation")
         self._levelModulationId = self._midiModulation.connectModulation("Level")
-        fadeMode = self._configurationTree.getValue("Mode")
-        if(fadeMode == "Black"):
-            self._fadeMode = FadeMode.Black
-        elif(fadeMode == "White"):
-            self._fadeMode = FadeMode.White
-        else:
-            self._fadeMode = FadeMode.Black #Defaults to black
+        wipeMode = self._configurationTree.getValue("WipeMode")
+        self._wipeMode = self._wipeModesHolder.findMode(wipeMode)
+        self._wipePostMix = self._configurationTree.getValue("WipePostMix")
+        wipeSettings = self._configurationTree.getValue("WipeSettings")
+        self._wipeSettings = self.getVerifiedWipeSettingsFromString(wipeSettings, self._wipeMode)
+#        print "DEBUG pcn: fadeTemplate._getConfiguration() " + str(self.getWipeSettings())
 
-    def update(self, fadeMode, fadeMod, levelMod):
+    @staticmethod
+    def getVerifiedWipeSettingsFromString(string, wipeMode):
+        if(wipeMode == WipeMode.Push):
+            wipeSettings = textToFloatValues(string, 1)
+        elif(wipeMode == WipeMode.Noize):
+            wipeSettings = textToFloatValues(string, 1)
+        elif(wipeMode == WipeMode.Zoom):
+            wipeSettings = textToFloatValues(string, 2)
+        elif(wipeMode == WipeMode.Flip):
+            wipeSettings = textToFloatValues(string, 1)
+        else:
+            wipeSettings = 0.0
+        return wipeSettings
+
+    def getWipeConfigValues(self, stringSettings):
+        self._getConfiguration()
+        if(stringSettings == True):
+            return self._wipeMode, self._wipePostMix, floatValuesToString(self._wipeSettings)
+        else:
+            return self._wipeMode, self._wipePostMix, self._wipeSettings
+
+    def update(self, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
+        print "DEBUG pcn: fadeTemplate update: " + str((wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod))
         if(fadeMod != None):
             self._midiModulation.setValue("Modulation", fadeMod)
         if(levelMod != None):
             self._midiModulation.setValue("Level", levelMod)
-        self._configurationTree.setValue("Mode", fadeMode)
+        self._configurationTree.setValue("WipeMode", self._wipeModesHolder.getNames(wipeMode))
+        if(wipePostMix != None):
+            self._configurationTree.setValue("WipePostMix", wipePostMix)
+        if(wipeSettings != None):
+            if(wipeMode == WipeMode.Push):
+                wipeSettingsString = floatValuesToString(wipeSettings)
+            elif(wipeMode == WipeMode.Noize):
+                wipeSettingsString = floatValuesToString(wipeSettings)
+            elif(wipeMode == WipeMode.Zoom):
+                wipeSettingsString = floatValuesToString(wipeSettings)
+            elif(wipeMode == WipeMode.Flip):
+                wipeSettingsString = floatValuesToString(wipeSettings)
+            else:
+                wipeSettingsString = "0.0"
+            self._configurationTree.setValue("WipeSettings", wipeSettingsString)
+        self._getConfiguration()
         
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -496,10 +537,13 @@ class FadeSettings(object):
     def updateFromXml(self, xmlFile):
         self._configurationTree._updateFromXml(xmlFile)
 
+    def getWipeSettings(self):
+        return self._wipeMode, self._wipePostMix, self._wipeSettings
+
     def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
         fadeVal =  self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
         levelVal =  self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        return (self._fadeMode, fadeVal, levelVal)
+        return (fadeVal, levelVal)
 
 class TimeModulationTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming, specialModulationHolder):
@@ -521,10 +565,10 @@ class TimeModulationTemplates(ConfigurationTemplates):
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
-    def createTemplate(self, saveName, fadeMode, fadeMod, rangeVal, rangeQuantize):
+    def createTemplate(self, saveName, speedMode, speedMod, rangeVal, rangeQuantize):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
         newTemplate = TimeModulationSettings(self._templateName, self._specialModulationHolder, saveName, self, fadeConfigTree, self._templateConfig, self._templateId)
-        newTemplate.update(fadeMode, fadeMod, rangeVal, rangeQuantize)
+        newTemplate.update(speedMode, speedMod, rangeVal, rangeQuantize)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
 
@@ -589,14 +633,14 @@ class TimeModulationSettings(object):
         return self._configurationTree
 
     def _getConfiguration(self):
-        fadeMode = self._configurationTree.getValue("Mode")
-        if(fadeMode == "Off"):
+        speedMode = self._configurationTree.getValue("Mode")
+        if(speedMode == "Off"):
             self._mode = TimeModulationMode.Off
-        elif(fadeMode == "SpeedModulation"):
+        elif(speedMode == "SpeedModulation"):
             self._mode = TimeModulationMode.SpeedModulation
-        elif(fadeMode == "TriggeredJump"):
+        elif(speedMode == "TriggeredJump"):
             self._mode = TimeModulationMode.TriggeredJump
-        elif(fadeMode == "TriggeredLoop"):
+        elif(speedMode == "TriggeredLoop"):
             self._mode = TimeModulationMode.TriggeredLoop
         else:
             self._mode = TimeModulationMode.SpeedModulation #Defaults to pitchbend

@@ -5,12 +5,12 @@ Created on 6. feb. 2012
 '''
 from midi.MidiTiming import MidiTiming
 from configuration.EffectSettings import EffectTemplates, FadeTemplates,\
-    EffectImageList, TimeModulationTemplates
+    EffectImageList, TimeModulationTemplates, FadeSettings
 import wx
 from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 from midi.MidiModulation import MidiModulation
 from midi.MidiController import MidiControllers
-from video.media.MediaFileModes import FadeMode, TimeModulationMode
+from video.media.MediaFileModes import TimeModulationMode, WipeMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
@@ -213,17 +213,17 @@ class GlobalConfig(object):
     def stopModulationGui(self):
         self._modulationGui.stopModulationUpdate()
 
-    def updateFadeGui(self, configName, editFieldName, editFieldWidget):
+    def updateFadeGui(self, configName, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
-            self._fadeGui.updateGui(template, editFieldName, editFieldWidget)
+            self._fadeGui.updateGui(template, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString)
 
     def updateFadeList(self, selectedName):
         self._fadeGui.updateFadeList(self._fadeConfiguration, selectedName)
 
-    def updateFadeGuiButtons(self, configName, modeWidget, modulationWidget, levelWidget):
+    def updateFadeGuiButtons(self, configName, noteWipeMode, modeWidget, modulationWidget, levelWidget):
         template = self._fadeConfiguration.getTemplate(configName)
-        self._fadeGui.updateFadeGuiButtons(template, modeWidget, modulationWidget, levelWidget)
+        self._fadeGui.updateFadeGuiButtons(template, noteWipeMode, modeWidget, modulationWidget, levelWidget)
 
     def getFadeTemplate(self, configName):
         return self._fadeConfiguration.getTemplate(configName)
@@ -231,8 +231,8 @@ class GlobalConfig(object):
     def getFadeTemplateByIndex(self, index):
         return self._fadeConfiguration.getTemplateByIndex(index)
 
-    def makeFadeTemplate(self, saveName, fadeMode, fadeMod, levelMod):
-        return self._fadeConfiguration.createTemplate(saveName, fadeMode, fadeMod, levelMod)
+    def makeFadeTemplate(self, saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
+        return self._fadeConfiguration.createTemplate(saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod)
 
     def deleteFadeTemplate(self, configName):
         self._fadeConfiguration.deleteTemplate(configName)
@@ -1646,9 +1646,9 @@ A list of start values for the effect modulation.
 #            self._oldListHeight = height
 
     def updateGui(self, effectTemplate, midiNote, editFieldName, editFieldWidget = None):
-        print "DEBUG pcn: updateGui() template xml:"
-        print effectTemplate.getXmlString()
-        print "x"*120
+#        print "DEBUG pcn: updateGui() template xml:"
+#        print effectTemplate.getXmlString()
+#        print "x"*120
         self._midiNote = midiNote
         self._activeEffectId = editFieldName
         self._editFieldWidget = editFieldWidget
@@ -1675,12 +1675,16 @@ class FadeGui(object):
         self._modulationGui = modulationGui
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._selectedEditor = self.EditSelected.Unselected
-        self._fadeModes = FadeMode()
+        self._wipeModesHolder = WipeMode()
         self._fadeListSelectedIndex = -1
 
-        self._blankFadeBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
-        self._fadeBlackBitmap = wx.Bitmap("graphics/fadeToBlack.png") #@UndefinedVariable
-        self._fadeWhiteBitmap = wx.Bitmap("graphics/fadeToWhite.png") #@UndefinedVariable
+        self._blankWipeBitmap = wx.Bitmap("graphics/modeEmpty.png") #@UndefinedVariable
+        self._wipeDefaultBitmap = wx.Bitmap("graphics/wipeDefault.png") #@UndefinedVariable
+        self._wipeFadeBitmap = wx.Bitmap("graphics/wipeFade.png") #@UndefinedVariable
+        self._wipePushBitmap = wx.Bitmap("graphics/wipePush.png") #@UndefinedVariable
+        self._wipeNoizeBitmap = wx.Bitmap("graphics/wipeNoize.png") #@UndefinedVariable
+        self._wipeZoomBitmap = wx.Bitmap("graphics/wipeZoom.png") #@UndefinedVariable
+        self._wipeFlipBitmap = wx.Bitmap("graphics/wipeFlip.png") #@UndefinedVariable
 
         self._helpBitmap = wx.Bitmap("graphics/helpButton.png") #@UndefinedVariable
         self._helpPressedBitmap = wx.Bitmap("graphics/helpButtonPressed.png") #@UndefinedVariable
@@ -1704,14 +1708,14 @@ class FadeGui(object):
         self._saveBigPressedBitmap = wx.Bitmap("graphics/saveButtonBigPressed.png") #@UndefinedVariable
         self._saveBigGreyBitmap = wx.Bitmap("graphics/saveButtonBigGrey.png") #@UndefinedVariable
 
-        self._fadeModeImages = [self._fadeBlackBitmap, self._fadeWhiteBitmap]
-        self._fadeModeLabels = self._fadeModes.getChoices()
+        self._wipeModeImages = [self._wipeDefaultBitmap, self._wipeFadeBitmap, self._wipePushBitmap, self._wipeNoizeBitmap, self._wipeZoomBitmap, self._wipeFlipBitmap]
+        self._wipeModeLabels = self._wipeModesHolder.getChoices()
         self._config = None
-        self._editFieldWidget = None
-        self._editFieldName = ""
+        self._fadeFieldWidget = None
+        self._fadeFieldName = ""
 
     def getFadeModeLists(self):
-        return (self._fadeModeImages, self._fadeModeLabels)
+        return (self._wipeModeImages, self._wipeModeLabels)
 
     class EditSelected():
         Unselected, Fade, Level = range(3)
@@ -1726,7 +1730,7 @@ class FadeGui(object):
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
-        self._fadeNameFieldUpdateCallback = parentClass.updateFadeField
+        self._mediaPoolFadeNameFieldUpdateCallback = parentClass.updateFadeField
 
         headerLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -1744,29 +1748,29 @@ class FadeGui(object):
         self._mainFadeGuiSizer.Add(templateNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         fadeModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
-        self._fadeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Black"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, "Black", "Black")
-        self._fadeModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Wipe mode:") #@UndefinedVariable
+        self._wipeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Fade"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, "Fade", "Fade")
+        self._wipeModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         fadeModeButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        fadeModeButton.Bind(wx.EVT_BUTTON, self._onFadeModeHelp) #@UndefinedVariable
+        fadeModeButton.Bind(wx.EVT_BUTTON, self._onWipeModeHelp) #@UndefinedVariable
         fadeModeSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
-        fadeModeSizer.Add(self._fadeModesField, 2, wx.ALL, 5) #@UndefinedVariable
+        fadeModeSizer.Add(self._wipeModesField, 2, wx.ALL, 5) #@UndefinedVariable
         fadeModeSizer.Add(fadeModeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(fadeModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-        self._mainFadeGuiPlane.Bind(wx.EVT_COMBOBOX, self._onFadeModeChosen, id=self._fadeModesField.GetId()) #@UndefinedVariable
+        self._mainFadeGuiPlane.Bind(wx.EVT_COMBOBOX, self._onFadeModeChosen, id=self._wipeModesField.GetId()) #@UndefinedVariable
 
-        fadeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Fade modulation:") #@UndefinedVariable
+        self._fadeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "ADSR modulation:") #@UndefinedVariable
         self._fadeModulationField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
         self._fadeModulationField.SetInsertionPoint(0)
         self._fadeModulationField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._fadeModulationButton = PcnImageButton(self._mainFadeGuiPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._fadeModulationButton.Bind(wx.EVT_BUTTON, self._onFadeModulationEdit) #@UndefinedVariable
-        fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
-        fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
-        fadeModulationSizer.Add(self._fadeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._mainFadeGuiSizer.Add(fadeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+        self._fadeModulationSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
+        self._fadeModulationSizer.Add(self._fadeModulationField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._fadeModulationSizer.Add(self._fadeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(self._fadeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         levelModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText3 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
@@ -1779,6 +1783,31 @@ class FadeGui(object):
         levelModulationSizer.Add(self._levelModulationField, 2, wx.ALL, 5) #@UndefinedVariable
         levelModulationSizer.Add(self._levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._wipePostMixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._wipePostMixLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Wipe Pre/Post:") #@UndefinedVariable
+        self._wipePostMixField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Pre", "Post"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateChoices(self._wipePostMixField, self._getWipePostMixChoises, "Pre", "Pre")
+        self._wipePostMixField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._wipePostMixButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._wipePostMixHelpText = ""
+        self._wipePostMixButton.Bind(wx.EVT_BUTTON, self._onWipePostHelp) #@UndefinedVariable
+        self._wipePostMixSizer.Add(self._wipePostMixLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._wipePostMixSizer.Add(self._wipePostMixField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._wipePostMixSizer.Add(self._wipePostMixButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(self._wipePostMixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._wipeSettingsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._wipeSettingsLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Wipe settings:") #@UndefinedVariable
+        self._wipeSettingsField = wx.TextCtrl(self._mainFadeGuiPlane, wx.ID_ANY, "0.0", size=(200, -1)) #@UndefinedVariable
+        self._wipeSettingsField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._wipeSettingsButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._wipeSettingsHelpText = ""
+        self._wipeSettingsButton.Bind(wx.EVT_BUTTON, self._onWipeSettingsHelp) #@UndefinedVariable
+        self._wipeSettingsSizer.Add(self._wipeSettingsLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._wipeSettingsSizer.Add(self._wipeSettingsField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._wipeSettingsSizer.Add(self._wipeSettingsButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainFadeGuiSizer.Add(self._wipeSettingsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -1793,6 +1822,9 @@ class FadeGui(object):
         self._buttonsSizer.Add(self._saveButton, 1, wx.ALL, 5) #@UndefinedVariable
         self._mainFadeGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+    def _getWipePostMixChoises(self):
+        return ["Pre", "Post"]
+
     def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
         self._mainFadeListPlane = plane
         self._mainFadeListGuiSizer = sizer
@@ -1802,9 +1834,17 @@ class FadeGui(object):
         self._fadeImageList = wx.ImageList(25, 16) #@UndefinedVariable
 
         self._modeIdImageIndex = []
-        index = self._fadeImageList.Add(self._fadeWhiteBitmap)
+        index = self._fadeImageList.Add(self._wipeDefaultBitmap)
         self._modeIdImageIndex.append(index)
-        index = self._fadeImageList.Add(self._fadeBlackBitmap)
+        index = self._fadeImageList.Add(self._wipeFadeBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._wipePushBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._wipeNoizeBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._wipeZoomBitmap)
+        self._modeIdImageIndex.append(index)
+        index = self._fadeImageList.Add(self._wipeFlipBitmap)
         self._modeIdImageIndex.append(index)
 
         self._modIdImageIndex = []
@@ -1827,6 +1867,8 @@ class FadeGui(object):
         self._fadeListWidget.InsertColumn(0, 'Name', width=150)
         self._fadeListWidget.InsertColumn(1, 'Fade', width=34)
         self._fadeListWidget.InsertColumn(2, 'Level', width=36)
+        self._fadeListWidget.InsertColumn(3, 'PostMix', width=42)
+        self._fadeListWidget.InsertColumn(4, 'Settings', width=48)
 
         self._mainFadeListGuiSizer.Add(self._fadeListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -1851,11 +1893,18 @@ class FadeGui(object):
     def _onFadeModeChosen(self, event):
         pass
 
-    def _onFadeModeHelp(self, event):
+    def _onWipeModeHelp(self, event):
         text = """
-Decides if this image fades to black or white.
+Decides how we fade or wipe in this media or track.
+
+Default:\tUse media mode or fade if no other is selected.
+Fade:\tCrossfade mode.
+Push:\tPush image from one of four sides.
+Noize:\tDisolve with TV noize.
+Zoom:\tZoom image to infinity.
+Flip:\tFlip image around X ot Y axis.
 """
-        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Fade mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Wipe mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -1895,6 +1944,48 @@ Decides if this image fades to black or white.
         self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
+    def _onWipePostHelp(self, event):
+        text = """
+Decides if the wipe happend before or after the mixing stage.
+
+It only affects wipes that move the images.
+"""
+        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Wipe pre/post help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onWipeSettingsHelp(self, event):
+        wipeModeString = self._wipeModesField.GetValue()
+        wipeModeId = self._wipeModesHolder.findMode(wipeModeString)
+        if(wipeModeId == WipeMode.Push):
+            text = """
+Sets witch way the image gets pushed.
+
+<0.25 is to the left
+<0.50 is to the top
+<0.75 is to the right
+>0.75 is to the bottom
+"""
+        elif(wipeModeId == WipeMode.Zoom):
+            text = """
+Sets x/y position of where the zoom ends.
+
+0.5|0.5 is in the middle of the screen.
+0.0|0.0 is in the bottom left corner.
+0.0|1.0 is in the top left corner.
+1.0|1.0 is in the top right corner.
+1.0|0.0 is in the bottom right corner.
+"""
+        elif(wipeModeId == WipeMode.Noize):
+            text = """
+Sets the size of the noize particles.
+"""
+        else:
+            text = "Help text is missing for " + str(wipeModeString) + " in _onWipeSettingsHelp()"
+        dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Wipe settings help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
     def _onCloseButton(self, event):
         self._hideFadeCallback()
         self._hideModulationCallback()
@@ -1915,7 +2006,7 @@ Decides if this image fades to black or white.
                 fadeName = fadeTemplate.getName()
                 newName = self._mainConfig.duplicateFadeTemplate(fadeName)
                 self._mainConfig.updateFadeList(newName)
-                self._mainConfig.updateFadeGui(newName, self._editFieldName, self._editFieldWidget)
+                self._mainConfig.updateFadeGui(newName, self._fadeFieldName, self._fadeFieldWidget)
 
     def _onListDeleteButton(self, event):
         if(self._fadeListSelectedIndex >= 0):
@@ -1991,7 +2082,7 @@ Decides if this image fades to black or white.
                 if(result == False):
                     cancel = True
                 else:
-                    if(self._editFieldWidget != None):
+                    if(self._fadeFieldWidget != None):
                         self._dialogResultCallback(-1)
                         text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                         dlg = ThreeChoiceMessageDialog(self._mainFadeGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
@@ -2009,7 +2100,7 @@ Decides if this image fades to black or white.
                         if(result == True):
                             rename = True
             else:
-                if(self._editFieldWidget != None):
+                if(self._fadeFieldWidget != None):
                     self._dialogResultCallback(-1)
                     text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                     dlg = ThreeChoiceMessageDialog(self._mainFadeGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
@@ -2026,25 +2117,38 @@ Decides if this image fades to black or white.
                     dlg.Destroy()
                     if(result == True):
                         rename = True
-        fadeMode = self._fadeModesField.GetValue()
+        wipeModeString = self._wipeModesField.GetValue()
         fadeMod = self._midiModulation.validateModulationString(self._fadeModulationField.GetValue())
         levelMod = self._midiModulation.validateModulationString(self._levelModulationField.GetValue())
+        wipePostMixString = self._wipePostMixField.GetValue()
+        if(wipePostMixString == "Post"):
+            wipePostMix = True
+        else:
+            wipePostMix = False
+        wipeSettingsString = self._wipeSettingsField.GetValue()
         if(cancel == True):
-            self._fadeModesField.SetValue(fadeMode)
+            self._wipeModesField.SetValue(wipeModeString)
             self._fadeModulationField.SetValue(fadeMod)
             self._levelModulationField.SetValue(levelMod)
         else:
+            wipeModeId = self._wipeModesHolder.findMode(wipeModeString)
+            wipeSettings = FadeSettings.getVerifiedWipeSettingsFromString(wipeSettingsString, wipeModeId)
             if(oldTemplate == None):
-                savedTemplate = self._mainConfig.makeFadeTemplate(saveName, fadeMode, fadeMod, levelMod)
+                savedTemplate = self._mainConfig.makeFadeTemplate(saveName, wipeModeId, wipePostMix, wipeSettings, fadeMod, levelMod)
                 if(rename == True):
                     self._mainConfig.renameFadeTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyFadeTemplateUsed()
             else:
-                oldTemplate.update(fadeMode, fadeMod, levelMod)
+                oldTemplate.update(wipeModeId, wipePostMix, wipeSettings, fadeMod, levelMod)
                 savedTemplate = oldTemplate
-            self.updateGui(savedTemplate, self._editFieldName, self._editFieldWidget)
-            if(self._editFieldWidget != None):
-                self._fadeNameFieldUpdateCallback(self._editFieldWidget, saveName, renameOne)
+            self.updateGui(savedTemplate, self._fadeFieldName, self._fadeFieldWidget)
+            if(self._fadeFieldWidget != None):
+                if((self._fadeFieldName == "Track")):
+                    self._trackFadeNameFieldUpdateCallback(self._fadeFieldWidget, saveName, renameOne)
+                else:
+                    self._mediaPoolFadeNameFieldUpdateCallback(self._fadeFieldWidget, saveName, renameOne)
+            if(self._fadeFieldWidget != None):
+                self._mediaPoolFadeNameFieldUpdateCallback(self._fadeFieldWidget, saveName, renameOne)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
             self._mainConfig.updateFadeList(saveName)
@@ -2072,8 +2176,8 @@ Decides if this image fades to black or white.
         configName = self._config.getValue("Name")
         if(guiName != configName):
             return True
-        guiMode = self._fadeModesField.GetValue()
-        configMode = self._config.getValue("Mode")
+        guiMode = self._wipeModesField.GetValue()
+        configMode = self._config.getValue("WipeMode")
         if(guiMode != configMode):
             return True
         guiModulation = self._fadeModulationField.GetValue()
@@ -2083,6 +2187,14 @@ Decides if this image fades to black or white.
         guiLevel = self._levelModulationField.GetValue()
         configLevel = self._config.getValue("Level")
         if(guiLevel != configLevel):
+            return True
+        guiWipePostMixString = self._wipePostMixField.GetValue()
+        if(guiWipePostMixString == "Post"):
+            guiWipePostMix = True
+        else:
+            guiWipePostMix = False
+        configWipePostMix = self._config.getValue("WipePostMix")
+        if(guiWipePostMix != configWipePostMix):
             return True
         return False
 
@@ -2096,39 +2208,53 @@ Decides if this image fades to black or white.
         if(updated == True):
             self._saveButton.setBitmaps(self._saveBigBitmap, self._saveBigPressedBitmap)
 
-    def updateFadeModeThumb(self, widget, fadeMode):
-        if(fadeMode == "None"):
-            widget.setBitmaps(self._blankFadeBitmap, self._blankFadeBitmap)
-        elif(fadeMode == "White"):
-            widget.setBitmaps(self._fadeWhiteBitmap, self._fadeWhiteBitmap)
+    def updateWipeModeThumb(self, widget, wipeMode):
+        if(wipeMode == None):
+            widget.setBitmaps(self._blankWipeBitmap, self._blankWipeBitmap)
+        elif(wipeMode == WipeMode.Default):
+            widget.setBitmaps(self._wipeDefaultBitmap, self._wipeDefaultBitmap)
+        elif(wipeMode == WipeMode.Fade):
+            widget.setBitmaps(self._wipeFadeBitmap, self._wipeFadeBitmap)
+        elif(wipeMode == WipeMode.Push):
+            widget.setBitmaps(self._wipePushBitmap, self._wipePushBitmap)
+        elif(wipeMode == WipeMode.Noize):
+            widget.setBitmaps(self._wipeNoizeBitmap, self._wipeNoizeBitmap)
+        elif(wipeMode == WipeMode.Zoom):
+            widget.setBitmaps(self._wipeZoomBitmap, self._wipeZoomBitmap)
+        elif(wipeMode == WipeMode.Flip):
+            widget.setBitmaps(self._wipeFlipBitmap, self._wipeFlipBitmap)
         else:
-            widget.setBitmaps(self._fadeBlackBitmap, self._fadeBlackBitmap)
+            widget.setBitmaps(self._wipeDefaultBitmap, self._wipeDefaultBitmap)
 
-    def updateFadeGuiButtons(self, fadeTemplate, modeWidget, modulationWidget, levelWidget):
+    def updateFadeGuiButtons(self, fadeTemplate, noteWipeMode, modeWidget, modulationWidget = None, levelWidget = None):
         if(fadeTemplate == None):
-            self.updateFadeModeThumb(modeWidget, "None")
-            self._mainConfig.updateModulationGuiButton(modulationWidget, "None")
-            self._mainConfig.updateModulationGuiButton(levelWidget, "None")
+            self.updateWipeModeThumb(modeWidget, None)
+            if(modulationWidget != None):
+                self._mainConfig.updateModulationGuiButton(modulationWidget, "None")
+            if(levelWidget != None):
+                self._mainConfig.updateModulationGuiButton(levelWidget, "None")
         else:
             config = fadeTemplate.getConfigHolder()
-            fadeMode = config.getValue("Mode")
-            self.updateFadeModeThumb(modeWidget, fadeMode)
-            fadeModulation = config.getValue("Modulation")
-            self._mainConfig.updateModulationGuiButton(modulationWidget, fadeModulation)
-            fadeLevel = config.getValue("Level")
-            self._mainConfig.updateModulationGuiButton(levelWidget, fadeLevel)
+            wipeMode, wipePostMix, _ = fadeTemplate.getWipeConfigValues(False)
+            if(noteWipeMode != None):
+                if(wipeMode == WipeMode.Default):
+                    wipeMode = noteWipeMode
+            self.updateWipeModeThumb(modeWidget, wipeMode)
+            if(modulationWidget != None):
+                fadeModulation = config.getValue("Modulation")
+                self._mainConfig.updateModulationGuiButton(modulationWidget, fadeModulation)
+            if(levelWidget != None):
+                fadeLevel = config.getValue("Level")
+                self._mainConfig.updateModulationGuiButton(levelWidget, fadeLevel)
 
-    def updateFadeList(self, effectConfiguration, selectedName):
+    def updateFadeList(self, fadeConfiguration, selectedName):
         self._fadeListWidget.DeleteAllItems()
         selectedIndex = -1
-        for effectConfig in effectConfiguration.getList():
-            config = effectConfig.getConfigHolder()
-            selectedMode = config.getValue("Mode")
-            if(selectedMode.lower() == "white"):
-                bitmapId = self._modeIdImageIndex[0]
-            else:
-                bitmapId = self._modeIdImageIndex[1]
-            configName = effectConfig.getName()
+        for fadeConfig in fadeConfiguration.getList():
+            wipeModeId, wipePostMix, wipeSettings = fadeConfig.getWipeConfigValues(True)
+            config = fadeConfig.getConfigHolder()
+            bitmapId = self._modeIdImageIndex[wipeModeId]
+            configName = fadeConfig.getName()
             index = self._fadeListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
             if(configName == selectedName):
                 selectedIndex = index
@@ -2140,6 +2266,11 @@ Decides if this image fades to black or white.
             modBitmapId = self._modulationGui.getModulationImageId(modulationString)
             imageId = self._modIdImageIndex[modBitmapId]
             self._fadeListWidget.SetStringItem(index, 2, "", imageId)
+            if(wipePostMix == True):
+                self._fadeListWidget.SetStringItem(index, 3, "On")
+            else:
+                self._fadeListWidget.SetStringItem(index, 3, "Off")
+            self._fadeListWidget.SetStringItem(index, 4, wipeSettings)
 
             if(index % 2):
                 self._fadeListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable
@@ -2149,22 +2280,41 @@ Decides if this image fades to black or white.
             self._fadeListSelectedIndex = selectedIndex
             self._fadeListWidget.Select(selectedIndex)
 
-    def updateGui(self, fadeTemplate, editFieldName, editFieldWidget = None):
+    def updateGui(self, fadeTemplate, fadeFieldName, fadeFieldWidget = None, selectedWipeMode = None, selectedWipePrePostString = None):
         self._config = fadeTemplate.getConfigHolder()
         self._selectedEditor = self.EditSelected.Unselected
-        self._editFieldName = editFieldName
-        self._editFieldWidget = editFieldWidget
+        self._fadeFieldName = fadeFieldName
+        self._fadeFieldWidget = fadeFieldWidget
         self._highlightButton(self._selectedEditor)
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
-        self._updateChoices(self._fadeModesField, self._fadeModes.getChoices, self._config.getValue("Mode"), "Black")
         self._fadeModulationField.SetValue(self._config.getValue("Modulation"))
+        if(fadeFieldName == "Track"):
+            self._mainFadeGuiSizer.Hide(self._fadeModulationSizer)
+        else:
+            self._mainFadeGuiSizer.Show(self._fadeModulationSizer)
+        self._mainFadeGuiSizer.Layout()
         self._levelModulationField.SetValue(self._config.getValue("Level"))
-        if(self._editFieldName == "Modulation"):
+        wipeMode, wipePostMix, wipeSettings = fadeTemplate.getWipeConfigValues(True)
+        if(selectedWipeMode != None):
+            wipeModeString = selectedWipeMode
+        else:
+            wipeModeString = self._wipeModesHolder.getNames(wipeMode)
+        self._updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, wipeModeString, "Default")
+        if(selectedWipePrePostString != None):
+            wipePostMixString = selectedWipePrePostString
+        else:
+            if(wipePostMix == True):
+                wipePostMixString = "Post"
+            else:
+                wipePostMixString = "Pre"
+        self._updateChoices(self._wipePostMixField, self._getWipePostMixChoises, wipePostMixString, "Pre")
+        self._wipeSettingsField.SetValue(wipeSettings)
+        if(self._fadeFieldName == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
-        if(self._editFieldName == "Level"):
+        if(self._fadeFieldName == "Level"):
             self._selectedEditor = self.EditSelected.Level
             self._highlightButton(self._selectedEditor)
             self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
@@ -2811,8 +2961,8 @@ Example for range = 4.0
     def updateTimeModulationList(self, timeModConfiguration, selectedName):
         self._timeModulationListWidget.DeleteAllItems()
         selectedIndex = -1
-        for effectConfig in timeModConfiguration.getList():
-            config = effectConfig.getConfigHolder()
+        for timeModConfig in timeModConfiguration.getList():
+            config = timeModConfig.getConfigHolder()
             selectedMode = config.getValue("Mode")
             selectedModeLower = selectedMode.lower()
             currentMode = TimeModulationMode.SpeedModulation
@@ -2831,7 +2981,7 @@ Example for range = 4.0
             else:
                 bitmapId = self._modeIdImageIndex[1]
                 currentMode = TimeModulationMode.SpeedModulation
-            configName = effectConfig.getName()
+            configName = timeModConfig.getName()
             index = self._timeModulationListWidget.InsertImageStringItem(sys.maxint, configName, bitmapId)
             if(configName == selectedName):
                 selectedIndex = index

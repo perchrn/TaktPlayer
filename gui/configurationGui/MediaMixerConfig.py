@@ -25,11 +25,12 @@ class MediaMixerConfig(object):
 
     def setupTrackConfig(self, trackConfigHolder):
         trackConfigHolder.addTextParameter("MixMode", "Default")
-        trackConfigHolder.addTextParameter("LevelModulation", "None")
         self._defaultPreEffectSettingsName = "MixPreDefault"
         trackConfigHolder.addTextParameter("PreEffectConfig", self._defaultPreEffectSettingsName)#Default MixPreDefault
         self._defaultPostEffectSettingsName = "MixPostDefault"
         trackConfigHolder.addTextParameter("PostEffectConfig", self._defaultPostEffectSettingsName)#Default MixPostDefault
+        self._defaultFadeSettingsName = "TrackDefault"
+        trackConfigHolder.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default TrackDefault
 
     def loadMediaFromConfiguration(self):
         mediaTrackState = []
@@ -57,23 +58,23 @@ class MediaMixerConfig(object):
         mixMode = xmlConfig.get("mixmode")
         trackConfig.setValue("MixMode", mixMode)
 
-        levelMod = xmlConfig.get("levelmodulation")
-        trackConfig.setValue("LevelModulation", levelMod)
-
         preEffectModulationTemplate = xmlConfig.get("preeffectconfig")
         trackConfig.setValue("PreEffectConfig", preEffectModulationTemplate)
 
         postEffectModulationTemplate = xmlConfig.get("posteffectconfig")
         trackConfig.setValue("PostEffectConfig", postEffectModulationTemplate)
 
+        fadeModulationTemplate = xmlConfig.get("fadeconfig")
+        trackConfig.setValue("FadeConfig", fadeModulationTemplate)
+
         return trackId
 
     def deafultTrackSettings(self, trackIndex):
         trackConfig = self._mediaTrackConfigs[trackIndex]
         trackConfig.setValue("MixMode", "Default")
-        trackConfig.setValue("LevelModulation", "None")
         trackConfig.setValue("PreEffectConfig", self._defaultPreEffectSettingsName)
         trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
+        trackConfig.setValue("FadeConfig", self._defaultFadeSettingsName)
 
     def getConfTree(self):
         return self._configurationTree
@@ -94,9 +95,11 @@ class MediaMixerConfig(object):
 
     def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
         returnNumer = 0
-#        for trackConfig in self._mediaTrackConfigs:
-#            if(trackConfig != None):
-#                returnNumer += trackConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
+        for trackConfig in self._mediaTrackConfigs:
+            if(trackConfig != None):
+                usedConfigName = trackConfig.getValue("FadeConfig")
+                if(usedConfigName == fadeConfigName):
+                    returnNumer += 1
         return returnNumer
 
     def renameEffectTemplateUsed(self, oldName, newName):
@@ -108,10 +111,11 @@ class MediaMixerConfig(object):
                         trackConfig.setValue(configName, newName)
 
     def renameFadeTemplateUsed(self, oldName, newName):
-        pass
-#        for trackConfig in self._mediaPool:
-#            if(trackConfig != None):
-#                trackConfig.renameFadeTemplateUsed(oldName, newName)
+        for trackConfig in self._mediaPool:
+            if(trackConfig != None):
+                usedConfigName = trackConfig.getValue("FadeConfig")
+                if(usedConfigName == oldName):
+                    trackConfig.setValue("FadeConfig", newName)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         for trackConfig in self._mediaTrackConfigs:
@@ -134,10 +138,16 @@ class MediaMixerConfig(object):
                     trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
 
     def verifyFadeTemplateUsed(self, fadeConfigNameList):
-        pass
-#        for trackConfig in self._mediaPool:
-#            if(trackConfig != None):
-#                trackConfig.verifyFadeTemplateUsed(fadeConfigNameList)
+        for trackConfig in self._mediaPool:
+            if(trackConfig != None):
+                usedConfigName = trackConfig.getValue("FadeConfig")
+                nameOk = False
+                for configName in fadeConfigNameList:
+                    if(usedConfigName == configName):
+                        nameOk = True
+                        break
+                if(nameOk == False):
+                    trackConfig.setValue("FadeConfig", self._defaultFadeSettingsName)
 
 class MediaTrackGui(object): #@UndefinedVariable
     def __init__(self, mainConfig):
@@ -173,7 +183,7 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._overviewTrackMixModePopupButtonIndex = -1
 
     class EditSelection():
-        Unselected, PreEffect, PostEffect = range(3)
+        Unselected, PreEffect, PostEffect, Fade = range(4)
 
     def setupTrackOverviewGui(self, plane, noteGuiClass, midiChannel, trackSettings, trackGuiSettingsList, cursorWidgetList, fxWidgetList, setActiveTrackIdCallback):
         self._midiTracksPlane = plane
@@ -182,9 +192,14 @@ class MediaTrackGui(object): #@UndefinedVariable
         self.updateMixmodeThumb = noteGuiClass.updateMixmodeThumb
         self.updateEffectThumb = noteGuiClass.updateEffectThumb
         self.showEffectList = noteGuiClass.showEffectList
+        self._showFadeCallback = noteGuiClass.showFadeGui
+        self._hideFadeCallback = noteGuiClass.hideFadeGui
+        self._showFadeListGui = noteGuiClass.showFadeListGui
         self._clearDragCursorCallback = noteGuiClass._clearDragCursorCallback
         self._mixImages = noteGuiClass._mixImages
         self._mixLabels = noteGuiClass._mixLabels
+        self._wipeModeImages = noteGuiClass._wipeModeImages
+        self._wipeModeLabels = noteGuiClass._wipeModeLabels
         self._setActiveTrackIdCallback = setActiveTrackIdCallback
 
         if(self._overviewTrackMixModeButtonPopup == None):
@@ -217,13 +232,15 @@ class MediaTrackGui(object): #@UndefinedVariable
         overviewTrackClipMixButton.Bind(wx.EVT_BUTTON, self._onTrackMixButton) #@UndefinedVariable
         trackSettings.setMixWidget(overviewTrackClipMixButton)
 
-        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Lvl:", pos=(140, 2+36*midiChannel)) #@UndefinedVariable
+        txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Wipe:", pos=(138, 2+36*midiChannel)) #@UndefinedVariable
         if(isMac == True):
             txt.SetFont(font)
-        overviewTrackClipLvlButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (140, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
-        cursorWidgetList.append(overviewTrackClipLvlButton)
-        overviewTrackClipLvlButton.Bind(wx.EVT_BUTTON, self._onTrackLvlButton) #@UndefinedVariable
-        trackSettings.setLvlWidget(overviewTrackClipLvlButton)
+        overviewTrackClipWipeButton = PcnImageButton(self._midiTracksPlane, self._blankMixBitmap, self._blankMixBitmap, (140, 17+36*midiChannel), wx.ID_ANY, size=(25, 16)) #@UndefinedVariable
+        cursorWidgetList.append(overviewTrackClipWipeButton)
+        overviewTrackClipWipeButton.enableDoubleClick()
+        overviewTrackClipWipeButton.Bind(wx.EVT_BUTTON, self._onTrackWipeButton) #@UndefinedVariable
+        overviewTrackClipWipeButton.Bind(EVT_DOUBLE_CLICK_EVENT, self._onClipWipeButtonDouble)
+        trackSettings.setFadeWidget(overviewTrackClipWipeButton)
 
         txt = wx.StaticText(self._midiTracksPlane, wx.ID_ANY, "Post:", pos=(167, 2+36*midiChannel)) #@UndefinedVariable
         if(isMac == True):
@@ -289,18 +306,6 @@ class MediaTrackGui(object): #@UndefinedVariable
         mixSizer.Add(mixHelpButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        levelModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Level modulation:") #@UndefinedVariable
-        self._levelModulationField = wx.TextCtrl(self._mainTrackPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
-        self._levelModulationField.SetInsertionPoint(0)
-        self._levelModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
-        levelModulationButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        levelModulationButton.Bind(wx.EVT_BUTTON, self._onLevelModulationEdit) #@UndefinedVariable
-        levelModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
-        levelModulationSizer.Add(self._levelModulationField, 1, wx.ALL, 5) #@UndefinedVariable
-        levelModulationSizer.Add(levelModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._mainTrackGuiSizer.Add(levelModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-
         preEffectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText8 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Pre effect template:") #@UndefinedVariable
         self._preEffectField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
@@ -325,6 +330,18 @@ class MediaTrackGui(object): #@UndefinedVariable
         postEffectSizer.Add(self._postEffectButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(postEffectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        fadeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText9 = wx.StaticText(self._mainTrackPlane, wx.ID_ANY, "Fade template:") #@UndefinedVariable
+        self._fadeField = wx.ComboBox(self._mainTrackPlane, wx.ID_ANY, size=(200, -1), choices=["TrackDefault"], style=wx.CB_READONLY) #@UndefinedVariable
+        self._updateFadeChoices(self._fadeField, "TrackDefault", "TrackDefault")
+        self._fadeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        self._fadeButton = PcnImageButton(self._mainTrackPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._fadeButton.Bind(wx.EVT_BUTTON, self._onFadeEdit) #@UndefinedVariable
+        fadeSizer.Add(tmpText9, 1, wx.ALL, 5) #@UndefinedVariable
+        fadeSizer.Add(self._fadeField, 1, wx.ALL, 5) #@UndefinedVariable
+        fadeSizer.Add(self._fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainTrackGuiSizer.Add(fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = PcnImageButton(self._mainTrackPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
         closeButton.Bind(wx.EVT_BUTTON, self._onCloseButton) #@UndefinedVariable
@@ -335,7 +352,10 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def updateEffectField(self, widget, value, saveValue, fieldName):
-        self._updateEffecChoices(widget, value, value, False)
+        if(fieldName == "PreEffect"):
+            self._updateEffecChoices(widget, value, "MixPreDefault", False)
+        else:
+            self._updateEffecChoices(widget, value, "MixPostDefault", False)
         if(saveValue == True):
             if(fieldName == "PreEffect"):
                 preEffectConfig = self._preEffectField.GetValue()
@@ -345,11 +365,25 @@ class MediaTrackGui(object): #@UndefinedVariable
                 self._config.setValue("PostEffectConfig", postEffectConfig)
         self._showOrHideSaveButton()
 
+    def updateFadeField(self, widget, value, saveValue, fieldName):
+        self._updateEffecChoices(widget, value, "TrackDefault", False)
+        if(saveValue == True):
+            if(fieldName == "Track"):
+                fadeConfig = self._fadeField.GetValue()
+                self._config.setValue("FadeConfig", fadeConfig)
+        self._showOrHideSaveButton()
+
     def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
         if(self._mainConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
+
+    def _updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
+        if(self._mainConfig == None):
+            self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
+        else:
+            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
@@ -425,37 +459,51 @@ Replace:\tNo mixing. Just use this image.
                 trackConfig.setValue("MixMode", mixMode)
             self._showOrHideSaveButton()
 
-    def _onTrackLvlButton(self, event):
+    def _onTrackWipeButton(self, event):
         buttonId = event.GetEventObject().GetId()
         foundTrackId = None
         for i in range(16):
-            if(self._trackGuiSettingsList[i].hasLvlWidgetId(buttonId)):
+            if(self._trackGuiSettingsList[i].hasFadeWidgetId(buttonId)):
                 foundTrackId = i
                 break
         if(foundTrackId != None):
+            self._setActiveTrackIdCallback(foundTrackId)
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
-            self._mainConfig.updateModulationGui(trackConfig.getValue("LevelModulation"), None, None, self._onTrackLvlButtonEditSave, foundTrackId)
-            self._showModulationCallback()
+            self._hideEffectsCallback()
+            if(self._selectedEditor != self.EditSelection.Fade):
+                self._hideModulationCallback()
+            selectedFadeConfig = trackConfig.getValue("FadeConfig")
+            self._selectedEditor = self.EditSelection.Fade
+            self._highlightButton(self._selectedEditor)
+            self._mainConfig.setSelectedMidiChannel(foundTrackId)
+            self._mainConfig.updateFadeGui(selectedFadeConfig, "Track", None)
+            self._showFadeCallback()
+            self._showOrHideSaveButton()
 
-    def _onTrackLvlButtonEditSave(self, trackId, value):
-        trackConfig = self._mainConfig.getTrackConfiguration(trackId)
-        if(trackConfig != None):
-            levelMod = self._midiModulation.validateModulationString(value)
-            trackConfig.setValue("LevelModulation", levelMod)
-
-    def _onLevelModulationEdit(self, event):
-        self._showModulationCallback()
-        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, None, None)
+    def _onClipWipeButtonDouble(self, event):
+        buttonId = event.GetEventObject().GetId()
+        foundTrackId = None
+        for i in range(16):
+            if(self._trackGuiSettingsList[i].hasFadeWidgetId(buttonId)):
+                foundTrackId = i
+                break
+        if(foundTrackId != None):
+            self._setActiveTrackIdCallback(foundTrackId)
+            trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            fadeConfigName = trackConfig.getValue("FadeConfig")
+            self._mainConfig.updateFadeList(fadeConfigName)
+            self._showFadeListGui()
 
     def _onPreEffectEdit(self, event, showGui = True):
         if(showGui == True):
             if(self._selectedEditor != self.EditSelection.PreEffect):
+                self._hideModulationCallback()
                 self._selectedEditor = self.EditSelection.PreEffect
                 self._showEffectsCallback()
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
-            self._hideModulationCallback()
+            self._hideFadeCallback()
         selectedEffectConfig = self._preEffectField.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect", self._preEffectField)
         self._showOrHideSaveButton()
@@ -464,14 +512,30 @@ Replace:\tNo mixing. Just use this image.
     def _onPostEffectEdit(self, event, showGui = True):
         if(showGui == True):
             if(self._selectedEditor != self.EditSelection.PostEffect):
+                self._hideModulationCallback()
                 self._selectedEditor = self.EditSelection.PostEffect
                 self._showEffectsCallback()
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
-        self._hideModulationCallback()
+            self._hideFadeCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect", self._postEffectField)
+        self._showOrHideSaveButton()
+        self._highlightButton(self._selectedEditor)
+
+    def _onFadeEdit(self, event, showGui = True):
+        if(showGui == True):
+            if(self._selectedEditor != self.EditSelection.Fade):
+                self._hideModulationCallback()
+                self._selectedEditor = self.EditSelection.Fade
+                self._showFadeCallback()
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._hideFadeCallback()
+            self._hideEffectsCallback()
+        selectedFadeConfig = self._fadeField.GetValue()
+        self._mainConfig.updateFadeGui(selectedFadeConfig, "Fade", None, self._fadeField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -483,9 +547,10 @@ Replace:\tNo mixing. Just use this image.
                 foundTrackId = i
                 break
         if(foundTrackId != None):
-            self._setActiveTrackIdCallback(self._trackId)
+            self._setActiveTrackIdCallback(foundTrackId)
             self._currentTrackEffectEditorIndex = foundTrackId
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            self._hideFadeCallback()
             if(self._selectedEditor != self.EditSelection.PreEffect):
                 self._hideModulationCallback()
             selectedEffectConfig = trackConfig.getValue("PreEffectConfig")
@@ -507,6 +572,7 @@ Replace:\tNo mixing. Just use this image.
         if(foundTrackId != None):
             self._currentTrackEffectEditorIndex = foundTrackId
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
+            self._hideFadeCallback()
             if(self._selectedEditor != self.EditSelection.PostEffect):
                 self._hideModulationCallback()
             selectedEffectConfig = trackConfig.getValue("PostEffectConfig")
@@ -577,6 +643,7 @@ Replace:\tNo mixing. Just use this image.
     def _onCloseButton(self, event):
         self._hideTrackGuiCallback()
         self._hideEffectsCallback()
+        self._hideFadeCallback()
         self._hideModulationCallback()
         self._hideSlidersCallback()
         self._selectedEditor = self.EditSelection.Unselected
@@ -586,17 +653,16 @@ Replace:\tNo mixing. Just use this image.
         if(self._config != None):
             mixMode = self._mixField.GetValue()
             self._config.setValue("MixMode", mixMode)
-            levelMod = self._midiModulation.validateModulationString(self._levelModulationField.GetValue())
-            self._levelModulationField.SetValue(levelMod)
-            self._config.setValue("LevelModulation", levelMod)
             preEffectConfig = self._preEffectField.GetValue()
             self._config.setValue("PreEffectConfig", preEffectConfig)
             postEffectConfig = self._postEffectField.GetValue()
             self._config.setValue("PostEffectConfig", postEffectConfig)
+            fadeConfig = self._fadeField.GetValue()
+            self._config.setValue("FadeConfig", fadeConfig)
             if((self._trackId >= 0) and (self._trackId < 16)):
                 trackSettings = self._trackGuiSettingsList[self._trackId]
                 self.updateTrackMixModeThumb(self._trackId, self._config, "None")
-                self.updateTrackLvlModThumb(self._trackId, self._config)
+                self.updateTrackFadeThumb(self._trackId, self._config, None)
                 self.updateEffectThumb(trackSettings.getPreFxWidget(), preEffectConfig)
                 self.updateEffectThumb(trackSettings.getPostFxWidget(), postEffectConfig)
                 
@@ -609,10 +675,6 @@ Replace:\tNo mixing. Just use this image.
         configMixMode = self._config.getValue("MixMode")
         if(guiMixMode != configMixMode):
             return True
-        guiLvlMode = self._levelModulationField.GetValue()
-        configLvlMode = self._config.getValue("LevelModulation")
-        if(guiLvlMode != configLvlMode):
-            return True
         guiPreEffect = self._preEffectField.GetValue()
         configPreEffect = self._config.getValue("PreEffectConfig")
         if(guiPreEffect != configPreEffect):
@@ -620,6 +682,10 @@ Replace:\tNo mixing. Just use this image.
         guiPostEffect = self._postEffectField.GetValue()
         configPostEffect = self._config.getValue("PostEffectConfig")
         if(guiPostEffect != configPostEffect):
+            return True
+        guiFadeConf = self._fadeField.GetValue()
+        configfadeConf = self._config.getValue("FadeConfig")
+        if(guiFadeConf != configfadeConf):
             return True
         return False
 
@@ -642,13 +708,13 @@ Replace:\tNo mixing. Just use this image.
         self.updateMixmodeThumb(widget, mixMode, noteMixMode)
         self._showOrHideSaveButton()
 
-    def updateTrackLvlModThumb(self, index, trackConfig):
-        widget = self._trackGuiSettingsList[index].getLvlWidget()
+    def updateTrackFadeThumb(self, index, trackConfig, noteWipeMode):
+        widget = self._trackGuiSettingsList[index].getFadeWidget()
         if(trackConfig != None):
-            mixMode = trackConfig.getValue("LevelModulation")
+            fadeConf = trackConfig.getValue("FadeConfig")
         else:
-            mixMode = "None"
-        self._mainConfig.updateModulationGuiButton(widget, mixMode)
+            fadeConf = "None"
+        self._mainConfig.updateFadeGuiButtons(fadeConf, noteWipeMode, widget)
         self._showOrHideSaveButton()
 
     def updateTrackEffectsThumb(self, index, trackConfig):
@@ -677,12 +743,12 @@ Replace:\tNo mixing. Just use this image.
         self._trackField.SetValue(str(self._trackId + 1))
         mixMode = self._config.getValue("MixMode")
         self._updateChoices(self._mixField, self._mixModes.getChoices, mixMode, "Default")
-        levelMod = self._config.getValue("LevelModulation")
-        self._levelModulationField.SetValue(levelMod)
         preEffectConfig = self._config.getValue("PreEffectConfig")
         self._updateEffecChoices(self._preEffectField, preEffectConfig, "MixPreDefault")
         postEffectConfig = self._config.getValue("PostEffectConfig")
         self._updateEffecChoices(self._postEffectField, postEffectConfig, "MixPostDefault")
+        fadeConfig = self._config.getValue("FadeConfig")
+        self._updateFadeChoices(self._fadeField, fadeConfig, "TrackDefault")
 
         if(self._selectedEditor != self.EditSelection.Unselected):
             if(self._selectedEditor == self.EditSelection.PreEffect):

@@ -54,6 +54,25 @@ def getMixModeFromName(name):
     else:
         return MixMode.Default
 
+class WipeMode:
+    Default, Fade, Push, Noize, Zoom, Flip = range(6)
+
+    def getChoices(self):
+        return ["Default", "Fade", "Push", "Noize", "Zoom", "Flip"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
+
 class ModulationValueMode:
     RawInput, KeepOld, ResetToDefault = range(3)
 
@@ -117,18 +136,6 @@ class MediaTypes:
 
     def getChoices(self):
         return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "KinectCamera", "Group", "Modulation"]
-
-    def getNames(self, typeId):
-        for i in range(len(self.getChoices())):
-            if(typeId == i):
-                return self.getChoices()[i]
-        return self.getChoices()[0]
-
-class FadeMode():
-    Black, White = range(2)
-
-    def getChoices(self):
-        return ["Black", "White"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

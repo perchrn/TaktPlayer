@@ -8,7 +8,8 @@ from cv2 import cv
 import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
-    ScrollModes, ContrastModes, HueSatModes, ValueToHueModes, BlobDetectModes
+    ScrollModes, ContrastModes, HueSatModes, ValueToHueModes, BlobDetectModes,\
+    SlitDirections
 import math
 import os
 import time
@@ -108,6 +109,9 @@ def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat
 
+def showCvImage(image, num = 1):
+    cv.ShowImage("TAKT debug " + str(num), image)
+
 def getHueColor(hue):
     phase = int(hue * 5.99)
     subPhase = (hue * 5.99) % 1.0
@@ -170,6 +174,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return DelayEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Rays):
         return RaysEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.SlitScan):
+        return SlitEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.SelfDifference):
         return SelfDifferenceEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Distortion):
@@ -313,6 +319,7 @@ class ZoomEffect(object):
         self._setZoomRange(0.25, 4.0)
 
         self._zoomMat = effectMat1
+        self._zoomMask = effectMask1
 
     def setExtraConfig(self, values):
 #        print("DEBUG pcn: Zoom::setExtraConfig() " + str(values))
@@ -382,7 +389,7 @@ class ZoomEffect(object):
 
         return self.zoomImageTransform(image, xcenter, ycenter, zoomCalc, angle, flip, 0.0)
 
-    def zoomImageTransform(self, image, xcenter, ycenter, zoom, xAngle, xRotation, zRotation):
+    def zoomImageTransform(self, image, xcenter, ycenter, zoom, xAngle, xRotation, zRotation, imageMask = None):
 #        print "DEBUG pcn: zoomImageTransform( " + str((xcenter, ycenter, zoom, xAngle, xRotation, zRotation))
         ycenter = 1.0 - ycenter
         originalW, originalH = cv.GetSize(image)
@@ -414,6 +421,9 @@ class ZoomEffect(object):
 #        print "DEBUG pcn: trasform points source: " + str(srcPoints) + " dest: " + str(dstPoints) 
         cv.GetAffineTransform(srcPoints, dstPoints, zoomMatrix)
         cv.WarpAffine(image, self._zoomMat, zoomMatrix)
+        if(imageMask != None):
+            cv.WarpAffine(imageMask, self._zoomMask, zoomMatrix)
+            cv.Copy(self._zoomMask, imageMask)
         cv.Copy(self._zoomMat, image)
         return image
 
@@ -1078,6 +1088,103 @@ class RaysEffect(object):
             cv.Copy(src_region, dst_region)
         return image
 
+class SlitEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._scaleWidthRange = math.sqrt(self._internalResolutionX) / 2
+        self._scaleHeightRange = math.sqrt(self._internalResolutionY) / 2
+        self._halfWidth = self._internalResolutionX / 2
+        self._halfHeight = self._internalResolutionY / 2
+
+        self._slitDirections = SlitDirections()
+
+        self._memoryMat = createMat(internalResX, internalResY)
+        self._composeMat = effectMat1
+
+    def setExtraConfig(self, values):
+        pass
+
+    def getName(self):
+        return "SlitScan"
+
+    def reset(self):
+        pass
+
+    def _findDirection(self, value):
+        direction = int(3.99 * value)
+        return direction
+        
+    def applyEffect(self, image, width, drawPos, sourceXPos, direction, crossFade):
+        return self.slitEffect(image, width, drawPos, sourceXPos, self._findDirection(direction), crossFade)
+
+    def slitEffect(self, image, width, drawPos, sourcePos, direction, crossFade):
+        if((direction == SlitDirections.Left) or (direction == SlitDirections.Right)):
+            sizeScale = int(math.pow((self._scaleWidthRange * (width+0.08)), 2))
+            if(sizeScale < 1):
+                return image
+            pixelWidth = int((self._internalResolutionX / sizeScale) - (2.0*width))
+            if(pixelWidth > self._halfWidth):
+                return image
+#        print "DEBUG pcn: sizeScale: width: " + str(width) + " sizeScale: " + str(sizeScale) + " pixelWidth: " + str(pixelWidth)
+            if(direction == SlitDirections.Left):
+                src_region = cv.GetSubRect(self._memoryMat, (pixelWidth, 0, self._internalResolutionX-pixelWidth, self._internalResolutionY))
+                dst_region = cv.GetSubRect(self._composeMat, (0, 0, self._internalResolutionX-pixelWidth, self._internalResolutionY))
+                cv.Copy(src_region, dst_region)
+                src_region = cv.GetSubRect(self._memoryMat, (0, 0, pixelWidth, self._internalResolutionY))
+                dst_region = cv.GetSubRect(self._composeMat, (self._internalResolutionX-pixelWidth, 0, pixelWidth, self._internalResolutionY))
+                cv.Copy(src_region, dst_region)
+            else:
+                src_region = cv.GetSubRect(self._memoryMat, (0, 0, self._internalResolutionX-pixelWidth, self._internalResolutionY))
+                dst_region = cv.GetSubRect(self._composeMat, (pixelWidth, 0, self._internalResolutionX-pixelWidth, self._internalResolutionY))
+                cv.Copy(src_region, dst_region)
+                src_region = cv.GetSubRect(self._memoryMat, (self._internalResolutionX-pixelWidth, 0, pixelWidth, self._internalResolutionY))
+                dst_region = cv.GetSubRect(self._composeMat, (0, 0, pixelWidth, self._internalResolutionY))
+                cv.Copy(src_region, dst_region)
+            sourcePosPixels = int(sourcePos * (self._internalResolutionX-pixelWidth))
+            drawPosPixels = int(drawPos * (self._internalResolutionX-pixelWidth))
+            src_region = cv.GetSubRect(image, (sourcePosPixels, 0, pixelWidth, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._composeMat, (drawPosPixels, 0, pixelWidth, self._internalResolutionY))
+            cv.Copy(src_region, dst_region)
+        else:
+            sizeScale = int(math.pow((self._scaleHeightRange * (width+0.08)), 2))
+            if(sizeScale < 1):
+                return image
+            pixelHeight = int((self._internalResolutionY / sizeScale) - (2.0*width))
+            if(pixelHeight > self._halfHeight):
+                return image
+            if(direction == SlitDirections.Up):
+                src_region = cv.GetSubRect(self._memoryMat, (0, pixelHeight, self._internalResolutionX, self._internalResolutionY-pixelHeight))
+                dst_region = cv.GetSubRect(self._composeMat, (0, 0, self._internalResolutionX, self._internalResolutionY-pixelHeight))
+                cv.Copy(src_region, dst_region)
+                src_region = cv.GetSubRect(self._memoryMat, (0, 0, self._internalResolutionX, pixelHeight))
+                dst_region = cv.GetSubRect(self._composeMat, (0, self._internalResolutionY-pixelHeight, self._internalResolutionX, pixelHeight))
+                cv.Copy(src_region, dst_region)
+            else:
+                src_region = cv.GetSubRect(self._memoryMat, (0, 0, self._internalResolutionX, self._internalResolutionY-pixelHeight))
+                dst_region = cv.GetSubRect(self._composeMat, (0, pixelHeight, self._internalResolutionX, self._internalResolutionY-pixelHeight))
+                cv.Copy(src_region, dst_region)
+                src_region = cv.GetSubRect(self._memoryMat, (0, self._internalResolutionY-pixelHeight, self._internalResolutionX, pixelHeight))
+                dst_region = cv.GetSubRect(self._composeMat, (0, 0, self._internalResolutionX, pixelHeight))
+                cv.Copy(src_region, dst_region)
+            sourcePosPixels = int(sourcePos * (self._internalResolutionY-pixelHeight))
+            drawPosPixels = int(drawPos * (self._internalResolutionY-pixelHeight))
+            src_region = cv.GetSubRect(image, (0, sourcePosPixels, self._internalResolutionX, pixelHeight))
+            dst_region = cv.GetSubRect(self._composeMat, (0, drawPosPixels, self._internalResolutionX, pixelHeight))
+            cv.Copy(src_region, dst_region)
+        cv.Copy(self._composeMat, self._memoryMat)
+        if(crossFade > 0.01):
+            if(crossFade > 0.5):
+                cv.ConvertScaleAbs(self._composeMat, self._composeMat, 1.0 - ((crossFade-0.5) * 2))
+            else:
+                cv.ConvertScaleAbs(image, image, crossFade * 2)
+            cv.Add(self._composeMat, image, image)
+        else:
+            cv.Copy(self._composeMat, image)
+        return image
+
 class BlurEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -1226,11 +1333,14 @@ class DelayEffect(object):
         setupEffectMemory(internalResX, internalResY)
 
         self._radians360 = math.radians(360)
-        self._gotMemory = False
+        self._resetMemory = True
         self._memoryMat = createMat(internalResX, internalResY)
+        self._memoryMask = createMask(internalResX, internalResY)
         cv.SetZero(self._memoryMat)
-        self._tmpMat = effectMat2
-        self._replaceMask = effectMask1
+        self._zoomMat = effectMat2
+        self._zoomMask = effectMask3
+        self._bwMask = effectMask1
+        self._innerMask = effectMask2
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
     def setExtraConfig(self, values):
@@ -1257,19 +1367,23 @@ class DelayEffect(object):
         return "Delay"
 
     def reset(self):
-        cv.SetZero(self._memoryMat)
+        self._resetMemory = True
 
     def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
         return self.addDelayImage(image, amount, arg1, arg2, arg3, arg4)
 
     def addDelayImage(self, image, value, lumaKey, move, direction, zoom):
         if(value < 0.01):
-            if(self._gotMemory == True):
-                cv.SetZero(self._memoryMat)
+            self._resetMemory = True
             return image
-        self._gotMemory = True
+        if(self._resetMemory == True):
+            self._resetMemory = False
+            cv.Copy(image, self._memoryMat)
+            cv.Set(self._memoryMask, (255))
+            return image
         #Fade
-        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, value, 0)
+        cv.ConvertScaleAbs(self._memoryMat, self._zoomMat, value, 0)
+        cv.ConvertScaleAbs(self._memoryMask, self._zoomMask, value/(4-(3*value)), 0)
         if((zoom != 0.5) or (move > 0.003)):
             zoom = 1.0 - zoom
             if(move > 0.003):
@@ -1295,18 +1409,21 @@ class DelayEffect(object):
                 flipX = 0.0
                 flipAngle = 0.0
                 rotZ = 0.0
-            self._zoomEffect.zoomImageTransform(self._tmpMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ)
-        cv.Copy(self._tmpMat, self._memoryMat)
-        cv.CvtColor(image, self._replaceMask, cv.CV_BGR2GRAY);
+            self._zoomEffect.zoomImageTransform(self._zoomMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ, self._zoomMask)
+
+        cv.CvtColor(image, self._bwMask, cv.CV_BGR2GRAY);
         if(lumaKey < 0.5):
             lumaThreshold = int(506 * lumaKey) + 3
-            cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_GT)
-            cv.Copy(image, self._memoryMat, self._replaceMask)
-        elif(lumaKey > 0.5):
+            cv.CmpS(self._bwMask, lumaThreshold, self._innerMask, cv.CV_CMP_GT)
+            cv.Set(self._zoomMask, (0), self._innerMask)
+            cv.Copy(self._zoomMat, image, self._zoomMask)
+        else:
             lumaThreshold = int(512 * (lumaKey - 0.5))
-            cv.CmpS(self._replaceMask, lumaThreshold, self._replaceMask, cv.CV_CMP_LT)
-            cv.Copy(image, self._memoryMat, self._replaceMask)
-        cv.Copy(self._memoryMat, image)
+            cv.CmpS(self._bwMask, lumaThreshold, self._innerMask, cv.CV_CMP_LT)
+            cv.Set(self._zoomMask, (0), self._innerMask)
+            cv.Copy(self._zoomMat, image, self._zoomMask)
+        cv.Copy(image, self._memoryMat)
+        cv.Add(self._innerMask, self._zoomMask, self._memoryMask)
         return image
 
 class SelfDifferenceEffect(object):

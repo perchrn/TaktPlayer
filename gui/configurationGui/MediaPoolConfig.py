@@ -738,6 +738,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
+        self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
@@ -3027,6 +3028,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapPixelate, self._fxBitmapPixelate)
         elif(effectId == EffectTypes.Rays):
             widget.setBitmaps(self._fxBitmapRays, self._fxBitmapRays)
+        elif(effectId == EffectTypes.SlitScan):
+            widget.setBitmaps(self._fxBitmapSlitScan, self._fxBitmapSlitScan)
         elif(effectId == EffectTypes.Rotate):
             widget.setBitmaps(self._fxBitmapRotate, self._fxBitmapRotate)
         elif(effectId == EffectTypes.Scroll):

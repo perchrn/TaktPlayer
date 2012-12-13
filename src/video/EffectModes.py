@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(24)
+    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(25)
 
     def getChoices(self):
         return ["None",
@@ -18,6 +18,7 @@ class EffectTypes():
                 "Feedback",
                 "Delay",
                 "Rays",
+                "SlitScan",
                 "SelfDifference",
                 "Distortion",
                 "Pixelate",
@@ -44,6 +45,7 @@ class EffectTypes():
                 "Video feedback effect.",
                 "Video delay effect.",
                 "Ray effect.",
+                "Slit-scan effect.",
                 "Delaying video and subtracting it with self.",
                 "Distort image to black or white.",
                 "Pixelate image",
@@ -81,6 +83,8 @@ def getEffectId(name):
         return EffectTypes.Delay
     elif(lowername == "rays"):
         return EffectTypes.Rays
+    elif(lowername == "slitscan"):
+        return EffectTypes.SlitScan
     elif(lowername == "selfdifference"):
         return EffectTypes.SelfDifference
     elif(lowername == "distortion"):
@@ -133,6 +137,8 @@ def getEffectName(effectId):
         return "Delay"
     elif(effectId == EffectTypes.Rays):
         return "Rays"
+    elif(effectId == EffectTypes.SlitScan):
+        return "SlitScan"
     elif(effectId == EffectTypes.SelfDifference):
         return "SelfDifference"
     elif(effectId == EffectTypes.Distortion):
@@ -206,6 +212,19 @@ class EdgeColourModes():
 
     def getChoices(self):
         return ["Value", "Saturation", "Hue"]
+
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
+
+class SlitDirections():
+    Left, Up, Right, Down = range(4)
+
+    def getChoices(self):
+        return ["Left", "Up", "Right", "Down"]
 
     def findMode(self, modeString):
         modesList = self.getChoices()

@@ -28,9 +28,6 @@ try:
 except:
     freenect = None
 
-def showCvImage(image, num = 1):
-    cv.ShowImage("TAKT debug " + str(num), image)
-
 def resizeImage(image, resizeMat):
     cv.Resize(image, resizeMat)
     return resizeMat

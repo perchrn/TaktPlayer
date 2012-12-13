@@ -165,6 +165,7 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
             self._defaultFadeSettingsName = "Default"
             self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+            self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
         self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         
         self._syncLength = -1.0
@@ -176,7 +177,6 @@ class MediaFile(object):
         self._modulationRestartMode = ModulationValueMode.KeepOld
         self._effect1Settings = None
         self._effect2Settings = None
-        self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
         self._timeModulationSettings = None
 
     def _getConfiguration(self):

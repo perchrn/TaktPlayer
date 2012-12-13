@@ -1454,8 +1454,8 @@ A list of start values for the effect modulation.
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rays):
-            self._setLabels("Amount:", "Mode:", None, None, None)
-            self._setupValueLabels(None, self._rayModes.getChoices(), None, None, None)
+            self._setLabels("Amount:", "Bend", "Mode:", "Horizontal:", None)
+            self._setupValueLabels(None, None, self._rayModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.SlitScan):
             self._setLabels("Slit size:", "Draw pos:", "Source pos", "Direction", "Mix")
             self._setupValueLabels(None, None, None, self._slitDirs.getChoices(), None)

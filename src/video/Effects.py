@@ -219,6 +219,8 @@ effectMask3 = None
 effectMask4 = None
 effectMask5 = None
 effect16bitMask = None
+invertMat1 = None
+invertMat2 = None
 bigNoizeMat = None
 bigNoizeMask = None
 
@@ -231,6 +233,8 @@ def setupEffectMemory(width, heigth):
     global effectMask4
     global effectMask5
     global effect16bitMask
+    global invertMat1
+    global invertMat2
     global bigNoizeMat
     global bigNoizeMask
     if(effectMat1 == None):
@@ -242,6 +246,8 @@ def setupEffectMemory(width, heigth):
         effectMask4 = createMask(width, heigth)
         effectMask5 = createMask(width, heigth)
         effect16bitMask = create16bitMat(width, heigth)
+        invertMat1 = createMat(heigth, width)
+        invertMat2 = createMat(heigth, width)
         bigNoizeMat, bigNoizeMask = createNoizeMatAndMask(width*2, heigth*2)
 
 def getNoizeMask(level, internalRezX, internalRezY, scaleValue):
@@ -1037,10 +1043,13 @@ class RaysEffect(object):
         self._configurationTree = configurationTree
         self._internalResolutionX = internalResX
         self._internalResolutionY = internalResY
+        self._halfX = int(self._internalResolutionX / 2)
         self._halfY = int(self._internalResolutionY / 2)
         setupEffectMemory(internalResX, internalResY)
 
         self._mirrorMat = effectMat1
+        self._invertImageMat = invertMat1
+        self._invertMirrorMat = invertMat2
 
     def getName(self):
         return "Rays"
@@ -1048,44 +1057,60 @@ class RaysEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
-        return self.rayEffect(image, amount, mode)
+    def applyEffect(self, image, amount, bend, mode, horizontal, dummy4):
+        return self.rayEffect(image, amount, bend, mode, horizontal)
 
-    def rayEffect(self, image, amount, mode):
+    def rayEffect(self, image, amount, bend, mode, horizontal):
         if(mode < 0.75):
             if(amount < 0.001):
                 return image
-        scaleCalc = 0.9 + ((1.0 - amount) * 0.1)
-        sourceSizeX = int(self._internalResolutionX * scaleCalc)
-        sourceSizeY = int(self._internalResolutionY * scaleCalc)
-        sourcePosX = int((self._internalResolutionX - sourceSizeX) / 2)
-        sourcePosY = int((self._internalResolutionY - sourceSizeY) / 2)
+        scaleCalcX = 0.9 + ((1.0 - amount) * 0.1)
+        scaleCalcY = 1.0 - ((1.0 - scaleCalcX) * (1.0 + (3* bend)))
+        if(horizontal < 0.5):
+            xSize = self._internalResolutionX
+            ySize = self._internalResolutionY
+            halfY = self._halfY
+            workImage = image
+            workMirrorMat = self._mirrorMat
+        else:
+            xSize = self._internalResolutionY
+            ySize = self._internalResolutionX
+            halfY = self._halfX
+            cv.Transpose(image, self._invertImageMat)
+            workImage = self._invertImageMat
+            workMirrorMat = self._invertMirrorMat
+        sourceSizeX = int(xSize * scaleCalcX)
+        sourceSizeY = int(ySize * scaleCalcY)
+        sourcePosX = int((xSize - sourceSizeX) / 2)
+        sourcePosY = int((ySize - sourceSizeY) / 2)
 #        print "DEBUG pcn: amount: " + str(amount) + " mode: " + str(mode)
         if(mode < 0.25):
-            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
-            cv.Resize(src_region, image)
+            src_region = cv.GetSubRect(workImage, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, workImage)
         elif(mode < 0.5):
-            cv.Flip(image, self._mirrorMat, 0)
-            src_region = cv.GetSubRect(self._mirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
-            cv.Resize(src_region, self._mirrorMat)
-            cv.Flip(self._mirrorMat, image, 0)
+            cv.Flip(workImage, workMirrorMat, 0)
+            src_region = cv.GetSubRect(workMirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, workMirrorMat)
+            cv.Flip(workMirrorMat, workImage, 0)
         elif(mode < 0.75):
-            cv.Flip(image, self._mirrorMat, 0) #Make flip copy for upper rays
-            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
-            cv.Resize(src_region, image)
-            src_region = cv.GetSubRect(self._mirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
-            cv.Resize(src_region, self._mirrorMat)
-            cv.Flip(self._mirrorMat, self._mirrorMat, 0) #Flip back
-            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfY))
-            dst_region = cv.GetSubRect(image, (0, 0 , self._internalResolutionX, self._halfY))
+            cv.Flip(workImage, workMirrorMat, 0) #Make flip copy for upper rays
+            src_region = cv.GetSubRect(workImage, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, workImage)
+            src_region = cv.GetSubRect(workMirrorMat, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, workMirrorMat)
+            cv.Flip(workMirrorMat, workMirrorMat, 0) #Flip back
+            src_region = cv.GetSubRect(workMirrorMat, (0, 0, xSize, halfY))
+            dst_region = cv.GetSubRect(workImage, (0, 0 , xSize, halfY))
             cv.Copy(src_region, dst_region)
         else:
-            src_region = cv.GetSubRect(image, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
-            cv.Resize(src_region, image)
-            cv.Flip(image, self._mirrorMat, 0)
-            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfY))
-            dst_region = cv.GetSubRect(image, (0, 0 , self._internalResolutionX, self._halfY))
+            src_region = cv.GetSubRect(workImage, (sourcePosX, sourcePosY, sourceSizeX, sourceSizeY))
+            cv.Resize(src_region, workImage)
+            cv.Flip(workImage, workMirrorMat, 0)
+            src_region = cv.GetSubRect(workMirrorMat, (0, 0, xSize, halfY))
+            dst_region = cv.GetSubRect(workImage, (0, 0 , xSize, halfY))
             cv.Copy(src_region, dst_region)
+        if(horizontal >= 0.5):
+            cv.Transpose(self._invertImageMat, image)
         return image
 
 class SlitEffect(object):

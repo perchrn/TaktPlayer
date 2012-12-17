@@ -95,8 +95,9 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
     def OnDropFiles(self, x, y, filenames):
         nameId = 0
         for name in filenames:
-            self._callbackFunction(self._widgetId, name, nameId)
-            nameId += 1
+            if(name != None):
+                self._callbackFunction(self._widgetId, name, nameId)
+                nameId += 1
 
 
 class TrackOverviewSettings(object):
@@ -1346,6 +1347,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def _call_command(self, command, option, fileName):
         outputString = ""
         try:
+            print "DEBUG pcn: _call_command() ", command, option, fileName
+            print "DEBUG pcn: _call_command() ", type(command), type(option), type(fileName)
             process = subprocess.Popen((command, option, fileName), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except:
             text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
@@ -1386,7 +1389,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if(destNoteId != None):
             if(destNoteId >= 128):
                 return
-            ffmpegString = self._call_command(ffmpegPath, "-i", fileName)
+            ffmpegString = self._call_command(ffmpegPath, "-i", fileName.encode("utf8"))
             if(ffmpegString == None):
                 return
             inputCount = 0

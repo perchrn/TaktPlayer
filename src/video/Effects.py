@@ -2074,9 +2074,6 @@ class ImageAddEffect(object):
 #UDP -> multicast
 #Improve thumb requests (bulk thumb requests?)
 
-#Lage teaser video
-#Make default config more showoffy/complete (TaktDemo ;-) )
-
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
 #Full path bug: could be when importing multipple files (DnD)

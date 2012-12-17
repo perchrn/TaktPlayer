@@ -2449,10 +2449,10 @@ All notes on events are quantized to this.
                     self._config.setValue("FadeConfig", fadeConfig)
 
                 self._onSyncValidate(event)
-                syncLength = self._syncField.GetValue()
+                syncLength = float(self._syncField.GetValue())
                 self._config.setValue("SyncLength", syncLength)
                 self._onQuantizeValidate(event)
-                quantizeLength = self._quantizeField.GetValue()
+                quantizeLength = float(self._quantizeField.GetValue())
                 self._config.setValue("QuantizeLength", quantizeLength)
                 self.updateGui(None, None)
 
@@ -3563,11 +3563,15 @@ All notes on events are quantized to this.
         self._syncField.SetValue(str(length))
         if(length >= 1000):
             length = int(float(length))
+        else:
+            length = float(length)
         self._overviewClipLengthLabel.SetLabel(str(length))
         qLength = self._config.getValue("QuantizeLength")
         self._quantizeField.SetValue(str(qLength))
         if(qLength >= 1000):
             qLength = int(float(qLength))
+        else:
+            qLength = float(qLength)
         self._overviewClipQuantizeLabel.SetLabel(str(qLength))
         if(self._type == "Modulation"):
             self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)

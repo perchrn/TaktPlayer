@@ -1347,11 +1347,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def _call_command(self, command, option, fileName):
         outputString = ""
         try:
-            print "DEBUG pcn: _call_command() ", command, option, fileName
-            print "DEBUG pcn: _call_command() ", type(command), type(option), type(fileName)
             process = subprocess.Popen((command, option, fileName), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except:
-            text = "Unable to execute ffmpeg command: \"" + command + "\"\n"
+            text = "Unable to execute command: \"" + command + " " + option + " " + fileName.decode() + "\"\n"
             text += " from directory: \"" + os.getcwd() + "\"\n"
             text += "\nPlease check your path or update GUI config under file menu.\n"
             dlg = wx.MessageDialog(self, text, 'ffmpeg error!', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
@@ -1385,73 +1383,82 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 destNoteId = i
                 break
         destNoteId += fileNameIndex
+        inputCount = 0
+        useWindowsTrick = False
         ffmpegPath = os.path.normpath(self._configuration.getFfmpegBinary())
         if(destNoteId != None):
             if(destNoteId >= 128):
                 return
-            ffmpegString = self._call_command(ffmpegPath, "-i", fileName.encode("utf8"))
-            if(ffmpegString == None):
-                return
-            inputCount = 0
-            streamcount = 0
-            inputIsVideo = True
-            inputIsAvi = False
-            inputOk = False
-            tryConvert = False
-            for ffmpegLine in ffmpegString.split('\n'):
-                if(ffmpegLine.startswith("Input") == True):
-                    print "Input: " + ffmpegLine,
-                    if(", image2," in ffmpegLine):
-                        print "image!!!"
-                        inputIsVideo = False
-                    elif(", mov," in ffmpegLine):
-                        print "qucktime video!!!"
-                    elif(", avi," in ffmpegLine):
-                        print "video!!!"
-                        inputIsAvi = True
+            for tries in range(2):
+                if(inputCount == 0):
+                    if(tries == 0):
+                        ffmpegFileName = fileName
                     else:
-                        print "unknown :-("
-                    inputCount += 1
-                if(inputCount == 1):
-                    if(ffmpegLine.startswith("Input") == False):
-                        if("Stream " in ffmpegLine):
-                            streamcount += 1
-                            if(inputIsVideo == True):
-                                if("MJPG" in ffmpegLine):
-                                    if("0x47504A4D" in ffmpegLine):
-                                        print "MJPG " * 20
-                                        if(inputIsAvi == True):
-                                            inputOk = True
-                                elif(" mjpeg," in ffmpegLine):
-                                    if(" yuvj420p," in ffmpegLine):
-                                        print "MJPG " * 20
-                                        if(inputIsAvi == True):
-                                            inputOk = True
-                                tryConvert = True
+                        print "Warning trying windows encodig of file name."
+                        ffmpegFileName = fileName.encode('cp1252')
+                        useWindowsTrick = True
+                    ffmpegString = self._call_command(ffmpegPath, "-i", ffmpegFileName)
+                    if(ffmpegString == None):
+                        return
+                    streamcount = 0
+                    inputIsVideo = True
+                    inputIsAvi = False
+                    inputOk = False
+                    tryConvert = False
+                    for ffmpegLine in ffmpegString.split('\n'):
+                        if(ffmpegLine.startswith("Input") == True):
+                            print "Input: " + ffmpegLine,
+                            if(", image2," in ffmpegLine):
+                                print "image!!!"
+                                inputIsVideo = False
+                            elif(", mov," in ffmpegLine):
+                                print "qucktime video!!!"
+                            elif(", avi," in ffmpegLine):
+                                print "video!!!"
+                                inputIsAvi = True
                             else:
-                                if(" mjpeg," in ffmpegLine):
-                                    print "Jpeg " * 10
-                                    inputOk = True
-                                elif(" gif," in ffmpegLine):
-                                    print "GIF " * 10
-                                    inputOk = True
-                                elif(" png," in ffmpegLine):
-                                    print "PNG " * 10
-                                    inputOk = True
-                                else:
-                                    print ffmpegLine
+                                print "unknown :-("
+                            inputCount += 1
+                        if(inputCount == 1):
+                            if(ffmpegLine.startswith("Input") == False):
+                                if("Stream " in ffmpegLine):
+                                    streamcount += 1
+                                    if(inputIsVideo == True):
+                                        if("MJPG" in ffmpegLine):
+                                            if("0x47504A4D" in ffmpegLine):
+                                                print "MJPG " * 20
+                                                if(inputIsAvi == True):
+                                                    inputOk = True
+                                        elif(" mjpeg," in ffmpegLine):
+                                            if(" yuvj420p," in ffmpegLine):
+                                                print "MJPG " * 20
+                                                if(inputIsAvi == True):
+                                                    inputOk = True
+                                        tryConvert = True
+                                    else:
+                                        if(" mjpeg," in ffmpegLine):
+                                            print "Jpeg " * 10
+                                            inputOk = True
+                                        elif(" gif," in ffmpegLine):
+                                            print "GIF " * 10
+                                            inputOk = True
+                                        elif(" png," in ffmpegLine):
+                                            print "PNG " * 10
+                                            inputOk = True
+                                        else:
+                                            print ffmpegLine
             if(inputCount > 0):
                 convertBeforeImport = True
                 mouseState = wx.GetMouseState() #@UndefinedVariable
                 if((mouseState.AltDown() == False) and (mouseState.CmdDown() == False) and (mouseState.ControlDown() == False) and (mouseState.MetaDown() == False)): #@UndefinedVariable
-                    print "Press ctrl, command, meta or alt to force convertion."
                     if((inputCount == 1) and (streamcount == 1) and (inputOk == True)):
+                        print "Press ctrl, command, meta or alt to force convertion."
                         convertBeforeImport = False
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
                         self._convertionWentOk = False
                         dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
-                                                   ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, 
+                                                   ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, useWindowsTrick, 
                                                    self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY)
                         dlg.ShowModal()
                         try:

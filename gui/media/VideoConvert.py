@@ -15,7 +15,7 @@ import shutil
 
 class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
     
-    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, lastDirName, configVideoDir, inputFile, cropValue, scaleModeValue, scaleXValue, scaleYValue):
+    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, lastDirName, configVideoDir, inputFile, useWindowsTrick, cropValue, scaleModeValue, scaleXValue, scaleYValue):
         super(VideoConverterDialog, self).__init__(parent=parent, title=title, size=(400, 280))
 
         self._valuesSaveCallback = valuesSaveCallback
@@ -23,6 +23,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         self._ffmpegPath = ffmpegPath
         self._dirName = lastDirName
         self._inputFile = inputFile
+        self._useWindowsTrick = useWindowsTrick
         self._cropMode = cropValue
         self._scaleMode = scaleModeValue
         self._scaleXValue = scaleXValue
@@ -181,7 +182,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
             print "Open converter dialog..."
             print "Show ffmpeg output realtime etc."
             ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
-            dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback)
+            dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback, self._useWindowsTrick)
             dlg.ShowModal()
             try:
                 dlg.Destroy()
@@ -283,17 +284,18 @@ class VideoCopyDialog(wx.Dialog): #@UndefinedVariable
 
 class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
     
-    def __init__(self, parent, title, ffmpegCommand, okConvertionCallback):
+    def __init__(self, parent, title, ffmpegCommand, okConvertionCallback, useWindowsTrick):
         super(VideoConverterStatusDialog, self).__init__(parent=parent, title=title, size=(800, 320))
 
         self._okConvertionCallback = okConvertionCallback
+        self._useWindowsTrick = useWindowsTrick
 
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
 
         commandSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         commandLabel = wx.StaticText(self, wx.ID_ANY, "Running:") #@UndefinedVariable
-        commandField = wx.TextCtrl(self, wx.ID_ANY, ffmpegCommand) #@UndefinedVariable
+        commandField = wx.TextCtrl(self, wx.ID_ANY, ffmpegCommand.replace('|', ' ')) #@UndefinedVariable
         commandField.SetEditable(False)
         commandField.SetBackgroundColour((222,222,222))
         commandSizer.Add(commandLabel, 0, wx.ALL, 5) #@UndefinedVariable
@@ -326,7 +328,10 @@ class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
         self.SetSizer(dialogSizer)
 
         self._commandProcess = None
-        self._startConvertion(ffmpegCommand)
+        if(self._useWindowsTrick):
+            self._startConvertion(ffmpegCommand.encode('cp1252'))
+        else:
+            self._startConvertion(ffmpegCommand)
 
         self._printTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._printTimer.Start(50)#20 times a second
@@ -361,16 +366,20 @@ class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
         try:
             while(True):
                 outputText += self._commandPrintQueue.get_nowait()
+                if(self._useWindowsTrick == True):
+                    guiText = outputText.decode('cp1252')
+                else:
+                    guiText = outputText
                 if(skippedCount < 25):
                     skippedCount += 1
                 else:
-                    self._ffmpegOutputArea.AppendText(outputText)
+                    self._ffmpegOutputArea.AppendText(guiText)
                     sys.stdout.write(outputText)
                     outputText = ""
                     skippedCount = 0
         except Empty:
             if(outputText != ""):
-                self._ffmpegOutputArea.AppendText(outputText)
+                self._ffmpegOutputArea.AppendText(guiText)
                 sys.stdout.write(outputText)
         if(self._commandProcess.is_alive() == False):
             self._stopConvertion()
@@ -400,7 +409,7 @@ class VideoConverterStatusDialog(wx.Dialog): #@UndefinedVariable
 
 def callCommandProcess(command, commandQueue, printQueue, returnValueQueue):
     process = subprocess.Popen(command.split('|'), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    printQueue.put("Running: " + command + "\n")
+    printQueue.put("Running: " + command.replace('|', ' ') + "\n")
     while True:
         out = process.stdout.read(1)
         if out == '' and process.poll() != None:
@@ -416,5 +425,5 @@ def callCommandProcess(command, commandQueue, printQueue, returnValueQueue):
         except Empty:
             pass
     printQueue.put(process.communicate()[0])
-    printQueue.put("Done.")
+    printQueue.put("Done.\n")
     returnValueQueue.put(process.returncode)

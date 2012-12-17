@@ -3230,51 +3230,11 @@ All notes on events are quantized to this.
     def _onClipFadeButton(self, event):
         self._onFadeEdit(event)
 
-    def _openModulationEditor(self, name):
-        if(self._config != None):
-            fadeConfigName = self._config.getValue("FadeConfig")
-            fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
-            if(fadeConfig != None):
-                makeNew = False
-                if(fadeConfigName == "Default"):
-                    makeNew = True
-                else:
-                    inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
-                    if(inUseNumber > 1):
-                        makeNew = True
-                if(makeNew == True):
-                    newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
-                    fadeConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
-                    if(fadeConfig == None):
-                        text = "We need an unique configuration to update the \"Fade " + str(name) + "\"\n"
-                        text += "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
-                        dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Make new config?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
-                        result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                        dlg.Destroy()
-                        if(result == True):
-                            dupTemplateName = self._mainConfig.duplicateFadeTemplate(fadeConfigName)
-                            fadeConfig = self._mainConfig.getFadeTemplate(dupTemplateName)
-                            fadeConfig.setName(newFadeConfigName)
-                            self._config.setValue("FadeConfig", newFadeConfigName)
-                            self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
-                            self._mainConfig.updateFadeGuiButtons(newFadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
-                            self._mainConfig.updateFadeList(newFadeConfigName)
-                            self._showOrHideSaveButton()
-                    fadeConfigName = newFadeConfigName
-                if(fadeConfig != None):
-                    self._mainConfig.updateFadeGui(fadeConfigName, "Media", self._fadeField)
-                    self._configSizer.Hide(self._timeModulationConfigPanel)
-                    self._configSizer.Hide(self._effectConfigPanel)
-                    self._configSizer.Hide(self._slidersPanel)
-                    self.showModulationGui()
-                    self._selectedEditor = self.EditSelection.Unselected
-                    self._highlightButton(self._selectedEditor)
-
     def _onClipFadeModulationButton(self, event):
-        self._openModulationEditor("Modulation")
+        self._onFadeEdit(event)
 
     def _onClipFadeLevelButton(self, event):
-        self._openModulationEditor("Level")
+        self._onFadeEdit(event)
 
     def _onLengthDoubbleButton(self, event):
         if(self._config != None):

@@ -1868,15 +1868,15 @@ class FadeGui(object):
         self._mainFadeListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
 #        self._oldListHeight = 376
-        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(220,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(310,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._fadeListWidget.SetImageList(self._fadeImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._fadeListWidget.SetBackgroundColour((170,170,170))
 
         self._fadeListWidget.InsertColumn(0, 'Name', width=150)
         self._fadeListWidget.InsertColumn(1, 'Fade', width=34)
         self._fadeListWidget.InsertColumn(2, 'Level', width=36)
-        self._fadeListWidget.InsertColumn(3, 'PostMix', width=42)
-        self._fadeListWidget.InsertColumn(4, 'Settings', width=48)
+        self._fadeListWidget.InsertColumn(3, 'Mix', width=34)
+        self._fadeListWidget.InsertColumn(4, 'Settings', width=56)
 
         self._mainFadeListGuiSizer.Add(self._fadeListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -2204,6 +2204,10 @@ Sets the size of the noize particles.
         configWipePostMix = self._config.getValue("WipePostMix")
         if(guiWipePostMix != configWipePostMix):
             return True
+        guiWipeSettings = self._wipeSettingsField.GetValue()
+        configWipeSettings = self._config.getValue("WipeSettings")
+        if(guiWipeSettings != configWipeSettings):
+            return True
         return False
 
     def _onUpdate(self, event):
@@ -2275,9 +2279,9 @@ Sets the size of the noize particles.
             imageId = self._modIdImageIndex[modBitmapId]
             self._fadeListWidget.SetStringItem(index, 2, "", imageId)
             if(wipePostMix == True):
-                self._fadeListWidget.SetStringItem(index, 3, "On")
+                self._fadeListWidget.SetStringItem(index, 3, "Post")
             else:
-                self._fadeListWidget.SetStringItem(index, 3, "Off")
+                self._fadeListWidget.SetStringItem(index, 3, "Pre")
             self._fadeListWidget.SetStringItem(index, 4, wipeSettings)
 
             if(index % 2):

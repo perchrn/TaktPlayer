@@ -2079,8 +2079,13 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
-#FFull path bug: could be when importing multipple files (DnD)
+#Full path bug: could be when importing multipple files (DnD)
 #Redo baertur with time modulation (started)
+#Wipe Noize mode + replace is strange
+#Check for MediaSettings leak after GroupMedia release bug fix (j)
+#Check unicode norwegian file names on media file dialog???
+
+
 #Make Rygg I Rand project (started)
 #Make Elg project (started)
 

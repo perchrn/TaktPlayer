@@ -99,7 +99,7 @@ class MediaMixer(object):
         trackConfigHolder.addTextParameter("PreEffectConfig", self._defaultPreEffectSettingsName)#Default MixPreDefault
         self._defaultPostEffectSettingsName = "MixPostDefault"
         trackConfigHolder.addTextParameter("PostEffectConfig", self._defaultPostEffectSettingsName)#Default MixPostDefault
-        self._defaultFadeSettingsName = "Default"
+        self._defaultFadeSettingsName = "TrackDefault"
         trackConfigHolder.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
 
     def loadMediaFromConfiguration(self):

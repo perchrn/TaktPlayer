@@ -910,7 +910,7 @@ class MediaGroup(MediaFile):
                 mediaSettings = subMediaSettingsList[i]
                 for j in range(len(self._mediaList)):
                     media = self._mediaList[j]
-                    media.releaseMedia(mediaSettings.mediaSettingsList[j])
+                    media.releaseMedia(mediaSettings)
             self._mediaList = newMediaList
             for mediaSettings in self._mediaSettingsHolder.getSettingsList():
                 if(mediaSettings.needsUpdate() == True):

@@ -783,7 +783,7 @@ class PixelateEffect(object):
             cv.Resize(self._blockMat, image, upScaler)
         if(colours > 0.01):
             colVal = 1.0 - colours
-            quantize = 2 + int(colVal * 14)
+            quantize = 2 + int(colVal * 30)
             if(self._colourTableLastValue != quantize):
                 self._updateTable(quantize)
             cv.LUT(image, image, self._colourTableMat)

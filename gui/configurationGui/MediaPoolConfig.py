@@ -657,6 +657,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._clearDragCursorCallback = parentClass.clearDragCursor
         self.setDragCursorCallback = parentClass.setDragCursor
         self.trackEffectFieldUpdateCallback = self._trackGui.updateEffectField
+        self._trackUnselectEditor = self._trackGui.unselectButton
         self._midiTiming = MidiTiming()
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
         self._mediaFileGuiPanel = wx.Panel(self._parentPlane, wx.ID_ANY) #@UndefinedVariable
@@ -1767,8 +1768,7 @@ Reverses the scroll direction when not modulated.
                 self._configSizer.Hide(self._moulationConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1792,8 +1792,7 @@ Decides how we add the second value.
                 self._configSizer.Hide(self._moulationConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1830,8 +1829,7 @@ Smoothest\t-> n = 128
                 self._configSizer.Hide(self._moulationConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1847,8 +1845,7 @@ Smoothest\t-> n = 128
                 self._configSizer.Hide(self._noteSlidersPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
@@ -1874,8 +1871,7 @@ Smoothest\t-> n = 128
                 self._configSizer.Hide(self._noteSlidersPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
@@ -2033,7 +2029,7 @@ All notes on events are quantized to this.
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
@@ -2045,11 +2041,9 @@ All notes on events are quantized to this.
     def _onEffect1Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.Effect1):
-                self._selectedEditor = self.EditSelection.Effect1
-                self._configSizer.Show(self._effectConfigPanel)
+                self.showEffectsGui(self.EditSelection.Effect1)
             else:
-                self._selectedEditor = self.EditSelection.Unselected
-                self._configSizer.Hide(self._effectConfigPanel)
+                self.hideEffectsGui()
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
@@ -2062,11 +2056,9 @@ All notes on events are quantized to this.
     def _onEffect2Edit(self, event, showEffectGui = True):
         if(showEffectGui == True):
             if(self._selectedEditor != self.EditSelection.Effect2):
-                self._configSizer.Show(self._effectConfigPanel)
-                self._selectedEditor = self.EditSelection.Effect2
+                self.showEffectsGui(self.EditSelection.Effect2)
             else:
-                self._configSizer.Hide(self._effectConfigPanel)
-                self._selectedEditor = self.EditSelection.Unselected
+                self.hideEffectsGui()
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
@@ -2090,13 +2082,16 @@ All notes on events are quantized to this.
     def fixTimeModulationGuiLayout(self):
         self.refreshLayout()
 
-    def showEffectsGui(self):
+    def showEffectsGui(self, selectedId):
+        self._selectedEditor = selectedId
         self._configSizer.Show(self._effectConfigPanel)
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
 
     def hideEffectsGui(self):
+        self.hideSlidersGui()
         self._configSizer.Hide(self._effectConfigPanel)
+        self._trackUnselectEditor()
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
@@ -2111,6 +2106,7 @@ All notes on events are quantized to this.
 
     def hideFadeGui(self):
         self._configSizer.Hide(self._fadeConfigPanel)
+        self._trackUnselectEditor()
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
@@ -2162,8 +2158,7 @@ All notes on events are quantized to this.
                 self._configSizer.Hide(self._fadeConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
-            self._configSizer.Hide(self._effectConfigPanel)
-            self._configSizer.Hide(self._slidersPanel)
+            self.hideEffectsGui()
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
@@ -2173,8 +2168,7 @@ All notes on events are quantized to this.
     def _onCloseButton(self, event):
         self.hideNoteGui()
         self._configSizer.Hide(self._timeModulationConfigPanel)
-        self._configSizer.Hide(self._effectConfigPanel)
-        self._configSizer.Hide(self._slidersPanel)
+        self.hideEffectsGui()
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._noteSlidersPanel)
@@ -3304,24 +3298,17 @@ All notes on events are quantized to this.
                 effectConfigName = self._config.getValue("Effect1Config")
                 effectId = "Effect1"
                 midiNote = self._midiNote
-                self._selectedEditor = self.EditSelection.Effect1
+                if((self._selectedEditor == self.EditSelection.Effect1) or (self._selectedEditor == self.EditSelection.Effect2)):
+                    self._selectedEditor = self.EditSelection.Effect1
+                else:
+                    self._selectedEditor = self.EditSelection.Unselected
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
                 effectId = "Effect2"
                 midiNote = self._midiNote
-                self._selectedEditor = self.EditSelection.Effect2
-        if(self._activeTrackClipNoteId > -1):
-            noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
-            if(noteConfig != None):
-                if(buttonId == self._overviewTrackFx1Button.GetId()):
-                    effectConfigName =  noteConfig.getValue("Effect1Config")
-                    effectId = "Effect1"
-                    midiNote = self._activeTrackClipNoteId
-                    self._selectedEditor = self.EditSelection.Unselected
-                if(buttonId == self._overviewTrackFx2Button.GetId()):
-                    effectConfigName =  noteConfig.getValue("Effect2Config")
-                    effectId = "Effect2"
-                    midiNote = self._activeTrackClipNoteId
+                if((self._selectedEditor == self.EditSelection.Effect1) or (self._selectedEditor == self.EditSelection.Effect2)):
+                    self._selectedEditor = self.EditSelection.Effect2
+                else:
                     self._selectedEditor = self.EditSelection.Unselected
         if(effectConfigName != None):
             self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId, None)
@@ -3337,13 +3324,6 @@ All notes on events are quantized to this.
                 effectConfigName = self._config.getValue("Effect1Config")
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
-        if(self._activeTrackClipNoteId > -1):
-            noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId).getConfig()
-            if(noteConfig != None):
-                if(buttonId == self._overviewTrackFx1Button.GetId()):
-                    effectConfigName =  noteConfig.getValue("Effect1Config")
-                if(buttonId == self._overviewTrackFx2Button.GetId()):
-                    effectConfigName =  noteConfig.getValue("Effect2Config")
         self._mainConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
@@ -3353,17 +3333,6 @@ All notes on events are quantized to this.
             fadeConfigName = self._config.getValue("FadeConfig")
         self._mainConfig.updateFadeList(fadeConfigName)
         self.showFadeListGui()
-
-    def _onOverviewTrackClipButton(self, event):
-        noteConfig = self._mainConfig.getNoteConfiguration(self._activeTrackClipNoteId)
-        self.updateGui(noteConfig, self._activeTrackClipNoteId)
-        self.updateOverviewClipBitmap(self._overviewTrackClipButton.getBitmap())
-
-    def updateTrackOverviewClipBitmap(self, clipBitmap):
-        if(clipBitmap != None):
-            self._overviewTrackClipButton.setBitmap(clipBitmap)
-        else:
-            self._overviewTrackClipButton.setBitmap(self._emptyBitMap)
 
     def updateOverviewClipBitmap(self, clipBitmap):
         if(clipBitmap != None):

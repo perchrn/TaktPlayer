@@ -877,7 +877,7 @@ A list of start values for the effect modulation.
         effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
         if(effectTemplate != None):
             self.updateGui(effectTemplate, None, self._activeEffectId)
-            self._showEffectsCallback()
+            self._showEffectsCallback(0)
 
     def _onListButton(self, event):
         effectConfigName = self._templateNameField.GetValue()
@@ -1134,7 +1134,12 @@ A list of start values for the effect modulation.
         self._hideSlidersCallback()
 
     def _onSliderEditButton(self, event):
-        self._showEffectsCallback()
+        selectedEditor = 0
+        if(self._activeEffectId == "Effect1"):
+            selectedEditor = 2
+        if(self._activeEffectId == "Effect2"):
+            selectedEditor = 3
+        self._showEffectsCallback(selectedEditor)
         self._sliderButtonsSizer.Hide(self._editButton)
         self._sliderButtonsSizer.Show(self._updateButton)
         self._sliderButtonsSizer.Layout()

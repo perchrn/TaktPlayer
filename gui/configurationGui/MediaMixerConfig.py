@@ -351,6 +351,10 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainTrackGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+    def unselectButton(self):
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton(self._selectedEditor)
+
     def updateEffectField(self, widget, value, saveValue, fieldName):
         if(fieldName == "PreEffect"):
             self._updateEffecChoices(widget, value, "MixPreDefault", False)
@@ -435,6 +439,10 @@ Replace:\tNo mixing. Just use this image.
             self._postEffectButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._postEffectButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(selected == self.EditSelection.Fade):
+            self._fadeButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._fadeButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def _onTrackMixButton(self, event):
         buttonId = event.GetEventObject().GetId()
@@ -496,14 +504,14 @@ Replace:\tNo mixing. Just use this image.
 
     def _onPreEffectEdit(self, event, showGui = True):
         if(showGui == True):
+            self._hideFadeCallback()
             if(self._selectedEditor != self.EditSelection.PreEffect):
                 self._hideModulationCallback()
+                self._showEffectsCallback(0)
                 self._selectedEditor = self.EditSelection.PreEffect
-                self._showEffectsCallback()
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
-            self._hideFadeCallback()
         selectedEffectConfig = self._preEffectField.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect", self._preEffectField)
         self._showOrHideSaveButton()
@@ -511,14 +519,14 @@ Replace:\tNo mixing. Just use this image.
 
     def _onPostEffectEdit(self, event, showGui = True):
         if(showGui == True):
+            self._hideFadeCallback()
             if(self._selectedEditor != self.EditSelection.PostEffect):
                 self._hideModulationCallback()
+                self._showEffectsCallback(0)
                 self._selectedEditor = self.EditSelection.PostEffect
-                self._showEffectsCallback()
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
-            self._hideFadeCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
         self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect", self._postEffectField)
         self._showOrHideSaveButton()
@@ -526,6 +534,7 @@ Replace:\tNo mixing. Just use this image.
 
     def _onFadeEdit(self, event, showGui = True):
         if(showGui == True):
+            self._hideEffectsCallback()
             if(self._selectedEditor != self.EditSelection.Fade):
                 self._hideModulationCallback()
                 self._selectedEditor = self.EditSelection.Fade
@@ -533,9 +542,8 @@ Replace:\tNo mixing. Just use this image.
             else:
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideFadeCallback()
-            self._hideEffectsCallback()
         selectedFadeConfig = self._fadeField.GetValue()
-        self._mainConfig.updateFadeGui(selectedFadeConfig, "Fade", None, self._fadeField)
+        self._mainConfig.updateFadeGui(selectedFadeConfig, "Track", None, self._fadeField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -756,5 +764,6 @@ Replace:\tNo mixing. Just use this image.
             elif(self._selectedEditor == self.EditSelection.PostEffect):
                 self._onPostEffectEdit(None, False)
 
+        self._highlightButton(self._selectedEditor)
         self._showOrHideSaveButton()
 

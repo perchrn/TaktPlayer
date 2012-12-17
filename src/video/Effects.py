@@ -741,6 +741,8 @@ class PixelateEffect(object):
         self._oldAmount = -1.0
 
         self._blockMat = effectMat1
+        self._colourTableMat = cv.CreateMat(1, 256, cv.CV_8UC1)
+        self._updateTable(16)
 
     def getName(self):
         return "Pixelate"
@@ -748,29 +750,43 @@ class PixelateEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, unused1, unused2, unused3):
-        return self.blockifyImage(image, amount, mode)
+    def _updateTable(self, quantize):
+        stepSize = 256.0 / quantize
+        for i in range(256):
+            if(int(i/stepSize) == 0):
+                cv.Set1D(self._colourTableMat, i, 0)
+            else:
+                cv.Set1D(self._colourTableMat, i, int((1+int(i/stepSize))*stepSize))
+        self._colourTableLastValue = quantize
 
-    def blockifyImage(self, image, amount, mode):
-        if(amount < 0.02):
-            return image
-        if(self._oldAmount != amount):
-            sizeScale = 1.0 / (math.pow((self._blockRange * amount), 2))
-            miniImageSizeX = int(self._internalResolutionX * sizeScale)
-            miniImageSizeY = int(self._internalResolutionY * sizeScale)
-            miniImageSizeX = min(max(1, miniImageSizeX), self._internalResolutionX)
-            miniImageSizeY = min(max(1, miniImageSizeY), self._internalResolutionY)
-#            print "DEBUG pcn: amount: " + str(amount) + " range: " + str(self._blockRange) + " scale: " + str(sizeScale) + " X: " + str(miniImageSizeX) + " Y: " + str(miniImageSizeY)
-            self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
-        downScaler = cv.CV_INTER_CUBIC
-        if(mode < 0.33):
-            upScaler = cv.CV_INTER_NN #Clean
-        elif(mode < 0.66):
-            upScaler = cv.CV_INTER_CUBIC #Blobby roundish
-        else:
-            upScaler = cv.CV_INTER_LINEAR #Blobby star
-        cv.Resize(image, self._blockMat, downScaler)
-        cv.Resize(self._blockMat, image, upScaler)
+    def applyEffect(self, image, amount, mode, colours, unused2, unused3):
+        return self.blockifyImage(image, amount, mode, colours)
+
+    def blockifyImage(self, image, amount, mode, colours):
+        if(amount > 0.01):
+            if(self._oldAmount != amount):
+                sizeScale = 1.0 / (math.pow((self._blockRange * amount), 2))
+                miniImageSizeX = int(self._internalResolutionX * sizeScale)
+                miniImageSizeY = int(self._internalResolutionY * sizeScale)
+                miniImageSizeX = min(max(1, miniImageSizeX), self._internalResolutionX)
+                miniImageSizeY = min(max(1, miniImageSizeY), self._internalResolutionY)
+#                print "DEBUG pcn: amount: " + str(amount) + " range: " + str(self._blockRange) + " scale: " + str(sizeScale) + " X: " + str(miniImageSizeX) + " Y: " + str(miniImageSizeY)
+                self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
+            downScaler = cv.CV_INTER_CUBIC
+            if(mode < 0.33):
+                upScaler = cv.CV_INTER_NN #Clean
+            elif(mode < 0.66):
+                upScaler = cv.CV_INTER_CUBIC #Blobby roundish
+            else:
+                upScaler = cv.CV_INTER_LINEAR #Blobby star
+            cv.Resize(image, self._blockMat, downScaler)
+            cv.Resize(self._blockMat, image, upScaler)
+        if(colours > 0.01):
+            colVal = 1.0 - colours
+            quantize = 2 + int(colVal * 14)
+            if(self._colourTableLastValue != quantize):
+                self._updateTable(quantize)
+            cv.LUT(image, image, self._colourTableMat)
         return image
 
 class ScrollEffect(object):

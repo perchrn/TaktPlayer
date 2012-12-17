@@ -1471,7 +1471,7 @@ A list of start values for the effect modulation.
             self._setLabels("Distortion amount:", "Distortion mode", None, None, None)
             self._setupValueLabels(None, self._distortionModes.getChoices(), None, None, None)
         elif(self._chosenEffectId == EffectTypes.Pixelate):
-            self._setLabels("Pixel size:", "Pixel mode", None, None, None)
+            self._setLabels("Pixel size:", "Pixel mode", "Colour reduce", None, None)
             self._setupValueLabels(None, self._pixelateModes.getChoices(), None, None, None)
         elif(self._chosenEffectId == EffectTypes.TVNoize):
             self._setLabels("Noize amount:", "Noize scale", "Scale mode", None, None)

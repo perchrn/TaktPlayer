@@ -25,7 +25,7 @@ def findOsFontPath():
 
 def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
     colour = (blue, green, red) #BGR (to skip transforming later.)
-    retries = 2
+    retries = 3
     if (os.path.isdir(fontPath) == False):
         print "Could not find font: %s (%s)" % (font, fontPath)
         raise FontError("Bad font path: " + str(fontPath))
@@ -34,18 +34,16 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
     if(os.path.isfile(fontFile) != True):
         print "Could not find font: %s.ttf trying %s.otf" % (font, font)
         fontFile = os.path.join(fontPath, font + ".otf")
-    while(retries >= 0):
+    while(retries > 0):
         try:
-            print "DEBUG pcn: opening font: " + str(fontFile)
+#            print "DEBUG pcn: opening font: " + str(fontFile)
             font = ImageFont.truetype(fontFile, fontSize)
             retries = -1
         except:
-            if(retries == 2):
+            if(retries == 3):
                 fontFile = os.path.join(fontPath, "Ariel.ttf")
-                print "DEBUG pcn: secondTry: " + str(fontFile)
-            elif(retries == 1):
+            elif(retries == 2):
                 fontFile = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
-                print "DEBUG pcn: thirdTry: " + str(fontFile)
             else:
                 raise FontError("Unable to load font: " + str(font) + " in " + str(fontPath))
                 return

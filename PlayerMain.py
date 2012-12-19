@@ -29,17 +29,12 @@ from midi.MidiTiming import MidiTiming
 from midi.TcpMidiListner import TcpMidiListner
 from midi.MidiStateHolder import MidiStateHolder, SpecialModulationHolder
 
-from utilities import MultiprocessLogger
-
 #Python standard
 import time
 import signal
 import sys
 import shutil
 import os
-#Log system
-import logging
-logging.root.setLevel(logging.ERROR)
 
 APP_NAME = "TaktPlayer"
 launchGUI = True
@@ -58,11 +53,6 @@ class PlayerMain(wx.Frame):
         elif(os.path.isfile("TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
             self.SetIcon(wxIcon)
-
-        #Multithreaded logging utility and regular logging:
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-#        self._log.setLevel(logging.WARNING)
-        self._multiprocessLogger = MultiprocessLogger.MultiprocessLogger(self._log)
 
         screenWidth = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_X)
         screenHeight = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
@@ -154,7 +144,7 @@ class PlayerMain(wx.Frame):
                                     self._internalResolutionY, self._playerConfiguration.getVideoDir(),
                                     self._playerConfiguration.getAppDataDirectory())
 
-        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger, self._configLoadCallback)
+        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._configLoadCallback)
         self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
 
         self._timingThreshold = 2.0/60
@@ -239,7 +229,7 @@ class PlayerMain(wx.Frame):
 
     def _startGUIProcess(self):
         if(sys.platform != "darwin"):
-            self._log.debug("Starting GUI Process")
+            print("Starting GUI Process")
             from configurationGui.GuiMainWindow import startGui
             self._commandQueue = Queue(10)
             self._statusQueue = Queue(-1)
@@ -257,7 +247,7 @@ class PlayerMain(wx.Frame):
             
     def _requestGuiProcessToStop(self):
         if(self._guiProcess != None):
-            self._log.debug("Stopping GUI Process")
+            print("Stopping GUI Process")
             self._commandQueue.put("QUIT")
 
     def hasGuiProcessProcessShutdownNicely(self):
@@ -454,7 +444,7 @@ class PlayerMain(wx.Frame):
 
     def _frameUpdate(self, event = None):
 #            if (dt > self._timingThreshold):
-#                self._log.info("Too slow main schedule " + str(dt))
+#                print("Too slow main schedule " + str(dt))
         #Prepare frame
         timeStamp = time.time()
         gotMidiNote = self._midiListner.getData(False)
@@ -464,7 +454,6 @@ class PlayerMain(wx.Frame):
             screenPos = self.ClientToScreen((0,0))
             self.WarpPointer(mousePos[0] - screenPos[0], mousePos[1] - screenPos[1])
         self._mediaPool.updateVideo(timeStamp)
-        self._multiprocessLogger.handleQueuedLoggs()
         self.checkAndUpdateFromConfiguration()
         updateConfig = self._guiServer.processGuiRequests()
         if(updateConfig == True):

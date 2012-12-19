@@ -3,7 +3,6 @@ Created on 21. des. 2011
 
 @author: pcn
 '''
-import logging
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
@@ -21,8 +20,6 @@ class MediaPool(object):
         self._effectsConfigurationTemplates = effectsConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
-        #Logging etc.
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
         self._internalResolutionX =  internalResolutionX
         self._internalResolutionY =  internalResolutionY

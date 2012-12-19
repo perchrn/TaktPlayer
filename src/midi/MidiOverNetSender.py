@@ -7,13 +7,11 @@ import pygame.midi
 import socket
 import ctypes
 import time
-import logging
 from multiprocessing import Process, Queue
 from Queue import Empty
 
 class MidiOverNetSender(object):
     def __init__(self):
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._midiInputList = None
         self._midiOverNetProcess = None
 
@@ -28,14 +26,14 @@ class MidiOverNetSender(object):
                     midiState = "Already in use."
                 else:
                     midiState = "Available."
-                self._log.info("input id: %d \"%s\" %s" % (i, midiName, midiState))
+                print("input id: %d \"%s\" %s" % (i, midiName, midiState))
                 self._midiInputList.append((midiName, midiOpen, i))
             if(midiOutput == 1):
                 if(midiOpen == 1):
                     midiState = "Already in use."
                 else:
                     midiState = "Available."
-                self._log.info("output id: %d \"%s\" %s" % (i, midiName, midiState))
+                print("output id: %d \"%s\" %s" % (i, midiName, midiState))
         return self._midiInputList
 
 #        self._host = "10.242.10.145"

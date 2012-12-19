@@ -4,7 +4,6 @@ Created on 20. des. 2011
 @author: pcn
 '''
 from midi import MidiUtilities
-import logging
 from midi.MidiController import MidiControllers
 import time
 
@@ -296,7 +295,6 @@ class MidiChannelModulationSources():
 
 class MidiChannelStateHolder(object):
     def __init__(self, channelId, midiControllerLatestModified):
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._midiChannel = channelId
 
         self._numberOfWaitingActiveNotes = 0
@@ -383,7 +381,7 @@ class MidiChannelStateHolder(object):
     def controllerChange(self, controllerId, value, songPosition):
 #        print "DEBUG got controller: " + self._midiControllers.getName(controllerId) + " (id: " + str(controllerId) + ") value: " + str(value)
         if(controllerId == self._midiControllers.ResetAllControllers):
-            self._log.info("Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition))
+            print "Resetting all controller values for MIDI channel %d at %f" %(self._midiChannel, songPosition)
             for i in range(128):
                 self._controllerValues[i] = 0.0
         elif(controllerId == self._midiControllers.AllNotesOff):

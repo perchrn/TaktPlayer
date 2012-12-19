@@ -3,7 +3,6 @@ Created on 21. des. 2011
 
 @author: pcn
 '''
-import logging
 from video.Effects import getEmptyImage, createMat, getEffectByName
 from video.media.MediaFile import MixMode, scaleAndSave
 from video.media.MediaFileModes import getMixModeFromName, WipeMode
@@ -21,8 +20,6 @@ class MediaMixer(object):
         self._effectsConfigurationTemplates = effectsConfiguration
         self._mediaFadeConfigurationTemplates = fadeConfiguration
         self._effectImagesConfigurationTemplates = effectImagesConfig
-        #Logging etc.
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
         self._internalResolutionX = internalResolutionX
         self._internalResolutionY = internalResolutionY

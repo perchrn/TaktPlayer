@@ -6,15 +6,10 @@ Created on 12. des. 2011
 
 import socket
 import time
-import logging
-from utilities import MultiprocessLogger
 from multiprocessing import Process, Queue
 from Queue import Empty
 
 def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue):
-    processLogger = logging.getLogger('networkDaemon')
-    processLogger.setLevel(logging.DEBUG)
-    MultiprocessLogger.configureProcessLogger(processLogger, logQueue)
     midiSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     if(useBroadcast == True):
         midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -27,7 +22,7 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
     try:
         midiSocket.bind((host, port))
     except:
-        processLogger.warning("Address already in use: %s:%d" % (host, port))
+        logQueue.put_nowait("Address already in use: %s:%d" % (host, port))
         #Ask process hogging port to shut down
         import ctypes
         udpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,7 +39,7 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
         try:
             midiSocket.bind((host, port))
         except:
-            processLogger.error("Address already in use and won't shut down: %s:%d" % (host, port))
+            logQueue.put_nowait("Address already in use and won't shut down: %s:%d" % (host, port))
             return
 #    if(useBroadcast == False):
 #        mreq = struct.pack("4sl", socket.inet_aton(mcastAddress), socket.INADDR_ANY)        
@@ -63,32 +58,31 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
                 timeStamp = time.time()
                 outputQueue.put_nowait((timeStamp, remoteAddress, data))#we loose data here if program is to slow
             else:
-                processLogger.warning("Got shutdown message from client!")
+                logQueue.put_nowait("Got shutdown message from client!")
         except:
             pass
         try:
             command, arguments = commandQueue.get_nowait()
             if(command == "QUIT"):
-                processLogger.debug("got command QUIT")
+                logQueue.put_nowait("got command QUIT")
                 run = False
             elif(command == "BIND"):
                 host, port = arguments
-                processLogger.info("got command BIND: %s:%d" % (host, port))
+                logQueue.put_nowait("got command BIND: %s:%d" % (host, port))
         except Empty:
             pass
 
 
 class TcpMidiListner(object):
-    def __init__(self, midiTimingClass, midiStateHolderClass, multiprocessLogger, configLoadCallback = None):
+    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback = None):
         #Logging etc.
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self._multiprocessLogger = multiprocessLogger
         self._configLoadCallback = configLoadCallback
 
         #Daemon variables:
         self._midiListnerProcess = None
         self._midiQueue = Queue(1024)
         self._midiListnerCommandQueue = Queue(-1)
+        self._midiListnerPrintQueue = Queue(1024)
         self._conectedAddress = None
 
         self._midiInsideSysExMessage = False
@@ -97,8 +91,8 @@ class TcpMidiListner(object):
         self._midiStateHolder = midiStateHolderClass
 
     def startDaemon(self, host, port, useBroadcast):
-        self._log.debug("Starting TcpMidiListner daemon")
-        self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, useBroadcast, self._midiQueue, self._midiListnerCommandQueue, self._multiprocessLogger.getLogQueue()))
+        print "Starting TcpMidiListner daemon"
+        self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, useBroadcast, self._midiQueue, self._midiListnerCommandQueue, self._midiListnerPrintQueue))
         self._midiListnerProcess.name = "midiUdpListner"
 #        self._midiListnerProcess.daemon = True
         self._midiListnerProcess.start()
@@ -141,10 +135,10 @@ class TcpMidiListner(object):
             for midiData in command, data1, data2, data3:
                 if((midiData & 0x80) and (midiData < 0xf7)):
                     self._midiInsideSysExMessage = False
-                    self._log.debug("SysEx message ended by a new command.")
+                    print "SysEx message ended by a new command."
                 elif(midiData == 0xf7):
                     self._midiInsideSysExMessage = False
-                    self._log.debug("SysEx message ended by a SysEx end command.")
+                    print "SysEx message ended by a SysEx end command."
             if(command & 0x80):
                 sysexEvent = False
         if(sysexEvent):
@@ -156,7 +150,7 @@ class TcpMidiListner(object):
                 self._midiInsideSysExMessage = False;
             else:
                 self._midiInsideSysExMessage = True;
-            self._log.debug("SysEx message start!")
+            print "SysEx message start!"
         elif(command == 0xf1):
             print "Time Code!"
         elif(command == 0xf2):
@@ -236,6 +230,11 @@ class TcpMidiListner(object):
         return isMidiNote
 
     def getData(self, clockOnly):
+        try:
+            printString = self._midiListnerPrintQueue.get_nowait()
+            print printString
+        except:
+            pass
         gotMidiNote = False
         while(True):
             try:

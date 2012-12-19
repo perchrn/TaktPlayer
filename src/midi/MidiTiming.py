@@ -4,12 +4,9 @@ Created on 21. des. 2011
 @author: pcn
 '''
 import time
-import logging
 
 class MidiTiming(object):
     def __init__(self):
-        #Logging etc.
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         #MIDI timing variables:
         self._midiOurSongPosition = 0;
         self._midiLastTimeEventWasSPP = False
@@ -80,7 +77,7 @@ class MidiTiming(object):
         print "%s%3d:%d:%02d.%04d BPM: %d" % (syncIndicator, bar, beat, subbeat, int(subsubpos * 10000), int(self._midiBpm))
         
     def _resetTimingTable(self):
-        self._log.warning("Resetting timing table!")
+        print "Resetting timing table!"
         for i in range(96):
             self._midiTicksTimestamps[i] = -1.0
         self._midiTicksTimestampsPos = -1
@@ -116,7 +113,7 @@ class MidiTiming(object):
             else:
                 if(subsubPos > 12.0):
                     #We have skipped MIDI ticks and add calculated ticks.
-                    self._log.info("Adding internal time to Song Position Pointer due to lost MIDI sync. " + str(subsubPos))
+                    print "Adding internal time to Song Position Pointer due to lost MIDI sync. " + str(subsubPos)
                     self._midiOurSongPosition += int(subsubPos)
                 else:
                     self._midiOurSongPosition += 1
@@ -137,7 +134,7 @@ class MidiTiming(object):
             if(midiSync == False or (abs(self._midiOurSongPosition - oldSongPosition) > self._midiTicksPerBar)):
                 self._resetTimingTable()
             self._midiLastTimeEventWasSPP = True
-            self._log.info("Got Song Position Pointer from host. SPP %d" %(self._midiOurSongPosition))
+            print "Got Song Position Pointer from host. SPP %d" %(self._midiOurSongPosition)
             if(abs(oldSpp - sppValue) > self._midiTicksPerQuarteNote):
                 return oldSpp
         return None

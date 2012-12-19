@@ -4,7 +4,6 @@ Created on 26. jan. 2012
 @author: pcn
 '''
 import os
-import logging
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel #@UnresolvedImport
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DRAG_START_EVENT,\
@@ -18,7 +17,6 @@ from configurationGui.MediaPoolConfig import MediaFileGui
 from configuration.ConfigurationHolder import xmlToPrettyString,\
     getDefaultDirectories
 import subprocess
-from utilities.MultiprocessLogger import MultiprocessLogger
 from configurationGui.MediaMixerConfig import MediaTrackGui
 from media.VideoConvert import VideoConverterDialog, VideoCopyDialog
 from midi.TcpMidiListner import TcpMidiListner
@@ -437,9 +435,6 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._activeTrackId = -1
         self._selectTrack(self._selectedMidiChannel)
 
-        self._log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        logging.basicConfig()
-        self._multiprocessLogger = MultiprocessLogger(self._log)
         self._midiTiming = MidiTiming()
         self._midiStateHolder = DummyMidiStateHolder()
         self._midiListner = None
@@ -567,7 +562,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.startGuiClientProcess(host, port, None)
 
     def setupMidiListner(self):        
-        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._multiprocessLogger)
+        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder)
         bcast, host, port = self._configuration.getMidiListenConfig()
         self._midiListner.startDaemon(host, port, bcast)
 
@@ -601,7 +596,6 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._midiListner.getData(False)
         self._updateTimingDisplay()
         self._checkConfigState()
-        self._multiprocessLogger.handleQueuedLoggs()
 
     def _checkForProcessCommands(self):
         if(self._commandQueue != None):
@@ -1671,7 +1665,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient.requestGuiClientProcessToStop()
         self._midiListner.requestTcpMidiListnerProcessToStop()
         if(self._statusQueue != None):
-            self._log.debug("Telling player process that we are quitting.")
+            print "Telling player process that we are quitting."
             self._statusQueue.put("QUIT")
         self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._shutdownTimer.Start(100)#10 times a second

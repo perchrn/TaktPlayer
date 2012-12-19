@@ -35,6 +35,7 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
         return
     while(retries > 0):
         try:
+            print "DEBUG pcn: opening font: " + str(fontFile)
             font = ImageFont.truetype(fontFile, fontSize)
             retries = 0
         except:

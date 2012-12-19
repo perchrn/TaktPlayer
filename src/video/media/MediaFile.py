@@ -879,7 +879,11 @@ class MediaGroup(MediaFile):
     def openFile(self, midiLength):
         self._mediaList = []
         fontPath = findOsFontPath()
-        fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
+        try:
+            fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
+        except:
+            traceback.print_exc()
+            raise MediaError("Error generating text!")
         labelImage = pilToCvImage(fontPILImage)
         copyOrResizeImage(labelImage, self._mediaSettingsHolder.captureImage)
         self._firstImage = self._mediaSettingsHolder.captureImage
@@ -1682,7 +1686,11 @@ class TextMedia(SpriteMediaBase):
         startGreen = int(startColour[startPos+2:startPos+4], 16)
         startBlue = int(startColour[startPos+4:startPos+6], 16)
 
-        fontPILImage, textPILMask = generateTextImageAndMask(text, startFont, self._fontPath, startSize, startRed, startGreen, startBlue)
+        try:
+            fontPILImage, textPILMask = generateTextImageAndMask(text, startFont, self._fontPath, startSize, startRed, startGreen, startBlue)
+        except:
+            traceback.print_exc()
+            raise MediaError("Error generating text!")
         self._firstImage = pilToCvImage(fontPILImage)
         self._mediaSettingsHolder.captureMask = pilToCvMask(textPILMask, 2)
 
@@ -2164,7 +2172,11 @@ class KinectCameraInput(MediaFile):
         cv.CmpS(depthMat, 20, self._mediaSettingsHolder.tmpMat2, cv.CV_CMP_LE)
         cv.Add(depthMat, self._mediaSettingsHolder.tmpMat2, self._startDepthMat)
         fontPath = findOsFontPath()
-        fontPILImage, _ = generateTextImageAndMask("Freenect\\n" + str(self._cameraId), "Arial", fontPath, 12, 255, 255, 255)
+        try:
+            fontPILImage, _ = generateTextImageAndMask("Freenect\\n" + str(self._cameraId), "Arial", fontPath, 12, 255, 255, 255)
+        except:
+            traceback.print_exc()
+            raise MediaError("Error generating text!")
         labelImage = pilToCvImage(fontPILImage)
         copyOrResizeImage(labelImage, self._mediaSettingsHolder.captureImage)
         self._firstImage = self._mediaSettingsHolder.captureImage
@@ -2639,7 +2651,11 @@ class ModulationMedia(MediaFile):
 
     def openFile(self, midiLength):
         fontPath = findOsFontPath()
-        fontPILImage, _ = generateTextImageAndMask("Mod\\n" + self._modulationName, "Arial", fontPath, 10, 255, 255, 255)
+        try:
+            fontPILImage, _ = generateTextImageAndMask("Mod\\n" + self._modulationName, "Arial", fontPath, 10, 255, 255, 255)
+        except:
+            traceback.print_exc()
+            raise MediaError("Error generating text!")
         self._mediaSettingsHolder.captureImage = pilToCvImage(fontPILImage)
         self._firstImage = self._mediaSettingsHolder.captureImage
         self._fileOk = True

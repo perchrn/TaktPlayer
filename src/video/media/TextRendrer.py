@@ -27,9 +27,9 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
     colour = (blue, green, red) #BGR (to skip transforming later.)
     retries = 2
     fontFile = os.path.join(fontPath, font + ".ttf")
-    if(os.path.isfile(fontPath) != True):
+    if(os.path.isdir(fontPath) != True):
         fontFile = os.path.join(fontPath, font + ".otf")
-    if (os.path.isfile(fontPath) == False):
+    if (os.path.isdir(fontPath) == False):
         print "Could not find font: %s (%s)" % (font, fontPath)
         raise FontError("Bad font path: " + str(fontPath))
         return

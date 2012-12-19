@@ -614,6 +614,7 @@ class MediaFile(object):
             captureFrame = cv.QueryFrame(self._videoFile)
             self._secondImage = copyImage(captureFrame)
         except:
+            traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         if (captureFrame == None):
@@ -623,6 +624,7 @@ class MediaFile(object):
             self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
             self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
         except:
+            traceback.print_exc()
             print "Exception while getting number of frames from: %s" % (os.path.basename(self._cfgFileName))
             raise MediaError("File caused exception!")
         if(self._numberOfFrames < 20):
@@ -634,6 +636,7 @@ class MediaFile(object):
                     captureFrame = cv.QueryFrame(self._videoFile)
                     self._bufferedImageList.append(copyImage(captureFrame))
             except:
+                traceback.print_exc()
                 print "Exception while reading: " + os.path.basename(self._cfgFileName)
                 raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
@@ -1109,6 +1112,7 @@ class ImageFile(MediaFile):
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
+            traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
@@ -1295,6 +1299,7 @@ class ScrollImageFile(MediaFile):
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
+            traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
@@ -1540,6 +1545,7 @@ class SpriteImageFile(SpriteMediaBase):
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
+            traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
@@ -1900,6 +1906,7 @@ class CameraInput(MediaFile):
             else:
                 self._firstImage = copyImage(videoCaptureCameras.getFirstImage(self._cameraId))
         except:
+            traceback.print_exc()
             print "Exception while opening camera with ID: %s" % (self._cameraId)
             raise MediaError("File caused exception!")
         if (self._firstImage == None):
@@ -1944,6 +1951,7 @@ class KinectCameras(object):
                 rgbCapture = cv.fromarray(rgbImage.astype(numpy.uint8))
                 resizeImage(rgbCapture, self._videoImage)
             except:
+                traceback.print_exc()
                 self._errorCount += 1
                 print "Exception while opening kinnect camera!"
                 self._depthMask = None

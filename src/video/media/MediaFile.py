@@ -609,6 +609,9 @@ class MediaFile(object):
         self._videoFile = cv.CaptureFromFile(filePath.encode("utf-8"))
         try:
             captureFrame = cv.QueryFrame(self._videoFile)
+            if (captureFrame == None):
+                print "Could not read frames from: " + os.path.basename(self._cfgFileName)
+                raise MediaError("File could not be read!")
             self._firstImage = copyImage(captureFrame)
             copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
             captureFrame = cv.QueryFrame(self._videoFile)
@@ -617,9 +620,6 @@ class MediaFile(object):
             traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)
             raise MediaError("File caused exception!")
-        if (captureFrame == None):
-            print "Could not read frames from: " + os.path.basename(self._cfgFileName)
-            raise MediaError("File could not be read!")
         try:
             self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
             self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))

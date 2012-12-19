@@ -31,6 +31,8 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
         fontFile = os.path.join(fontPath, font + ".otf")
     if (os.path.isfile(fontPath) == False):
         print "Could not find font: %s (%s)" % (font, fontPath)
+        raise FontError("Bad font path: " + str(fontPath))
+        return
     while(retries > 0):
         try:
             font = ImageFont.truetype(fontFile, fontSize)
@@ -42,6 +44,7 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
                 fontFile = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
             else:
                 raise FontError("Unable to load font: " + str(font) + " in " + str(fontPath))
+                return
             retries -= 1
     textSplit = text.split("\\n")
     textHeight = 0

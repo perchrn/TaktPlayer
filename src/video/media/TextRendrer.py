@@ -34,11 +34,11 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
     if(os.path.isfile(fontFile) != True):
         print "Could not find font: %s.ttf trying %s.otf" % (font, font)
         fontFile = os.path.join(fontPath, font + ".otf")
-    while(retries > 0):
+    while(retries >= 0):
         try:
             print "DEBUG pcn: opening font: " + str(fontFile)
             font = ImageFont.truetype(fontFile, fontSize)
-            retries = 0
+            retries = -1
         except:
             if(retries == 2):
                 fontFile = os.path.join(fontPath, "Ariel.ttf")

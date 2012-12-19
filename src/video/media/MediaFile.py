@@ -602,8 +602,9 @@ class MediaFile(object):
         filePath = self._fullFilePath
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
-        if (os.path.isfile(filePath) == False):
             print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
+            print "Trying " + str(self._packageFilePath)
+        if (os.path.isfile(filePath) == False):
             raise MediaError("File does not exist!")
         self._videoFile = cv.CaptureFromFile(filePath.encode("utf-8"))
         try:

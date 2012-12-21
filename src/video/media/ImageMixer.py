@@ -340,10 +340,10 @@ class ImageMixer(object):
                     cv.ConvertScaleAbs(image2, image2, level, 0.0)
                     cv.ConvertScaleAbs(image1, image1, 1.0 - level, 0.0)
                     cv.Add(image1, image2, mixMat)
-                    return image2
+                    return mixMat
                 else:
                     cv.ConvertScaleAbs(image2, mixMat, level, 0.0)
-                return mixMat
+                    return mixMat
             else:
                 if(wipePostMix == False):
                     image2, mixMask = self._wipeImage(wipeMode, wipeConfig, level, image2, None, mixMat, False)
@@ -352,10 +352,6 @@ class ImageMixer(object):
                     cv.Copy(image2, image1, mixMask)
                     return image1
                 else:
-                    if(image1 == mixMat):
-                        print "image1 == mixMat"
-                    if(image2 == mixMat):
-                        print "image2 == mixMat"
                     return self._wipeMix(wipeMode, wipeConfig, level, image1, image2, mixMat)
         return image2
     

@@ -1785,9 +1785,12 @@ class OpenCvCameras(object):
         if(self._cameraList[cameraId] == None):
             try:
                 self._cameraList[cameraId] = cv.CaptureFromCAM(cameraId)
-                self._bufferdImages[cameraId] = cv.QueryFrame(self._cameraList[cameraId])
+                captureImage = cv.QueryFrame(self._cameraList[cameraId])
+                if(captureImage != None):
+                    self._bufferdImages[cameraId] = captureImage
                 self._cameraFrameRates[cameraId] = int(cv.GetCaptureProperty(self._cameraList[cameraId], cv.CV_CAP_PROP_FPS))
             except:
+                traceback.print_exc()
                 return False # Failed to open camera id.
         return True
 
@@ -1805,7 +1808,9 @@ class OpenCvCameras(object):
             print "ERROR: Camera with id %d is not initialized! We only got %d number of cameras." %(minNumCamearas, len(self._cameraList))
             return None
         if((timeStamp != None) and (self._cameraTimeStamps[cameraId] != timeStamp)):
-            self._bufferdImages[cameraId] = cv.QueryFrame(self._cameraList[cameraId])
+            captureImage = cv.QueryFrame(self._cameraList[cameraId])
+            if(captureImage != None):
+                self._bufferdImages[cameraId] = captureImage
             self._cameraTimeStamps[cameraId] = timeStamp
 #        else:
 #            print "DEBUG: using buffered image!!!"
@@ -1910,16 +1915,17 @@ class CameraInput(MediaFile):
                 raise MediaError("Could not open VideoCapture camera with ID: %d!" %(self._cameraId))
         try:
             if(self._cameraMode == self.CameraModes.OpenCV):
-                self._firstImage = copyImage(openCvCameras.getFirstImage(self._cameraId))
+                captureImage = openCvCameras.getFirstImage(self._cameraId)
             else:
-                self._firstImage = copyImage(videoCaptureCameras.getFirstImage(self._cameraId))
+                captureImage = videoCaptureCameras.getFirstImage(self._cameraId)
         except:
             traceback.print_exc()
             print "Exception while opening camera with ID: %s" % (self._cameraId)
             raise MediaError("File caused exception!")
-        if (self._firstImage == None):
+        if (captureImage == None):
             print "Could not read frames from camera with ID: %d" % (self._cameraId)
             raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
+        self._firstImage = copyImage(captureImage)
         if(self._cameraMode == self.CameraModes.OpenCV):
             self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)

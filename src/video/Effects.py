@@ -1382,6 +1382,7 @@ class DelayEffect(object):
         self._zoomMask = effectMask3
         self._bwMask = effectMask1
         self._innerMask = effectMask2
+        self.setExtraConfig((None, None))
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
 
     def setExtraConfig(self, values):
@@ -1446,7 +1447,7 @@ class DelayEffect(object):
                 flipAngle = (zoom - 0.5) * self._xFlipAngleValue
                 rotZ = (zoom - 0.5) * self._zRotationValue
             else:
-                zoomCalc = 0.0
+                zoomCalc = 1.0
                 flipX = 0.0
                 flipAngle = 0.0
                 rotZ = 0.0
@@ -1614,6 +1615,13 @@ class EdgeEffect(object):
 
     def drawEdges(self, image, value, edgeMode, hsv, red, green, blue, lineWidth):
 #        print "mode: " + str(edgeMode) + " hsv: " + str(hsv) + " red: " + str(red) + " green: " + str(green) + " blue: " + str(blue)
+        if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
+            if(value < 0.01):
+                if(edgeMode == EdgeModes.CannyOnTop):
+                    return image
+                else: #Canny
+                    cv.SetZero(image)
+                    return image
         cv.CvtColor(image, self._colorMat, cv.CV_RGB2HSV)
         if(hsv == EdgeColourModes.Value):
             cv.Split(self._colorMat, None, None, self._splitMat, None)
@@ -1622,12 +1630,6 @@ class EdgeEffect(object):
         else:
             cv.Split(self._colorMat, self._splitMat, None, None, None)
         if((edgeMode == EdgeModes.CannyOnTop) or (edgeMode == EdgeModes.Canny)):
-            if(value < 0.0):
-                if(edgeMode == EdgeModes.CannyOnTop):
-                    return image
-                else: #Canny
-                    cv.SetZero(image)
-                    return image
             threshold = 256 - int(value * 256)
             cv.Canny(self._splitMat, self._maskMat, threshold, threshold * 2, 3)
             storage = cv.CreateMemStorage(0)

@@ -155,6 +155,14 @@ class MediaMixer(object):
             self._mediaTracksPreEffectControllerValues[trackId] = None
         preEffect = getEffectByName(preEffectSettings.getEffectName(), preEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
 
+        effect1Name = preEffectSettings.getEffectName()
+        if(effect1Name == "Zoom"):
+            preEffect.setExtraConfig(preEffectSettings.getExtraValues())
+        elif((effect1Name == "Feedback") or (effect1Name == "Delay")):
+            preEffect.setExtraConfig(preEffectSettings.getExtraValues())
+        elif(effect1Name == "Edge"):
+            preEffect.setExtraConfig(preEffectSettings.getExtraValues())
+
         oldPostEffectName = "None"
         oldPostEffectValues = "0.0|0.0|0.0|0.0|0.0"
         if(oldPostEffectSettings != None):
@@ -176,6 +184,14 @@ class MediaMixer(object):
             self._mediaTracksPostEffectControllerValues[trackId] = None
 #            print "DEBUG pcn: updating start values: " + str(postEffectStartValues)
         postEffect = getEffectByName(postEffectSettings.getEffectName(), postEffectModulationTemplate, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
+
+        effect2Name = postEffectSettings.getEffectName()
+        if(effect2Name == "Zoom"):
+            postEffect.setExtraConfig(postEffectSettings.getExtraValues())
+        elif((effect2Name == "Feedback") or (effect2Name == "Delay")):
+            postEffect.setExtraConfig(postEffectSettings.getExtraValues())
+        elif(effect2Name == "Edge"):
+            postEffect.setExtraConfig(postEffectSettings.getExtraValues())
 
 #        print "DEBUG pcn trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)
 

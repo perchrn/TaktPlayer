@@ -15,7 +15,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
     MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes,\
-    RayModes, SlitDirections
+    RayModes, SlitDirections, StrobeModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -512,6 +512,7 @@ class EffectsGui(object):
         self._hueSatModes = HueSatModes()
         self._colorizeModes = ColorizeModes()
         self._valueToHueModes = ValueToHueModes()
+        self._strobeModes = StrobeModes()
         self._midiControllers = MidiControllers()
 
     def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
@@ -1498,6 +1499,9 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Invert):
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Strobe):
+            self._setLabels("Amount:", "Speed:", "Mode:", None, None)
+            self._setupValueLabels(None, None, self._strobeModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.ValueToHue):
             self._setLabels("Mode:", "Colour rotate:", "Saturation:", None, None)
             self._setupValueLabels(self._valueToHueModes.getChoices(), None, None, None, None)

@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, ValueToHue, Threshold, ImageAdd = range(25)
+    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(26)
 
     def getChoices(self):
         return ["None",
@@ -30,6 +30,7 @@ class EffectTypes():
                 "HueSaturation",
                 "Colorize",
                 "Invert",
+                "Strobe",
                 "ValueToHue",
                 "Threshold",
                 "ImageAdd"]
@@ -57,6 +58,7 @@ class EffectTypes():
                 "Rotate colors and adjust saturation.",
                 "Add/subtract/multiply with color.",
                 "Invert video.",
+                "Strobe effect. Blink in time with music.",
                 "Turns BW images into a rainbow of colours.",
                 "Threshold video to black and white.",
                 "Can mask and add image to video."]
@@ -107,6 +109,8 @@ def getEffectId(name):
         return EffectTypes.Colorize
     elif(lowername == "invert"):
         return EffectTypes.Invert
+    elif(lowername == "strobe"):
+        return EffectTypes.Strobe
     elif(lowername == "valuetohue"):
         return EffectTypes.ValueToHue
     elif(lowername == "threshold"):
@@ -161,6 +165,8 @@ def getEffectName(effectId):
         return "Colorize"
     elif(effectId == EffectTypes.Invert):
         return "Invert"
+    elif(effectId == EffectTypes.Strobe):
+        return "Strobe"
     elif(effectId == EffectTypes.ValueToHue):
         return "ValueToHue"
     elif(effectId == EffectTypes.Threshold):
@@ -225,6 +231,19 @@ class SlitDirections():
 
     def getChoices(self):
         return ["Left", "Up", "Right", "Down"]
+
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
+
+class StrobeModes():
+    Black, White, Invert = range(3)
+
+    def getChoices(self):
+        return ["Black", "White", "Invert"]
 
     def findMode(self, modeString):
         modesList = self.getChoices()

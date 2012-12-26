@@ -198,6 +198,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return ColorizeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Invert):
         return InvertEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Strobe):
+        return StrobeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.ValueToHue):
         return ValueToHueEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Threshold):
@@ -370,7 +372,7 @@ class ZoomEffect(object):
             zoomCalc = 1.0 + (((zoom - 0.5) * 2) * (maxZoomTimes - 1))
         return zoomCalc
 
-    def applyEffect(self, image, amount, xcenter, ycenter, flip, angle, minZoomTimes = None, maxZoomTimes = None):
+    def applyEffect(self, image, songPosition, amount, xcenter, ycenter, flip, angle, minZoomTimes = None, maxZoomTimes = None):
         zoom = 1.0 - amount
 
         if(minZoomTimes == None):
@@ -452,7 +454,7 @@ class MirrorEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, mode, rotate, move, direction, unused1):
+    def applyEffect(self, image, songPosition, mode, rotate, move, direction, unused1):
         return self.mirrorImage(image, mode, rotate, move, direction)
 
     def mirrorImage(self, image, mode, rotate, move, direction):
@@ -506,7 +508,7 @@ class RotateEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, move, direction, zoom, unused1):
+    def applyEffect(self, image, songPosition, amount, move, direction, zoom, unused1):
         return self.rotateImage(image, amount, move, direction, zoom)
 
     def rotateImage(self, image, amount, move, direction, zoom):
@@ -592,7 +594,7 @@ class BlobDetectEffect(object):
         else:
             return BlobDetectModes.Blank
 
-    def applyEffect(self, image, blobFilter, mode, lineHue, lineSat, lineWeight):
+    def applyEffect(self, image, songPosition, blobFilter, mode, lineHue, lineSat, lineWeight):
         blobMode = self._findMode(mode)
         return self.detectBlobsImage(image, blobFilter, blobMode, lineHue, lineSat, lineWeight)
 
@@ -682,7 +684,7 @@ class TVNoizeEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, scale, mode, unused1, unused2):
+    def applyEffect(self, image, songPosition, amount, scale, mode, unused1, unused2):
         return self.noizeifyImage(image, amount, scale, mode)
 
     def noizeifyImage(self, image, amount, scale, mode):
@@ -759,7 +761,7 @@ class PixelateEffect(object):
                 cv.Set1D(self._colourTableMat, i, int((1+int(i/stepSize))*stepSize))
         self._colourTableLastValue = quantize
 
-    def applyEffect(self, image, amount, mode, colours, unused2, unused3):
+    def applyEffect(self, image, songPosition, amount, mode, colours, unused2, unused3):
         return self.blockifyImage(image, amount, mode, colours)
 
     def blockifyImage(self, image, amount, mode, colours):
@@ -814,7 +816,7 @@ class ScrollEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, xcenter, ycenter, mode, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, xcenter, ycenter, mode, dummy3, dummy4):
         flipMode = self.findMode(mode)
         return self.scrollImage(image, xcenter, ycenter, flipMode, False)
 
@@ -1042,7 +1044,7 @@ class FlipEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
         mode = self.findMode(amount)
         flipValue = self.findValue(mode)
         if(flipValue == None):
@@ -1073,7 +1075,7 @@ class RaysEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, bend, mode, horizontal, dummy4):
+    def applyEffect(self, image, songPosition, amount, bend, mode, horizontal, dummy4):
         return self.rayEffect(image, amount, bend, mode, horizontal)
 
     def rayEffect(self, image, amount, bend, mode, horizontal):
@@ -1158,7 +1160,7 @@ class SlitEffect(object):
         direction = int(3.99 * value)
         return direction
         
-    def applyEffect(self, image, width, drawPos, sourceXPos, direction, crossFade):
+    def applyEffect(self, image, songPosition, width, drawPos, sourceXPos, direction, crossFade):
         return self.slitEffect(image, width, drawPos, sourceXPos, self._findDirection(direction), crossFade)
 
     def slitEffect(self, image, width, drawPos, sourcePos, direction, crossFade):
@@ -1239,7 +1241,7 @@ class BlurEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, mode, dummy2, dummy3, dummy4):
         return self.blurImage(image, amount, mode)
 
     def blurImage(self, image, value, mode):
@@ -1268,7 +1270,7 @@ class BluredContrastEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
         return self.blurMultiply(image, amount)
 
     def blurMultiply(self, image, value):
@@ -1324,7 +1326,7 @@ class FeedbackEffect(object):
     def reset(self):
         cv.SetZero(self._memoryMat)
 
-    def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
+    def applyEffect(self, image, songPosition, amount, arg1, arg2, arg3, arg4):
         return self.addFeedbackImage(image, amount, arg1, arg2, arg3, arg4)
 
     def addFeedbackImage(self, image, value, invert, move, direction, zoom):
@@ -1411,7 +1413,7 @@ class DelayEffect(object):
     def reset(self):
         self._resetMemory = True
 
-    def applyEffect(self, image, amount, arg1, arg2, arg3, arg4):
+    def applyEffect(self, image, songPosition, amount, arg1, arg2, arg3, arg4):
         return self.addDelayImage(image, amount, arg1, arg2, arg3, arg4)
 
     def addDelayImage(self, image, value, lumaKey, move, direction, zoom):
@@ -1487,7 +1489,7 @@ class SelfDifferenceEffect(object):
         for i in range(self._memoryLength):
             cv.SetZero(self._memoryArray[i])
 
-    def applyEffect(self, image, amount, contrast, invert, smooth, dummy4):
+    def applyEffect(self, image, songPosition, amount, contrast, invert, smooth, dummy4):
         return self.diffImage(image, amount, contrast, invert, smooth)
 
     def diffImage(self, image, delay, contrast, invert, smooth):
@@ -1531,7 +1533,7 @@ class DistortionEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, mode, dummy2, dummy3, dummy4):
         return self.dilateErode(image, amount, mode)
 
     def findMode(self, value):
@@ -1608,7 +1610,7 @@ class EdgeEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, mode, lineHue, lineSat, lineWidth):
+    def applyEffect(self, image, songPosition, amount, mode, lineHue, lineSat, lineWidth):
         red, green, blue = modifyHue(getHueColor(lineHue), lineSat)
         edgeMode = self.findMode(mode)
         return self.drawEdges(image, amount, edgeMode, self._coluorMode, red, green, blue, lineWidth)
@@ -1689,7 +1691,7 @@ class DesaturateEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, value, valRange, mode, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, value, valRange, mode, dummy3, dummy4):
         satMode = self.findMode(mode)
         return self.selectiveDesaturate(image, value, valRange, satMode)
 
@@ -1736,7 +1738,7 @@ class ContrastBrightnessEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, contrast, brightness, mode, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, contrast, brightness, mode, dummy3, dummy4):
         return self.contrastBrightness(image, contrast, brightness, self.findMode(mode))
 
     def contrastBrightness(self, image, contrast, brightness, mode):
@@ -1786,7 +1788,7 @@ class HueSaturationEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, hueRot, saturation, brightness, mode, dummy4):
+    def applyEffect(self, image, songPosition, hueRot, saturation, brightness, mode, dummy4):
         return self.hueSaturationBrightness(image, hueRot, saturation, brightness, self.findMode(mode))
 
     def hueSaturationBrightness(self, image, rotate, saturation, brightness, mode):
@@ -1838,7 +1840,7 @@ class ColorizeEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, red, green, blue, modeVal):
+    def applyEffect(self, image, songPosition, amount, red, green, blue, modeVal):
         mode = self.findMode(modeVal)
         return self.colorize(image, amount, red, green, blue, mode)
 
@@ -1879,7 +1881,7 @@ class InvertEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
         return self.invert(image, amount)
 
     def invert(self, image, amount):
@@ -1889,6 +1891,63 @@ class InvertEffect(object):
         else:
             cv.ConvertScaleAbs(image, image, 1.0, brightnessVal)
             return image
+
+class StrobeEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+        self._lastOn = False
+        self._lastTime = 0.0
+        self.setExtraConfig((1.0, 4))
+
+    def setExtraConfig(self, values):
+#        print("DEBUG pcn: Strobe::setExtraConfig() " + str(values))
+        if(values != None):
+            strobeBaseTime, strobeSpeedupSteps = values
+            if(strobeBaseTime < 0.05):
+                strobeBaseTime = 0.05
+            if(strobeSpeedupSteps < 1):
+                strobeSpeedupSteps = 1
+            self._strobeBaseTime = float(strobeBaseTime * 24)
+            self._strobeSpeedupSteps = float(int(strobeSpeedupSteps)) + 0.5
+
+    def getName(self):
+        return "Strobe"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, songPosition, amount, speed, mode, dummy3, dummy4):
+        return self.blink(image, songPosition, amount, speed, mode)
+
+    def blink(self, image, songPosition, amount, speed, mode):
+        strobeIntervall = self._strobeBaseTime / math.pow(2, int(self._strobeSpeedupSteps * speed))
+        deltaTime = (songPosition - self._lastTime) * 2
+        print "DEBUG pcn: strobeEffect intervall " + str(strobeIntervall) + " deltaTime " + str(deltaTime) + " divider: " + str(int(self._strobeSpeedupSteps * speed))
+        if(deltaTime > strobeIntervall):
+            if(self._lastOn == True):
+                strobeOnOff = False
+            else:
+                strobeOnOff = True
+        else:
+            strobePhase = (songPosition % strobeIntervall) / strobeIntervall
+            print "DEBUG pcn: strobeEffect intervall " + str(strobeIntervall) + " phase " + str(strobePhase) + " divider: " + str(int(self._strobeSpeedupSteps * speed))
+            if(strobePhase < 0.5):
+                strobeOnOff = False
+            else:
+                strobeOnOff = True
+        if(strobeOnOff == True):
+            if(mode < 0.33):
+                cv.ConvertScaleAbs(image, image, 1.0-amount)
+            elif(mode < 0.66):
+                addValue = int(256*amount)
+                cv.AddS(image, (addValue, addValue, addValue), image)
+            else:
+                invertValue = int(-256*amount)
+                cv.ConvertScaleAbs(image, image, 1.0, invertValue)
+        self._lastOn = strobeOnOff
+        self._lastTime = songPosition
+        return image
 
 class ValueToHueEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
@@ -1918,7 +1977,7 @@ class ValueToHueEffect(object):
         else:
             return ValueToHueModes.Hue
 
-    def applyEffect(self, image, modeVal, rotate, saturate, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, modeVal, rotate, saturate, dummy3, dummy4):
         mode = self._findMode(modeVal)
         return self.processImage(image, mode, rotate, saturate)
 
@@ -1961,7 +2020,7 @@ class ThresholdEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, amount, dummy1, dummy2, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
         return self.threshold(image, amount)
 
     def threshold(self, image, threshold):
@@ -2047,7 +2106,7 @@ class ImageAddEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, maskId, imageId, mode, dummy3, dummy4):
+    def applyEffect(self, image, songPosition, maskId, imageId, mode, dummy3, dummy4):
         return self.mask(image, maskId, imageId, mode)
 
     def mask(self, image, maskId, imageId, mode):

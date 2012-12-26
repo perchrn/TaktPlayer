@@ -458,7 +458,7 @@ class MediaFile(object):
                     effectArg4 = effectStartValues[4]
                     effectSCV4 = effectStartSumValues[4]
             if(effect != None):
-                image = effect.applyEffect(image, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
+                image = effect.applyEffect(image, songPosition, effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)
 #                print "DEBUG pcn: modified values" + str((effectAmount, effectArg1, effectArg2, effectArg3, effectArg4)) + " ctrl: " + str((effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
             return (image, (effectAmount, effectArg1, effectArg2, effectArg3, effectArg4), (effectSCV0, effectSCV1, effectSCV2, effectSCV3, effectSCV4))
         else:

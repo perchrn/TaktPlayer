@@ -9,20 +9,35 @@ from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 import sys
 import os
 from video.media.MediaFileModes import forceUnixPath
+from widgets.PcnImageButton import PcnImageButton
 
 class EffectImagesListGui(object):
-    def __init__(self, mainConfig, effectImagesConfig):
+    def __init__(self, mainConfig, effectImagesConfig, globalConfig):
         self._mainConfig = mainConfig
+        self._globalConfig = globalConfig
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._lastDialogDir = self._videoDirectory
         self._effectImagesConfig = effectImagesConfig
         self._effectImageListSelectedIndex = -1
+
+        self._closeButtonBitmap = wx.Bitmap("graphics/closeButton.png") #@UndefinedVariable
+        self._closeButtonPressedBitmap = wx.Bitmap("graphics/closeButtonPressed.png") #@UndefinedVariable
+        self._newButtonBitmap = wx.Bitmap("graphics/newButton.png") #@UndefinedVariable
+        self._newButtonPressedBitmap = wx.Bitmap("graphics/newButtonPressed.png") #@UndefinedVariable
+        self._deleteButtonBitmap = wx.Bitmap("graphics/deleteButton.png") #@UndefinedVariable
+        self._deleteButtonPressedBitmap = wx.Bitmap("graphics/deleteButtonPressed.png") #@UndefinedVariable
 
     def setupEffectImageListGui(self, plane, sizer, parentSizer, parentClass):
         self._mainEffectImagesListPlane = plane
         self._mainEffectImagesListGuiSizer = sizer
         self._parentSizer = parentSizer
         self._hideEffectImagesListCallback = parentClass.hideEffectImageListGui
+
+        headerLabel = wx.StaticText(self._mainEffectImagesListPlane, wx.ID_ANY, "Image list:") #@UndefinedVariable
+        headerFont = headerLabel.GetFont()
+        headerFont.SetWeight(wx.BOLD) #@UndefinedVariable
+        headerLabel.SetFont(headerFont)
+        self._mainEffectImagesListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
         self._effectImageList = wx.ImageList(25, 16) #@UndefinedVariable
         self._imageBitmap = wx.Bitmap("graphics/modeImage.png") #@UndefinedVariable
@@ -41,18 +56,15 @@ class EffectImagesListGui(object):
         self._effectImageListWidget.Bind(wx.EVT_LEFT_DCLICK, self._onListDoubbleClick) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        closeButton = wx.Button(self._mainEffectImagesListPlane, wx.ID_ANY, 'Close') #@UndefinedVariable
-        closeButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectImagesListPlane.Bind(wx.EVT_BUTTON, self._onListCloseButton, id=closeButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(closeButton, 1, wx.ALL, 5) #@UndefinedVariable
-        newButton = wx.Button(self._mainEffectImagesListPlane, wx.ID_ANY, 'New') #@UndefinedVariable
-        newButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectImagesListPlane.Bind(wx.EVT_BUTTON, self._onListNewButton, id=newButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(newButton, 1, wx.ALL, 5) #@UndefinedVariable
-        deleteButton = wx.Button(self._mainEffectImagesListPlane, wx.ID_ANY, 'Delete') #@UndefinedVariable
-        deleteButton.SetBackgroundColour(wx.Colour(210,210,210)) #@UndefinedVariable
-        self._mainEffectImagesListPlane.Bind(wx.EVT_BUTTON, self._onListDeleteButton, id=deleteButton.GetId()) #@UndefinedVariable
-        self._buttonsSizer.Add(deleteButton, 1, wx.ALL, 5) #@UndefinedVariable
+        closeButton = PcnImageButton(self._mainEffectImagesListPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
+        closeButton.Bind(wx.EVT_BUTTON, self._onListCloseButton) #@UndefinedVariable
+        newButton = PcnImageButton(self._mainEffectImagesListPlane, self._newButtonBitmap, self._newButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(79, 17)) #@UndefinedVariable
+        newButton.Bind(wx.EVT_BUTTON, self._onListNewButton) #@UndefinedVariable
+        deleteButton = PcnImageButton(self._mainEffectImagesListPlane, self._deleteButtonBitmap, self._deleteButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(62, 17)) #@UndefinedVariable
+        deleteButton.Bind(wx.EVT_BUTTON, self._onListDeleteButton) #@UndefinedVariable
+        self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(newButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(deleteButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectImagesListGuiSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
     def updateEffectImageList(self):
@@ -87,9 +99,9 @@ class EffectImagesListGui(object):
                         if(noteFileName.startswith("..") == True):
                             noteFileName = fileName
                     fileName = noteFileName
-            oldImage = self._mainConfig.getEffectImage(fileName)
+            oldImage = self._globalConfig.getEffectImage(fileName)
             if(oldImage == None):
-                self._mainConfig.makeNewEffectImage(fileName)
+                self._globalConfig.makeNewEffectImage(fileName)
                 self.updateEffectImageList()
             else:
                 print "Warning: We already got this image! Ignoring."
@@ -97,7 +109,7 @@ class EffectImagesListGui(object):
 
     def _onListDeleteButton(self, event):
         if(self._effectImageListSelectedIndex >= 0):
-            effectImage = self._mainConfig.getEffectImageByIndex(self._effectImageListSelectedIndex)
+            effectImage = self._globalConfig.getEffectImageByIndex(self._effectImageListSelectedIndex)
             if(effectImage != None):
                 effectImageFileName = effectImage.getFileName()
                 text = "Are you sure you want to delete \"%s\"?" % (effectImageFileName)
@@ -105,7 +117,7 @@ class EffectImagesListGui(object):
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                 dlg.Destroy()
                 if(result == True):
-                    self._mainConfig.deleteEffectImage(effectImageFileName)
+                    self._globalConfig.deleteEffectImage(effectImageFileName)
                     self.updateEffectImageList()
 
     def _onListItemSelected(self, event):
@@ -115,7 +127,7 @@ class EffectImagesListGui(object):
         self._effectImageListSelectedIndex = -1
 
     def _onListDoubbleClick(self, event):
-        effectImage = self._mainConfig.getEffectImageByIndex(self._effectImageListSelectedIndex)
+        effectImage = self._globalConfig.getEffectImageByIndex(self._effectImageListSelectedIndex)
         if(effectImage != None):
             print "Show image editor!!!" * 10
 #            self.updateGui(effectImage, None, self._activeEffectId)

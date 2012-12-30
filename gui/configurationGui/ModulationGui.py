@@ -17,8 +17,9 @@ from midi.MidiController import MidiControllers
 from widgets.PcnImageButton import PcnImageButton
 
 class ModulationGui(object):
-    def __init__(self, mainConfing, midiTiming, specialModulationHolder):
+    def __init__(self, mainConfing, midiTiming, specialModulationHolder, globalConfig):
         self._mainConfig = mainConfing
+        self._globalConfig = globalConfig
         self._midiTiming = midiTiming
         self._specialModulationHolder = specialModulationHolder
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
@@ -316,7 +317,7 @@ class ModulationGui(object):
 
         """Special"""
 
-        self._specialTypes = SpecialTypes(self._mainConfig.getEffectConfiguration(), self._mainConfig.getNoteList())
+        self._specialTypes = SpecialTypes(self._globalConfig.getEffectConfiguration(), self._mainConfig.getNoteList())
 
         self._specialTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Type:") #@UndefinedVariable
@@ -1005,7 +1006,7 @@ Choose which blob modulation value to use.
         else:
             return self._modBitmatBlankBig
 
-    def updateModulationGuiButton(self, modulationString, widget):
+    def updateModulationGuiButton(self, widget, modulationString):
         imageId = self.getModulationImageId(modulationString)
         bitmap = self.getModulationImageBitmap(imageId)
         widget.setBitmaps(bitmap, bitmap)

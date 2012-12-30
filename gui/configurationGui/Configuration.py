@@ -46,6 +46,9 @@ class Configuration(object):
         self._effectStateRequestCallback = None
         self._getActiveNoteForTrackCallback = None
 
+    def getGlobalConfig(self):
+        return self._globalConf
+
     def setupSpecialModulations(self):
         self._mediaPoolConf.setupSpecialNoteModulations()
         self._globalConf.setupSpecialEffectModulations()
@@ -166,9 +169,6 @@ class Configuration(object):
             positionTuplet = (int(positionList[0]), int(positionList[1]))
         return positionTuplet
 
-    def getSpecialModulationHolder(self):
-        return self._globalConf.getSpecialModulationHolder()
-
     def setLatestMidiControllerRequestCallback(self, callback):
         self._latestMidiControllerRequestCallback = callback
 
@@ -230,27 +230,6 @@ class Configuration(object):
         if(self._clearNoteNewThumbCallback != None):
             self._clearNoteNewThumbCallback(noteId)
 
-    def getTimeModulationTemplate(self, configName):
-        return self._globalConf.getTimeModulationTemplate(configName)
-
-    def getTimeModulationTemplateByIndex(self, index):
-        return self._globalConf.getTimeModulationTemplateByIndex(index)
-
-    def duplicateTimeModulationTemplate(self, configName):
-        return self._globalConf.duplicateTimeModulationTemplate(configName)
-
-    def makeTimeModulationTemplate(self, saveName, mode, modulation, rangeVal, rangeQuantize):
-        return self._globalConf.makeTimeModulationTemplate(saveName, mode, modulation, rangeVal, rangeQuantize)
-
-    def deleteTimeModulationTemplate(self, configName):
-        return self._globalConf.deleteTimeModulationTemplate(configName)
-
-    def renameTimeModulationTemplateUsed(self, oldName, newName):
-        self._mediaPoolConf.renameTimeModulationTemplateUsed(oldName, newName)
-
-    def checkIfNameIsDefaultTimeModulationName(self, configName):
-        return self._globalConf.checkIfNameIsDefaultTimeModulationName(configName)
-
     def verifyTimeModulationTemplateUsed(self):
         effectsConfigNames =  self._globalConf.getTimeModulationTemplateNamesList()
         self._mediaPoolConf.verifyTimeModulationTemplateUsed(effectsConfigNames)
@@ -260,122 +239,11 @@ class Configuration(object):
         returnNumber += self._mediaPoolConf.countNumberOfTimeTimeModulationTemplateUsed(configName)
         return returnNumber
 
-    def getTimeModulationChoices(self):
-        return self._globalConf.getTimeModulationChoices()
-
-    def setupTimeModulationsGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupTimeModulationsGui(plane, sizer, parentSizer, parentClass)
-
-    def setupTimeModulationsListGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupTimeModulationsListGui(plane, sizer, parentSizer, parentClass)
-
-    def updateTimeModulationGui(self, configName, midiNote, editFieldWidget = None):
-        self._globalConf.updateTimeModulationGui(configName, midiNote, editFieldWidget)
-
-    def updateTimeModulationList(self, selectedName):
-        self._globalConf.updateTimeModulationList(selectedName)
-
-    def getEffectConfiguration(self):
-        return self._globalConf.getEffectConfiguration()
-
-    def getEffectChoices(self):
-        return self._globalConf.getEffectChoices()
-
-    def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupEffectsGui(plane, sizer, parentSizer, parentClass)
-
-    def setupEffectsListGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupEffectsListGui(plane, sizer, parentSizer, parentClass)
-
-    def setupEffectImageListGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupEffectImageListGui(plane, sizer, parentSizer, parentClass)
-
-    def getFadeModeLists(self):
-        return self._globalConf.getFadeModeLists()
-
-    def setupFadeGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupFadeGui(plane, sizer, parentSizer, parentClass)
-
-    def setupFadeListGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupFadeListGui(plane, sizer, parentSizer, parentClass)
-
-    def setupModulationGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupModulationGui(plane, sizer, parentSizer, parentClass)
-
-    def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
-        self._globalConf.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
-
-    def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget = None):
-        self._globalConf.updateEffectsGui(configName, midiNote, editFieldName, editFieldWidget)
-
-    def updateEffectsSliders(self, valuesString, guiString):
-        self._globalConf.updateEffectsSliders(valuesString, guiString)
-
-    def showSliderGuiEditButton(self, show = True):
-        self._globalConf.showSliderGuiEditButton(show)
-
-    def updateEffectList(self, selectedName):
-        self._globalConf.updateEffectList(selectedName)
-
-    def updateEffectImageList(self):
-        self._globalConf.updateEffectImageList()
-
-    def updateEffectListHeight(self, height):
-        self._globalConf.updateEffectListHeight(height)
-
-    def getDraggedFxName(self):
-        return self._globalConf.getDraggedFxName()
-
     def getDraggedNoteName(self):
         return self._draggedNoteName
 
     def setDraggedNoteName(self, draggedNoteName):
         self._draggedNoteName = draggedNoteName
-
-    def getEffectTemplate(self, configName):
-        return self._globalConf.getEffectTemplate(configName)
-
-    def getEffectTemplateByIndex(self, index):
-        return self._globalConf.getEffectTemplateByIndex(index)
-
-    def getFadeTemplate(self, configName):
-        return self._globalConf.getFadeTemplate(configName)
-
-    def getFadeTemplateByIndex(self, index):
-        return self._globalConf.getFadeTemplateByIndex(index)
-
-    def getEffectImage(self, fileName):
-        return self._globalConf.getEffectImage(fileName)
-
-    def getEffectImageByIndex(self, index):
-        return self._globalConf.getEffectImageByIndex(index)
-
-    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
-        return self._globalConf.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
-
-    def makeFadeTemplate(self, saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
-        return self._globalConf.makeFadeTemplate(saveName, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod)
-
-    def deleteEffectTemplate(self, configName):
-        return self._globalConf.deleteEffectTemplate(configName)
-
-    def deleteFadeTemplate(self, configName):
-        return self._globalConf.deleteFadeTemplate(configName)
-
-    def deleteEffectImage(self, fileName):
-        return self._globalConf.deleteEffectImage(fileName)
-
-    def duplicateEffectTemplate(self, configName):
-        return self._globalConf.duplicateEffectTemplate(configName)
-
-    def duplicateFadeTemplate(self, configName):
-        return self._globalConf.duplicateFadeTemplate(configName)
-
-    def makeNewEffectImage(self, fileName):
-        return self._globalConf.makeNewEffectImage(fileName)
-
-    def getEffectImageFileListString(self):
-        return self._globalConf.getEffectImageFileListString()
 
     def verifyEffectTemplateUsed(self):
         effectsConfigNames =  self._globalConf.getEffectTemplateNamesList()
@@ -386,12 +254,6 @@ class Configuration(object):
         effectsConfigNames =  self._globalConf.getFadeTemplateNamesList()
         self._mediaPoolConf.verifyFadeTemplateUsed(effectsConfigNames)
         self._mediaMixerConf.verifyFadeTemplateUsed(effectsConfigNames)
-
-    def checkIfNameIsDefaultEffectName(self, configName):
-        return self._globalConf.checkIfNameIsDefaultEffectName(configName)
-
-    def checkIfNameIsDefaultFadeName(self, configName):
-        return self._globalConf.checkIfNameIsDefaultFadeName(configName)
 
     def countNumberOfTimeEffectTemplateUsed(self, configName):
         returnNumber = 0
@@ -412,33 +274,6 @@ class Configuration(object):
     def renameFadeTemplateUsed(self, oldName, newName):
         self._mediaPoolConf.renameFadeTemplateUsed(oldName, newName)
         self._mediaMixerConf.renameFadeTemplateUsed(oldName, newName)
-
-    def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback, saveArgument = None):
-        self._globalConf.updateModulationGui(modulationString, widget, closeCallback, saveCallback, saveArgument)
-
-    def updateModulationGuiButton(self, widget, modulationString):
-        self._globalConf.updateModulationGuiButton(modulationString, widget)
-
-    def stopModulationGui(self):
-        self._globalConf.stopModulationGui()
-
-    def startSlidersUpdate(self):
-        self._globalConf.startSlidersUpdate()
-
-    def stopSlidersUpdate(self):
-        self._globalConf.stopSlidersUpdate()
-
-    def updateFadeGui(self, configName, editFieldName, editFieldWidget = None, selectedWipeMode = None, selectedWipePrePostString = None):
-        self._globalConf.updateFadeGui(configName, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString)
-
-    def updateFadeList(self, selectedName):
-        self._globalConf.updateFadeList(selectedName)
-
-    def updateFadeGuiButtons(self, fadeConf, noteWipeMode, modeWidget, modulationWidget = None, levelWidget = None):
-        self._globalConf.updateFadeGuiButtons(fadeConf, noteWipeMode, modeWidget, modulationWidget, levelWidget)
-
-    def getFadeChoices(self):
-        return self._globalConf.getFadeChoices()
 
     def getNoteConfiguration(self, noteId):
         return self._mediaPoolConf.getNoteConfiguration(noteId)

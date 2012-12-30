@@ -140,6 +140,7 @@ class ConfigurationTemplates(object):
             print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
         else:
             print "Config child removed OK"
+        self._validateDefault()
 
 class EffectTemplates(ConfigurationTemplates):
     def __init__(self, configurationTree, midiTiming, specialHolder, internalResolutionX, internalResolutionY):
@@ -210,7 +211,7 @@ class EffectSettings(object):
 
     def getCopy(self, newName):
         effectConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
-        copyTemplate = EffectSettings(self._templateName, newName, self._effectTemplates, effectConfigTree, self._parentConfigurationTree, self._templateId)
+        copyTemplate = EffectSettings(self._templateName, self._specialModulationHolder, newName, self._effectTemplates, effectConfigTree, self._parentConfigurationTree, self._templateId)
         effectName = self._configurationTree.getValue("Effect")
         ammountMod = self._configurationTree.getValue("Amount")
         arg1Mod = self._configurationTree.getValue("Arg1")
@@ -439,7 +440,7 @@ class FadeSettings(object):
     def getCopy(self, newName):
         self._getConfiguration()
         fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
-        copyTemplate = FadeSettings(self._templateName, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
+        copyTemplate = FadeSettings(self._templateName, self._specialModulationHolder, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
         fadeModulationString = self._configurationTree.getValue("Modulation")
         levelModulationString = self._configurationTree.getValue("Level")
         copyTemplate.update(self._wipeModesHolder.getNames(self._wipeMode), self._wipePostMix, self._wipeSettings, fadeModulationString, levelModulationString)
@@ -598,7 +599,7 @@ class TimeModulationSettings(object):
 
     def getCopy(self, newName):
         fadeConfigTree = self._parentConfigurationTree.addChildUniqueId(self._templateName, self._templateId, newName, newName)
-        copyTemplate = TimeModulationSettings(self._templateName, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
+        copyTemplate = TimeModulationSettings(self._templateName, self._specialModulationHolder, newName, self._fadeTemplates, fadeConfigTree, self._parentConfigurationTree, self._templateId)
         modeString = self._configurationTree.getValue("Mode")
         modulationString = self._configurationTree.getValue("Modulation")
         rangeValue = self._configurationTree.getValue("Range")

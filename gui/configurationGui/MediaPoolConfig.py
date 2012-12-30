@@ -649,7 +649,8 @@ class MediaFileGui(object): #@UndefinedVariable
     def __init__(self, parentPlane, mainConfig, trackGui, noteRequestCallback, parentClass, cursorWidgetList, fxWidgetList):
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
-        self._specialModulationHolder = self._mainConfig.getSpecialModulationHolder()
+        self._globalConfig = self._mainConfig.getGlobalConfig()
+        self._specialModulationHolder = self._globalConfig.getSpecialModulationHolder()
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._lastDialogDir = self._videoDirectory
         self._trackGui = trackGui
@@ -715,7 +716,7 @@ class MediaFileGui(object): #@UndefinedVariable
                             self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapAlpha, self._mixBitmapReplace]
         self._mixLabels = self._mixModes.getChoices()
 
-        self._wipeModeImages, self._wipeModeLabels = self._mainConfig.getFadeModeLists()
+        self._wipeModeImages, self._wipeModeLabels = self._globalConfig.getFadeModeLists()
         self._wipeModeLabelsLong = ["Default", "FadeOut", "PushOut", "NoizeDisolve", "ZoomOut", "Flip"]
 
         self._blankFxBitmap = wx.Bitmap("graphics/fxEmpty.png") #@UndefinedVariable
@@ -740,6 +741,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
         self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
+        self._fxBitmapStrobe = wx.Bitmap("graphics/fxStrobe.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
@@ -789,6 +791,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._subPanelsList.append(self._fadeConfigPanel)
         self._moulationConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._subPanelsList.append(self._moulationConfigPanel)
+        self._curveConfigPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
+        self._subPanelsList.append(self._curveConfigPanel)
         self._slidersPanel = wx.Panel(self._parentPlane, wx.ID_ANY, size=(300,-1)) #@UndefinedVariable
         self._subPanelsList.append(self._slidersPanel)
 
@@ -799,7 +803,14 @@ class MediaFileGui(object): #@UndefinedVariable
             if(isFirst == True):
                 isFirst = False
             else:
-                self._configSizer.Hide(panels)
+                if(panels == self._curveConfigPanel):
+                    print "DEBUG pcn: skip panel..."
+                    self._configSizer.Hide(panels)
+                elif(panels == self._slidersPanel):
+                    print "DEBUG pcn: skip panel 2..."
+                    self._configSizer.Hide(panels)
+                else:
+                    self._configSizer.Hide(panels)
 
         self._parentPlane.Bind(wx.EVT_LEFT_UP, self._onMouseRelease) #@UndefinedVariable
         self._parentPlane.SetSizer(self._configSizer)
@@ -824,47 +835,53 @@ class MediaFileGui(object): #@UndefinedVariable
         self._timeModulationListPanel.SetBackgroundColour((160,160,160))
         self._timeModulationListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._timeModulationListPanel.SetSizer(self._timeModulationListSizer)
-        self._mainConfig.setupTimeModulationsListGui(self._timeModulationListPanel, self._timeModulationListSizer, self._configSizer, self)
+        self._globalConfig.setupTimeModulationsListGui(self._timeModulationListPanel, self._timeModulationListSizer, self._configSizer, self)
 
         self._timeModulationConfigPanel.SetBackgroundColour((170,170,170))
         self._timeModulationConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._timeModulationConfigPanel.SetSizer(self._timeModulationConfigSizer)
-        self._mainConfig.setupTimeModulationsGui(self._timeModulationConfigPanel, self._timeModulationConfigSizer, self._configSizer, self)
+        self._globalConfig.setupTimeModulationsGui(self._timeModulationConfigPanel, self._timeModulationConfigSizer, self._configSizer, self)
 
         self._effectListPanel.SetBackgroundColour((160,160,160))
         self._effectListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectListPanel.SetSizer(self._effectListSizer)
-        self._mainConfig.setupEffectsListGui(self._effectListPanel, self._effectListSizer, self._configSizer, self)
+        self._globalConfig.setupEffectsListGui(self._effectListPanel, self._effectListSizer, self._configSizer, self)
 
         self._effectConfigPanel.SetBackgroundColour((170,170,170))
         self._effectConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectConfigPanel.SetSizer(self._effectConfigSizer)
-        self._mainConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
+        self._globalConfig.setupEffectsGui(self._effectConfigPanel, self._effectConfigSizer, self._configSizer, self)
 
         self._effectImageListPanel.SetBackgroundColour((180,180,180))
         self._effectImageListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._effectImageListPanel.SetSizer(self._effectImageListSizer)
-        self._mainConfig.setupEffectImageListGui(self._effectImageListPanel, self._effectImageListSizer, self._configSizer, self)
+        self._globalConfig.setupEffectImageListGui(self._effectImageListPanel, self._effectImageListSizer, self._configSizer, self)
 
         self._fadeListPanel.SetBackgroundColour((160,160,160))
         self._fadeListSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._fadeListPanel.SetSizer(self._fadeListSizer)
-        self._mainConfig.setupFadeListGui(self._fadeListPanel, self._fadeListSizer, self._configSizer, self)
+        self._globalConfig.setupFadeListGui(self._fadeListPanel, self._fadeListSizer, self._configSizer, self)
 
         self._fadeConfigPanel.SetBackgroundColour((170,170,170))
         self._fadeConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._fadeConfigPanel.SetSizer(self._fadeConfigSizer)
-        self._mainConfig.setupFadeGui(self._fadeConfigPanel, self._fadeConfigSizer, self._configSizer, self)
+        self._globalConfig.setupFadeGui(self._fadeConfigPanel, self._fadeConfigSizer, self._configSizer, self)
 
         self._moulationConfigPanel.SetBackgroundColour((160,160,160))
         self._moulationConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._moulationConfigPanel.SetSizer(self._moulationConfigSizer)
-        self._mainConfig.setupModulationGui(self._moulationConfigPanel, self._moulationConfigSizer, self._configSizer, self)
+        self._globalConfig.setupModulationGui(self._moulationConfigPanel, self._moulationConfigSizer, self._configSizer, self)
+
+        self._curveConfigPanel.SetBackgroundColour((160,160,160))
+        self._curveConfigSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
+        self._curveConfigPanel.SetSizer(self._curveConfigSizer)
+        self._curveGui = self._globalConfig.getCurveGui()
+        self._curveGui.setupCurveGui(self._curveConfigPanel, self._curveConfigSizer, self._configSizer, self)
 
         self._slidersPanel.SetBackgroundColour((180,180,180))
         self._slidersSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable ---
         self._slidersPanel.SetSizer(self._slidersSizer)
-        self._mainConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
+        self._globalConfig.setupEffectsSlidersGui(self._slidersPanel, self._slidersSizer, self._configSizer, self)
 
         self._parentPlane.Bind(wx.EVT_SIZE, self._onResize) #@UndefinedVariable
 
@@ -1500,7 +1517,7 @@ class MediaFileGui(object): #@UndefinedVariable
             guiControllerId = (guiControllerId & 0x0f)
             command = 0xd0
             command += guiControllerId
-            midiSender = self._mainConfig.getMidiSender()
+            midiSender = self._globalConfig.getMidiSender()
             midiSender.sendGuiRelease(channel, note, command)
 
     def sendGuiController(self, note, guiControllerId, value):
@@ -1516,7 +1533,7 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onResize(self, event):
         currentWidth, currentHeight = self._parentPlane.GetSize() #@UnusedVariable
-        self._mainConfig.updateEffectListHeight(currentHeight - 50)
+        self._globalConfig.updateEffectListHeight(currentHeight - 50)
 
     def refreshLayout(self):
         self._onResize(None)
@@ -1772,7 +1789,7 @@ Reverses the scroll direction when not modulated.
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
+        self._globalConfig.updateModulationGui(self._subModulationField.GetValue(), self._subModulationField, None, None)
         self._highlightButton(self._selectedEditor)
 
     def _onsubModulationMode1Help(self, event):
@@ -1796,7 +1813,7 @@ Decides how we add the second value.
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._subModulation2Field.GetValue(), self._subModulation2Field, None, None)
+        self._globalConfig.updateModulationGui(self._subModulation2Field.GetValue(), self._subModulation2Field, None, None)
         self._highlightButton(self._selectedEditor)
 
     def _onsubModulationMode2Help(self, event):
@@ -1833,7 +1850,7 @@ Smoothest\t-> n = 128
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
-        self._mainConfig.updateModulationGui(self._subModulation3Field.GetValue(), self._subModulation3Field, None, None)
+        self._globalConfig.updateModulationGui(self._subModulation3Field.GetValue(), self._subModulation3Field, None, None)
         self._highlightButton(self._selectedEditor)
 
     def _onValues1Edit(self, event, showEffectGui = True):
@@ -2035,7 +2052,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedConfig = self._timeModulationField.GetValue()
-        self._mainConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
+        self._globalConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
         self._highlightButton(self._selectedEditor)
 
     def _onEffect1Edit(self, event, showEffectGui = True):
@@ -2050,7 +2067,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
+        self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
         self._highlightButton(self._selectedEditor)
 
     def _onEffect2Edit(self, event, showEffectGui = True):
@@ -2065,7 +2082,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
+        self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
         self._highlightButton(self._selectedEditor)
 
     def showTimeModulationGui(self):
@@ -2126,7 +2143,24 @@ All notes on events are quantized to this.
             self._selectedEditor = self.EditSelection.Unselected
             self._highlightButton(self._selectedEditor)
         self.refreshLayout()
-        self._mainConfig.stopModulationGui()
+        self._globalConfig.stopModulationGui()
+
+    def showCurveGui(self):
+        self._configSizer.Show(self._curveConfigPanel)
+        self.refreshLayout()
+
+    def fixCurveGuiLayout(self):
+        self.refreshLayout()
+
+    def hideCurveGui(self):
+        self._configSizer.Hide(self._curveConfigPanel)
+        if((self._selectedEditor == self.EditSelection.SubModulation1)
+           or (self._selectedEditor == self.EditSelection.SubModulation2)
+           or (self._selectedEditor == self.EditSelection.SubModulation3)):
+            self._selectedEditor = self.EditSelection.Unselected
+            self._highlightButton(self._selectedEditor)
+        self.refreshLayout()
+        self._globalConfig.stopModulationGui()
 
     def setDragCursor(self, cursor):
         self._parentPlane.SetCursor(cursor) #@UndefinedVariable
@@ -2141,12 +2175,12 @@ All notes on events are quantized to this.
     def showSlidersGui(self):
         self._configSizer.Show(self._slidersPanel)
         self.refreshLayout()
-        self._mainConfig.startSlidersUpdate()
+        self._globalConfig.startSlidersUpdate()
 
     def hideSlidersGui(self):
         self._configSizer.Hide(self._slidersPanel)
         self.refreshLayout()
-        self._mainConfig.stopSlidersUpdate()
+        self._globalConfig.stopSlidersUpdate()
 
     def _onFadeEdit(self, event, showFadeGui=True):
         if(showFadeGui == True):
@@ -2162,7 +2196,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
-        self._mainConfig.updateFadeGui(selectedFadeConfig, "Media", self._fadeField)
+        self._globalConfig.updateFadeGui(selectedFadeConfig, "Media", self._fadeField)
         self._highlightButton(self._selectedEditor)
 
     def _onCloseButton(self, event):
@@ -2827,14 +2861,15 @@ All notes on events are quantized to this.
         self._updateTimeModulationChoices(widget, value, value, False)
         if(saveValue == True):
             timeModulation = self._timeModulationField.GetValue()
-            self._config.setValue("TimeModulationConfig", timeModulation)
+            if(self._config != None):
+                self._config.setValue("TimeModulationConfig", timeModulation)
         self._showOrHideSaveButton()
 
     def _updateTimeModulationChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._mainConfig == None):
+        if(self._globalConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getTimeModulationChoices, value, defaultValue, updateSaveButton)
+            self._updateChoices(widget, self._globalConfig.getTimeModulationChoices, value, defaultValue, updateSaveButton)
 
     def updateEffectField(self, widget, value, saveValue, fieldName):
         self._updateEffecChoices(widget, value, value, False)
@@ -2848,23 +2883,24 @@ All notes on events are quantized to this.
         self._showOrHideSaveButton()
 
     def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._mainConfig == None):
+        if(self._globalConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
+            self._updateChoices(widget, self._globalConfig.getEffectChoices, value, defaultValue, updateSaveButton)
 
     def updateFadeField(self, widget, value, saveValue):
         self._updateFadeChoices(widget, value, value, False)
         if(saveValue == True):
             fadeConfig = self._fadeField.GetValue()
-            self._config.setValue("FadeConfig", fadeConfig)
+            if(self._config != None):
+                self._config.setValue("FadeConfig", fadeConfig)
         self._showOrHideSaveButton()
 
     def _updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._mainConfig == None):
+        if(self._globalConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue, updateSaveButton)
+            self._updateChoices(widget, self._globalConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
     def _getMediaMixModes(self):
         fullList = self._mixModes.getChoices()
@@ -2980,7 +3016,7 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._mixBitmapSubtract, self._mixBitmapSubtract)
 
     def updateEffectThumb(self, widget, effectConfigName):
-        effectTemplate = self._mainConfig.getEffectTemplate(effectConfigName)
+        effectTemplate = self._globalConfig.getEffectTemplate(effectConfigName)
         effectTemplate.checkAndUpdateFromConfiguration()
         effectName = effectTemplate.getEffectName()
         effectId = getEffectId(effectName)
@@ -3016,6 +3052,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapImageAdd, self._fxBitmapImageAdd)
         elif(effectId == EffectTypes.Invert):
             widget.setBitmaps(self._fxBitmapInverse, self._fxBitmapInverse)
+        elif(effectId == EffectTypes.Strobe):
+            widget.setBitmaps(self._fxBitmapStrobe, self._fxBitmapStrobe)
         elif(effectId == EffectTypes.Mirror):
             widget.setBitmaps(self._fxBitmapMirror, self._fxBitmapMirror)
         elif(effectId == EffectTypes.Pixelate):
@@ -3107,7 +3145,7 @@ All notes on events are quantized to this.
 
     def _onMouseRelease(self, event):
         print "DEBUG mouse RELEASE " * 5
-        self._mainConfig.getDraggedFxName()
+        self._globalConfig.getDraggedFxName()
         self._clearDragCursorCallback()
 
     def _onClipMixButton(self, event):
@@ -3188,7 +3226,7 @@ All notes on events are quantized to this.
                 wipeMode = self._wipeModeLabels[index]
                 if(self._config != None):
                     fadeConfigName = self._config.getValue("FadeConfig")
-                    fadeConfig = self._mainConfig.getFadeTemplate(fadeConfigName)
+                    fadeConfig = self._globalConfig.getFadeTemplate(fadeConfigName)
                     if(fadeConfig != None):
                         if(fadeConfig.getFadeMode() != wipeMode):
                             makeNew = False
@@ -3202,7 +3240,7 @@ All notes on events are quantized to this.
                                     makeNew = True
                             if(makeNew == True):
                                 newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
-                                oldConfig = self._mainConfig.getFadeTemplate(newFadeConfigName)
+                                oldConfig = self._globalConfig.getFadeTemplate(newFadeConfigName)
                                 if(oldConfig == None):
                                     text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
                                 else:
@@ -3212,13 +3250,13 @@ All notes on events are quantized to this.
                                 dlg.Destroy()
                                 if(result == True):
                                     if(oldConfig == None):
-                                        self._mainConfig.makeFadeTemplate(newFadeConfigName, wipeMode, False, 0.0, "None", "None")
+                                        self._globalConfig.makeFadeTemplate(newFadeConfigName, wipeMode, False, 0.0, "None", "None")
                                         if(self._config != None):
                                             self._config.setValue("FadeConfig", newFadeConfigName)
                                     else:
                                         oldConfig.update(wipeMode, None, None, None, None)
                                     self._updateFadeChoices(self._fadeField, newFadeConfigName, "Default")
-                                    self._mainConfig.updateFadeGuiButtons(newFadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+                                    self._globalConfig.updateFadeGuiButtons(newFadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
                                     self._showOrHideSaveButton()
 
     def _onClipFadeButton(self, event):
@@ -3271,7 +3309,7 @@ All notes on events are quantized to this.
             self._showOrHideSaveButton()
 
     def _onDragFx1Done(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
+        fxName = self._globalConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
                 self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
@@ -3280,7 +3318,7 @@ All notes on events are quantized to this.
         self._clearDragCursorCallback()
 
     def _onDragFx2Done(self, event):
-        fxName = self._mainConfig.getDraggedFxName()
+        fxName = self._globalConfig.getDraggedFxName()
         if(fxName != None):
             if(self._midiNote != None):
                 self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
@@ -3311,8 +3349,8 @@ All notes on events are quantized to this.
                 else:
                     self._selectedEditor = self.EditSelection.Unselected
         if(effectConfigName != None):
-            self._mainConfig.updateEffectsGui(effectConfigName, midiNote, effectId, None)
-            self._mainConfig.showSliderGuiEditButton()
+            self._globalConfig.updateEffectsGui(effectConfigName, midiNote, effectId, None)
+            self._globalConfig.showSliderGuiEditButton()
             self.showSlidersGui()
         self._highlightButton(self._selectedEditor)
 
@@ -3324,14 +3362,14 @@ All notes on events are quantized to this.
                 effectConfigName = self._config.getValue("Effect1Config")
             if(buttonId == self._overviewFx2Button.GetId()):
                 effectConfigName = self._config.getValue("Effect2Config")
-        self._mainConfig.updateEffectList(effectConfigName)
+        self._globalConfig.updateEffectList(effectConfigName)
         self.showEffectList()
 
     def _onClipFadeButtonDouble(self, event):
         fadeConfigName = None
         if(self._config != None):
             fadeConfigName = self._config.getValue("FadeConfig")
-        self._mainConfig.updateFadeList(fadeConfigName)
+        self._globalConfig.updateFadeList(fadeConfigName)
         self.showFadeListGui()
 
     def updateOverviewClipBitmap(self, clipBitmap):
@@ -3577,7 +3615,7 @@ All notes on events are quantized to this.
             self._overviewClipMixButton.setBitmaps(self._blankMixBitmap, self._blankMixBitmap)
             self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
             self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
-            self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+            self._globalConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
         else:
             mixMode = self._config.getValue("MixMode")
             self._updateMixModeChoices(self._mixField, mixMode, "Add")
@@ -3590,7 +3628,7 @@ All notes on events are quantized to this.
             self.updateEffectThumb(self._overviewFx2Button, effect2Config)
             fadeConfigName = self._config.getValue("FadeConfig")
             self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
-            self._mainConfig.updateFadeGuiButtons(fadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+            self._globalConfig.updateFadeGuiButtons(fadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         if(self._selectedEditor != None):
             if(self._selectedEditor == self.EditSelection.TimeModulation):
@@ -3661,7 +3699,7 @@ All notes on events are quantized to this.
         self._overviewFx1Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewFx2Button.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         self._overviewClipNoteLabel.SetLabel("NOTE: " + midiNoteString)
-        self._mainConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
+        self._globalConfig.updateFadeGuiButtons("Clear\nThe\Buttons\nV0tt", None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
         self._showOrHideSaveButton()
 

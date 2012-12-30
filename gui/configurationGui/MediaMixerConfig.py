@@ -138,7 +138,7 @@ class MediaMixerConfig(object):
                     trackConfig.setValue("PostEffectConfig", self._defaultPostEffectSettingsName)
 
     def verifyFadeTemplateUsed(self, fadeConfigNameList):
-        for trackConfig in self._mediaPool:
+        for trackConfig in self._mediaTrackConfigs:
             if(trackConfig != None):
                 usedConfigName = trackConfig.getValue("FadeConfig")
                 nameOk = False
@@ -152,7 +152,8 @@ class MediaMixerConfig(object):
 class MediaTrackGui(object): #@UndefinedVariable
     def __init__(self, mainConfig):
         self._mainConfig = mainConfig
-        self._specialModulationHolder = self._mainConfig.getSpecialModulationHolder()
+        self._globalConfig = self._mainConfig.getGlobalConfig()
+        self._specialModulationHolder = self._globalConfig.getSpecialModulationHolder()
         self._config = None
         self._mixModes = MixMode()
         self._latestOverviewMixMode = MixMode.Add
@@ -378,16 +379,16 @@ class MediaTrackGui(object): #@UndefinedVariable
         self._showOrHideSaveButton()
 
     def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._mainConfig == None):
+        if(self._globalConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getEffectChoices, value, defaultValue, updateSaveButton)
+            self._updateChoices(widget, self._globalConfig.getEffectChoices, value, defaultValue, updateSaveButton)
 
     def _updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._mainConfig == None):
+        if(self._globalConfig == None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
-            self._updateChoices(widget, self._mainConfig.getFadeChoices, value, defaultValue, updateSaveButton)
+            self._updateChoices(widget, self._globalConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
         if(choicesFunction == None):
@@ -484,7 +485,7 @@ Replace:\tNo mixing. Just use this image.
             self._selectedEditor = self.EditSelection.Fade
             self._highlightButton(self._selectedEditor)
             self._mainConfig.setSelectedMidiChannel(foundTrackId)
-            self._mainConfig.updateFadeGui(selectedFadeConfig, "Track", None)
+            self._globalConfig.updateFadeGui(selectedFadeConfig, "Track", None)
             self._showFadeCallback()
             self._showOrHideSaveButton()
 
@@ -499,7 +500,7 @@ Replace:\tNo mixing. Just use this image.
             self._setActiveTrackIdCallback(foundTrackId)
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
             fadeConfigName = trackConfig.getValue("FadeConfig")
-            self._mainConfig.updateFadeList(fadeConfigName)
+            self._globalConfig.updateFadeList(fadeConfigName)
             self._showFadeListGui()
 
     def _onPreEffectEdit(self, event, showGui = True):
@@ -513,7 +514,7 @@ Replace:\tNo mixing. Just use this image.
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
         selectedEffectConfig = self._preEffectField.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect", self._preEffectField)
+        self._globalConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect", self._preEffectField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -528,7 +529,7 @@ Replace:\tNo mixing. Just use this image.
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideEffectsCallback()
         selectedEffectConfig = self._postEffectField.GetValue()
-        self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect", self._postEffectField)
+        self._globalConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect", self._postEffectField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -543,7 +544,7 @@ Replace:\tNo mixing. Just use this image.
                 self._selectedEditor = self.EditSelection.Unselected
                 self._hideFadeCallback()
         selectedFadeConfig = self._fadeField.GetValue()
-        self._mainConfig.updateFadeGui(selectedFadeConfig, "Track", None, self._fadeField)
+        self._globalConfig.updateFadeGui(selectedFadeConfig, "Track", None, self._fadeField)
         self._showOrHideSaveButton()
         self._highlightButton(self._selectedEditor)
 
@@ -565,8 +566,8 @@ Replace:\tNo mixing. Just use this image.
             self._selectedEditor = self.EditSelection.PreEffect
             self._highlightButton(self._selectedEditor)
             self._mainConfig.setSelectedMidiChannel(foundTrackId)
-            self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
-            self._mainConfig.showSliderGuiEditButton()
+            self._globalConfig.updateEffectsGui(selectedEffectConfig, None, "PreEffect")
+            self._globalConfig.showSliderGuiEditButton()
             self._showSlidersCallback()
             self._showOrHideSaveButton()
 
@@ -586,21 +587,21 @@ Replace:\tNo mixing. Just use this image.
             selectedEffectConfig = trackConfig.getValue("PostEffectConfig")
             self._selectedEditor = self.EditSelection.PostEffect
             self._highlightButton(self._selectedEditor)
-            self._mainConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
+            self._globalConfig.updateEffectsGui(selectedEffectConfig, None, "PostEffect")
             activeNoteId, activeNoteMixMode = self._mainConfig.getActiveNoteForTrack(foundTrackId)
             self.updateGui(trackConfig, foundTrackId, activeNoteId, activeNoteMixMode)
-            self._mainConfig.showSliderGuiEditButton()
+            self._globalConfig.showSliderGuiEditButton()
             self._showSlidersCallback()
             self._showOrHideSaveButton()
 
     def _onPreFxButtonDouble(self, event):
         selectedEffectConfig = self._preEffectField.GetValue()
-        self._mainConfig.updateEffectList(selectedEffectConfig)
+        self._globalConfig.updateEffectList(selectedEffectConfig)
         self.showEffectList()
 
     def _onPostFxButtonDouble(self, event):
         selectedEffectConfig = self._postEffectField.GetValue()
-        self._mainConfig.updateEffectList(selectedEffectConfig)
+        self._globalConfig.updateEffectList(selectedEffectConfig)
         self.showEffectList()
 
     def _onDragPreFxDone(self, event):
@@ -614,7 +615,7 @@ Replace:\tNo mixing. Just use this image.
             trackSettings = self._trackGuiSettingsList[foundTrackId]
             self._currentTrackEffectEditorIndex = foundTrackId
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
-            fxName = self._mainConfig.getDraggedFxName()
+            fxName = self._globalConfig.getDraggedFxName()
             if(fxName != None):
                 if(self._trackId != None):
                     trackConfig.setValue("PreEffectConfig", fxName)
@@ -635,7 +636,7 @@ Replace:\tNo mixing. Just use this image.
             trackSettings = self._trackGuiSettingsList[foundTrackId]
             self._currentTrackEffectEditorIndex = foundTrackId
             trackConfig = self._mainConfig.getTrackConfiguration(foundTrackId)
-            fxName = self._mainConfig.getDraggedFxName()
+            fxName = self._globalConfig.getDraggedFxName()
             if(fxName != None):
                 if(self._trackId != None):
                     trackConfig.setValue("PostEffectConfig", fxName)
@@ -722,7 +723,7 @@ Replace:\tNo mixing. Just use this image.
             fadeConf = trackConfig.getValue("FadeConfig")
         else:
             fadeConf = "None"
-        self._mainConfig.updateFadeGuiButtons(fadeConf, noteWipeMode, widget)
+        self._globalConfig.updateFadeGuiButtons(fadeConf, noteWipeMode, widget)
         self._showOrHideSaveButton()
 
     def updateTrackEffectsThumb(self, index, trackConfig):

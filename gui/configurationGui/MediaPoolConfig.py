@@ -6,8 +6,7 @@ Created on 6. feb. 2012
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
-    addTrackButtonFrame, EVT_DRAG_DONE_EVENT, EVT_DOUBLE_CLICK_EVENT,\
-    PcnPopupMenu
+    addTrackButtonFrame, PcnPopupMenu
 import os
 from video.media.MediaFileModes import VideoLoopMode, ImageSequenceMode,\
     MediaTypes, MixMode, getMixModeFromName, forceUnixPath
@@ -17,6 +16,7 @@ from midi.MidiTiming import MidiTiming
 import sys
 from utilities.FloatListText import textToFloatValues, floatValuesToString
 from configurationGui.MediaDialogs import MediaFontDialog
+from widgets.PcnEvents import EVT_DOUBLE_CLICK_EVENT, EVT_DRAG_DONE_EVENT
 
 class MediaPoolConfig(object):
     def __init__(self, configParent, noteModulation):

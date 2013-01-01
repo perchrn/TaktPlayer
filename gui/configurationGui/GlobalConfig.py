@@ -23,6 +23,7 @@ from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
 import re
 from configurationGui.UtilityDialogs import ThreeChoiceMessageDialog
+from configurationGui.CurveGui import CurveGui
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig, specialModulationHolder, effectsModulation):
@@ -33,20 +34,24 @@ class GlobalConfig(object):
 
         self._midiTiming = MidiTiming()
 
-        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming, self._specialModulationHolder)
+        self._modulationGui = ModulationGui(self._mainConfig, self._midiTiming, self._specialModulationHolder, self)
+        self._curveGui = CurveGui(self._mainConfig)
 
         self._timeModulationConfiguration = TimeModulationTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._timeModulationGui = TimeModulationGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
+        self._timeModulationGui = TimeModulationGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder, self)
 
         self._effectsConfiguration = EffectTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder, 800, 600)
-        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
+        self._effectsGui = EffectsGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder, self)
         self._fadeConfiguration = FadeTemplates(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder)
+        self._fadeGui = FadeGui(self._mainConfig, self._midiTiming, self._modulationGui, self._specialModulationHolder, self)
         self._effectImagesConfiguration = EffectImageList(self._configurationTree, self._midiTiming)
-        self._effectImagesGui = EffectImagesListGui(self._mainConfig, self._effectImagesConfiguration)
+        self._effectImagesGui = EffectImagesListGui(self._mainConfig, self._effectImagesConfiguration, self)
 
     def getSpecialModulationHolder(self):
         return self._specialModulationHolder
+
+    def getCurveGui(self):
+        return self._curveGui
 
     def _getConfiguration(self):
         self._timeModulationConfiguration._getConfiguration()
@@ -134,7 +139,7 @@ class GlobalConfig(object):
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._effectsGui.setupEffectsSlidersGui(plane, sizer, parentSizer, parentClass)
 
-    def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget):
+    def updateEffectsGui(self, configName, midiNote, editFieldName, editFieldWidget = None):
         template = self._effectsConfiguration.getTemplate(configName)
         if(template != None):
             self._effectsGui.updateGui(template, midiNote, editFieldName, editFieldWidget)
@@ -195,8 +200,8 @@ class GlobalConfig(object):
     def getEffectImageByIndex(self, index):
         return self._effectImagesConfiguration.getTemplateByIndex(index)
 
-    def deleteEffectImage(self, midiNote, noteLetter):
-        return self._effectImagesConfiguration.deleteTemplate(midiNote, noteLetter)
+    def deleteEffectImage(self, fileName):
+        return self._effectImagesConfiguration.deleteTemplate(fileName)
 
     def makeNewEffectImage(self, fileName):
         return self._effectImagesConfiguration.createTemplate(fileName)
@@ -207,16 +212,16 @@ class GlobalConfig(object):
     def updateModulationGui(self, modulationString, widget, closeCallback, saveCallback, saveArgument = None):
         self._modulationGui.updateGui(modulationString, widget, closeCallback, saveCallback, saveArgument)
 
-    def updateModulationGuiButton(self, modulationString, widget):
-        self._modulationGui.updateModulationGuiButton(modulationString, widget)
+    def updateModulationGuiButton(self, widget, modulationString):
+        self._modulationGui.updateModulationGuiButton(widget, modulationString)
 
     def stopModulationGui(self):
         self._modulationGui.stopModulationUpdate()
 
-    def updateFadeGui(self, configName, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString):
+    def updateFadeGui(self, configName, editFieldName, fadeFieldWidget = None, selectedWipeMode = None, selectedWipePrePostString = None):
         template = self._fadeConfiguration.getTemplate(configName)
         if(template != None):
-            self._fadeGui.updateGui(template, editFieldName, editFieldWidget, selectedWipeMode, selectedWipePrePostString)
+            self._fadeGui.updateGui(template, editFieldName, fadeFieldWidget, selectedWipeMode, selectedWipePrePostString)
 
     def updateFadeList(self, selectedName):
         self._fadeGui.updateFadeList(self._fadeConfiguration, selectedName)
@@ -247,8 +252,9 @@ class GlobalConfig(object):
         return self._fadeConfiguration.checkIfNameIsDefaultName(configName)
 
 class EffectsGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder, globalConfig):
         self._mainConfig = mainConfing
+        self._globalConfig = globalConfig
         self._midiTiming = midiTiming
         self._modulationGui = modulationGui
         self._specialModulationHolder = specialModulationHolder
@@ -279,6 +285,7 @@ class EffectsGui(object):
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
+        self._fxBitmapStrobe = wx.Bitmap("graphics/fxStrobe.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
@@ -332,6 +339,8 @@ class EffectsGui(object):
         self._hideEffectsCallback = parentClass.hideEffectsGui
         self._fixEffectGuiLayout = parentClass.fixEffectsGuiLayout
         self._showSlidersCallback = parentClass.showSlidersGui
+        self._showCurveCallback = parentClass.showCurveGui
+        self._hideCurveCallback = parentClass.hideCurveGui
         self._showModulationCallback = parentClass.showModulationGui
         self._hideModulationCallback = parentClass.hideModulationGui
         self._showEffectListCallback = parentClass.showEffectList
@@ -339,6 +348,8 @@ class EffectsGui(object):
         self._setDragCursor = parentClass.setDragCursorCallback
         self._mediaPoolEffectNameFieldUpdateCallback = parentClass.updateEffectField
         self._trackEffectNameFieldUpdateCallback = parentClass.trackEffectFieldUpdateCallback
+
+        self._curveGui = self._globalConfig.getCurveGui()
 
         headerLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect configuration:") #@UndefinedVariable
         headerFont = headerLabel.GetFont()
@@ -382,6 +393,18 @@ class EffectsGui(object):
         self._imagesSizer.Add(self._imagesField, 2, wx.ALL, 5) #@UndefinedVariable
         self._imagesSizer.Add(self._imagesButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._imagesSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._curveSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        self._curveLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Curve:") #@UndefinedVariable
+        self._curveField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "Linear|0,0|255,255", size=(200, -1)) #@UndefinedVariable
+#        self._curveField.SetEditable(False)
+        self._curveField.SetBackgroundColour((232,232,232))
+        self._curveButton = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._curveButton.Bind(wx.EVT_BUTTON, self._onCurveButton) #@UndefinedVariable
+        self._curveSizer.Add(self._curveLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        self._curveSizer.Add(self._curveField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._curveSizer.Add(self._curveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(self._curveSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._ammountSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Amount:") #@UndefinedVariable
@@ -593,6 +616,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapInverse)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapInverse)
+        index = self._effectImageList.Add(self._fxBitmapStrobe)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapStrobe)
         index = self._effectImageList.Add(self._fxBitmapVal2Hue)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapVal2Hue)
@@ -735,7 +761,7 @@ Selects the effect.
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onArg1Edit(self, event):
@@ -746,7 +772,7 @@ Selects the effect.
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onArg2Edit(self, event):
@@ -757,7 +783,7 @@ Selects the effect.
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onArg3Edit(self, event):
@@ -768,7 +794,7 @@ Selects the effect.
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onArg4Edit(self, event):
@@ -779,7 +805,7 @@ Selects the effect.
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onConf1Help(self, event):
@@ -817,16 +843,16 @@ A list of start values for the effect modulation.
 
     def _onListDuplicateButton(self, event):
         if(self._effectListSelectedIndex >= 0):
-            effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+            effectTemplate = self._globalConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
             if(effectTemplate != None):
                 effectName = effectTemplate.getName()
-                newName = self._mainConfig.duplicateEffectTemplate(effectName)
-                self._mainConfig.updateEffectList(newName)
-                self._mainConfig.updateEffectsGui(newName, self._midiNote, self._activeEffectId, self._editFieldWidget)
+                newName = self._globalConfig.duplicateEffectTemplate(effectName)
+                self._globalConfig.updateEffectList(newName)
+                self._globalConfig.updateEffectsGui(newName, self._midiNote, self._activeEffectId, self._editFieldWidget)
 
     def _onListDeleteButton(self, event):
         if(self._effectListSelectedIndex >= 0):
-            effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+            effectTemplate = self._globalConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
             if(effectTemplate != None):
                 effectName = effectTemplate.getName()
                 inUseNumber = self._mainConfig.countNumberOfTimeEffectTemplateUsed(effectName)
@@ -835,9 +861,9 @@ A list of start values for the effect modulation.
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                 dlg.Destroy()
                 if(result == True):
-                    self._mainConfig.deleteEffectTemplate(effectName)
+                    self._globalConfig.deleteEffectTemplate(effectName)
                     self._mainConfig.verifyEffectTemplateUsed()
-                    self._mainConfig.updateEffectList(None)
+                    self._globalConfig.updateEffectList(None)
                     self._mainConfig.updateNoteGui()
                     self._mainConfig.updateMixerGui()
 
@@ -875,26 +901,30 @@ A list of start values for the effect modulation.
 
     def _onListDoubbleClick(self, event):
         self._effectListDraggedIndex = -1
-        effectTemplate = self._mainConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
+        effectTemplate = self._globalConfig.getEffectTemplateByIndex(self._effectListSelectedIndex)
         if(effectTemplate != None):
             self.updateGui(effectTemplate, None, self._activeEffectId)
             self._showEffectsCallback(0)
 
     def _onListButton(self, event):
         effectConfigName = self._templateNameField.GetValue()
-        self._mainConfig.updateEffectList(effectConfigName)
+        self._globalConfig.updateEffectList(effectConfigName)
         self._showEffectListCallback()
 
     def _onImagesButton(self, event):
-        self._mainConfig.updateEffectImageList()
+        self._globalConfig.updateEffectImageList()
         self._showEffectImageListCallback()
+
+    def _onCurveButton(self, event):
+        self._curveGui.updateGui(self._curveField.GetValue(), self._curveField, None, None, None)
+        self._showCurveCallback()
 
     def _dialogResultCallback(self, value):
         self._dialogResult = value
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
-        oldTemplate = self._mainConfig.getEffectTemplate(saveName)
+        oldTemplate = self._globalConfig.getEffectTemplate(saveName)
         rename = False
         move = False
         moveOne = False
@@ -976,12 +1006,12 @@ A list of start values for the effect modulation.
             self._arg4Field.SetValue(arg4Mod)
         else:
             if(rename == True):
-                oldTemplate = self._mainConfig.getEffectTemplate(self._startConfigName)
+                oldTemplate = self._globalConfig.getEffectTemplate(self._startConfigName)
                 oldTemplate.setName(saveName)
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
             if(oldTemplate == None):
-                savedTemplate = self._mainConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+                savedTemplate = self._globalConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyEffectTemplateUsed()
@@ -997,7 +1027,8 @@ A list of start values for the effect modulation.
                     self._mediaPoolEffectNameFieldUpdateCallback(self._editFieldWidget, saveName, moveOne, self._activeEffectId)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
-            self._mainConfig.updateEffectList(saveName)
+            self._globalConfig.updateEffectList(saveName)
+            self._showOrHideSaveButton()
 
     def _onSlidersButton(self, event):
         self.showSliderGuiEditButton(False)
@@ -1523,56 +1554,71 @@ A list of start values for the effect modulation.
     def _checkIfUpdated(self):
         if(self._config == None):
             return False
+        print "DEBUG pcn: cu 1"
         guiName = self._templateNameField.GetValue()
         configName = self._config.getValue("Name")
         if(guiName != configName):
+            print "DEBUG pcn: diff 1"
             return True
         guiEffect = self._effectNameField.GetValue()
         configEffect = self._config.getValue("Effect")
         if(guiEffect != configEffect):
+            print "DEBUG pcn: diff 2 " + str((guiEffect, configEffect))
             return True
+        else:
+            print "DEBUG pcn: eq 2 " + str((guiEffect, configEffect))
         guiArg = self._ammountField.GetValue()
         configArg = self._config.getValue("Amount")
         if(guiArg != configArg):
+            print "DEBUG pcn: diff 3 " + str((guiArg, configArg))
             return True
         guiArg = self._arg1Field.GetValue()
         configArg = self._config.getValue("Arg1")
         if(guiArg != configArg):
+            print "DEBUG pcn: diff 4"
             return True
         guiArg = self._arg2Field.GetValue()
         configArg = self._config.getValue("Arg2")
         if(guiArg != configArg):
+            print "DEBUG pcn: diff 5"
             return True
         guiArg = self._arg3Field.GetValue()
         configArg = self._config.getValue("Arg3")
         if(guiArg != configArg):
+            print "DEBUG pcn: diff 6"
             return True
         guiArg = self._arg4Field.GetValue()
         configArg = self._config.getValue("Arg4")
         if(guiArg != configArg):
+            print "DEBUG pcn: diff 7"
             return True
         guiStart = self._startValuesField.GetValue()
         configStart = self._config.getValue("StartValues")
         if(guiStart != configStart):
+            print "DEBUG pcn: diff 8"
             return True
         if(configEffect == "Zoom"):
             config1Val = self._config.getValue("ZoomMode")
             gui1Val = self._conf1Field.GetValue()
             if(gui1Val != config1Val):
+                print "DEBUG pcn: diff z1"
                 return True
             config2Val = self._config.getValue("ZoomRange")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
+                print "DEBUG pcn: diff z2"
                 return True
         elif((configEffect == "Feedback") or (configEffect == "Delay")):
             config2Val = self._config.getValue("FeedbackAdvancedZoom")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
+                print "DEBUG pcn: diff f1"
                 return True
         elif(configEffect == "Edge"):
             config1Val = self._config.getValue("EdgeChannelMode")
             gui1Val = self._conf1Field.GetValue()
             if(gui1Val != config1Val):
+                print "DEBUG pcn: diff e1"
                 return True
         return False
 
@@ -1673,7 +1719,7 @@ A list of start values for the effect modulation.
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
         self._setEffect(self._config.getValue("Effect"))
-        self._imagesField.SetValue(self._mainConfig.getEffectImageFileListString())
+        self._imagesField.SetValue(self._globalConfig.getEffectImageFileListString())
         self._ammountField.SetValue(self._config.getValue("Amount"))
         self._arg1Field.SetValue(self._config.getValue("Arg1"))
         self._arg2Field.SetValue(self._config.getValue("Arg2"))
@@ -1685,12 +1731,14 @@ A list of start values for the effect modulation.
         self._sliderButtonsSizer.Layout()
 
 class FadeGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder, globalConfig):
         self._mainConfig = mainConfing
+        self._globalConfig = globalConfig
         self._midiTiming = midiTiming
         self._specialModulationHolder = specialModulationHolder
         self._modulationGui = modulationGui
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
+        self._startConfigName = ""
         self._selectedEditor = self.EditSelected.Unselected
         self._wipeModesHolder = WipeMode()
         self._fadeListSelectedIndex = -1
@@ -1877,14 +1925,14 @@ class FadeGui(object):
         self._mainFadeListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
 #        self._oldListHeight = 376
-        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(310,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._fadeListWidget = ultimatelistctrl.UltimateListCtrl(self._mainFadeListPlane, id=wx.ID_ANY, size=(325,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._fadeListWidget.SetImageList(self._fadeImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._fadeListWidget.SetBackgroundColour((170,170,170))
 
         self._fadeListWidget.InsertColumn(0, 'Name', width=150)
         self._fadeListWidget.InsertColumn(1, 'Fade', width=34)
         self._fadeListWidget.InsertColumn(2, 'Level', width=36)
-        self._fadeListWidget.InsertColumn(3, 'Mix', width=34)
+        self._fadeListWidget.InsertColumn(3, 'Mix', width=36)
         self._fadeListWidget.InsertColumn(4, 'Settings', width=56)
 
         self._mainFadeListGuiSizer.Add(self._fadeListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -1947,7 +1995,7 @@ Flip:\tFlip image around X ot Y axis.
             self._selectedEditor = self.EditSelected.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onLevelModulationEdit(self, event):
@@ -1958,7 +2006,7 @@ Flip:\tFlip image around X ot Y axis.
             self._selectedEditor = self.EditSelected.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onWipePostHelp(self, event):
@@ -2018,16 +2066,16 @@ Sets the size of the noize particles.
 
     def _onListDuplicateButton(self, event):
         if(self._fadeListSelectedIndex >= 0):
-            fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+            fadeTemplate = self._globalConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
             if(fadeTemplate != None):
                 fadeName = fadeTemplate.getName()
-                newName = self._mainConfig.duplicateFadeTemplate(fadeName)
-                self._mainConfig.updateFadeList(newName)
-                self._mainConfig.updateFadeGui(newName, self._fadeFieldName, self._fadeFieldWidget)
+                newName = self._globalConfig.duplicateFadeTemplate(fadeName)
+                self._globalConfig.updateFadeList(newName)
+                self._globalConfig.updateFadeGui(newName, self._fadeFieldName, self._fadeFieldWidget)
 
     def _onListDeleteButton(self, event):
         if(self._fadeListSelectedIndex >= 0):
-            fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+            fadeTemplate = self._globalConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
             if(fadeTemplate != None):
                 fadeName = fadeTemplate.getName()
                 inUseNumber = self._mainConfig.countNumberOfTimeFadeTemplateUsed(fadeName)
@@ -2036,9 +2084,9 @@ Sets the size of the noize particles.
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                 dlg.Destroy()
                 if(result == True):
-                    self._mainConfig.deleteFadeTemplate(fadeName)
+                    self._globalConfig.deleteFadeTemplate(fadeName)
                     self._mainConfig.verifyFadeTemplateUsed()
-                    self._mainConfig.updateFadeList(None)
+                    self._globalConfig.updateFadeList(None)
                     self._mainConfig.updateNoteGui()
                     self._mainConfig.updateMixerGui()
 
@@ -2069,14 +2117,14 @@ Sets the size of the noize particles.
 
     def _onListDoubbleClick(self, event):
         self._fadeListDraggedIndex = -1
-        fadeTemplate = self._mainConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
+        fadeTemplate = self._globalConfig.getFadeTemplateByIndex(self._fadeListSelectedIndex)
         if(fadeTemplate != None):
             self.updateGui(fadeTemplate, None)
             self._showFadeCallback()
 
     def _onListButton(self, event):
         fadeConfigName = self._templateNameField.GetValue()
-        self._mainConfig.updateFadeList(fadeConfigName)
+        self._globalConfig.updateFadeList(fadeConfigName)
         self._showFadeListCallback()
 
     def _dialogResultCallback(self, value):
@@ -2084,7 +2132,7 @@ Sets the size of the noize particles.
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
-        oldTemplate = self._mainConfig.getFadeTemplate(saveName)
+        oldTemplate = self._globalConfig.getFadeTemplate(saveName)
         rename = False
         renameOne = False
         cancel = False
@@ -2151,7 +2199,7 @@ Sets the size of the noize particles.
             wipeModeId = self._wipeModesHolder.findMode(wipeModeString)
             wipeSettings = FadeSettings.getVerifiedWipeSettingsFromString(wipeSettingsString, wipeModeId)
             if(oldTemplate == None):
-                savedTemplate = self._mainConfig.makeFadeTemplate(saveName, wipeModeId, wipePostMix, wipeSettings, fadeMod, levelMod)
+                savedTemplate = self._globalConfig.makeFadeTemplate(saveName, wipeModeId, wipePostMix, wipeSettings, fadeMod, levelMod)
                 if(rename == True):
                     self._mainConfig.renameFadeTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyFadeTemplateUsed()
@@ -2168,7 +2216,7 @@ Sets the size of the noize particles.
                 self._mediaPoolFadeNameFieldUpdateCallback(self._fadeFieldWidget, saveName, renameOne)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
-            self._mainConfig.updateFadeList(saveName)
+            self._globalConfig.updateFadeList(saveName)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -2251,9 +2299,9 @@ Sets the size of the noize particles.
         if(fadeTemplate == None):
             self.updateWipeModeThumb(modeWidget, None)
             if(modulationWidget != None):
-                self._mainConfig.updateModulationGuiButton(modulationWidget, "None")
+                self._globalConfig.updateModulationGuiButton(modulationWidget, "None")
             if(levelWidget != None):
-                self._mainConfig.updateModulationGuiButton(levelWidget, "None")
+                self._globalConfig.updateModulationGuiButton(levelWidget, "None")
         else:
             config = fadeTemplate.getConfigHolder()
             wipeMode, wipePostMix, _ = fadeTemplate.getWipeConfigValues(False)
@@ -2263,10 +2311,10 @@ Sets the size of the noize particles.
             self.updateWipeModeThumb(modeWidget, wipeMode)
             if(modulationWidget != None):
                 fadeModulation = config.getValue("Modulation")
-                self._mainConfig.updateModulationGuiButton(modulationWidget, fadeModulation)
+                self._globalConfig.updateModulationGuiButton(modulationWidget, fadeModulation)
             if(levelWidget != None):
                 fadeLevel = config.getValue("Level")
-                self._mainConfig.updateModulationGuiButton(levelWidget, fadeLevel)
+                self._globalConfig.updateModulationGuiButton(levelWidget, fadeLevel)
 
     def updateFadeList(self, fadeConfiguration, selectedName):
         self._fadeListWidget.DeleteAllItems()
@@ -2334,21 +2382,23 @@ Sets the size of the noize particles.
         if(self._fadeFieldName == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
             self._highlightButton(self._selectedEditor)
-            self._mainConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
+            self._globalConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
         if(self._fadeFieldName == "Level"):
             self._selectedEditor = self.EditSelected.Level
             self._highlightButton(self._selectedEditor)
-            self._mainConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
+            self._globalConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
 
         self._showOrHideSaveButton()
 
 class TimeModulationGui(object):
-    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder):
+    def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder, globalConfig):
         self._mainConfig = mainConfing
+        self._globalConfig = globalConfig
         self._midiTiming = midiTiming
         self._specialModulationHolder = specialModulationHolder
         self._modulationGui = modulationGui
         self._midiModulation = MidiModulation(None, self._midiTiming, self._specialModulationHolder)
+        self._startConfigName = ""
         self._selectedEditor = self.EditSelected.Unselected
         self._timeModes = TimeModulationMode()
         self._timeModListSelectedIndex = -1
@@ -2555,14 +2605,14 @@ class TimeModulationGui(object):
         self._mainTimeModulationListGuiSizer.Add(headerLabel, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
 
 #        self._oldListHeight = 376
-        self._timeModulationListWidget = ultimatelistctrl.UltimateListCtrl(self._mainTimeModulationListPlane, id=wx.ID_ANY, size=(270,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
+        self._timeModulationListWidget = ultimatelistctrl.UltimateListCtrl(self._mainTimeModulationListPlane, id=wx.ID_ANY, size=(300,376), agwStyle = wx.LC_REPORT | wx.LC_HRULES | wx.LC_SINGLE_SEL) #@UndefinedVariable
         self._timeModulationListWidget.SetImageList(self._timeModulationImageList, wx.IMAGE_LIST_SMALL) #@UndefinedVariable
         self._timeModulationListWidget.SetBackgroundColour((170,170,170))
 
         self._timeModulationListWidget.InsertColumn(0, 'Name', width=150)
-        self._timeModulationListWidget.InsertColumn(1, 'Modulation', width=34)
-        self._timeModulationListWidget.InsertColumn(2, 'Range', width=36)
-        self._timeModulationListWidget.InsertColumn(3, 'Quantize', width=36)
+        self._timeModulationListWidget.InsertColumn(1, 'Mod', width=36)
+        self._timeModulationListWidget.InsertColumn(2, 'Range', width=48)
+        self._timeModulationListWidget.InsertColumn(3, 'Quantize', width=52)
 
         self._mainTimeModulationListGuiSizer.Add(self._timeModulationListWidget, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
@@ -2641,7 +2691,7 @@ OBS! Group type can only use SpeedModulation.
             self._selectedEditor = self.EditSelected.Unselected
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
-        self._mainConfig.updateModulationGui(self._timeModulationModulationField.GetValue(), self._timeModulationModulationField, self.unselectButton, None)
+        self._globalConfig.updateModulationGui(self._timeModulationModulationField.GetValue(), self._timeModulationModulationField, self.unselectButton, None)
         self._highlightButton(self._selectedEditor)
 
     def _onTimeModulationModulationTestHelp(self, event):
@@ -2754,16 +2804,16 @@ Example for range = 4.0
 
     def _onListDuplicateButton(self, event):
         if(self._timeModListSelectedIndex >= 0):
-            timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+            timeModulationTemplate = self._globalConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
             if(timeModulationTemplate != None):
                 timeModulationName = timeModulationTemplate.getName()
-                newName = self._mainConfig.duplicateTimeModulationTemplate(timeModulationName)
-                self._mainConfig.updateTimeModulationList(newName)
-                self._mainConfig.updateTimeModulationGui(newName, self._midiNote, self._editFieldWidget)
+                newName = self._globalConfig.duplicateTimeModulationTemplate(timeModulationName)
+                self._globalConfig.updateTimeModulationList(newName)
+                self._globalConfig.updateTimeModulationGui(newName, self._midiNote, self._editFieldWidget)
 
     def _onListDeleteButton(self, event):
         if(self._timeModListSelectedIndex >= 0):
-            timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+            timeModulationTemplate = self._globalConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
             if(timeModulationTemplate != None):
                 timeModulationName = timeModulationTemplate.getName()
                 inUseNumber = self._mainConfig.countNumberOfTimeTimeModulationTemplateUsed(timeModulationName)
@@ -2772,11 +2822,11 @@ Example for range = 4.0
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                 dlg.Destroy()
                 if(result == True):
-                    self._mainConfig.deleteTimeModulationTemplate(timeModulationName)
+                    self._globalConfig.deleteTimeModulationTemplate(timeModulationName)
                     self._mainConfig.verifyTimeModulationTemplateUsed()
-                    self._mainConfig.updateTimeModulationList(None)
-                    self._mainConfig.updateNoteGui()
-                    self._mainConfig.updateMixerGui()
+                    self._globalConfig.updateTimeModulationList(None)
+                    self._globalConfig.updateNoteGui()
+                    self._globalConfig.updateMixerGui()
 
     def _onListItemMouseDown(self, event):
         self._timeModListSelectedIndex = event.m_itemIndex
@@ -2805,14 +2855,14 @@ Example for range = 4.0
 
     def _onListDoubbleClick(self, event):
         self._timeModulationListDraggedIndex = -1
-        timeModulationTemplate = self._mainConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
+        timeModulationTemplate = self._globalConfig.getTimeModulationTemplateByIndex(self._timeModListSelectedIndex)
         if(timeModulationTemplate != None):
             self.updateGui(timeModulationTemplate, self._midiNote, self._editFieldWidget)
             self._showTimeModulationCallback()
 
     def _onListButton(self, event):
         timeModulationConfigName = self._templateNameField.GetValue()
-        self._mainConfig.updateTimeModulationList(timeModulationConfigName)
+        self._globalConfig.updateTimeModulationList(timeModulationConfigName)
         self._showTimeModulationListCallback()
 
     def _dialogResultCallback(self, value):
@@ -2820,12 +2870,12 @@ Example for range = 4.0
 
     def _onSaveButton(self, event):
         saveName = self._templateNameField.GetValue()
-        oldTemplate = self._mainConfig.getTimeModulationTemplate(saveName)
+        oldTemplate = self._globalConfig.getTimeModulationTemplate(saveName)
         rename = False
         renameOne = True
         cancel = False
         if(saveName != self._startConfigName):
-            inUseNumber = self._mainConfig.countNumberOfTimeTimeModulationTemplateUsed(self._startConfigName)
+            inUseNumber = self._globalConfig.countNumberOfTimeTimeModulationTemplateUsed(self._startConfigName)
             
             if(oldTemplate != None):
                 text = "\"%s\" already exists!!! Do you want to overwrite?" % (saveName)
@@ -2885,10 +2935,10 @@ Example for range = 4.0
             self._timeModulationModulationField.SetValue(timeModulationMod)
         else:
             if(oldTemplate == None):
-                savedTemplate = self._mainConfig.makeTimeModulationTemplate(saveName, timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
+                savedTemplate = self._globalConfig.makeTimeModulationTemplate(saveName, timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
                 if(rename == True):
-                    self._mainConfig.renameTimeModulationTemplateUsed(self._startConfigName, saveName)
-                self._mainConfig.verifyTimeModulationTemplateUsed()
+                    self._globalConfig.renameTimeModulationTemplateUsed(self._startConfigName, saveName)
+                self._globalConfig.verifyTimeModulationTemplateUsed()
             else:
                 oldTemplate.update(timeModulationMode, timeModulationMod, timeModulationRange, timeModulationRangeQuantize)
                 savedTemplate = oldTemplate
@@ -2897,7 +2947,7 @@ Example for range = 4.0
                 self._timeModulationNameFieldUpdateCallback(self._editFieldWidget, saveName, renameOne)
             self._mainConfig.updateNoteGui()
             self._mainConfig.updateMixerGui()
-            self._mainConfig.updateTimeModulationList(saveName)
+            self._globalConfig.updateTimeModulationList(saveName)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue):
         if(choicesFunction == None):
@@ -2971,13 +3021,13 @@ Example for range = 4.0
     def updateTimeModulationGuiButtons(self, timeModulationTemplate, modeWidget, modulationWidget, levelWidget):
         if(timeModulationTemplate == None):
             self.updateTimeModeThumb(modeWidget, "SpeedModulation")
-            self._mainConfig.updateModulationGuiButton(modulationWidget, "MidiChannel.PitchBend")
+            self._globalConfig.updateModulationGuiButton(modulationWidget, "MidiChannel.PitchBend")
         else:
             config = timeModulationTemplate.getConfigHolder()
             mode = config.getValue("Mode")
             self.updateTimeModeThumb(modeWidget, mode)
             modulation = config.getValue("Modulation")
-            self._mainConfig.updateModulationGuiButton(modulationWidget, modulation)
+            self._globalConfig.updateModulationGuiButton(modulationWidget, modulation)
 
     def updateTimeModulationList(self, timeModConfiguration, selectedName):
         self._timeModulationListWidget.DeleteAllItems()
@@ -3013,14 +3063,14 @@ Example for range = 4.0
                 self._timeModulationListWidget.SetStringItem(index, 1, "", imageId)
             else:
                 self._timeModulationListWidget.SetStringItem(index, 1, "", self._modeIdImageIndex[0])
-            if((currentMode == TimeModulationMode.TriggeredJump) or (currentMode == TimeModulationMode.TriggeredLoop)):
+            if((currentMode == TimeModulationMode.SpeedModulation) or (currentMode == TimeModulationMode.TriggeredJump) or (currentMode == TimeModulationMode.TriggeredLoop)):
                 rangeString = str(config.getValue("Range"))
                 rangeQuantizeString = str(config.getValue("RangeQuantize"))
-                self._timeModulationListWidget.SetStringItem(index, 2, rangeString, [])
-                self._timeModulationListWidget.SetStringItem(index, 3, rangeQuantizeString, [])
+                self._timeModulationListWidget.SetStringItem(index, 2, rangeString)
+                self._timeModulationListWidget.SetStringItem(index, 3, rangeQuantizeString)
             else:
-                self._timeModulationListWidget.SetStringItem(index, 2, "", [])
-                self._timeModulationListWidget.SetStringItem(index, 3, "", [])
+                self._timeModulationListWidget.SetStringItem(index, 2, "")
+                self._timeModulationListWidget.SetStringItem(index, 3, "")
 
             if(index % 2):
                 self._timeModulationListWidget.SetItemBackgroundColour(index, wx.Colour(170,170,170)) #@UndefinedVariable

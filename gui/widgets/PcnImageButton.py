@@ -4,13 +4,9 @@ Created on 26. jan. 2012
 @author: pcn
 '''
 import wx #@UnusedImport
-import  wx.lib.newevent #@UnresolvedImport
 from PIL import Image
-
-DragStartEvent, EVT_DRAG_START_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
-DragDoneEvent, EVT_DRAG_DONE_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
-
-DoubleEvent, EVT_DOUBLE_CLICK_EVENT = wx.lib.newevent.NewEvent() #@UndefinedVariable
+from widgets.PcnEvents import EVT_DRAG_START_EVENT, EVT_DRAG_DONE_EVENT,\
+    EVT_DOUBLE_CLICK_EVENT
 
 class PcnPopupMenu(wx.Menu): #@UndefinedVariable
     def __init__(self, parent, imageList, nameList, onChosenCallback):
@@ -215,7 +211,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self.clicked = True
         dragStartEvent = wx.CommandEvent() #@UndefinedVariable
         dragStartEvent.SetEventObject(self)
-        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId)
+        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId) #@UndefinedVariable
         wx.PostEvent(self, dragStartEvent) #@UndefinedVariable
     def on_left_dclick(self, event):
         if(self._singleClickTimer.IsRunning() == True):
@@ -242,7 +238,7 @@ class PcnKeyboardButton(wx.PyControl): #@UndefinedVariable
         self._doubleClicked = False
         dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
         dragDoneEvent.SetEventObject(self)
-        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
+        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId) #@UndefinedVariable
         wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
         wx.PostEvent(self._buttonParent, event) #@UndefinedVariable
 #    def on_motion(self, event):
@@ -328,7 +324,7 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
         self.clicked = True
         dragStartEvent = wx.CommandEvent() #@UndefinedVariable
         dragStartEvent.SetEventObject(self)
-        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId)
+        dragStartEvent.SetEventType(EVT_DRAG_START_EVENT.typeId) #@UndefinedVariable
         wx.PostEvent(self, dragStartEvent) #@UndefinedVariable
     def on_left_dclick(self, event):
         if(self._singleClickTimer.IsRunning() == True):
@@ -355,7 +351,7 @@ class PcnImageButton(wx.PyControl): #@UndefinedVariable
         self._doubleClicked = False
         dragDoneEvent = wx.CommandEvent() #@UndefinedVariable
         dragDoneEvent.SetEventObject(self)
-        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId)
+        dragDoneEvent.SetEventType(EVT_DRAG_DONE_EVENT.typeId) #@UndefinedVariable
         wx.PostEvent(self, dragDoneEvent) #@UndefinedVariable
         wx.PostEvent(self._buttonParent, event) #@UndefinedVariable
 #    def on_motion(self, event):

@@ -7,6 +7,7 @@ Created on 27. dec. 2012
 import wx
 from widgets.PcnImageButton import PcnImageButton
 from widgets.PcnCurveDisplayWindget import PcnCurveDisplayWidget
+from widgets.PcnEvents import EVT_DOUBLE_CLICK_EVENT
 
 class Curve(object):
     Off, Linear, Array = range(3)
@@ -35,9 +36,7 @@ class Curve(object):
                         nextPoint = self._points[nextI]
                         beforePoint = afterPoint
                         afterPoint = nextPoint
-                        if(nextPoint[0] < xPos):
-                            pass
-                        else:
+                        if(nextPoint[0] >= xPos):
                             print "DEBUG pcn: xPos: " + str(xPos) + " i: " + str(i) + " afterPoint = " + str(nextPoint),
                             break
                 print "DEBUG pcn: beforePoint " + str(beforePoint) + " afterPoint " + str(afterPoint)
@@ -63,14 +62,10 @@ class Curve(object):
         bigSplit = newString.split('|', 1)
         if(len(bigSplit) > 1):
             if(bigSplit[0] == "Linear"):
-                print "DEBUG pcn: Linear!"
-                print "DEBUG pcn: bigSplit len: " + str(len(bigSplit))
-                print "DEBUG pcn: bigSplit[1]: " + str(bigSplit[1])
                 self._mode = self.Linear
                 pointsSplit = bigSplit[1].split('|')
                 self._points = []
                 for pointString in pointsSplit:
-                    print "DEBUG pcn: pointString: " + pointString
                     coordinateSplit = pointString.split(',')
                     if(len(coordinateSplit) == 2):
                         try:
@@ -151,6 +146,8 @@ class CurveGui(object):
         self._curveGraphicsDisplay = PcnCurveDisplayWidget(self._mainCurveGuiPlane)
         curveGraphicsValueButton = PcnImageButton(self._mainCurveGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         curveGraphicsValueButton.Bind(wx.EVT_BUTTON, self._onCurveGraphicsHelp) #@UndefinedVariable
+        self._curveGraphicsDisplay.Bind(wx.EVT_BUTTON, self._onCurveSingleClick) #@UndefinedVariable
+        self._curveGraphicsDisplay.Bind(EVT_DOUBLE_CLICK_EVENT, self._onCurveDoubleClick) #@UndefinedVariable
         self._curveGraphicsSizer.Add(self._curveGraphicsLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._curveGraphicsSizer.Add(self._curveGraphicsDisplay, 2, wx.ALL, 5) #@UndefinedVariable
         self._curveGraphicsSizer.Add(curveGraphicsValueButton, 0, wx.ALL, 5) #@UndefinedVariable
@@ -177,6 +174,11 @@ Shows the curve.
         dlg.ShowModal()
         dlg.Destroy()
 
+    def _onCurveSingleClick(self, event):
+        print "DEBUG pcn: Single! " + str(self._curveGraphicsDisplay.getLastStartPos()) + " -> "+ str(self._curveGraphicsDisplay.getLastPos())
+
+    def _onCurveDoubleClick(self, event):
+        print "DEBUG pcn: Double! " + str(self._curveGraphicsDisplay.getLastPos())
 
     def _updateCurveGraph(self):
         self._curveGraphicsDisplay.drawCurve(self._curveConfig)

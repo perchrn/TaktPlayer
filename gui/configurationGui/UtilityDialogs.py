@@ -5,6 +5,30 @@ Created on 23. nov. 2012
 '''
 import wx
 
+def updateChoices(widget, choicesFunction, value, defaultValue = None, choiceList = None):
+    if(choiceList == None):
+        if(choicesFunction == None):
+            choiceList = [value]
+        else:
+            choiceList = choicesFunction()
+    widget.Clear()
+    firstValue = None
+    valueOk = False
+    for choice in choiceList:
+        widget.Append(choice)
+        if(firstValue == None):
+            firstValue = choice
+        if(choice == value):
+            valueOk = True
+    if(valueOk == True):
+        widget.SetStringSelection(value)
+    else:
+        if(defaultValue == None):
+            widget.SetStringSelection(firstValue)
+        else:
+            widget.SetStringSelection(defaultValue)
+
+
 class ThreeChoiceMessageDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, buttonPressedCallback, text, firstChoice, secondChoice, thirdChoice):
         super(ThreeChoiceMessageDialog, self).__init__(parent=parent, title=title, size=(420, 140))

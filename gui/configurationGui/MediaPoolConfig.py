@@ -17,6 +17,7 @@ import sys
 from utilities.FloatListText import textToFloatValues, floatValuesToString
 from configurationGui.MediaDialogs import MediaFontDialog
 from widgets.PcnEvents import EVT_DOUBLE_CLICK_EVENT, EVT_DRAG_DONE_EVENT
+from configurationGui.UtilityDialogs import updateChoices
 
 class MediaPoolConfig(object):
     def __init__(self, configParent, noteModulation):
@@ -2971,20 +2972,7 @@ All notes on events are quantized to this.
             self._updateChoices(widget, self._getModulationSmootherChoises, value, defaultValue)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
-        if(choicesFunction == None):
-            choiceList = [value]
-        else:
-            choiceList = choicesFunction()
-        widget.Clear()
-        valueOk = False
-        for choice in choiceList:
-            widget.Append(choice)
-            if(choice == value):
-                valueOk = True
-        if(valueOk == True):
-            widget.SetStringSelection(value)
-        else:
-            widget.SetStringSelection(defaultValue)
+        updateChoices(widget, choicesFunction, value, defaultValue)
         if(updateSaveButton == True):
             self._showOrHideSaveButton()
 

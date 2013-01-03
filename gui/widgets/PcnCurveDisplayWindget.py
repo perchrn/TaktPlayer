@@ -4,7 +4,7 @@ Created on 26. jan. 2012
 @author: pcn
 '''
 import wx
-from widgets.PcnEvents import EVT_DOUBLE_CLICK_EVENT
+from widgets.PcnEvents import EVT_DOUBLE_CLICK_EVENT, MouseMoveEvent
 
 class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
     def __init__(self, parent, pos=(-1,-1), bid = -1, size=(-1,-1), isBig=False):
@@ -37,7 +37,8 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
 
     def drawCurve(self, curve):
         baseX, baseY = self._baseBitmap.GetSize()
-        
+
+        """ Clear """
         workBitmap = wx.EmptyBitmap(baseX, baseX) #@UndefinedVariable
         dc = wx.MemoryDC() #@UndefinedVariable
         dc.SelectObject(workBitmap)
@@ -45,14 +46,26 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
         dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
         dc.DrawRectangle(0, 0, baseX, baseY)
 
+        drawFactor = float(self._drawSize) / 256
+
+        """ Points """
+        dc.SetPen(wx.Pen((0,0,255), 2)) #@UndefinedVariable
+        for point in curve.getPoints():
+            yPos = int(drawFactor * self._drawSize - (int(point[1]))) + 1
+            dc.DrawCircle(int(point[0] * drawFactor) + 1, yPos, 4) 
+
+        """ Curve """
         dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
         lastYPos = None
         for xPos in range(self._drawSize):
             yValue = curve.getValue(float(xPos*256)/self._drawSize)
-            yPos = self._drawSize - (int(yValue))
+            yPos = self._drawSize - (int(yValue * drawFactor))
+            xPos = int(xPos * drawFactor)
             if(lastYPos == None):
                 lastYPos = yPos
-            dc.DrawLine(xPos + 1, lastYPos, xPos + 1, yPos)
+            if(lastYPos == yPos):
+                lastYPos += 1
+            dc.DrawLine(xPos + 1, lastYPos - 1, xPos + 1, yPos - 1)
             lastYPos = yPos
 
         dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
@@ -74,7 +87,8 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
     def eventPosToCurvePos(self, pos):
         xPos = min(max(int(pos[0] - 2), 0), 255)
         yPos = min(max(int(257 - pos[1]), 0), 255)
-        return (xPos, yPos)
+        drawFactor = float(self._drawSize) / 256
+        return (int(xPos/drawFactor), int(yPos/drawFactor))
     def getLastPos(self):
         return self._lastPos
     def getLastStartPos(self):
@@ -123,10 +137,8 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
 #        wx.PostEvent(self._buttonParent, event) #@UndefinedVariable
     def on_motion(self, event):
         pos = self.eventPosToCurvePos(event.GetPosition())
-        if(self.clicked == True):
-            print "M",
-        else:
-            print "m",
+        mouseEvent = MouseMoveEvent(mousePosition=pos, mousePressed=self._clicked)
+        wx.PostEvent(self, mouseEvent) #@UndefinedVariable
     def on_leave_window(self, event):
         self.clicked = False
     def on_size(self, event):

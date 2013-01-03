@@ -15,6 +15,7 @@ from midi.MidiStateHolder import MidiChannelModulationSources,\
     NoteModulationSources, SpecialTypes
 from midi.MidiController import MidiControllers
 from widgets.PcnImageButton import PcnImageButton
+from configurationGui.UtilityDialogs import updateChoices
 
 class ModulationGui(object):
     def __init__(self, mainConfing, midiTiming, specialModulationHolder, globalConfig):
@@ -75,7 +76,7 @@ class ModulationGui(object):
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
+        updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
         modulationSorcesButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         modulationSorcesButton.Bind(wx.EVT_BUTTON, self._onModulationModeHelp) #@UndefinedVariable
         modulationSorcesSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
@@ -90,7 +91,7 @@ class ModulationGui(object):
         tmpText2 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Channel source:") #@UndefinedVariable
         self._midiChannelSource = MidiChannelModulationSources()
         self._midiChannelSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Controller"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._midiChannelSourceField, self._midiChannelSource.getChoices, "Controller", "Controller")
+        updateChoices(self._midiChannelSourceField, self._midiChannelSource.getChoices, "Controller", "Controller")
         midiChannelSourceButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         midiChannelSourceButton.Bind(wx.EVT_BUTTON, self._onMidiChannelSourceHelp) #@UndefinedVariable
         self._midiChannelSourceSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
@@ -103,7 +104,7 @@ class ModulationGui(object):
         tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Controller:") #@UndefinedVariable
         self._midiControllers = MidiControllers()
         self._midiControllerField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ModWheel"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
+        updateChoices(self._midiControllerField, self._midiControllers.getChoices, "ModWheel", "ModWheel")
         midiControllerButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         midiControllerButton.Bind(wx.EVT_BUTTON, self._onMidiChannelControllerHelp) #@UndefinedVariable
         self._midiControllerSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
@@ -129,7 +130,7 @@ class ModulationGui(object):
         tmpText5 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Note source:") #@UndefinedVariable
         self._midiNoteSource = NoteModulationSources()
         self._midiNoteSourceField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Velocity"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
+        updateChoices(self._midiNoteSourceField, self._midiNoteSource.getChoices, "Velocity", "Velocity")
         midiNoteSourceButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         midiNoteSourceButton.Bind(wx.EVT_BUTTON, self._onMidiNoteSourceHelp) #@UndefinedVariable
         self._midiNoteSourceSizer.Add(tmpText5, 1, wx.ALL, 5) #@UndefinedVariable
@@ -144,7 +145,7 @@ class ModulationGui(object):
         tmpText6 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "LFO type:") #@UndefinedVariable
         self._lfoType = LfoShapes()
         self._lfoTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Triangle"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
+        updateChoices(self._lfoTypeField, self._lfoType.getChoices, "Triangle", "Triangle")
         lfoTypeButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         lfoTypeButton.Bind(wx.EVT_BUTTON, self._onLfoTypeHelp) #@UndefinedVariable
         self._lfoTypeSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
@@ -224,7 +225,7 @@ class ModulationGui(object):
         tmpText3 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "ADSR type:") #@UndefinedVariable
         self._adsrType = AdsrShapes()
         self._adsrTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["ADSR"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._adsrTypeField, self._adsrType.getChoices, "ADSR", "ADSR")
+        updateChoices(self._adsrTypeField, self._adsrType.getChoices, "ADSR", "ADSR")
         adsrTypeButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         adsrTypeButton.Bind(wx.EVT_BUTTON, self._onAdsrTypeHelp) #@UndefinedVariable
         self._adsrTypeSizer.Add(tmpText3, 1, wx.ALL, 5) #@UndefinedVariable
@@ -322,7 +323,7 @@ class ModulationGui(object):
         self._specialTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._specialTypeLabel = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Type:") #@UndefinedVariable
         self._specialTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Effect"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Note", "Note")
+        updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, "Note", "Note")
         specialHelpButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         specialHelpButton.Bind(wx.EVT_BUTTON, self._onSpecialTypeHelp) #@UndefinedVariable
         self._specialTypeSizer.Add(self._specialTypeLabel, 1, wx.ALL, 5) #@UndefinedVariable
@@ -470,7 +471,7 @@ Value:\t\tStatic value.
 
     def _onActiveControllersUpdate(self, event):
         selected = self._midiControllerField.GetValue()
-        self._updateChoices(self._midiActiveControllerField, self._getActiveControllersStringList, selected, "ModWheel")
+        updateChoices(self._midiActiveControllerField, self._getActiveControllersStringList, selected, "ModWheel")
 
     def _onMidiChannelSourceChosen(self, event):
         choice = self._midiChannelSourceField.GetValue()
@@ -704,7 +705,7 @@ This graph auto adjusts to the length of the ADSR.
         specialType = self._specialTypeField.GetValue()
         specialTypeId = self._specialTypes.getTypeId(specialType)
 #        print "DEBUG pcn: _onSpecialTypeChosen: " + str(specialType) + " -> " + str(specialTypeId) + " => " + str(self._specialTypes.getSubTypes(specialTypeId))
-        self._updateChoices(self._specialSub1TypeField, None, self._specialSub1TypeField.GetValue(), None, self._specialTypes.getSubTypes(specialTypeId))
+        updateChoices(self._specialSub1TypeField, None, self._specialSub1TypeField.GetValue(), None, self._specialTypes.getSubTypes(specialTypeId))
         self._onSpecialSubTypeChosen(event)
 
     def _onSpecialSubTypeChosen(self, event):
@@ -713,9 +714,9 @@ This graph auto adjusts to the length of the ADSR.
         subTypeString = self._specialSub1TypeField.GetValue()
 #        print "DEBUG pcn: _onSpecialTypeChosen: a " + str(specialType) + " -> " + str(specialTypeId)
 #        print "DEBUG pcn: _onSpecialTypeChosen: b " + str(subTypeString) + " -> " + str(self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
-        self._updateChoices(self._specialSub2TypeField, None, self._specialSub2TypeField.GetValue(), None, self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
-        self._updateChoices(self._specialSub3TypeField, None, self._specialSub3TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 1))
-        self._updateChoices(self._specialSub4TypeField, None, self._specialSub4TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 2))
+        updateChoices(self._specialSub2TypeField, None, self._specialSub2TypeField.GetValue(), None, self._specialTypes.getSubSubTypes(specialTypeId, subTypeString))
+        updateChoices(self._specialSub3TypeField, None, self._specialSub3TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 1))
+        updateChoices(self._specialSub4TypeField, None, self._specialSub4TypeField.GetValue(), None, self._specialTypes.getSubSubSubTypes(specialTypeId, subTypeString, 2))
 
     def _updateLfoGraph(self, lfoTypeString, length, phase, minLevel, maxLevel):
         lfoType = getLfoShapeId(lfoTypeString)
@@ -1123,11 +1124,11 @@ Choose which blob modulation value to use.
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[1]: " + str(subSubModeStringSplit[1])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[2]: " + str(subSubModeStringSplit[2])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[3]: " + str(subSubModeStringSplit[3])
-                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
-                    self._updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
-                    self._updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
-                    self._updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
-                    self._updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
+                    updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
+                    updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
+                    updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
+                    updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
+                    updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
                 if(subTypeString == "Note"):
                     subSubModeString = self._specialModulationHolder.getSubModString(subModId).split("Note.")[1]
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeString: " + str(subSubModeString)
@@ -1146,11 +1147,11 @@ Choose which blob modulation value to use.
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[1]: " + str(subSubModeStringSplit[1])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[2]: " + str(subSubModeStringSplit[2])
 #                    print "DEBUG pcn: SPECIAL!!! subSubModeStringSplit[3]: " + str(subSubModeStringSplit[3])
-                    self._updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
-                    self._updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
-                    self._updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
-                    self._updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
-                    self._updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
+                    updateChoices(self._specialTypeField, self._specialTypes.getTypeStrings, subTypeString, "Note")
+                    updateChoices(self._specialSub1TypeField, None, subSubModeStringSplit[0], None, self._specialTypes.getSubTypes(subTypeId))
+                    updateChoices(self._specialSub2TypeField, None, subSubModeStringSplit[1], None, self._specialTypes.getSubSubTypes(subTypeId, subSubModeStringSplit[0]))
+                    updateChoices(self._specialSub3TypeField, None, subSubModeStringSplit[2], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 1))
+                    updateChoices(self._specialSub4TypeField, None, subSubModeStringSplit[3], None, self._specialTypes.getSubSubSubTypes(subTypeId, subSubModeStringSplit[0], 2))
 #                print "DEBUG pcn: SPECIAL!!! done."
 
         if(updatedId != "MidiChannel"):

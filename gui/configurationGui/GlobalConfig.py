@@ -22,7 +22,8 @@ from configurationGui.EffectImagesListGui import EffectImagesListGui
 from widgets.PcnImageButton import PcnImageButton
 from midi.MidiUtilities import noteToNoteString
 import re
-from configurationGui.UtilityDialogs import ThreeChoiceMessageDialog
+from configurationGui.UtilityDialogs import ThreeChoiceMessageDialog,\
+    updateChoices
 from configurationGui.CurveGui import CurveGui
 
 class GlobalConfig(object):
@@ -373,7 +374,7 @@ class EffectsGui(object):
         tmpText2 = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Effect:") #@UndefinedVariable
         self._effectChoices = EffectTypes()
         self._effectNameField = wx.ComboBox(self._mainEffectsPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._effectNameField, self._effectChoices.getChoices, "None", "None")
+        updateChoices(self._effectNameField, self._effectChoices.getChoices, "None", "None")
         effectNameButton = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         effectNameButton.Bind(wx.EVT_BUTTON, self._onEffectHelp) #@UndefinedVariable
         effectNameSizer.Add(tmpText2, 1, wx.ALL, 5) #@UndefinedVariable
@@ -1035,22 +1036,6 @@ A list of start values for the effect modulation.
         self._showSlidersCallback()
         self._fixEffectGuiLayout()
 
-    def _updateChoices(self, widget, choicesFunction, value, defaultValue):
-        if(choicesFunction == None):
-            choiceList = [value]
-        else:
-            choiceList = choicesFunction()
-        widget.Clear()
-        valueOk = False
-        for choice in choiceList:
-            widget.Append(choice)
-            if(choice == value):
-                valueOk = True
-        if(valueOk == True):
-            widget.SetStringSelection(value)
-        else:
-            widget.SetStringSelection(defaultValue)
-
     def setupEffectsSlidersGui(self, plane, sizer, parentSizer, parentClass):
         self._mainSliderSizer = sizer
         self._parentSizer = parentSizer
@@ -1315,7 +1300,7 @@ A list of start values for the effect modulation.
             configLabel, configChoisesFunction, configvalue, configdefaultChoise, configHelpText = config1config
             self._mainEffectsGuiSizer.Show(self._conf1Sizer)
             self._conf1Label.SetLabel(configLabel)
-            self._updateChoices(self._conf1Field, configChoisesFunction, configvalue, configdefaultChoise)
+            updateChoices(self._conf1Field, configChoisesFunction, configvalue, configdefaultChoise)
             self._conf1HelpText = configHelpText
         else:
             self._mainEffectsGuiSizer.Hide(self._conf1Sizer)
@@ -1639,7 +1624,7 @@ A list of start values for the effect modulation.
         else:
             self._chosenEffectId = getEffectId(value)
             self._chosenEffect = getEffectName(self._chosenEffectId)
-        self._updateChoices(self._effectNameField, self._effectChoices.getChoices, self._chosenEffect, "None")
+        updateChoices(self._effectNameField, self._effectChoices.getChoices, self._chosenEffect, "None")
         self._updateLabels()
         self._fixEffectGuiLayout()
 
@@ -1815,7 +1800,7 @@ class FadeGui(object):
         fadeModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText2 = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Wipe mode:") #@UndefinedVariable
         self._wipeModesField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Fade"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, "Fade", "Fade")
+        updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, "Fade", "Fade")
         self._wipeModesField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         fadeModeButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         fadeModeButton.Bind(wx.EVT_BUTTON, self._onWipeModeHelp) #@UndefinedVariable
@@ -1852,7 +1837,7 @@ class FadeGui(object):
         self._wipePostMixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._wipePostMixLabel = wx.StaticText(self._mainFadeGuiPlane, wx.ID_ANY, "Wipe Pre/Post:") #@UndefinedVariable
         self._wipePostMixField = wx.ComboBox(self._mainFadeGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Pre", "Post"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._wipePostMixField, self._getWipePostMixChoises, "Pre", "Pre")
+        updateChoices(self._wipePostMixField, self._getWipePostMixChoises, "Pre", "Pre")
         self._wipePostMixField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._wipePostMixButton = PcnImageButton(self._mainFadeGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._wipePostMixHelpText = ""
@@ -2369,7 +2354,7 @@ Sets the size of the noize particles.
             wipeModeString = selectedWipeMode
         else:
             wipeModeString = self._wipeModesHolder.getNames(wipeMode)
-        self._updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, wipeModeString, "Default")
+        updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, wipeModeString, "Default")
         if(selectedWipePrePostString != None):
             wipePostMixString = selectedWipePrePostString
         else:
@@ -2377,7 +2362,7 @@ Sets the size of the noize particles.
                 wipePostMixString = "Post"
             else:
                 wipePostMixString = "Pre"
-        self._updateChoices(self._wipePostMixField, self._getWipePostMixChoises, wipePostMixString, "Pre")
+        updateChoices(self._wipePostMixField, self._getWipePostMixChoises, wipePostMixString, "Pre")
         self._wipeSettingsField.SetValue(wipeSettings)
         if(self._fadeFieldName == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
@@ -2473,7 +2458,7 @@ class TimeModulationGui(object):
         timeModulationModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText2 = wx.StaticText(self._mainTimeModulationGuiPlane, wx.ID_ANY, "Mode:") #@UndefinedVariable
         self._timeModulationModesField = wx.ComboBox(self._mainTimeModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["SpeedModulation"], style=wx.CB_READONLY) #@UndefinedVariable
-        self._updateChoices(self._timeModulationModesField, self._timeModes.getChoices, "SpeedModulation", "SpeedModulation")
+        updateChoices(self._timeModulationModesField, self._timeModes.getChoices, "SpeedModulation", "SpeedModulation")
         self._timeModulationModesField.Bind(wx.EVT_COMBOBOX, self._onTimeModulationModeChosen) #@UndefinedVariable
         timeModulationModeButton = PcnImageButton(self._mainTimeModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         timeModulationModeButton.Bind(wx.EVT_BUTTON, self._onTimeModulationModeHelp) #@UndefinedVariable
@@ -3090,7 +3075,7 @@ Example for range = 4.0
         self._templateNameField.SetValue(self._startConfigName)
 
         currentModeString = self._config.getValue("Mode")
-        self._updateChoices(self._timeModulationModesField, self._timeModes.getChoices, currentModeString, "SpeedModulation")
+        updateChoices(self._timeModulationModesField, self._timeModes.getChoices, currentModeString, "SpeedModulation")
 
         self._timeModulationModulationField.SetValue(self._config.getValue("Modulation"))
 

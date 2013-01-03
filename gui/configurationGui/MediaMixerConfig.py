@@ -12,6 +12,7 @@ from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
 import sys
 from midi.MidiModulation import MidiModulation
 from midi.MidiTiming import MidiTiming
+from configurationGui.UtilityDialogs import updateChoices
 
 class MediaMixerConfig(object):
     def __init__(self, configParent):
@@ -391,20 +392,7 @@ class MediaTrackGui(object): #@UndefinedVariable
             self._updateChoices(widget, self._globalConfig.getFadeChoices, value, defaultValue, updateSaveButton)
 
     def _updateChoices(self, widget, choicesFunction, value, defaultValue, updateSaveButton = False):
-        if(choicesFunction == None):
-            choiceList = [value]
-        else:
-            choiceList = choicesFunction()
-        widget.Clear()
-        valueOk = False
-        for choice in choiceList:
-            widget.Append(choice)
-            if(choice == value):
-                valueOk = True
-        if(valueOk == True):
-            widget.SetStringSelection(value)
-        else:
-            widget.SetStringSelection(defaultValue)
+        updateChoices(widget, choicesFunction, value, defaultValue)
         if(updateSaveButton == True):
             self._showOrHideSaveButton()
 

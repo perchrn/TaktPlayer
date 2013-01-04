@@ -16,18 +16,162 @@ import warnings
 warnings.simplefilter('ignore', numpy.RankWarning)
 
 class Curve(object):
-    Linear, Curve, Array, Off = range(4)
+    Off, All, RGB, HSV = range(4)
+    Linear, Curve, Array = range(3)
 
     def getChoices(self):
-        return ["Linear", "Curve", "Array", "Off"]
+        return ["Off", "All", "RGB", "HSV"]
+    def getSubChoices(self):
+        return ["Linear", "Curve", "Array"]
 
     def __init__(self):
-        self._mode = self.Linear
+        self._curves = []
+        self._curves.append(CurveChannel())
+        self._curves.append(CurveChannel())
+        self._curves.append(CurveChannel())
+        self._mode = Curve.Off
+
+    def getValue(self, xPos, subId = -1):
+        if(self._mode == Curve.Off):
+            return [xPos]
+        elif(self._mode == Curve.All):
+            return [self._curves[0].getValue(xPos)]
+        else:
+            if((subId >= 0) and (subId < 3)):
+                return [self._curves[subId].getValue(xPos)]
+            else:
+                return [self._curves[0].getValue(xPos), self._curves[1].getValue(xPos), self._curves[2].getValue(xPos)]
+
+    def changeModeString(self, modeString):
+        print "DEBUG pcn: changeModeString: " + modeString
+        if(modeString.lower() == "all"):
+            self._mode = Curve.All
+        elif(modeString.lower() == "rgb"):
+            self._mode = Curve.RGB
+        elif(modeString.lower() == "hsv"):
+            self._mode = Curve.HSV
+        else:
+            self._mode = Curve.Off
+
+    def changeSubModeString(self, modeString):
+        self._curves[0].changeModeString(modeString)
+        self._curves[1].changeModeString(modeString)
+        self._curves[2].changeModeString(modeString)
+
+    def getPoints(self, subId = -1):
+        if(self._mode == Curve.Off):
+            return [[]]
+        elif(self._mode == Curve.All):
+            return [self._curves[0].getPoints()]
+        else:
+            if((subId >= 0) and (subId < 3)):
+                return [self._curves[subId].getPoints()]
+            else:
+                return [self._curves[0].getPoints(), self._curves[1].getPoints(), self._curves[2].getPoints()]
+
+    def movePoint(self, oldPoint, newPoint, subId = -1):
+        if(self._mode == Curve.Off):
+            pass
+        elif(self._mode == Curve.All):
+            self._curves[0].movePoint(oldPoint, newPoint)
+        else:
+            if((subId >= 0) and (subId < 3)):
+                self._curves[subId].movePoint(oldPoint, newPoint)
+
+    def drawingDone(self):
+        self._curves[0].drawingDone()
+        self._curves[1].drawingDone()
+        self._curves[2].drawingDone()
+
+    def addPoint(self, newPoint, subId = -1):
+        if(self._mode == Curve.Off):
+            pass
+        elif(self._mode == Curve.All):
+            self._curves[0].addPoint(newPoint)
+        else:
+            if((subId >= 0) and (subId < 3)):
+                self._curves[subId].addPoint(newPoint)
+
+    def drawPoint(self, point, subId = -1):
+        if(self._mode == Curve.Off):
+            pass
+        elif(self._mode == Curve.All):
+            self._curves[0].drawPoint(point)
+        else:
+            if((subId >= 0) and (subId < 3)):
+                self._curves[subId].drawPoint(point)
+
+    def getArray(self, subId = -1):
+        if(self._mode == Curve.Off):
+            return None
+        if(self._mode == Curve.All):
+            return self._curves[0].getArray()
+        else:
+            if((subId >= 0) and (subId < 3)):
+                return self._curves[subId].getArray()
+            else:
+                return (self._curves[0].getArray(), self._curves[1].getArray(), self._curves[2].getArray())
+
+    def setString(self, newString):
+        if(newString.lower() == "off"):
+            self._mode = Curve.Off
+            self._curves[0].setString("Linear|0,0|255,255")
+            self._curves[1].setString("Linear|0,0|255,255")
+            self._curves[2].setString("Linear|0,0|255,255")
+            return
+        curvesSplit = newString.split(';')
+        if(len(curvesSplit) > 1):
+            if(curvesSplit[0] == "All"):
+                self._mode = Curve.All
+                self._curves[0].setString(curvesSplit[1])
+            else:
+                if(curvesSplit[0] == "RGB"):
+                    self._mode = Curve.RGB
+                if(curvesSplit[0] == "HSV"):
+                    self._mode = Curve.HSV
+                self._curves[0].setString(curvesSplit[1])
+                if(len(curvesSplit) > 2):
+                    self._curves[1].setString(curvesSplit[2])
+                    if(len(curvesSplit) > 2):
+                        self._curves[2].setString(curvesSplit[3])
+                    else:
+                        self._curves[2].setString(curvesSplit[2])
+                else:
+                    self._curves[1].setString(curvesSplit[1])
+                    self._curves[2].setString(curvesSplit[1])
+
+    def getString(self):
+        if(self._mode == Curve.Off):
+            return "Off"
+        elif(self._mode == Curve.All):
+            returnString = "All;"
+            returnString += self._curves[0].getString()
+            return returnString
+        elif(self._mode == Curve.RGB):
+            returnString = "RGB;"
+        elif(self._mode == Curve.HSV):
+            returnString = "HSV;"
+        returnString += self._curves[0].getString()
+        returnString += ";"
+        returnString += self._curves[1].getString()
+        returnString += ";"
+        returnString += self._curves[2].getString()
+        return returnString
+
+    def getMode(self):
+        return self._mode
+
+    def getSubMode(self):
+        return self._curves[0].getMode()
+
+class CurveChannel(object):
+    def __init__(self):
+        self._mode = Curve.Linear
         self._points = [(0,0), (255,255)]
         self._curveCoefficients = []
 
     def getValue(self, xPos):
-        if(self._mode == self.Linear):
+        if(self._mode == Curve.Linear):
             firstPoint = self._points[0]
             lastPoint = self._points[len(self._points)-1]
             if(xPos < firstPoint[0]):
@@ -47,16 +191,14 @@ class Curve(object):
                         beforePoint = afterPoint
                         afterPoint = nextPoint
                         if(nextPoint[0] >= xPos):
-#                            print "DEBUG pcn: xPos: " + str(xPos) + " i: " + str(i) + " afterPoint = " + str(nextPoint),
                             break
-#                print "DEBUG pcn: beforePoint " + str(beforePoint) + " afterPoint " + str(afterPoint)
                 subPos = xPos - beforePoint[0]
                 if(afterPoint[0] == beforePoint[0]):
                     subCalc = afterPoint[1]
                 else:
                     subCalc = beforePoint[1] + ((afterPoint[1] - beforePoint[1]) * (float(subPos) / (afterPoint[0] - beforePoint[0])))
                 return subCalc
-        if(self._mode == self.Curve):
+        if(self._mode == Curve.Curve):
             numPoints = len(self._curveCoefficients)
             if(numPoints < 1):
                 return xPos
@@ -66,52 +208,38 @@ class Curve(object):
                 ySum += coefficient * math.pow(xPos, numPoints-1-i)
             yValue = min(max(int(ySum), 0.0), 255.99)
             return yValue
-        if(self._mode == self.Array):
+        if(self._mode == Curve.Array):
             i = min(max(int(xPos), 0), 255)
             return self._points[i]
-        if(self._mode == self.Off):
-            return xPos
 
     def changeModeString(self, modeString):
         if(modeString.lower() == "array"):
-            self.changeMode(self.Array)
-        if(modeString.lower() == "curve"):
-            self.changeMode(self.Curve)
-        elif(modeString.lower() == "off"):
-            self.changeMode(self.Off)
+            self.changeMode(Curve.Array)
+        elif(modeString.lower() == "curve"):
+            self.changeMode(Curve.Curve)
         else:
-            self.changeMode(self.Linear)
+            self.changeMode(Curve.Linear)
 
     def changeMode(self, newMode):
+        print "DEBUG pcn: changeMode: " + str(newMode) + " from " + str(self._mode)
         if(self._mode != newMode):
-            if(newMode == self.Linear):
-                self._mode = self.Linear
-                self._points = [(0,0), (255,255)]
-            elif(newMode == self.Curve):
-                if(self._mode == self.Linear):
+            if(newMode == Curve.Linear):
+                if(self._mode == Curve.Linear):
                     pass
-                elif(self._mode == self.Array):
+                elif(self._mode == Curve.Array):
                     self._points = [(0,0), (255,255)]
-                elif(self._mode == self.Off):
+                self._mode = Curve.Linear
+            elif(newMode == Curve.Curve):
+                if(self._mode == Curve.Linear):
+                    pass
+                elif(self._mode == Curve.Array):
                     self._points = [(0,0), (255,255)]
                 self._calculateCoefficients()
-                self._mode = self.Curve
-            elif(newMode == self.Array):
-                if(self._mode == self.Linear):
-                    newArray = self.getArray()
-                    self._points = newArray
-                if(self._mode == self.Curve):
-                    newArray = self.getArray()
-                    self._points = newArray
-                if(self._mode == self.Off):
-                    self._mode = self.Linear
-                    self._points = [(0,0), (255,255)]
-                    newArray = self.getArray()
-                    self._points = newArray
-                self._mode = self.Array
-            elif(newMode == self.Off):
-                self._mode = self.Off
-                self._points = []
+                self._mode = Curve.Curve
+            elif(newMode == Curve.Array):
+                newArray = self.getArray()
+                self._points = newArray
+                self._mode = Curve.Array
 
     def _calculateCoefficients(self):
         numPoints = len(self._points)
@@ -126,14 +254,14 @@ class Curve(object):
             self._curveCoefficients = numpy.polyfit(xArr, yArr, numPoints)
 
     def getPoints(self):
-        if(self._mode == self.Linear):
+        if(self._mode == Curve.Linear):
             return self._points
-        if(self._mode == self.Curve):
+        if(self._mode == Curve.Curve):
             return self._points
         return []
 
-    def findNearestPoint(self, xPos, yPos):
-        if((self._mode == self.Linear) or (self._mode == self.Curve)):
+    def _findNearestPoint(self, xPos, yPos):
+        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
             closePoints = []
             for point in self._points:
                 if(abs(point[0] - xPos) < 5):
@@ -154,7 +282,7 @@ class Curve(object):
         return None
 
     def movePoint(self, oldPoint, newPoint):
-        if((self._mode == self.Linear) or (self._mode == self.Curve)):
+        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
             if(oldPoint != newPoint):
                 numPoints = len(self._points)
                 for i in range(numPoints):
@@ -172,15 +300,15 @@ class Curve(object):
                                 done = True
                         if(done == False):
                             self._points[i] = newPoint
-            if(self._mode == self.Curve):
+            if(self._mode == Curve.Curve):
                 self._calculateCoefficients()
 
     def drawingDone(self):
-        if((self._mode == self.Linear) or (self._mode == self.Curve)):
+        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
             self._movePoint = None
 
     def addPoint(self, newPoint):
-        if((self._mode == self.Linear) or (self._mode == self.Curve)):
+        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
             self._movePoint = None
             added = False
             updated = False
@@ -205,23 +333,21 @@ class Curve(object):
             else:
                 if(updated == False):
                     self._points.append(newPoint)
-            if(self._mode == self.Curve):
+            if(self._mode == Curve.Curve):
                 self._calculateCoefficients()
 
     def drawPoint(self, point):
-        if((self._mode == self.Linear) or (self._mode == self.Curve)):
+        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
             if(self._movePoint == None):
-                self._movePoint = self.findNearestPoint(point[0], point[1])
+                self._movePoint = self._findNearestPoint(point[0], point[1])
             if(self._movePoint != None):
                 self.movePoint(self._movePoint, point)
                 self._movePoint = point
-        if(self._mode == self.Array):
+        if(self._mode == Curve.Array):
             i = min(max(int(point[0]), 0), 255)
             self._points[i] = point[1]
 
     def getArray(self):
-        if(self._mode == self.Off):
-            return None
         returnArray = []
         for xPos in range(256):
             returnArray.append(int(self.getValue(xPos)))
@@ -232,9 +358,9 @@ class Curve(object):
         bigSplit = newString.split('|', 1)
         if(len(bigSplit) > 1):
             if(bigSplit[0] == "Linear"):
-                self._mode = self.Linear
+                self._mode = Curve.Linear
             if(bigSplit[0] == "Curve"):
-                self._mode = self.Curve
+                self._mode = Curve.Curve
             if((bigSplit[0] == "Linear") or (bigSplit[0] == "Curve")):
                 pointsSplit = bigSplit[1].split('|')
                 self._points = []
@@ -256,22 +382,21 @@ class Curve(object):
                     self._calculateCoefficients()
                 return
             elif(bigSplit[0] == "Array"):
-                self._mode = self.Array
+                self._mode = Curve.Array
                 return
-        self._mode = self.Off
 
     def getString(self):
-        if(self._mode == self.Linear):
+        if(self._mode == Curve.Linear):
             returnString = "Linear"
             for point in self._points:
                 returnString += "|" + str(point[0]) + "," + str(point[1])
             return returnString
-        if(self._mode == self.Curve):
+        if(self._mode == Curve.Curve):
             returnString = "Curve"
             for point in self._points:
                 returnString += "|" + str(point[0]) + "," + str(point[1])
             return returnString
-        if(self._mode == self.Array):
+        if(self._mode == Curve.Array):
             returnString = "Array|"
             first = True
             for point in self._points:
@@ -280,7 +405,6 @@ class Curve(object):
                 first = False
                 returnString += str(point)
             return returnString
-        return "Off"
 
     def getMode(self):
         return self._mode
@@ -323,8 +447,8 @@ class CurveGui(object):
 
         curveModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainCurveGuiPlane, wx.ID_ANY, "Curve mode:") #@UndefinedVariable
-        self._curveModeField = wx.ComboBox(self._mainCurveGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Linear"], style=wx.CB_READONLY) #@UndefinedVariable
-        updateChoices(self._curveModeField, self._curveConfig.getChoices, "Linear", "Linear")
+        self._curveModeField = wx.ComboBox(self._mainCurveGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Off"], style=wx.CB_READONLY) #@UndefinedVariable
+        updateChoices(self._curveModeField, self._curveConfig.getChoices, "Off", "Off")
         curveModeButton = PcnImageButton(self._mainCurveGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         curveModeButton.Bind(wx.EVT_BUTTON, self._onCurveModeHelp) #@UndefinedVariable
         curveModeSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
@@ -332,6 +456,30 @@ class CurveGui(object):
         curveModeSizer.Add(curveModeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainCurveGuiSizer.Add(curveModeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainCurveGuiPlane.Bind(wx.EVT_COMBOBOX, self._onCurveModeChosen, id=self._curveModeField.GetId()) #@UndefinedVariable
+
+        curveSubModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(self._mainCurveGuiPlane, wx.ID_ANY, "Curve sub mode:") #@UndefinedVariable
+        self._curveSubModeField = wx.ComboBox(self._mainCurveGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Linear"], style=wx.CB_READONLY) #@UndefinedVariable
+        updateChoices(self._curveSubModeField, self._curveConfig.getSubChoices, "Linear", "Linear")
+        curveSubModeButton = PcnImageButton(self._mainCurveGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        curveSubModeButton.Bind(wx.EVT_BUTTON, self._onCurveSubModeHelp) #@UndefinedVariable
+        curveSubModeSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        curveSubModeSizer.Add(self._curveSubModeField, 2, wx.ALL, 5) #@UndefinedVariable
+        curveSubModeSizer.Add(curveSubModeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainCurveGuiSizer.Add(curveSubModeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainCurveGuiPlane.Bind(wx.EVT_COMBOBOX, self._onCurveSubModeChosen, id=self._curveSubModeField.GetId()) #@UndefinedVariable
+
+        self._curveChannelSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText1 = wx.StaticText(self._mainCurveGuiPlane, wx.ID_ANY, "Edit channel:") #@UndefinedVariable
+        self._curveChannelField = wx.ComboBox(self._mainCurveGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Red"], style=wx.CB_READONLY) #@UndefinedVariable
+        updateChoices(self._curveChannelField, None, "Red", "Red", ["Red", "Green", "Blue"])
+        curveChannelButton = PcnImageButton(self._mainCurveGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        curveChannelButton.Bind(wx.EVT_BUTTON, self._onCurveChannelHelp) #@UndefinedVariable
+        self._curveChannelSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable
+        self._curveChannelSizer.Add(self._curveChannelField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._curveChannelSizer.Add(curveChannelButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainCurveGuiSizer.Add(self._curveChannelSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainCurveGuiPlane.Bind(wx.EVT_COMBOBOX, self._onCurveChannelChosen, id=self._curveChannelField.GetId()) #@UndefinedVariable
 
         self._curveGraphicsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._curveGraphicsLabel = wx.StaticText(self._mainCurveGuiPlane, wx.ID_ANY, "Curve graph:") #@UndefinedVariable
@@ -361,34 +509,84 @@ class CurveGui(object):
 
     def _onCurveModeHelp(self, event):
         text = """
-Selects how we edit the curve.
+Selects curve mode.
 
-Linear:\tAdd points to define curve.
-Curve:\tAdd points to define bendt curve.
-Array:\tDraw the curve pixel by pixel.
-Off:\tStraight line from 0,0 to 255,255.
+Off:\tNo curve modifications are done.
+All:\tOne curve controlls all channels.
+RGB:\tOne curve for each RGB colour.
+HSV:\tOne curve for each HSV channel.
 """
         dlg = wx.MessageDialog(self._mainCurveGuiPlane, text, 'Curve mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onCurveModeChosen(self, event):
-        updateChoices(self._curveModeField, self._curveConfig.getChoices, self._curveModeField.GetValue(), "Linear")
+        updateChoices(self._curveModeField, self._curveConfig.getChoices, self._curveModeField.GetValue(), "Off")
         self._curveConfig.changeModeString(self._curveModeField.GetValue())
+        self._onCurveChannelChosen(None)
         self._updateCurveGraph()
 
+    def _onCurveSubModeHelp(self, event):
+        text = """
+Selects how we edit the curve.
+
+Linear:\tAdd points to define curve.
+Curve:\tAdd points to define bendt curve.
+Array:\tDraw the curve pixel by pixel.
+"""
+        dlg = wx.MessageDialog(self._mainCurveGuiPlane, text, 'Curve sub mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onCurveSubModeChosen(self, event):
+        updateChoices(self._curveSubModeField, self._curveConfig.getSubChoices, self._curveSubModeField.GetValue(), "Linear")
+        self._curveConfig.changeSubModeString(self._curveSubModeField.GetValue())
+        self._updateCurveGraph()
+
+    def _onCurveChannelHelp(self, event):
+        if(self._curveConfig.getMode() == Curve.HSV):
+            text = """
+Selects which channel we are editing now.
+
+Hue:\tEdits hue curve. (Colour rotation.)
+Saturation:\tEdits saturation curve.
+Value:\tEdits value curve.
+"""
+        else:
+            text = """
+Selects which channel we are editing now.
+
+Red:\tEdits red colour curve.
+Green:\tEdits green colour curve.
+Blue:\tEdits blue colour curve.
+"""
+        dlg = wx.MessageDialog(self._mainCurveGuiPlane, text, 'Curve sub mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onCurveChannelChosen(self, event):
+        if(self._curveConfig.getMode() == Curve.HSV):
+            self._mainCurveGuiSizer.Show(self._curveChannelSizer)
+            updateChoices(self._curveChannelField, None, self._curveChannelField.GetValue(), "Hue", ["Hue", "Saturation", "Value"])
+        elif(self._curveConfig.getMode() == Curve.RGB):
+            self._mainCurveGuiSizer.Show(self._curveChannelSizer)
+            updateChoices(self._curveChannelField, None, self._curveChannelField.GetValue(), "Red", ["Red", "Green", "Blue"])
+        else:
+            self._mainCurveGuiSizer.Hide(self._curveChannelSizer)
+        self._fixCurveGuiLayout()
+
     def _onCurveGraphicsHelp(self, event):
-        if(self._curveConfig.getMode() == Curve.Linear):
+        if(self._curveConfig.getSubMode() == Curve.Linear):
             text = "Shows the curve\n"
             text += "\n"
             text += "Add points by doubble clicking.\n"
             text += "Select and drag points with left button."
-        if(self._curveConfig.getMode() == Curve.Curve):
+        if(self._curveConfig.getSubMode() == Curve.Curve):
             text = "Shows the curve\n"
             text += "\n"
             text += "Add points by doubble clicking.\n"
             text += "Select and drag points with left button."
-        if(self._curveConfig.getMode() == Curve.Array):
+        if(self._curveConfig.getSubMode() == Curve.Array):
             text = "Shows the curve\n"
             text += "\n"
             text += "Set point(s) with left button."
@@ -398,20 +596,33 @@ Off:\tStraight line from 0,0 to 255,255.
         dlg.ShowModal()
         dlg.Destroy()
 
+    def getSubId(self):
+        if(self._curveConfig.getMode() == Curve.Off):
+            return -1
+        if(self._curveConfig.getMode() == Curve.All):
+            return -1
+        channelString = self._curveChannelField.GetValue()
+        if((channelString == "Red") or (channelString == "Hue")):
+            return 0
+        if((channelString == "Green") or (channelString == "Saturation")):
+            return 1
+        if((channelString == "Blue") or (channelString == "Value")):
+            return 2
+
     def _onCurveSingleClick(self, event):
         self._curveConfig.drawingDone()
         self._updateCurveGraph()
 
     def _onCurveDoubleClick(self, event):
-        self._curveConfig.addPoint(self._curveGraphicsDisplay.getLastPos())
+        self._curveConfig.addPoint(self._curveGraphicsDisplay.getLastPos(), self.getSubId())
         self._updateCurveGraph()
 
     def _onMouseMove(self, event):
         if(event.mousePressed == True):
-            self._curveConfig.drawPoint(event.mousePosition)
+            self._curveConfig.drawPoint(event.mousePosition, self.getSubId())
+            self._updateCurveGraph()
         else:
             self._curveConfig.drawingDone()
-        self._updateCurveGraph()
 
     def _updateCurveGraph(self):
         self._curveGraphicsDisplay.drawCurve(self._curveConfig)
@@ -455,6 +666,9 @@ Off:\tStraight line from 0,0 to 255,255.
         self._saveArgument = saveArgument
         self._lastSavedCurveString = curveConfigString
         self._curveConfig.setString(curveConfigString)
+        updateChoices(self._curveModeField, self._curveConfig.getChoices, self._curveConfig.getChoices()[self._curveConfig.getMode()], "Off")
+        updateChoices(self._curveSubModeField, self._curveConfig.getSubChoices, self._curveConfig.getSubChoices()[self._curveConfig.getSubMode()], "Linear")
+        self._onCurveChannelChosen(None)
         self._updateCurveGraph()
         self._checkForUpdates()
 

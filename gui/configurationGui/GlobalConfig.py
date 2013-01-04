@@ -397,7 +397,7 @@ class EffectsGui(object):
 
         self._curveSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._curveLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Curve:") #@UndefinedVariable
-        self._curveField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "Linear|0,0|255,255", size=(200, -1)) #@UndefinedVariable
+        self._curveField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "Off", size=(200, -1)) #@UndefinedVariable
 #        self._curveField.SetEditable(False)
         self._curveField.SetBackgroundColour((232,232,232))
         self._curveButton = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable

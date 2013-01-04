@@ -35,6 +35,24 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
         self._lastPos = (-1,-1)
         self._lastStartPos = (-1,-1)
 
+    def setPenColour(self, dc, red, green, blue, width):
+        if(red == True):
+            if(green == True):
+                if(blue == True):
+                    dc.SetPen(wx.Pen((0,0,0), width)) #@UndefinedVariable
+                else:
+                    dc.SetPen(wx.Pen((120,60,0), width)) #@UndefinedVariable
+            else:
+                dc.SetPen(wx.Pen((200,0,0), width)) #@UndefinedVariable
+        else:
+            if(green == True):
+                if(blue == True):
+                    dc.SetPen(wx.Pen((0,90,90), width)) #@UndefinedVariable
+                else:
+                    dc.SetPen(wx.Pen((0,200,0), width)) #@UndefinedVariable
+            else:
+                dc.SetPen(wx.Pen((0,0,200), width)) #@UndefinedVariable
+
     def drawCurve(self, curve):
         baseX, baseY = self._baseBitmap.GetSize()
 
@@ -49,24 +67,120 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
         drawFactor = float(self._drawSize) / 256
 
         """ Points """
-        dc.SetPen(wx.Pen((0,0,255), 2)) #@UndefinedVariable
-        for point in curve.getPoints():
-            yPos = int(drawFactor * self._drawSize - (int(point[1]))) + 1
-            dc.DrawCircle(int(point[0] * drawFactor) + 1, yPos, 4) 
+        pointListList = curve.getPoints()
+        if(len(pointListList) < 2):
+            dc.SetPen(wx.Pen((0,0,255), 2)) #@UndefinedVariable
+            for point in pointListList[0]:
+                yPos = int(drawFactor * self._drawSize - (int(point[1]))) + 1
+                dc.DrawCircle(int(point[0] * drawFactor) + 1, yPos, 4)
+        else:
+            ch0Len = len(pointListList[0])
+            ch1Len = len(pointListList[1])
+            ch2Len = len(pointListList[2])
+            if(ch0Len > 0):
+                ch0i = 0
+            else:
+                ch0i = -1
+            if(ch1Len > 0):
+                ch1i = 0
+            else:
+                ch1i = -1
+            if(ch2Len > 0):
+                ch2i = 0
+            else:
+                ch2i = -1
+            stop = False
+            while(stop == False):
+                drawPoint = (300,300)
+                if(ch0i >= 0):
+                    if(pointListList[0][ch0i][0] <= drawPoint[0]):
+                        if(pointListList[0][ch0i][1] <= drawPoint[1]):
+                            drawPoint = (pointListList[0][ch0i][0], pointListList[0][ch0i][1])
+                if(ch1i >= 0):
+                    if(pointListList[0][ch1i][0] <= drawPoint[0]):
+                        if(pointListList[1][ch1i][1] <= drawPoint[1]):
+                            drawPoint = (pointListList[1][ch1i][0], pointListList[1][ch1i][1])
+                if(ch2i >= 0):
+                    if(pointListList[2][ch2i][0] <= drawPoint[0]):
+                        if(pointListList[2][ch2i][1] <= drawPoint[1]):
+                            drawPoint = (pointListList[2][ch2i][0], pointListList[2][ch2i][1])
+                draw0 = False
+                draw1 = False
+                draw2 = False
+                if(ch0i >= 0):
+                    if(pointListList[0][ch0i][0] == drawPoint[0]):
+                        if(pointListList[0][ch0i][1] == drawPoint[1]):
+                            draw0 = True
+                            ch0i += 1
+                            if(ch0i >= ch0Len):
+                                ch0i = -1
+                if(ch1i >= 0):
+                    if(pointListList[1][ch1i][0] == drawPoint[0]):
+                        if(pointListList[1][ch1i][1] == drawPoint[1]):
+                            draw1 = True
+                            ch1i += 1
+                            if(ch1i >= ch1Len):
+                                ch1i = -1
+                if(ch2i >= 0):
+                    if(pointListList[2][ch2i][0] == drawPoint[0]):
+                        if(pointListList[2][ch2i][1] == drawPoint[1]):
+                            draw2 = True
+                            ch2i += 1
+                            if(ch2i >= ch2Len):
+                                ch2i = -1
+                if((ch0i < 0) and (ch1i < 0) and (ch2i < 0)):
+                    stop = True
+                self.setPenColour(dc, draw0, draw1, draw2, 2)
+                yPos = int(drawFactor * self._drawSize - (int(drawPoint[1]))) + 1
+                dc.DrawCircle(int(drawPoint[0] * drawFactor) + 1, yPos, 4)
+
 
         """ Curve """
-        dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
-        lastYPos = None
+        lastY0Pos = None
+        lastY1Pos = None
+        lastY2Pos = None
         for xPos in range(self._drawSize):
-            yValue = curve.getValue(float(xPos*256)/self._drawSize)
-            yPos = self._drawSize - (int(yValue * drawFactor))
-            xPos = int(xPos * drawFactor)
-            if(lastYPos == None):
-                lastYPos = yPos
-            if(lastYPos == yPos):
-                lastYPos += 1
-            dc.DrawLine(xPos + 1, lastYPos - 1, xPos + 1, yPos - 1)
-            lastYPos = yPos
+            yValueList = curve.getValue(float(xPos*256)/self._drawSize)
+            if(len(yValueList) < 2):
+                dc.SetPen(wx.Pen((0,0,0), 1)) #@UndefinedVariable
+                yPos = self._drawSize - (int(yValueList[0] * drawFactor))
+                xPos = int(xPos * drawFactor)
+                if(lastY0Pos == None):
+                    lastY0Pos = yPos
+                if(lastY0Pos == yPos):
+                    lastY0Pos += 1
+                dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
+                lastY0Pos = yPos
+            else:
+                self.setPenColour(dc, True, yValueList[1]==yValueList[0], yValueList[2]==yValueList[0], 1)
+                yPos = self._drawSize - (int(yValueList[0] * drawFactor))
+                xPos = int(xPos * drawFactor)
+                if(lastY0Pos == None):
+                    lastY0Pos = yPos
+                if(lastY0Pos == yPos):
+                    lastY0Pos += 1
+                dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
+                lastY0Pos = yPos
+                if(yValueList[0] != yValueList[1]):
+                    self.setPenColour(dc, yValueList[0]==yValueList[1], True, yValueList[2]==yValueList[1], 1)
+                    yPos = self._drawSize - (int(yValueList[1] * drawFactor))
+                    xPos = int(xPos * drawFactor)
+                    if(lastY1Pos == None):
+                        lastY1Pos = yPos
+                    if(lastY1Pos == yPos):
+                        lastY1Pos += 1
+                    dc.DrawLine(xPos + 1, lastY1Pos - 1, xPos + 1, yPos - 1)
+                    lastY1Pos = yPos
+                if((yValueList[0] != yValueList[2]) and (yValueList[1] != yValueList[2])):
+                    self.setPenColour(dc, yValueList[0]==yValueList[2], yValueList[1]==yValueList[2], True, 1)
+                    yPos = self._drawSize - (int(yValueList[2] * drawFactor))
+                    xPos = int(xPos * drawFactor)
+                    if(lastY2Pos == None):
+                        lastY2Pos = yPos
+                    if(lastY2Pos == yPos):
+                        lastY2Pos += 1
+                    dc.DrawLine(xPos + 1, lastY2Pos - 1, xPos + 1, yPos - 1)
+                    lastY2Pos = yPos
 
         dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
         self._activeBitmap = workBitmap

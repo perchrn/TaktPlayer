@@ -728,6 +728,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapDelay = wx.Bitmap("graphics/fxDelay.png") #@UndefinedVariable
         self._fxBitmapColorize = wx.Bitmap("graphics/fxColorize.png") #@UndefinedVariable
         self._fxBitmapContrast = wx.Bitmap("graphics/fxContrast.png") #@UndefinedVariable
+        self._fxBitmapCurve = wx.Bitmap("graphics/fxCurve.png") #@UndefinedVariable
         self._fxBitmapDeSat = wx.Bitmap("graphics/fxDeSat.png") #@UndefinedVariable
         self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
@@ -3026,6 +3027,8 @@ All notes on events are quantized to this.
             widget.setBitmaps(self._fxBitmapColorize, self._fxBitmapColorize)
         elif(effectId == EffectTypes.Contrast):
             widget.setBitmaps(self._fxBitmapContrast, self._fxBitmapContrast)
+        elif(effectId == EffectTypes.Curve):
+            widget.setBitmaps(self._fxBitmapCurve, self._fxBitmapCurve)
         elif(effectId == EffectTypes.Desaturate):
             widget.setBitmaps(self._fxBitmapDeSat, self._fxBitmapDeSat)
         elif(effectId == EffectTypes.Distortion):

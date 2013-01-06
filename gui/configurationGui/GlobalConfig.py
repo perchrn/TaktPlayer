@@ -227,7 +227,7 @@ class GlobalConfig(object):
     def updateFadeList(self, selectedName):
         self._fadeGui.updateFadeList(self._fadeConfiguration, selectedName)
 
-    def updateFadeGuiButtons(self, configName, noteWipeMode, modeWidget, modulationWidget, levelWidget):
+    def updateFadeGuiButtons(self, configName, noteWipeMode, modeWidget, modulationWidget = None, levelWidget = None):
         template = self._fadeConfiguration.getTemplate(configName)
         self._fadeGui.updateFadeGuiButtons(template, noteWipeMode, modeWidget, modulationWidget, levelWidget)
 
@@ -272,6 +272,7 @@ class EffectsGui(object):
         self._fxBitmapDelay = wx.Bitmap("graphics/fxDelay.png") #@UndefinedVariable
         self._fxBitmapColorize = wx.Bitmap("graphics/fxColorize.png") #@UndefinedVariable
         self._fxBitmapContrast = wx.Bitmap("graphics/fxContrast.png") #@UndefinedVariable
+        self._fxBitmapCurve = wx.Bitmap("graphics/fxCurve.png") #@UndefinedVariable
         self._fxBitmapDeSat = wx.Bitmap("graphics/fxDeSat.png") #@UndefinedVariable
         self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
@@ -330,7 +331,7 @@ class EffectsGui(object):
         self._editFieldWidget = None
 
     class EditSelection():
-        Unselected, Ammount, Arg1, Arg2, Arg3, Arg4 = range(6)
+        Unselected, Ammount, Arg1, Arg2, Arg3, Arg4, Config2 = range(7)
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._mainEffectsPlane = plane
@@ -600,6 +601,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapHueSat)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapHueSat)
+        index = self._effectImageList.Add(self._fxBitmapCurve)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapCurve)
         index = self._effectImageList.Add(self._fxBitmapColorize)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapColorize)
@@ -717,31 +721,44 @@ Selects the effect.
         dlg.ShowModal()
         dlg.Destroy()
 
-    def _highlightButton(self, selected):
-        if(selected == self.EditSelection.Ammount):
+    def _highlightButton(self):
+        if(self._selectedEditor == self.EditSelection.Ammount):
             self._ammountButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._ammountButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Arg1):
+        if(self._selectedEditor == self.EditSelection.Arg1):
             self._arg1Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._arg1Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Arg2):
+        if(self._selectedEditor == self.EditSelection.Arg2):
             self._arg2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._arg2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Arg3):
+        if(self._selectedEditor == self.EditSelection.Arg3):
             self._arg3Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._arg3Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelection.Arg4):
+        if(self._selectedEditor == self.EditSelection.Arg4):
             self._arg4Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._arg4Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(self._selectedEditor == self.EditSelection.Config2):
+            if(self._conf2EditorCallback != None):
+                self._conf2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+            else:
+                self._hideCurveCallback()
+                self._selectedEditor = self.EditSelection.Unselected
+                self._conf2Button.setBitmaps(self._helpBitmap, self._helpPressedBitmap)
+        else:
+            if(self._conf2EditorCallback != None):
+                self._conf2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
+            else:
+                self._conf2Button.setBitmaps(self._helpBitmap, self._helpPressedBitmap)
+            self._hideCurveCallback()
 
     def unselectButton(self):
         self._selectedEditor = self.EditSelection.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onAmmountEdit(self, event):
         if(self._selectedEditor != self.EditSelection.Ammount):
@@ -752,7 +769,7 @@ Selects the effect.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._ammountField.GetValue(), self._ammountField, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onArg1Edit(self, event):
         if(self._selectedEditor != self.EditSelection.Arg1):
@@ -763,7 +780,7 @@ Selects the effect.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._arg1Field.GetValue(), self._arg1Field, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onArg2Edit(self, event):
         if(self._selectedEditor != self.EditSelection.Arg2):
@@ -774,7 +791,7 @@ Selects the effect.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._arg2Field.GetValue(), self._arg2Field, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onArg3Edit(self, event):
         if(self._selectedEditor != self.EditSelection.Arg3):
@@ -785,7 +802,7 @@ Selects the effect.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._arg3Field.GetValue(), self._arg3Field, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onArg4Edit(self, event):
         if(self._selectedEditor != self.EditSelection.Arg4):
@@ -796,7 +813,7 @@ Selects the effect.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._arg4Field.GetValue(), self._arg4Field, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onConf1Help(self, event):
         dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf1HelpText, 'Config dropdown help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
@@ -805,7 +822,15 @@ Selects the effect.
 
     def _onConf2Button(self, event):
         if(self._conf2EditorCallback != None):
-            self._conf2EditorCallback()
+            if(self._selectedEditor != self.EditSelection.Config2):
+                self._selectedEditor = self.EditSelection.Config2
+                self._conf2EditorCallback(True)
+                self._highlightButton()
+                self._hideModulationCallback()
+            else:
+                self._selectedEditor = self.EditSelection.Unselected
+                self._conf2EditorCallback(False)
+                self._highlightButton()
         else:
             dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf2HelpText, 'Config field help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
             dlg.ShowModal()
@@ -821,18 +846,20 @@ A list of start values for the effect modulation.
 
     def _onCloseButton(self, event):
         self._selectedEditor = self.EditSelection.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
         self._hideSlidersCallback()
         self._hideModulationCallback()
+        self._hideCurveCallback()
         self._hideEffectsCallback()
 
     def _onListCloseButton(self, event):
         self._hideSlidersCallback()
         self._hideModulationCallback()
+        self._hideCurveCallback()
         self._hideEffectsCallback()
         self._hideEffectsListCallback()
         self._selectedEditor = self.EditSelection.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onListDuplicateButton(self, event):
         if(self._effectListSelectedIndex >= 0):
@@ -908,9 +935,16 @@ A list of start values for the effect modulation.
         self._globalConfig.updateEffectImageList()
         self._showEffectImageListCallback()
 
-    def _updateAndOpenCurveEditor(self):
-        self._curveGui.updateGui(self._conf2Field.GetValue(), self._conf2Field, None, None, None)
-        self._showCurveCallback()
+    def _updateAndOpenCurveEditor(self, openEditor):
+        if(openEditor == True):
+            self._curveGui.updateGui(self._conf2Field.GetValue(), self._conf2Field, self._closeCurveEditor, None, None)
+            self._showCurveCallback()
+        else:
+            self._hideCurveCallback()
+
+    def _closeCurveEditor(self):
+        self._selectedEditor = self.EditSelection.Unselected
+        self._highlightButton()
 
     def _dialogResultCallback(self, value):
         self._dialogResult = value
@@ -1303,10 +1337,6 @@ A list of start values for the effect modulation.
             self._conf2Field.SetValue(configvalue)
             self._conf2HelpText = configHelpText
             self._conf2EditorCallback = configEditorCallback
-            if(configEditorCallback != None):
-                self._conf2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
-            else:
-                self._conf2Button.setBitmaps(self._helpBitmap, self._helpPressedBitmap)
         else:
             self._mainEffectsGuiSizer.Hide(self._conf2Sizer)
         self._fixEffectGuiLayout()
@@ -1540,71 +1570,61 @@ A list of start values for the effect modulation.
     def _checkIfUpdated(self):
         if(self._config == None):
             return False
-        print "DEBUG pcn: cu 1"
         guiName = self._templateNameField.GetValue()
         configName = self._config.getValue("Name")
         if(guiName != configName):
-            print "DEBUG pcn: diff 1"
             return True
         guiEffect = self._effectNameField.GetValue()
         configEffect = self._config.getValue("Effect")
         if(guiEffect != configEffect):
-            print "DEBUG pcn: diff 2 " + str((guiEffect, configEffect))
             return True
-        else:
-            print "DEBUG pcn: eq 2 " + str((guiEffect, configEffect))
         guiArg = self._ammountField.GetValue()
         configArg = self._config.getValue("Amount")
         if(guiArg != configArg):
-            print "DEBUG pcn: diff 3 " + str((guiArg, configArg))
             return True
         guiArg = self._arg1Field.GetValue()
         configArg = self._config.getValue("Arg1")
         if(guiArg != configArg):
-            print "DEBUG pcn: diff 4"
             return True
         guiArg = self._arg2Field.GetValue()
         configArg = self._config.getValue("Arg2")
         if(guiArg != configArg):
-            print "DEBUG pcn: diff 5"
             return True
         guiArg = self._arg3Field.GetValue()
         configArg = self._config.getValue("Arg3")
         if(guiArg != configArg):
-            print "DEBUG pcn: diff 6"
             return True
         guiArg = self._arg4Field.GetValue()
         configArg = self._config.getValue("Arg4")
         if(guiArg != configArg):
-            print "DEBUG pcn: diff 7"
             return True
         guiStart = self._startValuesField.GetValue()
         configStart = self._config.getValue("StartValues")
         if(guiStart != configStart):
-            print "DEBUG pcn: diff 8"
             return True
         if(configEffect == "Zoom"):
             config1Val = self._config.getValue("ZoomMode")
             gui1Val = self._conf1Field.GetValue()
             if(gui1Val != config1Val):
-                print "DEBUG pcn: diff z1"
                 return True
             config2Val = self._config.getValue("ZoomRange")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
-                print "DEBUG pcn: diff z2"
                 return True
         elif((configEffect == "Feedback") or (configEffect == "Delay")):
             config2Val = self._config.getValue("FeedbackAdvancedZoom")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
-                print "DEBUG pcn: diff f1"
                 return True
         elif(configEffect == "Edge"):
             config1Val = self._config.getValue("EdgeChannelMode")
             gui1Val = self._conf1Field.GetValue()
             if(gui1Val != config1Val):
-                print "DEBUG pcn: diff e1"
+                return True
+        elif(configEffect == "Curve"):
+            config2Val = self._config.getValue("Curve")
+            gui2Val = self._conf2Field.GetValue()
+            if(gui2Val != config2Val):
                 return True
         return False
 
@@ -1715,6 +1735,7 @@ A list of start values for the effect modulation.
         self._sliderButtonsSizer.Hide(self._editButton)
         self._sliderButtonsSizer.Show(self._updateButton)
         self._sliderButtonsSizer.Layout()
+        self._highlightButton()
 
 class FadeGui(object):
     def __init__(self, mainConfing, midiTiming, modulationGui, specialModulationHolder, globalConfig):
@@ -1959,19 +1980,19 @@ Flip:\tFlip image around X ot Y axis.
         dlg.ShowModal()
         dlg.Destroy()
 
-    def _highlightButton(self, selected):
-        if(selected == self.EditSelected.Fade):
+    def _highlightButton(self):
+        if(self._selectedEditor == self.EditSelected.Fade):
             self._fadeModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._fadeModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
-        if(selected == self.EditSelected.Level):
+        if(self._selectedEditor == self.EditSelected.Level):
             self._levelModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._levelModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def unselectButton(self):
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onFadeModulationEdit(self, event):
         if(self._selectedEditor != self.EditSelected.Fade):
@@ -1982,7 +2003,7 @@ Flip:\tFlip image around X ot Y axis.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onLevelModulationEdit(self, event):
         if(self._selectedEditor != self.EditSelected.Level):
@@ -1993,7 +2014,7 @@ Flip:\tFlip image around X ot Y axis.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onWipePostHelp(self, event):
         text = """
@@ -2041,14 +2062,14 @@ Sets the size of the noize particles.
         self._hideFadeCallback()
         self._hideModulationCallback()
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onListCloseButton(self, event):
         self._hideModulationCallback()
         self._hideFadeCallback()
         self._hideFadeListCallback()
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onListDuplicateButton(self, event):
         if(self._fadeListSelectedIndex >= 0):
@@ -2340,7 +2361,7 @@ Sets the size of the noize particles.
         self._selectedEditor = self.EditSelected.Unselected
         self._fadeFieldName = fadeFieldName
         self._fadeFieldWidget = fadeFieldWidget
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
         self._fadeModulationField.SetValue(self._config.getValue("Modulation"))
@@ -2367,11 +2388,11 @@ Sets the size of the noize particles.
         self._wipeSettingsField.SetValue(wipeSettings)
         if(self._fadeFieldName == "Modulation"):
             self._selectedEditor = self.EditSelected.Fade
-            self._highlightButton(self._selectedEditor)
+            self._highlightButton()
             self._globalConfig.updateModulationGui(self._fadeModulationField.GetValue(), self._fadeModulationField, self.unselectButton, self._onSaveButton)
         if(self._fadeFieldName == "Level"):
             self._selectedEditor = self.EditSelected.Level
-            self._highlightButton(self._selectedEditor)
+            self._highlightButton()
             self._globalConfig.updateModulationGui(self._levelModulationField.GetValue(), self._levelModulationField, self.unselectButton, self._onSaveButton)
 
         self._showOrHideSaveButton()
@@ -2659,15 +2680,15 @@ OBS! Group type can only use SpeedModulation.
         dlg.ShowModal()
         dlg.Destroy()
 
-    def _highlightButton(self, selected):
-        if(selected == self.EditSelected.Mode):
+    def _highlightButton(self):
+        if(self._selectedEditor == self.EditSelected.Mode):
             self._timeModulationModulationButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._timeModulationModulationButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
 
     def unselectButton(self):
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onTimeModulationModulationEdit(self, event):
         if(self._selectedEditor != self.EditSelected.Mode):
@@ -2678,7 +2699,7 @@ OBS! Group type can only use SpeedModulation.
             self._hideModulationCallback()
         self._fixEffectGuiLayout()
         self._globalConfig.updateModulationGui(self._timeModulationModulationField.GetValue(), self._timeModulationModulationField, self.unselectButton, None)
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onTimeModulationModulationTestHelp(self, event):
         text = """
@@ -2778,7 +2799,7 @@ Example for range = 4.0
         self._hideTimeModulationCallback()
         self._hideModulationCallback()
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
         self.sendGuiRelease(self._midiNote, 4)
 
     def _onListCloseButton(self, event):
@@ -2786,7 +2807,7 @@ Example for range = 4.0
         self._hideTimeModulationCallback()
         self._hideTimeModulationListCallback()
         self._selectedEditor = self.EditSelected.Unselected
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
 
     def _onListDuplicateButton(self, event):
         if(self._timeModListSelectedIndex >= 0):
@@ -3071,7 +3092,7 @@ Example for range = 4.0
         self._midiNote = midiNote
         self._selectedEditor = self.EditSelected.Unselected
         self._editFieldWidget = editFieldWidget
-        self._highlightButton(self._selectedEditor)
+        self._highlightButton()
         self._startConfigName = self._config.getValue("Name")
         self._templateNameField.SetValue(self._startConfigName)
 

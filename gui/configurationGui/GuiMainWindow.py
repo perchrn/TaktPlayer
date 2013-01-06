@@ -213,6 +213,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self.SetIcon(wxIcon)
 
         self._configuration = Configuration(configDir)
+        self._globalConfig = self._configuration.getGlobalConfig()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
 
         windowSizeX, windowSizeY = self._configuration.getWindowSize()
@@ -728,7 +729,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             else:
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, activeNoteConfig.getMixMode())
                                 fadeConfigName = activeNoteConfig.getFadeConfigName()
-                                fadeConfig = self._configuration.getFadeTemplate(fadeConfigName)
+                                fadeConfig = self._globalConfig.getFadeTemplate(fadeConfigName)
                                 if(fadeConfig):
                                     noteWipeMode, _, _ = fadeConfig.getWipeConfigValues(False)
                                 else:
@@ -745,7 +746,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 if(result[1] != None):
                     valuesString = result[1][0]
                     guiString = result[1][1]
-                    self._configuration.updateEffectsSliders(valuesString, guiString)
+                    self._globalConfig.updateEffectsSliders(valuesString, guiString)
 #                    print "DEBUG values: %s gui: %s" %(valuesString, guiString)
                 if(foundTask != None):
                     foundTask.taskDone()
@@ -813,9 +814,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._noteGui.updateOverviewClipBitmap(noteBitmap)
                                 self._noteGui.updateGui(noteConfig, self._activeNoteId)
                             self._selectTrack(self._selectedMidiChannel)
-                            self._configuration.updateEffectList(None)
-                            self._configuration.updateFadeList(None)
-                            self._configuration.updateEffectImageList()
+                            self._globalConfig.updateEffectList(None)
+                            self._globalConfig.updateFadeList(None)
+                            self._globalConfig.updateEffectImageList()
 #                            print "#" * 150
 #                            self._configuration.printConfiguration()
 #                            print "#" * 150

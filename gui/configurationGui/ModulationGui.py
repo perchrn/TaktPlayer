@@ -900,6 +900,7 @@ Choose which blob modulation value to use.
                 modeString += ";" + sub3TypeString
                 sub4TypeString = self._specialSub4TypeField.GetValue()
                 modeString += ";" + sub4TypeString
+        modeString = self._midiModulation.validateModulationString(modeString)
         return modeString
 
     def _onSaveButton(self, event):

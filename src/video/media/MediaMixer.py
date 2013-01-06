@@ -162,6 +162,8 @@ class MediaMixer(object):
             preEffect.setExtraConfig(preEffectSettings.getExtraValues())
         elif(effect1Name == "Edge"):
             preEffect.setExtraConfig(preEffectSettings.getExtraValues())
+        elif(effect1Name == "Curve"):
+            preEffect.setExtraConfig(preEffectSettings.getExtraValues())
 
         oldPostEffectName = "None"
         oldPostEffectValues = "0.0|0.0|0.0|0.0|0.0"
@@ -191,6 +193,8 @@ class MediaMixer(object):
         elif((effect2Name == "Feedback") or (effect2Name == "Delay")):
             postEffect.setExtraConfig(postEffectSettings.getExtraValues())
         elif(effect2Name == "Edge"):
+            postEffect.setExtraConfig(postEffectSettings.getExtraValues())
+        elif(effect2Name == "Curve"):
             postEffect.setExtraConfig(postEffectSettings.getExtraValues())
 
 #        print "DEBUG pcn trackId: " + str(trackId) + " setting preeffect: " + str(preEffectSettings.getEffectName()) + " -> " + str(preEffect) + " setting posteffect: " + str(postEffectSettings.getEffectName()) + " -> " + str(postEffect)

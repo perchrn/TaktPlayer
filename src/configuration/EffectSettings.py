@@ -239,6 +239,10 @@ class EffectSettings(object):
             self._configurationTree.addTextParameter("EdgeChannelMode", "Value")
         else:
             self._configurationTree.removeParameter("EdgeChannelMode")
+        if(effectName == "Curve"):
+            self._configurationTree.addTextParameter("Curve", "Off")
+        else:
+            self._configurationTree.removeParameter("Curve")
 
     def getExtraValues(self):
         returnVal1 = None
@@ -251,6 +255,8 @@ class EffectSettings(object):
             returnVal2 = self._configurationTree.getValue("FeedbackAdvancedZoom")
         if(effectName == "Edge"):
             returnVal1 = self._configurationTree.getValue("EdgeChannelMode")
+        if(effectName == "Curve"):
+            returnVal2 = self._configurationTree.getValue("Curve")
         return returnVal1, returnVal2
 
     def updateWithExtraValues(self, extraConfigValues):
@@ -282,6 +288,12 @@ class EffectSettings(object):
                 self._configurationTree.setValue("EdgeChannelMode", extraConfig1Value)
         else:
             self._configurationTree.removeParameter("EdgeChannelMode")
+        if(effectName == "Curve"):
+            self._configurationTree.addTextParameter("Curve", "Off")
+            if(extraConfig1Value != None):
+                self._configurationTree.setValue("Curve", extraConfig2Value)
+        else:
+            self._configurationTree.removeParameter("Curve")
 
     def getName(self):
         return self._name

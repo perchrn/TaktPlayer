@@ -138,6 +138,8 @@ class MediaFile(object):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
             elif(effect1Name == "Edge"):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
+            elif(effect1Name == "Curve"):
+                mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
             effect2Name = self._effect2Settings.getEffectName()
             if((mediaSettingsHolder.effect2 == None) or (effect2Name != self._effect2Settings.getEffectName())):
                 mediaSettingsHolder.effect2 = getEffectByName(effect2Name, self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
@@ -146,6 +148,8 @@ class MediaFile(object):
             elif((effect2Name == "Feedback") or (effect2Name == "Delay")):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
             elif(effect2Name == "Edge"):
+                mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
+            elif(effect2Name == "Curve"):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
 
     def _setupConfiguration(self):

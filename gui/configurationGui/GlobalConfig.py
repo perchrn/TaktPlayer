@@ -395,18 +395,6 @@ class EffectsGui(object):
         self._imagesSizer.Add(self._imagesButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(self._imagesSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        self._curveSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        self._curveLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Curve:") #@UndefinedVariable
-        self._curveField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "Off", size=(200, -1)) #@UndefinedVariable
-#        self._curveField.SetEditable(False)
-        self._curveField.SetBackgroundColour((232,232,232))
-        self._curveButton = PcnImageButton(self._mainEffectsPlane, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        self._curveButton.Bind(wx.EVT_BUTTON, self._onCurveButton) #@UndefinedVariable
-        self._curveSizer.Add(self._curveLabel, 1, wx.ALL, 5) #@UndefinedVariable
-        self._curveSizer.Add(self._curveField, 2, wx.ALL, 5) #@UndefinedVariable
-        self._curveSizer.Add(self._curveButton, 0, wx.ALL, 5) #@UndefinedVariable
-        self._mainEffectsGuiSizer.Add(self._curveSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-
         self._ammountSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         self._amountLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Amount:") #@UndefinedVariable
         self._ammountField = wx.TextCtrl(self._mainEffectsPlane, wx.ID_ANY, "None", size=(200, -1)) #@UndefinedVariable
@@ -485,7 +473,8 @@ class EffectsGui(object):
         self._conf2Field.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._conf2Button = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._conf2HelpText = ""
-        self._conf2Button.Bind(wx.EVT_BUTTON, self._onConf2Help) #@UndefinedVariable
+        self._conf2EditorCallback = None
+        self._conf2Button.Bind(wx.EVT_BUTTON, self._onConf2Button) #@UndefinedVariable
         self._conf2Sizer.Add(self._conf2Label, 1, wx.ALL, 5) #@UndefinedVariable
         self._conf2Sizer.Add(self._conf2Field, 2, wx.ALL, 5) #@UndefinedVariable
         self._conf2Sizer.Add(self._conf2Button, 0, wx.ALL, 5) #@UndefinedVariable
@@ -814,10 +803,13 @@ Selects the effect.
         dlg.ShowModal()
         dlg.Destroy()
 
-    def _onConf2Help(self, event):
-        dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf2HelpText, 'Config field help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
-        dlg.ShowModal()
-        dlg.Destroy()
+    def _onConf2Button(self, event):
+        if(self._conf2EditorCallback != None):
+            self._conf2EditorCallback()
+        else:
+            dlg = wx.MessageDialog(self._mainEffectsPlane, self._conf2HelpText, 'Config field help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+            dlg.ShowModal()
+            dlg.Destroy()
 
     def _onStartValuesHelp(self, event):
         text = """
@@ -916,8 +908,8 @@ A list of start values for the effect modulation.
         self._globalConfig.updateEffectImageList()
         self._showEffectImageListCallback()
 
-    def _onCurveButton(self, event):
-        self._curveGui.updateGui(self._curveField.GetValue(), self._curveField, None, None, None)
+    def _updateAndOpenCurveEditor(self):
+        self._curveGui.updateGui(self._conf2Field.GetValue(), self._conf2Field, None, None, None)
         self._showCurveCallback()
 
     def _dialogResultCallback(self, value):
@@ -1305,11 +1297,16 @@ A list of start values for the effect modulation.
         else:
             self._mainEffectsGuiSizer.Hide(self._conf1Sizer)
         if(config2config != None):
-            configLabel, configvalue, configHelpText = config2config
+            configLabel, configvalue, configHelpText, configEditorCallback = config2config
             self._mainEffectsGuiSizer.Show(self._conf2Sizer)
             self._conf2Label.SetLabel(configLabel)
             self._conf2Field.SetValue(configvalue)
             self._conf2HelpText = configHelpText
+            self._conf2EditorCallback = configEditorCallback
+            if(configEditorCallback != None):
+                self._conf2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
+            else:
+                self._conf2Button.setBitmaps(self._helpBitmap, self._helpPressedBitmap)
         else:
             self._mainEffectsGuiSizer.Hide(self._conf2Sizer)
         self._fixEffectGuiLayout()
@@ -1422,7 +1419,7 @@ A list of start values for the effect modulation.
             config2helpText += "\n"
             config2helpText += "0.25 -> zoom out to a quarter of original size.\n"
             config2helpText += "4.00 -> zoom in to four times the original size.\n"
-            config2config = "Zoom range", self._tryToGetConfigValue("ZoomRange", "0.25|4.0"), config2helpText
+            config2config = "Zoom range", self._tryToGetConfigValue("ZoomRange", "0.25|4.0"), config2helpText, None
             self._setLabels("Amount:", "X position", "Y position", "Flip", "Flip angle", config1config, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Scroll):
@@ -1456,7 +1453,7 @@ A list of start values for the effect modulation.
             config2helpText += "\t1.0 = flip 360 degrees.\n"
             config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
             config2helpText += "\t1.0 = rotate 360 degrees.\n"
-            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText
+            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
             self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Delay):
@@ -1472,7 +1469,7 @@ A list of start values for the effect modulation.
             config2helpText += "\t1.0 = flip 360 degrees.\n"
             config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
             config2helpText += "\t1.0 = rotate 360 degrees.\n"
-            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText
+            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rays):
@@ -1500,6 +1497,10 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.BlobDetect):
             self._setLabels("Amount:", "Mode", "Line color:", "Line saturation", "LineWeight")
             self._setupValueLabels(None, self._blobDetectModes.getChoices(), None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Curve):
+            config2config = "Curve config:", self._tryToGetConfigValue("Curve", "Off"), "", self._updateAndOpenCurveEditor
+            self._setLabels("Amount:", None, None, None, None, None, config2config)
+            self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Desaturate):
             self._setLabels("Colour:", "Range", "Mode", None, None)
             self._setupValueLabels(None, None, self._desaturateModes.getChoices(), None, None)

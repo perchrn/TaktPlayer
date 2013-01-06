@@ -15,6 +15,7 @@ import os
 import time
 import sys
 from utilities.FloatListText import textToFloatValues
+from video.Curve import Curve
 
 effectImageList = []
 effectImageFileNameList = []
@@ -188,6 +189,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return EdgeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.BlobDetect):
         return BlobDetectEffect(configurationTree, specialModulationHolder, templateName, internalResX, internalResY)
+    elif(effectType == EffectTypes.Curve):
+        return CurveEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Desaturate):
         return DesaturateEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Contrast):
@@ -1663,6 +1666,70 @@ class EdgeEffect(object):
             cv.ConvertScale(self._edgeMat, self._maskMat, 0.5)
             cv.CvtColor(self._maskMat, image, cv.CV_GRAY2RGB)
             return image
+
+class CurveEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+
+        self._hsvMat = effectMat1
+        self._lastAmount = -1.0
+        self._curveConfig = Curve()
+        self._lastCurveString = self._curveConfig.getString()
+        self._curveTableMat = cv.CreateMat(1, 256, cv.CV_8UC3)
+        self._diffTable = []
+        for _ in range(256):
+            self._diffTable.append((0,0,0))
+
+    def getName(self):
+        return "Curve"
+
+    def reset(self):
+        pass
+
+    def setExtraConfig(self, values):
+        if(values != None):
+            _, curveConfigString = values
+            if(curveConfigString == None):
+                curveConfigString = "Off"
+            if(curveConfigString != self._lastCurveString):
+                self._curveConfig.setString(curveConfigString)
+                curveValues = self._curveConfig.getArray()
+                if(len(curveValues) == 3):
+                    for i in range(256):
+                        self._diffTable[i] = (curveValues[0][i] - i, curveValues[1][i] - i, curveValues[2][i] - i)
+                else:
+                    for i in range(256):
+                        diffVal = curveValues[i] - i
+                        self._diffTable[i] = (diffVal, diffVal, diffVal)
+                self._lastAmount = -1.0
+
+    def _updateTable(self, amount):
+        for i in range(256):
+            diffValues = self._diffTable[i]
+            ch0Val = int(i + (amount * diffValues[0]))
+            ch1Val = int(i + (amount * diffValues[1]))
+            ch2Val = int(i + (amount * diffValues[2]))
+            cv.Set1D(self._curveTableMat, i, (ch0Val, ch1Val, ch2Val))
+
+    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
+        return self.applyCurve(image, amount)
+
+    def applyCurve(self, image, amount):
+        if(amount < 0.01):
+            return image
+        if(self._curveConfig.getMode() == Curve.Off):
+            return image
+        if(self._lastAmount != amount):
+            self._updateTable(amount)
+            self._lastAmount = amount
+        if(self._curveConfig.getMode() == Curve.HSV):
+            cv.CvtColor(image, self._hsvMat, cv.CV_RGB2HSV)
+            cv.LUT(self._hsvMat, self._hsvMat, self._curveTableMat)
+            cv.CvtColor(self._hsvMat, image, cv.CV_HSV2RGB)
+        else:
+            cv.LUT(image, image, self._curveTableMat)
+        return image
 
 class DesaturateEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):

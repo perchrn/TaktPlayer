@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(26)
+    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(27)
 
     def getChoices(self):
         return ["None",
@@ -25,6 +25,7 @@ class EffectTypes():
                 "TVNoize",
                 "Edge",
                 "BlobDetect",
+                "Curve",
                 "Desaturate",
                 "Contrast",
                 "HueSaturation",
@@ -53,6 +54,7 @@ class EffectTypes():
                 "TVNoize adder.",
                 "Edge detection effects.",
                 "Blob detection effects.",
+                "Adjust image by aplying colour curves.",
                 "Selective desaturation effects.",
                 "Adjust brightness and contrast",
                 "Rotate colors and adjust saturation.",
@@ -99,6 +101,8 @@ def getEffectId(name):
         return EffectTypes.Edge
     elif(lowername == "blobdetect"):
         return EffectTypes.BlobDetect
+    elif(lowername == "curve"):
+        return EffectTypes.Curve
     elif(lowername == "desaturate"):
         return EffectTypes.Desaturate
     elif(lowername == "contrast"):
@@ -155,6 +159,8 @@ def getEffectName(effectId):
         return "Edge"
     elif(effectId == EffectTypes.BlobDetect):
         return "BlobDetect"
+    elif(effectId == EffectTypes.Curve):
+        return "Curve"
     elif(effectId == EffectTypes.Desaturate):
         return "Desaturate"
     elif(effectId == EffectTypes.Contrast):

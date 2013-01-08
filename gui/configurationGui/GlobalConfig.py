@@ -331,7 +331,7 @@ class EffectsGui(object):
         self._editFieldWidget = None
 
     class EditSelection():
-        Unselected, Ammount, Arg1, Arg2, Arg3, Arg4, Config2 = range(7)
+        Unselected, Ammount, Arg1, Arg2, Arg3, Arg4, ImageList, Config2 = range(8)
 
     def setupEffectsGui(self, plane, sizer, parentSizer, parentClass):
         self._mainEffectsPlane = plane
@@ -347,6 +347,7 @@ class EffectsGui(object):
         self._hideModulationCallback = parentClass.hideModulationGui
         self._showEffectListCallback = parentClass.showEffectList
         self._showEffectImageListCallback = parentClass.showEffectImageListGui
+        self._hideEffectImageListCallback = parentClass.hideEffectImageListGui
         self._setDragCursor = parentClass.setDragCursorCallback
         self._mediaPoolEffectNameFieldUpdateCallback = parentClass.updateEffectField
         self._trackEffectNameFieldUpdateCallback = parentClass.trackEffectFieldUpdateCallback
@@ -592,6 +593,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapBlobDetect)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapBlobDetect)
+        index = self._effectImageList.Add(self._fxBitmapCurve)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapCurve)
         index = self._effectImageList.Add(self._fxBitmapDeSat)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapDeSat)
@@ -601,9 +605,6 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapHueSat)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapHueSat)
-        index = self._effectImageList.Add(self._fxBitmapCurve)
-        self._fxIdImageIndex.append(index)
-        self._fxBitmapList.append(self._fxBitmapCurve)
         index = self._effectImageList.Add(self._fxBitmapColorize)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapColorize)
@@ -742,6 +743,10 @@ Selects the effect.
             self._arg4Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._arg4Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(self._selectedEditor == self.EditSelection.ImageList):
+            self._imagesButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._imagesButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(self._selectedEditor == self.EditSelection.Config2):
             if(self._conf2EditorCallback != None):
                 self._conf2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
@@ -764,6 +769,7 @@ Selects the effect.
         if(self._selectedEditor != self.EditSelection.Ammount):
             self._selectedEditor = self.EditSelection.Ammount
             self._showModulationCallback()
+            self._hideEffectImageListCallback()
         else:
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
@@ -775,6 +781,7 @@ Selects the effect.
         if(self._selectedEditor != self.EditSelection.Arg1):
             self._selectedEditor = self.EditSelection.Arg1
             self._showModulationCallback()
+            self._hideEffectImageListCallback()
         else:
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
@@ -786,6 +793,7 @@ Selects the effect.
         if(self._selectedEditor != self.EditSelection.Arg2):
             self._selectedEditor = self.EditSelection.Arg2
             self._showModulationCallback()
+            self._hideEffectImageListCallback()
         else:
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
@@ -797,6 +805,7 @@ Selects the effect.
         if(self._selectedEditor != self.EditSelection.Arg3):
             self._selectedEditor = self.EditSelection.Arg3
             self._showModulationCallback()
+            self._hideEffectImageListCallback()
         else:
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
@@ -808,6 +817,7 @@ Selects the effect.
         if(self._selectedEditor != self.EditSelection.Arg4):
             self._selectedEditor = self.EditSelection.Arg4
             self._showModulationCallback()
+            self._hideEffectImageListCallback()
         else:
             self._selectedEditor = self.EditSelection.Unselected
             self._hideModulationCallback()
@@ -851,12 +861,14 @@ A list of start values for the effect modulation.
         self._hideModulationCallback()
         self._hideCurveCallback()
         self._hideEffectsCallback()
+        self._hideEffectImageListCallback()
 
     def _onListCloseButton(self, event):
         self._hideSlidersCallback()
         self._hideModulationCallback()
         self._hideCurveCallback()
         self._hideEffectsCallback()
+        self._hideEffectImageListCallback()
         self._hideEffectsListCallback()
         self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton()
@@ -933,7 +945,15 @@ A list of start values for the effect modulation.
 
     def _onImagesButton(self, event):
         self._globalConfig.updateEffectImageList()
-        self._showEffectImageListCallback()
+        if(self._selectedEditor != self.EditSelection.ImageList):
+            self._selectedEditor = self.EditSelection.ImageList
+            self._showEffectImageListCallback()
+            self._hideCurveCallback()
+            self._hideModulationCallback()
+        else:
+            self._selectedEditor = self.EditSelection.Unselected
+            self._hideEffectImageListCallback()
+        self._highlightButton()
 
     def _updateAndOpenCurveEditor(self, openEditor):
         if(openEditor == True):
@@ -1244,6 +1264,7 @@ A list of start values for the effect modulation.
         selectedEffectId = self._effectNameField.GetSelection()
         self._setEffect(getEffectName(selectedEffectId-1))
         self._showOrHideSaveButton()
+        self._highlightButton()
 
     def sendGuiRelease(self, isChannelController, channel, note, guiControllerId):
         guiControllerId = (guiControllerId & 0x0f)
@@ -1338,6 +1359,7 @@ A list of start values for the effect modulation.
             self._conf2HelpText = configHelpText
             self._conf2EditorCallback = configEditorCallback
         else:
+            self._conf2EditorCallback = None
             self._mainEffectsGuiSizer.Hide(self._conf2Sizer)
         self._fixEffectGuiLayout()
 

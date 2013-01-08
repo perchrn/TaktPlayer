@@ -1675,7 +1675,6 @@ class CurveEffect(object):
         self._hsvMat = effectMat1
         self._lastAmount = -1.0
         self._curveConfig = Curve()
-        self._lastCurveString = self._curveConfig.getString()
         self._curveTableMat = cv.CreateMat(1, 256, cv.CV_8UC3)
         self._diffTable = []
         for _ in range(256):
@@ -1692,12 +1691,16 @@ class CurveEffect(object):
             _, curveConfigString = values
             if(curveConfigString == None):
                 curveConfigString = "Off"
-            if(curveConfigString != self._lastCurveString):
+            if(curveConfigString != self._curveConfig.getString()):
                 self._curveConfig.setString(curveConfigString)
                 curveValues = self._curveConfig.getArray()
                 if(len(curveValues) == 3):
-                    for i in range(256):
-                        self._diffTable[i] = (curveValues[0][i] - i, curveValues[1][i] - i, curveValues[2][i] - i)
+                    if(self._curveConfig.getMode() == Curve.HSV):
+                        for i in range(256):
+                            self._diffTable[i] = (curveValues[0][i] - i, curveValues[1][i] - i, curveValues[2][i] - i)
+                    else:
+                        for i in range(256):
+                            self._diffTable[i] = (curveValues[2][i] - i, curveValues[1][i] - i, curveValues[0][i] - i)
                 else:
                     for i in range(256):
                         diffVal = curveValues[i] - i
@@ -1724,9 +1727,9 @@ class CurveEffect(object):
             self._updateTable(amount)
             self._lastAmount = amount
         if(self._curveConfig.getMode() == Curve.HSV):
-            cv.CvtColor(image, self._hsvMat, cv.CV_RGB2HSV)
+            cv.CvtColor(image, self._hsvMat, cv.CV_BGR2HSV)
             cv.LUT(self._hsvMat, self._hsvMat, self._curveTableMat)
-            cv.CvtColor(self._hsvMat, image, cv.CV_HSV2RGB)
+            cv.CvtColor(self._hsvMat, image, cv.CV_HSV2BGR)
         else:
             cv.LUT(image, image, self._curveTableMat)
         return image
@@ -1963,7 +1966,7 @@ class StrobeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
         setupEffectMemory(internalResX, internalResY)
-        self._lastOn = False
+        self._lastValue = -9
         self._lastTime = 0.0
         self.setExtraConfig((1.0, 4))
 
@@ -1988,21 +1991,32 @@ class StrobeEffect(object):
         return self.blink(image, songPosition, amount, speed, mode)
 
     def blink(self, image, songPosition, amount, speed, mode):
-        strobeIntervall = self._strobeBaseTime / math.pow(2, int(self._strobeSpeedupSteps * speed))
-        deltaTime = (songPosition - self._lastTime) * 2
-        print "DEBUG pcn: strobeEffect intervall " + str(strobeIntervall) + " deltaTime " + str(deltaTime) + " divider: " + str(int(self._strobeSpeedupSteps * speed))
-        if(deltaTime > strobeIntervall):
-            if(self._lastOn == True):
-                strobeOnOff = False
+        powerFactor = (self._strobeSpeedupSteps + 2) * speed
+        if(powerFactor > self._strobeSpeedupSteps):
+            strobeLength = 3 - int(powerFactor - self._strobeSpeedupSteps)
+            if(self._lastValue < 0):
+                if(self._lastValue <= -strobeLength):
+                    strobeOnOff = True
+                    self._lastValue = 1.0
+                else:
+                    strobeOnOff = False
+                    self._lastValue -= 1.0
             else:
-                strobeOnOff = True
+                if(self._lastValue >= strobeLength):
+                    strobeOnOff = False
+                    self._lastValue = -1.0
+                else:
+                    strobeOnOff = True
+                    self._lastValue += 1.0
+#            print "DEBUG pcn: strobeEffect length " + str(strobeLength) + " nextVal " + str(self._lastValue) + " divider: " + str(int(powerFactor)) + " on: " + str(strobeOnOff)
         else:
+            strobeIntervall = self._strobeBaseTime / math.pow(2, int(powerFactor))
             strobePhase = (songPosition % strobeIntervall) / strobeIntervall
-            print "DEBUG pcn: strobeEffect intervall " + str(strobeIntervall) + " phase " + str(strobePhase) + " divider: " + str(int(self._strobeSpeedupSteps * speed))
             if(strobePhase < 0.5):
                 strobeOnOff = False
             else:
                 strobeOnOff = True
+#            print "DEBUG pcn: strobeEffect intervall " + str(strobeIntervall) + " phase " + str(strobePhase) + " divider: " + str(int(powerFactor)) + " on: " + str(strobeOnOff)
         if(strobeOnOff == True):
             if(mode < 0.33):
                 cv.ConvertScaleAbs(image, image, 1.0-amount)
@@ -2012,7 +2026,6 @@ class StrobeEffect(object):
             else:
                 invertValue = int(-256*amount)
                 cv.ConvertScaleAbs(image, image, 1.0, invertValue)
-        self._lastOn = strobeOnOff
         self._lastTime = songPosition
         return image
 

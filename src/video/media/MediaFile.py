@@ -22,6 +22,7 @@ from video.media.TextRendrer import generateTextImageAndMask, findOsFontPath
 from midi.MidiStateHolder import NoteState
 import traceback
 from video.media.ImageMixer import ImageMixer
+from video.Curve import Curve
 try:
     import freenect
 except:
@@ -79,6 +80,10 @@ class MediaFile(object):
         self._configurationTree.addTextParameterStatic("FileName", self._cfgFileName)
         self._midiModulation = None
         self._setupConfiguration()
+
+        self._curveConfig = Curve()
+        self._curveMode = Curve.Off
+        self._curveTableMat = cv.CreateMat(1, 256, cv.CV_8UC3)
 
         self._mediaSettingsHolder = MediaSettings(0)
         self._setupMediaSettingsHolder(self._mediaSettingsHolder)
@@ -163,6 +168,7 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
             self._defaultEffect2SettingsName = "MediaDefault2"
             self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
+            self._configurationTree.addTextParameter("Curve", "Off")
             self._defaultFadeSettingsName = "Default"
             self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
             self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
@@ -223,6 +229,24 @@ class MediaFile(object):
                     mediaSettingsHolder.effect2StartValues = effect2StartValues
                     mediaSettingsHolder.effect2OldValues = mediaSettingsHolder.effect2StartValues
                     mediaSettingsHolder.resetEffect = True
+
+            newCurveString = self._configurationTree.getValue("Curve")
+            if(newCurveString != self._curveConfig.getString()):
+                self._curveConfig.setString(newCurveString)
+                self._curveMode = self._curveConfig.getMode()
+                if(self._curveMode != Curve.Off):
+                    for i in range(256):
+                        curveValues = self._curveConfig.getArray()
+                        if(len(curveValues) == 3):
+                            if(self._curveMode == Curve.HSV):
+                                for i in range(256):
+                                    cv.Set1D(self._curveTableMat, i, (curveValues[0][i], curveValues[1][i], curveValues[2][i]))
+                            else:
+                                for i in range(256):
+                                    cv.Set1D(self._curveTableMat, i, (curveValues[2][i], curveValues[1][i], curveValues[0][i]))
+                        else:
+                            for i in range(256):
+                                cv.Set1D(self._curveTableMat, i, (curveValues[i], curveValues[i], curveValues[i]))
 
             fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
             self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(fadeAndLevelTemplate)
@@ -476,6 +500,13 @@ class MediaFile(object):
             mediaSettingsHolder.image = copyImage(mediaSettingsHolder.captureImage)
         else:
             copyOrResizeImage(mediaSettingsHolder.captureImage, mediaSettingsHolder.image)
+        if(self._curveMode != Curve.Off):
+            if(self._curveMode == Curve.HSV):
+                cv.CvtColor(mediaSettingsHolder.image, mediaSettingsHolder.image, cv.CV_BGR2HSV)
+                cv.LUT(mediaSettingsHolder.image, mediaSettingsHolder.image, self._curveTableMat)
+                cv.CvtColor(mediaSettingsHolder.image, mediaSettingsHolder.image, cv.CV_HSV2BGR)
+            else:
+                cv.LUT(mediaSettingsHolder.image, mediaSettingsHolder.image, self._curveTableMat)
 
         (mediaSettingsHolder.image, mediaSettingsHolder.effect1OldValues, mediaSettingsHolder.effect1StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect1, self._effect1Settings, mediaSettingsHolder.effect1StartSumValues, mediaSettingsHolder.effect1StartMidiValues, mediaSettingsHolder.effect1StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 0)
         (mediaSettingsHolder.image, mediaSettingsHolder.effect2OldValues, mediaSettingsHolder.effect2StartSumValues) = self._applyOneEffect(mediaSettingsHolder.image, mediaSettingsHolder.effect2, self._effect2Settings, mediaSettingsHolder.effect2StartSumValues, mediaSettingsHolder.effect2StartMidiValues, mediaSettingsHolder.effect2StartValues, currentSongPosition, midiChannelState, midiNoteState, mediaSettingsHolder.guiCtrlStateHolder, 5)
@@ -1027,7 +1058,7 @@ class ImageFile(MediaFile):
                 multiplicator = 0.5 - (0.1666666 * ((zoom - 0.5) * 4))
             else:
                 multiplicator = 0.3333333 - (0.08333333 *((zoom - 0.75) * 4))
-#            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator)
+#            print "DEBUG zoom: " + str(zoom) + " multiplicator: " + str(multiplicator) + " dst: " + str((0, 0, self._internalResolutionX, self._internalResolutionY))
             dst_region = cv.GetSubRect(self._zoomResizeMat, (0, 0, self._internalResolutionX, self._internalResolutionY))
             if(self._cropMode == "Crop"):
                 sourceRectangleX = int(self._source100percentCropX * multiplicator)
@@ -1083,7 +1114,7 @@ class ImageFile(MediaFile):
             elif((top + sourceRectangleY) > self._sourceY):
                 top = self._sourceY - sourceRectangleY
 #            print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
-#            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
+            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, dst_region)
             copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)

@@ -196,13 +196,14 @@ class MediaFile(object):
         if(mediaType != "Modulation"):
             self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
             self._defaultTimeModulationSettingsName = "Default"
-            self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
+            self._configurationTree.addTextParameter("self._globalConfig", self._defaultTimeModulationSettingsName)#Default Default
             self._defaultEffect1SettingsName = "MediaDefault1"
             self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
             self._defaultEffect2SettingsName = "MediaDefault2"
             self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
             self._defaultFadeSettingsName = "Default"
             self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+            self._configurationTree.addTextParameter("Curve", "Off")
         self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
@@ -295,6 +296,7 @@ class MediaFile(object):
                 self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
                 self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
                 self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+                self._configurationTree.addTextParameter("Curve", "Off")
 
             if(changedToImage == True):
                 self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
@@ -354,6 +356,7 @@ class MediaFile(object):
                     self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
                     self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
                     self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+                    self._configurationTree.addTextParameter("Curve", "Off")
 
     def getName(self):
         return self._configurationTree.getValue("FileName")
@@ -391,12 +394,14 @@ class MediaFile(object):
             self._configurationTree.removeParameter("MinValue")
             self._configurationTree.removeParameter("MaxValue")
             self._configurationTree.removeParameter("Smoother")
+            self._configurationTree.removeParameter("Curve")
         else:
             self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
             self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
             self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
             self._configurationTree.addTextParameter("Effect2Config", self._defaultEffect2SettingsName)#Default MediaDefault2
             self._configurationTree.addTextParameter("FadeConfig", self._defaultFadeSettingsName)#Default Default
+            self._configurationTree.addTextParameter("Curve", "Off")
             self._configurationTree.addFloatParameter("MinValue", 0.0)
             self._configurationTree.addFloatParameter("MaxValue", 1.0)
             self._configurationTree.addTextParameter("Smoother", "Off")
@@ -405,6 +410,7 @@ class MediaFile(object):
             self._configurationTree.setValue("Effect1Config", sourceConfigTree.getValue("Effect1Config"))
             self._configurationTree.setValue("Effect2Config", sourceConfigTree.getValue("Effect2Config"))
             self._configurationTree.setValue("FadeConfig", sourceConfigTree.getValue("FadeConfig"))
+            self._configurationTree.setValue("Curve", sourceConfigTree.getValue("Curve"))
         self._configurationTree.setValue("ModulationValuesMode", sourceConfigTree.getValue("ModulationValuesMode"))
 
         if(mediaType == "VideoLoop"):
@@ -651,6 +657,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._parentPlane = parentPlane
         self._mainConfig = mainConfig
         self._globalConfig = self._mainConfig.getGlobalConfig()
+        self._curveGui = self._globalConfig.getCurveGui()
         self._specialModulationHolder = self._globalConfig.getSpecialModulationHolder()
         self._videoDirectory = self._mainConfig.getGuiVideoDir()
         self._lastDialogDir = self._videoDirectory
@@ -1107,49 +1114,61 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteConfigSizer.Add(self._mixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._timeModulationSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Time modulation template:") #@UndefinedVariable
+        tmpText8 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Time modulation template:") #@UndefinedVariable
         self._timeModulationField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateTimeModulationChoices(self._timeModulationField, "Default", "Default")
         self._timeModulationField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._timeModulationButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._timeModulationButton.Bind(wx.EVT_BUTTON, self._onTimeModulationEdit) #@UndefinedVariable
-        self._timeModulationSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._timeModulationSizer.Add(tmpText8, 1, wx.ALL, 5) #@UndefinedVariable
         self._timeModulationSizer.Add(self._timeModulationField, 1, wx.ALL, 5) #@UndefinedVariable
         self._timeModulationSizer.Add(self._timeModulationButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._timeModulationSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._effect1Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
+        tmpText9 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 1 template:") #@UndefinedVariable
         self._effect1Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault1"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._effect1Field, "MediaDefault1", "MediaDefault1")
         self._effect1Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect1Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect1Button.Bind(wx.EVT_BUTTON, self._onEffect1Edit) #@UndefinedVariable
-        self._effect1Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._effect1Sizer.Add(tmpText9, 1, wx.ALL, 5) #@UndefinedVariable
         self._effect1Sizer.Add(self._effect1Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._effect1Sizer.Add(self._effect1Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._effect1Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._effect2Sizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
+        tmpTextA = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Effect 2 template:") #@UndefinedVariable
         self._effect2Field = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["MediaDefault2"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._effect2Field.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._effect2Button = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._effect2Button.Bind(wx.EVT_BUTTON, self._onEffect2Edit) #@UndefinedVariable
-        self._effect2Sizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._effect2Sizer.Add(tmpTextA, 1, wx.ALL, 5) #@UndefinedVariable
         self._effect2Sizer.Add(self._effect2Field, 1, wx.ALL, 5) #@UndefinedVariable
         self._effect2Sizer.Add(self._effect2Button, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._effect2Sizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        self._curveSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpTextB = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Curve:") #@UndefinedVariable
+        self._curveField = wx.TextCtrl(self._noteConfigPanel, wx.ID_ANY, "Off", size=(200, -1)) #@UndefinedVariable
+        self._curveField.SetInsertionPoint(0)
+        self._curveField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
+        self._curveButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._curveButton.Bind(wx.EVT_BUTTON, self._onCurveEdit) #@UndefinedVariable
+        self._curveSizer.Add(tmpTextB, 1, wx.ALL, 5) #@UndefinedVariable
+        self._curveSizer.Add(self._curveField, 1, wx.ALL, 5) #@UndefinedVariable
+        self._curveSizer.Add(self._curveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._noteConfigSizer.Add(self._curveSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         self._fadeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
-        tmpText7 = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Fade template:") #@UndefinedVariable
+        tmpTextC = wx.StaticText(self._noteConfigPanel, wx.ID_ANY, "Fade template:") #@UndefinedVariable
         self._fadeField = wx.ComboBox(self._noteConfigPanel, wx.ID_ANY, size=(200, -1), choices=["Default"], style=wx.CB_READONLY) #@UndefinedVariable
         self._updateFadeChoices(self._fadeField, "Default", "Default")
         self._fadeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
         self._fadeButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         self._fadeButton.Bind(wx.EVT_BUTTON, self._onFadeEdit) #@UndefinedVariable
-        self._fadeSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._fadeSizer.Add(tmpTextC, 1, wx.ALL, 5) #@UndefinedVariable
         self._fadeSizer.Add(self._fadeField, 1, wx.ALL, 5) #@UndefinedVariable
         self._fadeSizer.Add(self._fadeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._fadeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
@@ -1172,7 +1191,6 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mainSelection = self.MainSelection.Unselected
         self._selectedEditor = self.EditSelection.Unselected
         self._noteGuiOpen = False
-        self._isEffectImageListOpen = False
         self._activeTrackClipNoteId = -1
         self._type = "VideoLoop"
         self._setupSubConfig(self._config)
@@ -1567,15 +1585,10 @@ class MediaFileGui(object): #@UndefinedVariable
         self.refreshLayout()
 
     def showEffectImageListGui(self):
-        if(self._isEffectImageListOpen == False):
-            self._isEffectImageListOpen = True
-            self._configSizer.Show(self._effectImageListPanel)
-            self.refreshLayout()
-        else:
-            self.hideEffectImageListGui()
+        self._configSizer.Show(self._effectImageListPanel)
+        self.refreshLayout()
 
     def hideEffectImageListGui(self):
-        self._isEffectImageListOpen = False
         self._configSizer.Hide(self._effectImageListPanel)
         self.refreshLayout()
 
@@ -1612,7 +1625,7 @@ class MediaFileGui(object): #@UndefinedVariable
         Unselected, Track, Note = range(3)
 
     class EditSelection():
-        Unselected, TimeModulation, Effect1, Effect2, Fade, SubModulation1, SubModulation2, SubModulation3, Values1, Values2 = range(10)
+        Unselected, TimeModulation, Effect1, Effect2, Curve, Fade, SubModulation1, SubModulation2, SubModulation3, Values1, Values2 = range(11)
 
     def _onOpenFile(self, event):
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -1911,6 +1924,7 @@ Decides how this image is mixed with images on lower MIDI channels.
 \t(This only gets used if track mix mode is set to Default.)
 
 Add:\t\tSums the images together.
+Subtract:\t\tSubtracts one image from another.
 Multiply:\t\tMultiplies the images together.
 Lumakey:\t\tReplaces source everywhere the image is black.
 WhiteLumakey:\tReplaces source everywhere the image is white.
@@ -2035,6 +2049,11 @@ All notes on events are quantized to this.
             self._effect2Button.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._effect2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
+        if(selected == self.EditSelection.Curve):
+            print "DEBUG pcn: curve!"
+            self._curveButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
+        else:
+            self._curveButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Fade):
             self._fadeButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
@@ -2052,6 +2071,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
+            self.hideCurveGui()
             self.refreshLayout()
         selectedConfig = self._timeModulationField.GetValue()
         self._globalConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
@@ -2067,6 +2087,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
+            self.hideCurveGui()
             self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
         self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
@@ -2082,9 +2103,28 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
+            self.hideCurveGui()
             self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
         self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
+        self._highlightButton(self._selectedEditor)
+
+    def _onCurveEdit(self, event, showCurveGui = True):
+        if(showCurveGui == True):
+            if(self._selectedEditor != self.EditSelection.Curve):
+                self._selectedEditor = self.EditSelection.Curve
+                print "DEBUG pcn curve = True"
+                self.showCurveGui()
+            else:
+                print "DEBUG pcn curve = False"
+                self.hideCurveGui()
+            self._configSizer.Hide(self._timeModulationConfigPanel)
+            self._configSizer.Hide(self._fadeConfigPanel)
+            self._configSizer.Hide(self._moulationConfigPanel)
+            self._configSizer.Hide(self._noteSlidersPanel)
+            self.hideEffectsGui()
+            self.refreshLayout()
+        self._curveGui.updateGui(self._curveField.GetValue(), self._curveField, None, None, None)
         self._highlightButton(self._selectedEditor)
 
     def showTimeModulationGui(self):
@@ -2111,7 +2151,8 @@ All notes on events are quantized to this.
         self.hideSlidersGui()
         self._configSizer.Hide(self._effectConfigPanel)
         self._trackUnselectEditor()
-        self._selectedEditor = self.EditSelection.Unselected
+        if((self._selectedEditor == self.EditSelection.Effect1) or (self._selectedEditor == self.EditSelection.Effect2)):
+            self._selectedEditor = self.EditSelection.Unselected
         self._highlightButton(self._selectedEditor)
         self.refreshLayout()
 
@@ -2156,13 +2197,10 @@ All notes on events are quantized to this.
 
     def hideCurveGui(self):
         self._configSizer.Hide(self._curveConfigPanel)
-        if((self._selectedEditor == self.EditSelection.SubModulation1)
-           or (self._selectedEditor == self.EditSelection.SubModulation2)
-           or (self._selectedEditor == self.EditSelection.SubModulation3)):
+        if((self._selectedEditor == self.EditSelection.Curve)):
             self._selectedEditor = self.EditSelection.Unselected
-            self._highlightButton(self._selectedEditor)
+        self._highlightButton(self._selectedEditor)
         self.refreshLayout()
-        self._globalConfig.stopModulationGui()
 
     def setDragCursor(self, cursor):
         self._parentPlane.SetCursor(cursor) #@UndefinedVariable
@@ -2458,6 +2496,7 @@ All notes on events are quantized to this.
                     self._config.removeParameter("Effect1Config")
                     self._config.removeParameter("Effect2Config")
                     self._config.removeParameter("FadeConfig")
+                    self._config.removeParameter("Curve")
                 else:
                     self._config.removeParameter("FirstModulation")
                     self._config.removeParameter("ModulationCombiner1")
@@ -2473,6 +2512,7 @@ All notes on events are quantized to this.
                     self._config.addTextParameter("Effect1Config", "MediaDefault1")#Default MediaDefault1
                     self._config.addTextParameter("Effect2Config", "MediaDefault2")#Default MediaDefault2
                     self._config.addTextParameter("FadeConfig", "Default")#Default Default
+                    self._config.addTextParameter("Curve", "Off")
                     mixMode = self._mixField.GetValue()
                     self._config.setValue("MixMode", mixMode)
                     timeModulation = self._timeModulationField.GetValue()
@@ -2483,6 +2523,8 @@ All notes on events are quantized to this.
                     self._config.setValue("Effect2Config", effect2Config)
                     fadeConfig = self._fadeField.GetValue()
                     self._config.setValue("FadeConfig", fadeConfig)
+                    curveConfig = self._curveField.GetValue()
+                    self._config.setValue("Curve", curveConfig)
 
                 self._onSyncValidate(event)
                 syncLength = float(self._syncField.GetValue())
@@ -2805,10 +2847,12 @@ All notes on events are quantized to this.
 
         if((self._type == "Camera") or (self._type == "KinectCamera")):
             self._noteConfigSizer.Hide(self._timeModulationSizer)
+            self._noteConfigSizer.Hide(self._curveSizer)
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         elif(self._type == "Modulation"):
             self._noteConfigSizer.Hide(self._timeModulationSizer)
+            self._noteConfigSizer.Hide(self._curveSizer)
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         else:
@@ -2819,6 +2863,12 @@ All notes on events are quantized to this.
                 oldTimeModulationTemplate = self._timeModulationField.GetValue()
                 self._updateTimeModulationChoices(self._timeModulationField, oldTimeModulationTemplate, "Default")
             self._noteConfigSizer.Show(self._timeModulationSizer)
+            if(config != None):
+                curveString = config.getValue("Curve")
+                self._curveField.SetValue(curveString)
+            else:
+                self._curveField.SetValue("Off")
+            self._noteConfigSizer.Show(self._curveSizer)
 
         if(self._type == "Group"):
             self._syncFieldLabel.SetLabel("Time multiplyer:")
@@ -3526,6 +3576,10 @@ All notes on events are quantized to this.
             configFx2 = self._config.getValue("Effect2Config")
             if(guiFx2 != configFx2):
                 return True
+            guiCurve = self._curveField.GetValue()
+            configCurve = self._config.getValue("Curve")
+            if(guiCurve != configCurve):
+                return True
             guiFade = self._fadeField.GetValue()
             configFade = self._config.getValue("FadeConfig")
             if(guiFade != configFade):
@@ -3628,6 +3682,8 @@ All notes on events are quantized to this.
                 self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
                 self._onEffect2Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Curve):
+                self._onCurveEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.SubModulation1):
@@ -3669,6 +3725,8 @@ All notes on events are quantized to this.
                 self._onEffect1Edit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect2):
                 self._onEffect2Edit(None, False)
+            elif(self._selectedEditor == self.EditSelection.Curve):
+                self._onCurveEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.Fade):
                 self._onFadeEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.SubModulation1):

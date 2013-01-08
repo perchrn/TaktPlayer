@@ -409,11 +409,14 @@ This is the track number and MIDI channel.
 Decides how this image is mixed with images on lower MIDI channels.
 \t(This overrides media mix mode if not set to Default.)
 
-Default:\tUses Add if no other mode has been selected by media.
-Add:\tSums the images together.
-Multiply:\tMultiplies the images together. Very handy for masking.
-Lumakey:\tReplaces source everywhere the image is not black.
-Replace:\tNo mixing. Just use this image.
+Default:\t\tUses note mix mode.
+Add:\t\tSums the images together.
+Subtract:\t\tSubtracts one image from another.
+Multiply:\t\tMultiplies the images together.
+Lumakey:\t\tReplaces source everywhere the image is black.
+WhiteLumakey:\tReplaces source everywhere the image is white.
+AlphaMask:\tIf source has alpha channel it will use this as mask.
+Replace:\t\tNo mixing. Just use this image.
 """
         dlg = wx.MessageDialog(self._mainTrackPlane, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()

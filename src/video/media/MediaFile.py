@@ -1114,7 +1114,7 @@ class ImageFile(MediaFile):
             elif((top + sourceRectangleY) > self._sourceY):
                 top = self._sourceY - sourceRectangleY
 #            print "DEBUG Move X: %d Y: %d" %(moveX, moveY)
-            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
+#            print "DEBUG pcn: src_region: " + str((left, top, sourceRectangleX, sourceRectangleY))
             src_region = cv.GetSubRect(self._firstImage, (left, top, sourceRectangleX, sourceRectangleY) )
             cv.Resize(src_region, dst_region)
             copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
@@ -1397,10 +1397,12 @@ class SpriteMediaBase(MediaFile):
         self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
         self._midiModulation.setModulationReceiver("XModulation", "None")
         self._midiModulation.setModulationReceiver("YModulation", "None")
+        self._midiModulation.setModulationReceiver("ZModulation", "None")
         self._startX, self._startY, self._startZ = textToFloatValues("0.5|0.5|0.0", 3)
         self._endX, self._endY, self._endZ = textToFloatValues("0.5|0.5|0.0", 3)
         self._xModulationId = None
         self._yModulationId = None
+        self._zModulationId = None
 
         self._bufferedImageList = []
         self._bufferedImageMasks = []
@@ -1414,6 +1416,7 @@ class SpriteMediaBase(MediaFile):
         mediaSettingsHolder.spritePlacementMask = createMask(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.oldX = -2.0
         mediaSettingsHolder.oldY = -2.0
+        mediaSettingsHolder.oldZ = -2.0
         mediaSettingsHolder.oldCurrentFrame = -1
 
     def _getConfiguration(self):
@@ -1424,6 +1427,7 @@ class SpriteMediaBase(MediaFile):
         self._endX, self._endY, self._endZ = textToFloatValues(endValuesString, 3)
         self._xModulationId = self._midiModulation.connectModulation("XModulation")
         self._yModulationId = self._midiModulation.connectModulation("YModulation")
+        self._zModulationId = self._midiModulation.connectModulation("ZModulation")
 
     def getType(self):
         return "SpriteMediaBase"
@@ -1447,6 +1451,7 @@ class SpriteMediaBase(MediaFile):
         #Find pos.
         posX = 0.5
         posY = 0.5
+        posZ = 0.0
         modulationIsActive = False
         if((self._xModulationId != None)):
             posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
@@ -1454,20 +1459,27 @@ class SpriteMediaBase(MediaFile):
         if((self._yModulationId != None)):
             posY = self._midiModulation.getModlulationValue(self._yModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
             modulationIsActive = True
+        if((self._zModulationId != None)):
+            posZ = self._midiModulation.getModlulationValue(self._zModulationId, midiChannelState, midiNoteState, currentSongPosition, self._specialModulationHolder)
+            modulationIsActive = True
 
         if(modulationIsActive == False):
             posX = self._startX
             posY = self._startY
+            posZ = self._startZ
             unmodifiedPos = (currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength
             modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, mediaSettingsHolder, midiNoteState, midiChannelState, syncLength)
             if(modifiedPos >= 1.0):
                 posX = self._endX
                 posY = self._endY
+                posZ = self._endZ
             elif(mediaSettingsHolder.startSongPosition < currentSongPosition):
                 if(self._endX != self._startX):
                     posX = self._startX + ((self._endX - self._startX) * modifiedPos)
                 if(self._endY != self._startY):
                     posY = self._startY + ((self._endY - self._startY) * modifiedPos)
+                if(self._endZ != self._startZ):
+                    posZ = self._startZ + ((self._endZ - self._startZ) * modifiedPos)
 
         if(mediaSettingsHolder.guiCtrlStateHolder != None):
             guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
@@ -1477,6 +1489,9 @@ class SpriteMediaBase(MediaFile):
             if(guiStates[1] != None):
                 if(guiStates[1] > -0.5):
                     posY = guiStates[1]
+            if(guiStates[2] != None):
+                if(guiStates[2] > -0.5):
+                    posZ = guiStates[2]
 
         #Select frame.
         if(self._numberOfFrames == 1):
@@ -1486,64 +1501,60 @@ class SpriteMediaBase(MediaFile):
             mediaSettingsHolder.currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
 
         #Scroll image + mask
-        if((posX != mediaSettingsHolder.oldX) or(posY != mediaSettingsHolder.oldY) or (mediaSettingsHolder.currentFrame != mediaSettingsHolder.oldCurrentFrame)):
+        if((posX != mediaSettingsHolder.oldX) or (posY != mediaSettingsHolder.oldY) or (posZ != mediaSettingsHolder.oldZ) or (mediaSettingsHolder.currentFrame != mediaSettingsHolder.oldCurrentFrame)):
             mediaSettingsHolder.oldX = posX
             mediaSettingsHolder.oldY = posY
+            mediaSettingsHolder.oldZ = posZ
+            zoom = 1.0 - posZ
             mediaSettingsHolder.oldCurrentFrame = mediaSettingsHolder.currentFrame
             cv.SetZero(self._spritePlacementMat)
             cv.SetZero(mediaSettingsHolder.spritePlacementMask)
-            currentSource = self._bufferedImageList[mediaSettingsHolder.currentFrame]
-            currentSourceMask = self._bufferedImageMasks[mediaSettingsHolder.currentFrame]
-            sourceX, sourceY = cv.GetSize(currentSource)
-            xMovmentRange = self._internalResolutionX + sourceX
-            yMovmentRange = self._internalResolutionY + sourceY
-            left = int(xMovmentRange * posX) - sourceX
-            top = int(yMovmentRange * posY) - sourceY
-            width = sourceX
-            height = sourceY
-            sourceLeft = 0
-            sourceTop = 0
-            sourceWidth = sourceX
-            sourceHeight = sourceY
-            if(left < 0):
-                sourceLeft = -left
-                sourceWidth = sourceWidth + left
-                width = width + left
-                left = 0
-            elif((left + sourceX) > self._internalResolutionX):
-                overflow = (left + sourceX - self._internalResolutionX)
-                sourceWidth = sourceWidth - overflow
-                width = width - overflow
-            if(top < 0):
-                sourceTop = -top
-                sourceHeight = sourceHeight + top
-                height = height + top
-                top = 0
-            elif((top + sourceY) > self._internalResolutionY):
-                overflow = (top + sourceY - self._internalResolutionY)
-                sourceHeight = sourceHeight - overflow
-                height = height - overflow
-            if(left < 0):
-                width = width + left
-                left = 0
-            if(width > (left + self._internalResolutionX)):
-                overflow = (width + left - self._internalResolutionX)
-                sourceWidth = sourceWidth - overflow
-                width = width - overflow
-            if(top < 0):
-                top = 0
-                height = height + top
-            if(height > (top + self._internalResolutionY)):
-                overflow = (height + top - self._internalResolutionY)
-                sourceHeight = sourceHeight - overflow
-                height = height - overflow
-            if((width > 0) and (height > 0)):
-                srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
-                dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
-                cv.Resize(srcRegion, dstRegion)
-                srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
-                dstRegion = cv.GetSubRect(mediaSettingsHolder.spritePlacementMask, (left, top, width, height))
-                cv.Resize(srcRegion, dstRegion)
+            if(zoom > 0.001):
+                currentSource = self._bufferedImageList[mediaSettingsHolder.currentFrame]
+                currentSourceMask = self._bufferedImageMasks[mediaSettingsHolder.currentFrame]
+                sourceX, sourceY = cv.GetSize(currentSource)
+                width = int(sourceX * zoom)
+                height = int(sourceY * zoom)
+                xMovmentRange = self._internalResolutionX + sourceX
+                yMovmentRange = self._internalResolutionY + sourceX
+                left = int(xMovmentRange * posX) - sourceX
+                top = int(yMovmentRange * (1.0 - posY)) - sourceX
+                if(zoom < 1.0):
+                    left = left + int((sourceX - width) / 2)
+                    top = top + int((sourceY - height) / 2)
+                sourceLeft = 0
+                sourceTop = 0
+                sourceWidth = sourceX
+                sourceHeight = sourceY
+                if(left < 0):
+                    sourceLeft = -int(left / zoom)
+                    sourceWidth = sourceWidth + int(left / zoom)
+                    width = width + left
+                    left = 0
+                elif((left + width) > self._internalResolutionX):
+                    overflow = (left + width - self._internalResolutionX)
+                    sourceWidth = sourceWidth - int(overflow / zoom)
+                    width = width - overflow
+                if(top < 0):
+                    sourceTop = -int(top / zoom)
+                    sourceHeight = sourceHeight + int(top / zoom)
+                    height = height + top
+                    top = 0
+                elif((top + height) > self._internalResolutionY):
+                    overflow = (top + height - self._internalResolutionY)
+                    sourceHeight = sourceHeight - int(overflow / zoom)
+                    height = height - overflow
+                if(sourceWidth > sourceX):
+                    sourceWidth = sourceX
+                if(sourceHeight > sourceY):
+                    sourceHeight = sourceY
+                if((width > 0) and (height > 0)):
+                    srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                    dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
+                    cv.Resize(srcRegion, dstRegion)
+                    srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                    dstRegion = cv.GetSubRect(mediaSettingsHolder.spritePlacementMask, (left, top, width, height))
+                    cv.Resize(srcRegion, dstRegion)
             copyOrResizeImage(self._spritePlacementMat, mediaSettingsHolder.captureImage)
             mediaSettingsHolder.captureMask = mediaSettingsHolder.spritePlacementMask
 

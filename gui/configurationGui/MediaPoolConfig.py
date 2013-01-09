@@ -220,12 +220,14 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
+            self._configurationTree.addTextParameter("ZModulation", "None")
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
         elif(mediaType == "Text"):
             self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
+            self._configurationTree.addTextParameter("ZModulation", "None")
             self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
@@ -280,6 +282,7 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("EndPosition")
                 self._configurationTree.removeParameter("XModulation")
                 self._configurationTree.removeParameter("YModulation")
+                self._configurationTree.removeParameter("ZModulation")
                 self._configurationTree.removeParameter("Font")
             elif(oldType == "Modulation"):
                 self._configurationTree.removeParameter("FirstModulation")
@@ -332,12 +335,14 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("EndPosition")
                     self._configurationTree.removeParameter("XModulation")
                     self._configurationTree.removeParameter("YModulation")
+                    self._configurationTree.removeParameter("ZModulation")
                     self._configurationTree.removeParameter("InvertFirstFrameMask")
                 elif(oldType == "Text"):
                     self._configurationTree.removeParameter("StartPosition")
                     self._configurationTree.removeParameter("EndPosition")
                     self._configurationTree.removeParameter("XModulation")
                     self._configurationTree.removeParameter("YModulation")
+                    self._configurationTree.removeParameter("ZModulation")
                     self._configurationTree.removeParameter("Font")
                 elif(oldType == "Group"):
                     pass
@@ -465,6 +470,7 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
+            self._configurationTree.addTextParameter("ZModulation", "None")
             startVal = sourceConfigTree.getValue("StartPosition")
             if(startVal != None):
                 self._configurationTree.setValue("StartPosition", startVal)
@@ -477,11 +483,15 @@ class MediaFile(object):
             yVal = sourceConfigTree.getValue("YModulation")
             if(yVal != None):
                 self._configurationTree.setValue("YModulation", yVal)
+            zVal = sourceConfigTree.getValue("ZModulation")
+            if(zVal != None):
+                self._configurationTree.setValue("ZModulation", zVal)
         else:
             self._configurationTree.removeParameter("StartPosition")
             self._configurationTree.removeParameter("EndPosition")
             self._configurationTree.removeParameter("XModulation")
             self._configurationTree.removeParameter("YModulation")
+            self._configurationTree.removeParameter("ZModulation")
 
         if(mediaType == "Sprite"):
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
@@ -2408,11 +2418,16 @@ All notes on events are quantized to this.
                     self._subModulation2Field.SetValue(yModulation)
                     self._config.addTextParameter("YModulation", "None")
                     self._config.setValue("YModulation", yModulation)
+                    zModulation = self._midiModulation.validateModulationString(self._subModulation3Field.GetValue())
+                    self._subModulation3Field.SetValue(zModulation)
+                    self._config.addTextParameter("ZModulation", "None")
+                    self._config.setValue("ZModulation", zModulation)
                 else:
                     self._config.removeParameter("StartPosition")
                     self._config.removeParameter("EndPosition")
                     self._config.removeParameter("XModulation")
                     self._config.removeParameter("YModulation")
+                    self._config.removeParameter("ZModulation")
 
                 if(self._type == "Sprite"):
                     self._config.addBoolParameter("InvertFirstFrameMask", False)
@@ -2627,20 +2642,22 @@ All notes on events are quantized to this.
                 if(confString == None):
                     confValString = "0.5|0.5|0.0"
                 else:
-                    confVal = textToFloatValues(confString, 2)
+                    confVal = textToFloatValues(confString, 3)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
                 if(confString == None):
                     confValString = "0.5|0.5|0.0"
                 else:
-                    confVal = textToFloatValues(confString, 2)
+                    confVal = textToFloatValues(confString, 3)
                     confValString = floatValuesToString(confVal)
                 self._values2Field.SetValue(confValString)
                 xMod = config.getValue("XModulation")
                 self._subModulationField.SetValue(str(xMod))
                 yMod = config.getValue("YModulation")
                 self._subModulation2Field.SetValue(str(yMod))
+                zMod = config.getValue("ZModulation")
+                self._subModulation3Field.SetValue(str(zMod))
             else:
                 if(self._type == "Sprite"):
                     self._selectedSubMode = self._subModeField.GetValue()
@@ -2651,6 +2668,7 @@ All notes on events are quantized to this.
                 self._values2Field.SetValue("0.5|0.5|0.0")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
+                self._subModulation3Field.SetValue("None")
         elif(self._type == "Camera"):
             self._subModeLabel.SetLabel("Resize mode:")
             if(config != None):
@@ -2773,20 +2791,25 @@ All notes on events are quantized to this.
         if(self._type == "Sprite"):
             self._subModulation2Label.SetLabel("Y position modulation:")
             self._noteConfigSizer.Show(self._subModulation2Sizer)
+            self._subModulation3Label.SetLabel("Zoom modulation:")
+            self._noteConfigSizer.Show(self._subModulation3Sizer)
         elif(self._type == "Text"):
             self._subModulation2Label.SetLabel("Y position modulation:")
             self._noteConfigSizer.Show(self._subModulation2Sizer)
+            self._subModulation3Label.SetLabel("Zoom modulation:")
+            self._noteConfigSizer.Show(self._subModulation3Sizer)
         elif(self._type == "Modulation"):
             self._subModulation2Label.SetLabel("2nd modulation:")
             self._noteConfigSizer.Show(self._subModulation2Sizer)
+            self._subModulation3Label.SetLabel("3rd modulation:")
+            self._noteConfigSizer.Show(self._subModulation3Sizer)
         else:
             self._noteConfigSizer.Hide(self._subModulation2Sizer)
             if(self._selectedEditor == self.EditSelection.SubModulation2):
                 self._onSubmodulation2Edit(None, True)
+            self._noteConfigSizer.Hide(self._subModulation3Sizer)
 
         if(self._type == "Modulation"):
-            self._subModulation3Label.SetLabel("3rd modulation:")
-            self._noteConfigSizer.Show(self._subModulation3Sizer)
             self._noteConfigSizer.Show(self._subModulationMode1Sizer)
             self._noteConfigSizer.Show(self._subModulationMode2Sizer)
             self._noteConfigSizer.Show(self._subModulationSmootherSizer)
@@ -2795,7 +2818,6 @@ All notes on events are quantized to this.
             self._noteConfigSizer.Hide(self._effect2Sizer)
             self._noteConfigSizer.Hide(self._fadeSizer)
         else:
-            self._noteConfigSizer.Hide(self._subModulation3Sizer)
             self._noteConfigSizer.Hide(self._subModulationMode1Sizer)
             self._noteConfigSizer.Hide(self._subModulationMode2Sizer)
             self._noteConfigSizer.Hide(self._subModulationSmootherSizer)
@@ -3485,6 +3507,10 @@ All notes on events are quantized to this.
                 return True
             guiSubMode = self._subModulation2Field.GetValue()
             configSubMode = self._config.getValue("YModulation")
+            if(guiSubMode != configSubMode):
+                return True
+            guiSubMode = self._subModulation3Field.GetValue()
+            configSubMode = self._config.getValue("ZModulation")
             if(guiSubMode != configSubMode):
                 return True
             guiSubMode = self._values1Field.GetValue()

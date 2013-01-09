@@ -68,6 +68,8 @@ class Curve(object):
             pass
         elif(self._mode == Curve.All):
             self._curves[0].movePoint(oldPoint, newPoint)
+            self._curves[1].movePoint(oldPoint, newPoint)
+            self._curves[2].movePoint(oldPoint, newPoint)
         else:
             if((subId >= 0) and (subId < 3)):
                 self._curves[subId].movePoint(oldPoint, newPoint)
@@ -82,6 +84,8 @@ class Curve(object):
             pass
         elif(self._mode == Curve.All):
             self._curves[0].addPoint(newPoint)
+            self._curves[1].addPoint(newPoint)
+            self._curves[2].addPoint(newPoint)
         else:
             if((subId >= 0) and (subId < 3)):
                 self._curves[subId].addPoint(newPoint)
@@ -91,6 +95,8 @@ class Curve(object):
             pass
         elif(self._mode == Curve.All):
             self._curves[0].drawPoint(point)
+            self._curves[1].drawPoint(point)
+            self._curves[2].drawPoint(point)
         else:
             if((subId >= 0) and (subId < 3)):
                 self._curves[subId].drawPoint(point)
@@ -118,6 +124,8 @@ class Curve(object):
             if(curvesSplit[0] == "All"):
                 self._mode = Curve.All
                 self._curves[0].setString(curvesSplit[1])
+                self._curves[1].setString(curvesSplit[1])
+                self._curves[2].setString(curvesSplit[1])
             else:
                 if(curvesSplit[0] == "RGB"):
                     self._mode = Curve.RGB
@@ -126,7 +134,7 @@ class Curve(object):
                 self._curves[0].setString(curvesSplit[1])
                 if(len(curvesSplit) > 2):
                     self._curves[1].setString(curvesSplit[2])
-                    if(len(curvesSplit) > 2):
+                    if(len(curvesSplit) > 3):
                         self._curves[2].setString(curvesSplit[3])
                     else:
                         self._curves[2].setString(curvesSplit[2])
@@ -376,6 +384,19 @@ class CurveChannel(object):
                 return
             elif(bigSplit[0] == "Array"):
                 self._mode = Curve.Array
+                newArray = []
+                lastValue = 0
+                arrayString = bigSplit[1].split(',')
+                for valString in arrayString:
+                    try:
+                        newValue = int(valString)
+                    except:
+                        newValue = lastValue
+                    newArray.append(newValue)
+                    lastValue = newValue
+                while(len(newArray) < 256):
+                    newArray.append(lastValue)
+                self._points = newArray
                 return
 
     def getString(self):

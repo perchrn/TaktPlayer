@@ -196,7 +196,7 @@ class MediaFile(object):
         if(mediaType != "Modulation"):
             self._configurationTree.addTextParameter("MixMode", "Add")#Default Add
             self._defaultTimeModulationSettingsName = "Default"
-            self._configurationTree.addTextParameter("self._globalConfig", self._defaultTimeModulationSettingsName)#Default Default
+            self._configurationTree.addTextParameter("TimeModulationConfig", self._defaultTimeModulationSettingsName)#Default Default
             self._defaultEffect1SettingsName = "MediaDefault1"
             self._configurationTree.addTextParameter("Effect1Config", self._defaultEffect1SettingsName)#Default MediaDefault1
             self._defaultEffect2SettingsName = "MediaDefault2"
@@ -216,14 +216,14 @@ class MediaFile(object):
             self._configurationTree.addBoolParameter("HorizontalMode", True)
             self._configurationTree.addBoolParameter("ReverseMode", False)
         elif(mediaType == "Sprite"):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
         elif(mediaType == "Text"):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
@@ -461,8 +461,8 @@ class MediaFile(object):
             self._configurationTree.removeParameter("ReverseMode")
             
         if((mediaType == "Sprite") or (mediaType == "Text")):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             startVal = sourceConfigTree.getValue("StartPosition")
@@ -911,11 +911,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fileNameField.SetBackgroundColour((232,232,232))
         self._fileNameField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
         self._fileNameField.Bind(wx.EVT_LEFT_UP, self._onFileLeftRelease) #@UndefinedVariable
-        fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        fileOpenButton.Bind(wx.EVT_BUTTON, self._onOpenFile) #@UndefinedVariable
+        self._fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._fileOpenButton.Bind(wx.EVT_BUTTON, self._onOpenFile) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameLabel, 1, wx.ALL, 5) #@UndefinedVariable
         fileNameSizer.Add(self._fileNameField, 1, wx.ALL, 5) #@UndefinedVariable
-        fileNameSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
+        fileNameSizer.Add(self._fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(fileNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._fontSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -924,11 +924,11 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fontField.SetEditable(True)
         self._fontField.SetBackgroundColour((255,255,255))
         self._fontField.Bind(wx.EVT_TEXT, self._onUpdate) #@UndefinedVariable
-        fileOpenButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
-        fileOpenButton.Bind(wx.EVT_BUTTON, self._onFontDialog) #@UndefinedVariable
+        self._fontButton = PcnImageButton(self._noteConfigPanel, self._editBitmap, self._editPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        self._fontButton.Bind(wx.EVT_BUTTON, self._onFontDialog) #@UndefinedVariable
         self._fontSizer.Add(self._fontLabel, 1, wx.ALL, 5) #@UndefinedVariable
         self._fontSizer.Add(self._fontField, 1, wx.ALL, 5) #@UndefinedVariable
-        self._fontSizer.Add(fileOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._fontSizer.Add(self._fontButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._fontSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         typeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
@@ -1635,11 +1635,11 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._fileNameField.SetValue(str(self._cameraId))
             dlg.Destroy()
         elif(self._type == "Group"):
-            pass # TODO: Fix group GUI
+            wx.MessageBox('Enter comma separated list of notes to group together here.\n\n0C,0D\tGroups together note 0C and 0D\n\nYou can also drag and drop notes from keyboard.', 'Group help', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable	
         elif(self._type == "Text"):
-            pass # TODO: Fix Text GUI
+            wx.MessageBox('Enter textyou wat displayed here.\n\nAdd \\n for new line.', 'Group help', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable	
         elif(self._type == "Modulation"):
-            pass # TODO: Fix Text GUI
+            wx.MessageBox('Enter modulation name here.\n\nWill be used to identify this modulation so make it unique.', 'Group help', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable	
         else:
             dlg = wx.FileDialog(self._mediaFileGuiPanel, "Choose a file", self._lastDialogDir, "", "*.*", wx.OPEN) #@UndefinedVariable
             if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
@@ -1886,7 +1886,7 @@ Smoothest\t-> n = 128
         elif(self._type == "VideoLoop"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Pitch bend:", "Hmm1:", "Hmm2:"), self._values1Field, 3, "Video loop test:")
         elif((self._type == "Sprite") or (self._type == "Text")):
-            self._updateNoteSliders(self._values1Field.GetValue(), ("Start X position:", "Start Y position:"), self._values1Field, 2, "Start position:")
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Start X position:", "Start Y position:", "Zoom out:"), self._values1Field, 3, "Start position:")
         elif(self._type == "Modulation"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Minimum value:"), self._values1Field, 1, "Minimum value:")
         else: #KinectInput
@@ -1910,7 +1910,7 @@ Smoothest\t-> n = 128
         if(self._type == "Image"):
             self._updateNoteSliders(self._values2Field.GetValue(), ("End zoom:", "End move:", "End angle:"), self._values2Field, 3, "End zoom:")
         elif((self._type == "Sprite") or (self._type == "Text")):
-            self._updateNoteSliders(self._values2Field.GetValue(), ("End X position:", "End Y position:"), self._values2Field, 2, "End position:")
+            self._updateNoteSliders(self._values2Field.GetValue(), ("End X position:", "End Y position:", "Zoom out:"), self._values2Field, 3, "End position:")
         elif(self._type == "Modulation"):
             self._updateNoteSliders(self._values2Field.GetValue(), ("Maximum value:"), self._values2Field, 1, "Maximum value:")
         else: #KinectInput
@@ -2385,20 +2385,20 @@ All notes on events are quantized to this.
 
                 if((self._type == "Sprite") or (self._type == "Text")):
                     fieldValString = self._values1Field.GetValue()
-                    startVal = textToFloatValues(fieldValString, 2)
+                    startVal = textToFloatValues(fieldValString, 3)
                     startValString = floatValuesToString(startVal)
                     if(fieldValString != startValString):
-                        startValString = "0.5|0.5"
+                        startValString = "0.5|0.5|0.0"
                     self._values1Field.SetValue(startValString)
-                    self._config.addTextParameter("StartPosition", "0.5|0.5")
+                    self._config.addTextParameter("StartPosition", "0.5|0.5|0.0")
                     self._config.setValue("StartPosition", startValString)
                     fieldValString = self._values2Field.GetValue()
-                    endVal = textToFloatValues(fieldValString, 2)
+                    endVal = textToFloatValues(fieldValString, 3)
                     endValString = floatValuesToString(endVal)
                     if(fieldValString != endValString):
-                        endValString = "0.5|0.5"
+                        endValString = "0.5|0.5|0.0"
                     self._values2Field.SetValue(endValString)
-                    self._config.addTextParameter("EndPosition", "0.5|0.5")
+                    self._config.addTextParameter("EndPosition", "0.5|0.5|0.0")
                     self._config.setValue("EndPosition", endValString)
                     xModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(xModulation)
@@ -2625,14 +2625,14 @@ All notes on events are quantized to this.
                         self._fontField.SetValue(font)
                 confString = self._config.getValue("StartPosition")
                 if(confString == None):
-                    confValString = "0.5|0.5"
+                    confValString = "0.5|0.5|0.0"
                 else:
                     confVal = textToFloatValues(confString, 2)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
                 if(confString == None):
-                    confValString = "0.5|0.5"
+                    confValString = "0.5|0.5|0.0"
                 else:
                     confVal = textToFloatValues(confString, 2)
                     confValString = floatValuesToString(confVal)
@@ -2647,8 +2647,8 @@ All notes on events are quantized to this.
                     self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 else:
                     self._fontField.SetValue("Arial;32;#FFFFFF")
-                self._values1Field.SetValue("0.5|0.5")
-                self._values2Field.SetValue("0.5|0.5")
+                self._values1Field.SetValue("0.5|0.5|0.0")
+                self._values2Field.SetValue("0.5|0.5|0.0")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
         elif(self._type == "Camera"):
@@ -2825,6 +2825,10 @@ All notes on events are quantized to this.
                 self._onValues1Edit(None, True)
 
 
+        if((self._type == "Text") or (self._type == "Group") or (self._type == "Modulation")):
+            self._fileOpenButton.setBitmaps(self._helpBitmap, self._helpPressedBitmap)
+        else:
+            self._fileOpenButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(self._type == "Image"):
             self._values2Label.SetLabel("End zoom:")
             self._noteConfigSizer.Show(self._values2Sizer)

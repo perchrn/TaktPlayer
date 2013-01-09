@@ -1393,12 +1393,12 @@ class SpriteMediaBase(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
 
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5")
-        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5")
+        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
+        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
         self._midiModulation.setModulationReceiver("XModulation", "None")
         self._midiModulation.setModulationReceiver("YModulation", "None")
-        self._startX, self._startY = textToFloatValues("0.5|0.5", 2)
-        self._endX, self._endY = textToFloatValues("0.5|0.5", 2)
+        self._startX, self._startY, self._startZ = textToFloatValues("0.5|0.5|0.0", 3)
+        self._endX, self._endY, self._endZ = textToFloatValues("0.5|0.5|0.0", 3)
         self._xModulationId = None
         self._yModulationId = None
 
@@ -1419,9 +1419,9 @@ class SpriteMediaBase(MediaFile):
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         startValuesString = self._configurationTree.getValue("StartPosition")
-        self._startX, self._startY = textToFloatValues(startValuesString, 2)
+        self._startX, self._startY, self._startZ = textToFloatValues(startValuesString, 3)
         endValuesString = self._configurationTree.getValue("EndPosition")
-        self._endX, self._endY = textToFloatValues(endValuesString, 2)
+        self._endX, self._endY, self._endZ = textToFloatValues(endValuesString, 3)
         self._xModulationId = self._midiModulation.connectModulation("XModulation")
         self._yModulationId = self._midiModulation.connectModulation("YModulation")
 

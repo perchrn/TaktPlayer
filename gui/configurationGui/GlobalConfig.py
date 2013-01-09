@@ -2398,7 +2398,10 @@ Sets the size of the noize particles.
             wipeModeString = selectedWipeMode
         else:
             wipeModeString = self._wipeModesHolder.getNames(wipeMode)
-        updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, wipeModeString, "Default")
+        if((self._fadeFieldName == "Media")):
+            updateChoices(self._wipeModesField, self._wipeModesHolder.getChoicesNoDefault, wipeModeString, "Fade")
+        else:
+            updateChoices(self._wipeModesField, self._wipeModesHolder.getChoices, wipeModeString, "Default")
         if(selectedWipePrePostString != None):
             wipePostMixString = selectedWipePrePostString
         else:

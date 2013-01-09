@@ -408,8 +408,10 @@ class FadeTemplates(ConfigurationTemplates):
             foundConfig = self._templateConfig.findChildUniqueId(self._templateName, self._templateId, name)
             if(foundConfig == None):
                 fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
-                self._defaultModulationConfig = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
-                self._configurationTemplates.append(self._defaultModulationConfig)
+                defaultFadeConfig = FadeSettings(self._templateName, self._specialModulationHolder, name, self, fadeConfigTree, self._templateConfig, self._templateId)
+                if(name == "Default"):
+                    defaultFadeConfig.update(WipeMode.Fade, None, None, None, None)
+                self._configurationTemplates.append(defaultFadeConfig)
 
     def createTemplateFromXml(self, name, xmlConfig):
         fadeConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, name, name)
@@ -518,7 +520,7 @@ class FadeSettings(object):
             return self._wipeMode, self._wipePostMix, self._wipeSettings
 
     def update(self, wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod):
-        print "DEBUG pcn: fadeTemplate update: " + str((wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod))
+#        print "DEBUG pcn: fadeTemplate update: " + str((wipeMode, wipePostMix, wipeSettings, fadeMod, levelMod))
         if(fadeMod != None):
             self._midiModulation.setValue("Modulation", fadeMod)
         if(levelMod != None):

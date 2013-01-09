@@ -60,6 +60,9 @@ class WipeMode:
     def getChoices(self):
         return ["Default", "Fade", "Push", "Noize", "Zoom", "Flip"]
 
+    def getChoicesNoDefault(self):
+        return ["Fade", "Push", "Noize", "Zoom", "Flip"]
+
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
             if(typeId == i):

@@ -2002,16 +2002,16 @@ class FadeGui(object):
         pass
 
     def _onWipeModeHelp(self, event):
-        text = """
-Decides how we fade or wipe in this media or track.
+        text = "Decides how we fade or wipe in this media or track.\n"
+        text += "\n"
+        if((self._fadeFieldName != "Media")):
+            text += "Default:\tUse media mode or fade if no other is selected.\n"
+        text += "Fade:\tCrossfade mode.\n"
+        text += "Push:\tPush image from one of four sides.\n"
+        text += "Noize:\tDisolve with TV noize.\n"
+        text += "Zoom:\tZoom image to infinity.\n"
+        text += "Flip:\tFlip image around X ot Y axis.\n"
 
-Default:\tUse media mode or fade if no other is selected.
-Fade:\tCrossfade mode.
-Push:\tPush image from one of four sides.
-Noize:\tDisolve with TV noize.
-Zoom:\tZoom image to infinity.
-Flip:\tFlip image around X ot Y axis.
-"""
         dlg = wx.MessageDialog(self._mainFadeGuiPlane, text, 'Wipe mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()

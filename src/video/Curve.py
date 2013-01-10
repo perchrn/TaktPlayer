@@ -171,6 +171,8 @@ class CurveChannel(object):
         self._mode = Curve.Linear
         self._points = [(0,0), (255,255)]
         self._curveCoefficients = []
+        self._movePoint = None
+        self._lastPoint = None
 
     def getValue(self, xPos):
         if(self._mode == Curve.Linear):
@@ -305,8 +307,8 @@ class CurveChannel(object):
                 self._calculateCoefficients()
 
     def drawingDone(self):
-        if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
-            self._movePoint = None
+        self._movePoint = None
+        self._lastPoint = None
 
     def addPoint(self, newPoint):
         if((self._mode == Curve.Linear) or (self._mode == Curve.Curve)):
@@ -346,7 +348,17 @@ class CurveChannel(object):
                 self._movePoint = point
         if(self._mode == Curve.Array):
             i = min(max(int(point[0]), 0), 255)
+            if(self._lastPoint != None):
+                xJump = self._lastPoint[0]-i
+                if(abs(xJump) > 1):
+                    yDiff = self._lastPoint[1] - point[1]
+                    for j in range(abs(xJump)):
+                        if(xJump < 0):
+                            self._points[i-j] = point[1] + int(yDiff * (float(j) / abs(xJump)))
+                        else:
+                            self._points[i+j] = point[1] + int(yDiff * (float(j) / abs(xJump)))
             self._points[i] = point[1]
+            self._lastPoint = (i, point[1])
 
     def getArray(self):
         returnArray = []

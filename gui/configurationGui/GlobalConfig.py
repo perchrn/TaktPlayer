@@ -690,32 +690,42 @@ Selects the effect.
             effectDescription = effectDescriptions[i]
             extraTab = "\t"
             if(sys.platform == "darwin"):
-                if(i == 2):
+                if(getEffectId(effectName) == EffectTypes.Flip):
                     extraTab = "\t\t"
-                elif(i == 4):
+                elif(getEffectId(effectName) == EffectTypes.Blur):
                     extraTab = "\t\t"
-                elif(i == 5):
+                elif(getEffectId(effectName) == EffectTypes.BlurContrast):
                     extraTab = ""
-                elif(i == 8):
+                elif(getEffectId(effectName) == EffectTypes.SelfDifference):
                     extraTab = ""
-                elif(i == 10):
+                elif(getEffectId(effectName) == EffectTypes.BlobDetect):
                     extraTab = ""
-                elif(i == 12):
+                elif(getEffectId(effectName) == EffectTypes.Desaturate):
                     extraTab = ""
-                elif(i == 15):
+                elif(getEffectId(effectName) == EffectTypes.HueSaturation):
                     extraTab = ""
-                elif(i == 16):
+                elif(getEffectId(effectName) == EffectTypes.ValueToHue):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.Threshold):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.ImageAdd):
                     extraTab = ""
             else:
-                if(i == 5):
+                if(getEffectId(effectName) == EffectTypes.BlurContrast):
                     extraTab = ""
-                elif(i == 10):
+                elif(getEffectId(effectName) == EffectTypes.SelfDifference):
                     extraTab = ""
-                elif(i == 12):
+                elif(getEffectId(effectName) == EffectTypes.BlobDetect):
                     extraTab = ""
-                elif(i == 15):
+                elif(getEffectId(effectName) == EffectTypes.Desaturate):
                     extraTab = ""
-                elif(i == 16):
+                elif(getEffectId(effectName) == EffectTypes.HueSaturation):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.ValueToHue):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.Threshold):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.ImageAdd):
                     extraTab = ""
             text += effectName + ":\t" + extraTab + effectDescription + "\n"
         dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Effect help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable

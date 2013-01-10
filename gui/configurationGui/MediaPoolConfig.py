@@ -1487,20 +1487,23 @@ class MediaFileGui(object): #@UndefinedVariable
         baseId = 10
         self.sendGuiRelease(self._midiNote, baseId)
 
+    def _getSlideValuesString(self):
+        values = []
+        if(self._noteValuesNumValues > 0):
+            values.append(round(float(self._noteSlider1.GetValue()) / 127.0, 2))
+        if(self._noteValuesNumValues > 1):
+            values.append(round(float(self._noteSlider2.GetValue()) / 127.0, 2))
+        if(self._noteValuesNumValues > 2):
+            values.append(round(float(self._noteSlider3.GetValue()) / 127.0, 2))
+        if(self._noteValuesNumValues > 3):
+            values.append(round(float(self._noteSlider4.GetValue()) / 127.0, 2))
+        if(self._noteValuesNumValues > 4):
+            values.append(round(float(self._noteSlider5.GetValue()) / 127.0, 2))
+        return floatValuesToString(values)
+
     def _onSliderUpdateButton(self, event):
         if(self._noteValuesWidget != None):
-            values = []
-            if(self._noteValuesNumValues > 0):
-                values.append(round(float(self._noteSlider1.GetValue()) / 127.0, 2))
-            if(self._noteValuesNumValues > 1):
-                values.append(round(float(self._noteSlider2.GetValue()) / 127.0, 2))
-            if(self._noteValuesNumValues > 2):
-                values.append(round(float(self._noteSlider3.GetValue()) / 127.0, 2))
-            if(self._noteValuesNumValues > 3):
-                values.append(round(float(self._noteSlider4.GetValue()) / 127.0, 2))
-            if(self._noteValuesNumValues > 4):
-                values.append(round(float(self._noteSlider5.GetValue()) / 127.0, 2))
-            self._valuesString = floatValuesToString(values)
+            self._valuesString = self._getSlideValuesString()
             self._noteValuesWidget.SetValue(self._valuesString)
             self._updateNoteSliders(self._valuesString, self._labelList, self._noteValuesWidget, self._noteValuesNumValues, self._infoText)
 
@@ -1538,6 +1541,10 @@ class MediaFileGui(object): #@UndefinedVariable
         self._noteSlider4ValueLabel.SetLabel(valueString)
         valueString = "%.2f" % (float(self._noteSlider5.GetValue()) / 127.0)
         self._noteSlider5ValueLabel.SetLabel(valueString)
+        if(self._getSlideValuesString() != self._valuesString):
+            self._updateButton.setBitmaps(self._updateRedButtonBitmap, self._updateRedButtonPressedBitmap)
+        else:
+            self._updateButton.setBitmaps(self._updateButtonBitmap, self._updateButtonPressedBitmap)
 
     def sendGuiRelease(self, note, guiControllerId):
         if((note == None) or (note < 0) or (note >= 128)):

@@ -2580,9 +2580,9 @@ class ModulationMedia(MediaFile):
         if(smootherMode == "Smooth"):
             smootherLen = 4
         if(smootherMode == "Smoother"):
-            smootherLen = 16
+            smootherLen = 8
         if(smootherMode == "Smoothest"):
-            smootherLen = 32
+            smootherLen = 16
         if(smootherLen != self._valueSmootherLen):
             self._valueSmoother = []
             for _ in range(smootherLen):

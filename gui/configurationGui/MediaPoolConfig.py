@@ -1198,6 +1198,8 @@ class MediaFileGui(object): #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+#        wx.StaticText(self._noteConfigPanel, wx.ID_ANY, ".", pos=(445, 560)) #@UndefinedVariable
+
         self._mainSelection = self.MainSelection.Unselected
         self._selectedEditor = self.EditSelection.Unselected
         self._noteGuiOpen = False
@@ -1712,17 +1714,15 @@ class MediaFileGui(object): #@UndefinedVariable
         self._showOrHideSaveButton()
 
     def _onTypeHelp(self, event):
-        text = """
-Decides what kind of input this is.
-
-VideoLoop:\tOur normal video file playing in loop.
-Image:\t\tA single static image.
-ScrollImage:\tAn image that scrolls horizontally or vertically.
-Sprite:\t\tAn small image (or GIF anim) that can be moved.
-ImageSequence:\tA sequence of images.
-Camera:\t\tCamera or capture input.
-Group:\t\tGroups together a set of inputs.
-"""
+        text = "Decides what kind of input this is.\n"
+        text += "\n"
+        text += "VideoLoop:\tOur normal video file playing in loop.\n"
+        text += "Image:\t\tA single static image.\n"
+        text += "ScrollImage:\tAn image that scrolls horizontally or vertically.\n"
+        text += "Sprite:\t\tAn small image (or GIF anim) that can be moved.\n"
+        text += "ImageSequence:\tA sequence of images.\n"
+        text += "Camera:\t\tCamera or capture input.\n"
+        text += "Group:\t\tGroups together a set of inputs.\n"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Type help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -1736,46 +1736,36 @@ Group:\t\tGroups together a set of inputs.
 
     def _onSubModeHelp(self, event):
         if(self._type == "VideoLoop"):
-            text = """
-Decides how we loop this video file.
-
-Normal:\tLoops forward.
-Reverse:\tLoops in reverse.
-PingPong:\tLoops alternating between forward and reverse.
-PingPongReverse:\tLoops alternating between reverse and forward.
-DontLoop:\tPlay video once.
-DontLoopReverse:\tPlay video onve in reverse.
-"""
+            text = "Decides how we loop this video file.\n"
+            text += "\n"
+            text += "Normal:\tLoops forward.\n"
+            text += "Reverse:\tLoops in reverse.\n"
+            text += "PingPong:\tLoops alternating between forward and reverse.\n"
+            text += "PingPongReverse:\tLoops alternating between reverse and forward.\n"
+            text += "DontLoop:\tPlay video once.\n"
+            text += "DontLoopReverse:\tPlay video onve in reverse.\n"
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Loop mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "Image"):
-            text = """
-Decides fit the image to screen.
-
-Crop:\tCuts away what does not fit.
-Stretch:\tStretches the image to fit.
-Scale:\tAdds black borders to keep aspect ratio.
-"""
+            text = "Decides fit the image to screen.\n"
+            text += "\n"
+            text += "Crop:\tCuts away what does not fit.\n"
+            text += "Stretch:\tStretches the image to fit.\n"
+            text += "Scale:\tAdds black borders to keep aspect ratio.\n"
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Sequence mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "ImageSequence"):
-            text = """
-Decides how we decide which image to show.
-
-Time:\tShows each image synchronization length before skipping.
-ReTrigger:\tShows a new image every time the note is pressed.
-Modulation:\tUses modulation source to select image.
-
-ReTrigger Will be restarted when another note is activated on the same track.
-"""
+            text = "Decides how we decide which image to show.\n"
+            text += "\n"
+            text += "Time:\tShows each image synchronization length before skipping.\n"
+            text += "ReTrigger:\tShows a new image every time the note is pressed.\n"
+            text += "Modulation:\tUses modulation source to select image.\n"
+            text += "\n"
+            text += "ReTrigger Will be restarted when another note is activated on the same track.\n"
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Sequence mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "ScrollImage"):
-            text = """
-Decides which direction the image scrolls when not modulated.
-"""
+            text = "Decides which direction the image scrolls when not modulated."
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Scroll direction help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "Sprite"):
-            text = """
-Sometimes you may need to invert the mask on the first image.
-"""
+            text = "Sometimes you may need to invert the mask on the first image."
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mask invertion help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         else:
             text = "\nMissing help text for \"" + str(self._type) + "\" (subMode1)"
@@ -1798,9 +1788,7 @@ Sometimes you may need to invert the mask on the first image.
 
     def _onSubMode2Help(self, event):
         if(self._type == "ScrollImage"):
-            text = """
-Reverses the scroll direction when not modulated.
-"""
+            text = "Reverses the scroll direction when not modulated."
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Scroll direction help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         else:
             text = "\nMissing help text for " + str(self._type) + " (subMode2)"
@@ -1818,6 +1806,8 @@ Reverses the scroll direction when not modulated.
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self.hideEffectsGui()
+            self.hideCurveGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1825,9 +1815,7 @@ Reverses the scroll direction when not modulated.
         self._highlightButton(self._selectedEditor)
 
     def _onsubModulationMode1Help(self, event):
-        text = """
-Decides how we add the second value.
-"""
+        text = "Decides how we add the second value."
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -1842,6 +1830,8 @@ Decides how we add the second value.
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self.hideEffectsGui()
+            self.hideCurveGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1849,22 +1839,18 @@ Decides how we add the second value.
         self._highlightButton(self._selectedEditor)
 
     def _onsubModulationMode2Help(self, event):
-        text = """
-Decides how we add the third value.
-"""
+        text = "Decides how we add the third value."
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onsubModulationSmootherHelp(self, event):
-        text = """
-Averages the sum value over the last n values.
-
-Smoothish\t-> n = 4
-Smooth\t-> n = 16
-Smoother\t-> n = 48
-Smoothest\t-> n = 128
-"""
+        text = "Averages the sum value over the last n values.\n"
+        text += "\n"
+        text += "Smoothish\t-> n = 2\n"
+        text += "Smooth\t-> n = 4\n"
+        text += "Smoother\t-> n = 8\n"
+        text += "Smoothest\t-> n = 16\n"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Modulation combine help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -1879,6 +1865,8 @@ Smoothest\t-> n = 128
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self.hideEffectsGui()
+            self.hideCurveGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
@@ -1895,6 +1883,8 @@ Smoothest\t-> n = 128
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self.hideEffectsGui()
+            self.hideCurveGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
@@ -1921,6 +1911,8 @@ Smoothest\t-> n = 128
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self.hideEffectsGui()
+            self.hideCurveGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self.refreshLayout()
@@ -1936,27 +1928,23 @@ Smoothest\t-> n = 128
         self._highlightButton(self._selectedEditor)
 
     def _onMixHelp(self, event):
-        text = """
-Decides how this image is mixed with images on lower MIDI channels.
-\t(This only gets used if track mix mode is set to Default.)
-
-Add:\t\tSums the images together.
-Subtract:\t\tSubtracts one image from another.
-Multiply:\t\tMultiplies the images together.
-Lumakey:\t\tReplaces source everywhere the image is black.
-WhiteLumakey:\tReplaces source everywhere the image is white.
-AlphaMask:\tIf source has alpha channel it will use this as mask.
-Replace:\t\tNo mixing. Just use this image.
-"""
+        text = "Decides how this image is mixed with images on lower MIDI channels.\n"
+        text += "\t(This only gets used if track mix mode is set to Default.)\n"
+        text += "\n"
+        text += "Add:\t\tSums the images together.\n"
+        text += "Subtract:\t\tSubtracts one image from another.\n"
+        text += "Multiply:\t\tMultiplies the images together.\n"
+        text += "Lumakey:\t\tReplaces source everywhere the image is black.\n"
+        text += "WhiteLumakey:\tReplaces source everywhere the image is white.\n"
+        text += "AlphaMask:\tIf source has alpha channel it will use this as mask.\n"
+        text += "Replace:\t\tNo mixing. Just use this image.\n"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Mix help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
     def _onNoteHelp(self, event):
-        text = """
-This is the note assigned to this configuration.
-\t(Note \"""" + noteToNoteString(self._midiNote) + "\" has id " + str(self._midiNote) + """.)
-"""
+        text = "This is the note assigned to this configuration.\n"
+        text += "\t(Note \"" + noteToNoteString(self._midiNote) + "\" has id " + str(self._midiNote) + ".)"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Note help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -1984,19 +1972,15 @@ This is the note assigned to this configuration.
 
     def _onSyncHelp(self, event):
         if(self._type == "Group"):
-            text = """
-Decides how fast the clips in this groups should play.
-
-\t0.5 -> is double speed.
-\t2.0 -> is half speed.
-"""
+            text = "Decides how fast the clips in this groups should play.\n"
+            text += "\n"
+            text += "\t0.5 -> is double speed.\n"
+            text += "\t2.0 -> is half speed.\n"
         else:
-            text = """
-Decides how long the video takes to loop
-or how long the images are displayed.
-
-\tGiven in beats (4:4)
-"""
+            text = "Decides how long the video takes to loop\n"
+            text += "or how long the images are displayed.\n"
+            text += "\n"
+            text += "\tGiven in beats (4:4)\n"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Synchronization help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -2023,12 +2007,10 @@ or how long the images are displayed.
         self._quantizeField.SetValue(valueString)
 
     def _onQuantizeHelp(self, event):
-        text = """
-Decides when the video or image starts.
-All notes on events are quantized to this.
-
-\tGiven in beats (4:4)
-"""
+        text = "Decides when the video or image starts.\n"
+        text += "All notes on events are quantized to this.\n"
+        text += "\n"
+        text += "\tGiven in beats (4:4)\n"
         dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Quantize help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
@@ -2067,7 +2049,6 @@ All notes on events are quantized to this.
         else:
             self._effect2Button.setBitmaps(self._editBitmap, self._editPressedBitmap)
         if(selected == self.EditSelection.Curve):
-            print "DEBUG pcn: curve!"
             self._curveButton.setBitmaps(self._editSelectedBitmap, self._editSelectedBitmap)
         else:
             self._curveButton.setBitmaps(self._editBitmap, self._editPressedBitmap)
@@ -2089,6 +2070,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.hideCurveGui()
+            self.hideEffectImageListGui()
             self.refreshLayout()
         selectedConfig = self._timeModulationField.GetValue()
         self._globalConfig.updateTimeModulationGui(selectedConfig, self._midiNote, self._timeModulationField)
@@ -2105,6 +2087,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.hideCurveGui()
+            self.hideEffectImageListGui()
             self.refreshLayout()
         selectedEffectConfig = self._effect1Field.GetValue()
         self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect1", self._effect1Field)
@@ -2121,6 +2104,7 @@ All notes on events are quantized to this.
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.hideCurveGui()
+            self.hideEffectImageListGui()
             self.refreshLayout()
         selectedEffectConfig = self._effect2Field.GetValue()
         self._globalConfig.updateEffectsGui(selectedEffectConfig, self._midiNote, "Effect2", self._effect2Field)
@@ -2130,16 +2114,15 @@ All notes on events are quantized to this.
         if(showCurveGui == True):
             if(self._selectedEditor != self.EditSelection.Curve):
                 self._selectedEditor = self.EditSelection.Curve
-                print "DEBUG pcn curve = True"
                 self.showCurveGui()
             else:
-                print "DEBUG pcn curve = False"
                 self.hideCurveGui()
             self._configSizer.Hide(self._timeModulationConfigPanel)
             self._configSizer.Hide(self._fadeConfigPanel)
             self._configSizer.Hide(self._moulationConfigPanel)
             self._configSizer.Hide(self._noteSlidersPanel)
             self.hideEffectsGui()
+            self.hideEffectImageListGui()
             self.refreshLayout()
         self._curveGui.updateGui(self._curveField.GetValue(), self._curveField, None, None, None)
         self._highlightButton(self._selectedEditor)
@@ -2249,7 +2232,9 @@ All notes on events are quantized to this.
                 self._configSizer.Hide(self._fadeConfigPanel)
                 self._selectedEditor = self.EditSelection.Unselected
             self._configSizer.Hide(self._timeModulationConfigPanel)
+            self.hideCurveGui()
             self.hideEffectsGui()
+            self.hideEffectImageListGui()
             self._configSizer.Hide(self._noteSlidersPanel)
             self.refreshLayout()
         selectedFadeConfig = self._fadeField.GetValue()
@@ -2259,7 +2244,9 @@ All notes on events are quantized to this.
     def _onCloseButton(self, event):
         self.hideNoteGui()
         self._configSizer.Hide(self._timeModulationConfigPanel)
+        self.hideCurveGui()
         self.hideEffectsGui()
+        self.hideEffectImageListGui()
         self._configSizer.Hide(self._moulationConfigPanel)
         self._configSizer.Hide(self._fadeConfigPanel)
         self._configSizer.Hide(self._noteSlidersPanel)
@@ -2880,12 +2867,13 @@ All notes on events are quantized to this.
 
         if((self._type == "Camera") or (self._type == "KinectCamera")):
             self._noteConfigSizer.Hide(self._timeModulationSizer)
-            self._noteConfigSizer.Hide(self._curveSizer)
+            self._noteConfigSizer.Show(self._curveSizer)
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         elif(self._type == "Modulation"):
             self._noteConfigSizer.Hide(self._timeModulationSizer)
             self._noteConfigSizer.Hide(self._curveSizer)
+            self.hideCurveGui()
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         else:

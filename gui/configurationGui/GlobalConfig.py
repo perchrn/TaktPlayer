@@ -696,7 +696,11 @@ Selects the effect.
                     extraTab = "\t\t"
                 elif(getEffectId(effectName) == EffectTypes.BlurContrast):
                     extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.Rays):
+                    extraTab = "\t\t"
                 elif(getEffectId(effectName) == EffectTypes.SelfDifference):
+                    extraTab = ""
+                elif(getEffectId(effectName) == EffectTypes.Distortion):
                     extraTab = ""
                 elif(getEffectId(effectName) == EffectTypes.BlobDetect):
                     extraTab = ""

@@ -316,7 +316,7 @@ class ImageMixer(object):
     def _mixImageSubtract(self, wipeSettings, level, image1, image2, mixMat):
         if(level < 0.99):
             wipeMode, wipePostMix, wipeConfig = wipeSettings
-            print "DEBUG pcn: mixImageSubtract: wipeSettings: " + str(wipeSettings)
+#            print "DEBUG pcn: mixImageSubtract: wipeSettings: " + str(wipeSettings)
             if((wipeMode == WipeMode.Fade) or (wipeMode == WipeMode.Default)):
                 cv.ConvertScaleAbs(image2, image2, level, 0.0)
                 cv.Sub(image1, image2, mixMat)

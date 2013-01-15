@@ -57,15 +57,18 @@ def generateTextImageAndMask(text, font, fontPath, fontSize, red, green, blue):
         textWidth = max(textWidth, textW)
     #print "DEBUG pcn: textSize " + str(textSize) + " for: " + text 
     fontPILImage = Image.new('RGB', (textWidth, textHeight), (0, 0, 0))
+    fontPILMaskImage = Image.new('RGB', (textWidth, textHeight), (0, 0, 0))
     drawArea = ImageDraw.Draw(fontPILImage)
+    maskArea = ImageDraw.Draw(fontPILMaskImage)
     posY = 0
     for textLines in textSplit:
         textW, textH = font.getsize(textLines)
         posX = int((textWidth - textW) / 2)
         drawArea.text((posX, posY), textLines, font=font, fill=colour)
+        maskArea.text((posX, posY), textLines, font=font, fill=(255,255,255))
         posY += textH
 
-    textPILMask = fontPILImage.convert('L')
+    textPILMask = fontPILMaskImage.convert('L')
 
     return fontPILImage, textPILMask
 

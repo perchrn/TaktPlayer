@@ -408,6 +408,9 @@ class ZoomEffect(object):
         originalHeight = float(originalH)
         width = int(originalWidth * zoom)
         height = int(originalHeight * zoom)
+        if((width < 1) or (height < 1)):
+            cv.SetZero(image)
+            return image
         left = int((originalWidth / 2) - (width / 2))
         top = int((originalHeight / 2) - (height / 2))
         extraMultiplyer = 0.6 + (0.4/zoom)
@@ -1363,7 +1366,7 @@ class FeedbackEffect(object):
                 flipAngle = (zoom - 0.5) * self._xFlipAngleValue
                 rotZ = (zoom - 0.5) * self._zRotationValue
             else:
-                zoomCalc = 0.0
+                zoomCalc = 1.0
                 flipX = 0.0
                 flipAngle = 0.0
                 rotZ = 0.0

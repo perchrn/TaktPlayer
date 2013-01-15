@@ -650,7 +650,10 @@ class MediaFile(object):
             self._firstImage = copyImage(captureFrame)
             copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
             captureFrame = cv.QueryFrame(self._videoFile)
-            self._secondImage = copyImage(captureFrame)
+            if (captureFrame == None):
+                self._secondImage = self._firstImage
+            else:
+                self._secondImage = copyImage(captureFrame)
         except:
             traceback.print_exc()
             print "Exception while reading: " + os.path.basename(self._cfgFileName)

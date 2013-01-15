@@ -100,7 +100,7 @@ class MediaPool(object):
 #            else:
 #                print note.getType(),
             if((note != None) and (note.getType() == "Modulation")):
-                noteName = note.getFileName()
+                noteName = note.getFileName().encode("utf-8")
                 descSum = "Modulation;" + noteName + ";Any;Sum"
                 desc1st = "Modulation;" + noteName + ";Any;1st"
                 desc2nd = "Modulation;" + noteName + ";Any;2nd"
@@ -345,7 +345,7 @@ class MediaPool(object):
                         self._mediaTrackStateHolders[midiChannel] = activeMediaState
                     except MediaError:
                         traceback.print_exc()
-                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName().encode("utf-8")
                         newMedia = None
                         activeMediaState = None
                         self._mediaTrackIds[midiChannel] = -1
@@ -365,7 +365,7 @@ class MediaPool(object):
                         self._mediaTrackStateHolders[midiChannel] = activeMediaState
                     except MediaError:
                         traceback.print_exc()
-                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                        print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName().encode("utf-8")
                         newMedia = None
                         activeMediaState = None
                         self._mediaTrackIds[midiChannel] = -1
@@ -386,7 +386,7 @@ class MediaPool(object):
                         midiChannelState.removeDoneActiveNote()
                     self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)
                 except MediaError:
-                    print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName()
+                    print "MediaError for " + newMedia.getType() + ": " + newMedia.getFileName().encode("utf-8")
                     traceback.print_exc()
                     midiChannelState.removeAllNotes()
                     self._mediaMixer.gueueImage(None, None, midiChannel)

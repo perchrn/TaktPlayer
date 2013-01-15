@@ -2212,20 +2212,15 @@ class ImageAddEffect(object):
 #class BaerturEffect(object): #Sigle frame feedback ish ;-)
 
 #class EchoEffect2(object):
+#class KaleidoscopeEffect(object):
 
-#class CurveEffect(object):
 #class CromaKeyGeneratorEffect(object):
 
 #??? TODO ???
 #get coordinates from image blob (I want better tracking (or sorting if you like))
-#Redo clip overview (use more space)
 #Showoff DEMO
 #make ModulationValueMode available and Move ModulationValueMode to EffectConfig.
 #Dont reload all thumbs on config update (only for changed media.) Optemizing ;-)
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# !!! Embedd licence information !!!!
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ADSR add A AHoldR HoldR modes
 #DMX512
@@ -2237,16 +2232,12 @@ class ImageAddEffect(object):
 #Debugging.
 #Check in blip on verse on RulleIGlassskaar, Effects related?
 #Full path bug: could be when importing multipple files (DnD)
-#Redo baertur with time modulation (started)
-#Wipe Noize mode + replace is strange
-#Check for MediaSettings leak after GroupMedia release bug fix (j)
-#Check unicode norwegian file names on media file dialog???
-
 
 #Make Rygg I Rand project (started)
-#Make Elg project (started)
 
 #No screensaver fix
+
+#Keep last image on play once / advanced looping?
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!
@@ -2256,7 +2247,6 @@ class ImageAddEffect(object):
 
 #Media:
 #Video with alpha channel
-#Sprite size / zoom (Text media also)
 #TextMedia font directory config.
 #URL image media?
 #Streaming from on player to another media (cameras etc.)

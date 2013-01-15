@@ -637,7 +637,7 @@ class MediaFile(object):
         filePath = self._fullFilePath
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
-            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName.encode("utf-8"), self._videoDirectory)
             print "Trying " + str(self._packageFilePath)
         if (os.path.isfile(filePath) == False):
             raise MediaError("File does not exist!")
@@ -645,7 +645,7 @@ class MediaFile(object):
         try:
             captureFrame = cv.QueryFrame(self._videoFile)
             if (captureFrame == None):
-                print "Could not read frames from: " + os.path.basename(self._cfgFileName)
+                print "Could not read frames from: " + os.path.basename(self._cfgFileName.encode("utf-8"))
                 raise MediaError("File could not be read!")
             self._firstImage = copyImage(captureFrame)
             copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
@@ -656,14 +656,14 @@ class MediaFile(object):
                 self._secondImage = copyImage(captureFrame)
         except:
             traceback.print_exc()
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            print "Exception while reading: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File caused exception!")
         try:
             self._numberOfFrames = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FRAME_COUNT))
             self._originalFrameRate = int(cv.GetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_FPS))
         except:
             traceback.print_exc()
-            print "Exception while getting number of frames from: %s" % (os.path.basename(self._cfgFileName))
+            print "Exception while getting number of frames from: %s" % (os.path.basename(self._cfgFileName.encode("utf-8")))
             raise MediaError("File caused exception!")
         if(self._numberOfFrames < 20):
             try:
@@ -675,7 +675,7 @@ class MediaFile(object):
                     self._bufferedImageList.append(copyImage(captureFrame))
             except:
                 traceback.print_exc()
-                print "Exception while reading: " + os.path.basename(self._cfgFileName)
+                print "Exception while reading: " + os.path.basename(self._cfgFileName.encode("utf-8"))
                 raise MediaError("File caused exception!")
         self._originalTime = float(self._numberOfFrames) / self._originalFrameRate
         self._pingPongNumberOfFrames = (2 * self._numberOfFrames) - 2
@@ -683,7 +683,7 @@ class MediaFile(object):
             if(midiLength <= 0.0):
                 midiLength = self._midiTiming.guessMidiLength(self._originalTime)
             self.setMidiLengthInBeats(midiLength)
-        print "Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f" % (os.path.basename(self._cfgFileName), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
+        print "Read file %s with %d frames, framerate %d and length %f guessed MIDI length %f" % (os.path.basename(self._cfgFileName.encode("utf-8")), self._numberOfFrames, self._originalFrameRate, self._originalTime, self._syncLength)
         self._fileOk = True
 
     def getThumbnailId(self, videoPosition, appDataDir, forceUpdate):
@@ -1148,14 +1148,14 @@ class ImageFile(MediaFile):
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
         if (os.path.isfile(filePath) == False):
-            print "Error! Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
+            print "Error! Could not find file: %s in directory: %s" % (self._cfgFileName.encode("utf-8"), self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
             traceback.print_exc()
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            print "Exception while reading: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
 #        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
@@ -1171,7 +1171,7 @@ class ImageFile(MediaFile):
             pilRgb = Image.merge("RGB", (pilSplit[2], pilSplit[1], pilSplit[0])) #We need "BGR" and not "RGB"
         self._firstImage = pilToCvImage(pilRgb)
         if(self._firstImage == None):
-            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            print "Could not read image from: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File could not be read!")
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._originalTime = 1.0
@@ -1190,7 +1190,7 @@ class ImageFile(MediaFile):
             self._dest100percentScaleX = int(self._internalResolutionY * self._sourceAspect)
             self._dest100percentScaleY = self._internalResolutionY
 #            print "DEBUG pcn: scale2 x: " + str(self._dest100percentScaleX) + " y: " + str(self._dest100percentScaleY)
-        print "Read image file %s" % (os.path.basename(self._cfgFileName))
+        print "Read image file %s" % (os.path.basename(self._cfgFileName.encode("utf-8")))
         self._fileOk = True
 
 class ScrollImageFile(MediaFile):
@@ -1335,14 +1335,14 @@ class ScrollImageFile(MediaFile):
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
         if (os.path.isfile(filePath) == False):
-            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName.encode("utf-8"), self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
             traceback.print_exc()
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            print "Exception while reading: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
 #        print "DEBUG Image split: " + str(len(pilSplit)) + " mode: " + str(pilImage.mode)
@@ -1374,7 +1374,7 @@ class ScrollImageFile(MediaFile):
         else:
             self._mediaSettingsHolder.captureMask = None
         if (self._firstImage == None):
-            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            print "Could not read image from: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File could not be read!")
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._firstImageMask = self._mediaSettingsHolder.captureMask
@@ -1388,7 +1388,7 @@ class ScrollImageFile(MediaFile):
         else:
             self._source100percentCropX = self._sourceX
             self._source100percentCropY = int(self._sourceX / self._destinationAspect)
-        print "Read image file %s" % (os.path.basename(self._cfgFileName))
+        print "Read image file %s" % (os.path.basename(self._cfgFileName.encode("utf-8")))
         self._fileOk = True
 
 class SpriteMediaBase(MediaFile):
@@ -1581,7 +1581,7 @@ class SpriteImageFile(SpriteMediaBase):
             oldInvState = self._invertFirstImageMask
             self._invertFirstImageMask = self._configurationTree.getValue("InvertFirstFrameMask")
             if(oldInvState != self._invertFirstImageMask):
-                print "InvertFirstFrameMask is updated -> Sprite is re-loaded."
+#                print "InvertFirstFrameMask is updated -> Sprite is re-loaded."
                 self._loadFile()
 
     def getType(self):
@@ -1592,14 +1592,14 @@ class SpriteImageFile(SpriteMediaBase):
         if(os.path.isfile(filePath) == False):
             filePath = self._packageFilePath
         if (os.path.isfile(filePath) == False):
-            print "Could not find file: %s in directory: %s" % (self._cfgFileName, self._videoDirectory)
+            print "Could not find file: %s in directory: %s" % (self._cfgFileName.encode("utf-8"), self._videoDirectory)
             raise MediaError("File does not exist!")
         try:
             pilImage = Image.open(filePath)
             pilImage.load()
         except:
             traceback.print_exc()
-            print "Exception while reading: " + os.path.basename(self._cfgFileName)
+            print "Exception while reading: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File caused exception!")
         pilSplit = pilImage.split()
         pilDepth = len(pilSplit)
@@ -1638,7 +1638,7 @@ class SpriteImageFile(SpriteMediaBase):
             cv.Set(captureMask, 255)
             self._mediaSettingsHolder.captureMask = captureMask
         if (self._firstImage == None):
-            print "Could not read image from: " + os.path.basename(self._cfgFileName)
+            print "Could not read image from: " + os.path.basename(self._cfgFileName.encode("utf-8"))
             raise MediaError("File could not be read!")
         self._bufferedImageList.append(self._firstImage)
         self._bufferedImageMasks.append(self._mediaSettingsHolder.captureMask)
@@ -1680,7 +1680,7 @@ class SpriteImageFile(SpriteMediaBase):
         self._originalTime = 1.0
         for mediaSettingsHolder in self._mediaSettingsHolder.getSettingsList():
             mediaSettingsHolder.oldCurrentFrame = -1
-        print "Read image file %s" % (os.path.basename(self._cfgFileName))
+        print "Read image file %s" % (os.path.basename(self._cfgFileName.encode("utf-8")))
 
     def openFile(self, midiLength):
         self._loadFile()
@@ -1754,7 +1754,7 @@ class TextMedia(SpriteMediaBase):
 
         for mediaSettingsHolder in self._mediaSettingsHolder.getSettingsList():
             mediaSettingsHolder.oldCurrentFrame = -1
-        print "Generated text media: %s" % (self._cfgFileName)
+        print "Generated text media: %s" % (self._cfgFileName.encode("utf-8"))
 
     def openFile(self, midiLength):
 #        print "DEBUG pcn: openFile -> _getConfiguration()"

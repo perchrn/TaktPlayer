@@ -72,7 +72,7 @@ class Configuration(object):
         self._guiConfig.addBoolParameter("MidiBroadcast", True)
         self._guiConfig.addTextParameter("MidiBindAddress", "0.0.0.0")
         self._guiConfig.addIntParameter("MidiPort", 2022)
-        self._guiConfig.addTextParameter("WindowSize", "800,600") #default, xpos,ypos, 0,0 etc.
+        self._guiConfig.addTextParameter("WindowSize", "800,724") #default, xpos,ypos, 0,0 etc.
         self._guiConfig.addTextParameter("WindowPosition", "-1,-1") #auto, xpos,ypos, 0,0 etc.
 
     def setPlayerConfig(self, playerHost, midiPort, webPort, midiOn):

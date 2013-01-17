@@ -202,7 +202,7 @@ class TrackOverviewSettings(object):
 
 class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def __init__(self, parent, configDir, debugMode, title):
-        super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 600))
+        super(TaktPlayerGui, self).__init__(parent, title=title, size=(800, 724))
         self._debugModeOn = debugMode
         self._baseTitle = title
         self._activeConfig = ""

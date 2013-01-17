@@ -99,10 +99,10 @@ def getModulationValueModeFromName(name):
         return ModulationValueMode.RawInput
 
 class VideoLoopMode:
-    Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse = range(6)
+    Normal, Reverse, PingPong, PingPongReverse, DontLoop, DontLoopReverse, KeepLast = range(7)
 
     def getChoices(self):
-        return ["Normal", "Reverse", "PingPong", "PingPongReverse", "DontLoop", "DontLoopReverse"]
+        return ["Normal", "Reverse", "PingPong", "PingPongReverse", "DontLoop", "DontLoopReverse", "KeepLast"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

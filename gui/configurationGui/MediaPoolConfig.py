@@ -707,15 +707,16 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPingPongReverse = wx.Bitmap("graphics/modePingPongReverse.png") #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
+        self._modeBitmapKeepLast = wx.Bitmap("graphics/modeKeepLast.png") #@UndefinedVariable
         self._modeBitmapGroup = wx.Bitmap("graphics/modeGroup.png") #@UndefinedVariable
         self._modeBitmapModulation = wx.Bitmap("graphics/modeModulation.png") #@UndefinedVariable
 
         self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
-                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapCamera, self._modeBitmapImage,
+                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapKeepLast, self._modeBitmapCamera, self._modeBitmapImage,
                             self._modeBitmapImageScroll, self._modeBitmapSprite, self._modeBitmapText, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
                             self._modeBitmapImageSeqModulation, self._modeBitmapGroup, self._modeBitmapModulation]
         self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
-                           "VideoPlayOnce", "VideoPlayOnceReverse", "Camera", "Image",
+                           "VideoPlayOnce", "VideoPlayOnceReverse", "VideoKeepLast", "Camera", "Image",
                            "ScrollingImage", "Sprite", "Text", "ImageSeqTime", "ImageSeqReTrigger",
                            "ImageSeqModulation", "Group", "Modulation"]
 
@@ -1329,7 +1330,7 @@ class MediaFileGui(object): #@UndefinedVariable
         cursorWidgetList.append(self._overviewClipSaveButton)
         self._overviewClipSaveButton.Bind(wx.EVT_BUTTON, self._onOverviewClipSaveButton) #@UndefinedVariable
 
-        sizeText = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, ".", pos=(78, 435)) #@UndefinedVariable
+        sizeText = wx.StaticText(self._mainClipOverviewPlane, wx.ID_ANY, ".", pos=(78, 559)) #@UndefinedVariable
         if(isMac == True):
             sizeText.SetFont(font)
 
@@ -3176,6 +3177,8 @@ class MediaFileGui(object): #@UndefinedVariable
                 widget.setBitmaps(self._modeBitmapPlayOnce, self._modeBitmapPlayOnce)
             elif(loopMode == "DontLoopReverse"):
                 widget.setBitmaps(self._modeBitmapPlayOnceReverse, self._modeBitmapPlayOnceReverse)
+            elif(loopMode == "KeepLast"):
+                widget.setBitmaps(self._modeBitmapKeepLast, self._modeBitmapKeepLast)
         elif(mediaType == "ImageSequence"):
             if(configHolder != None):
                 seqMode = configHolder.getValue("SequenceMode")
@@ -3250,6 +3253,10 @@ class MediaFileGui(object): #@UndefinedVariable
             elif(modeText == "VideoPlayOnceReverse"):
                 self._type = "VideoLoop"
                 loopMode = "DontLoopReverse"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoKeepLast"):
+                self._type = "VideoLoop"
+                loopMode = "KeepLast"
                 self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
             elif(modeText == "Camera"):
                 self._type = "Camera"

@@ -2356,6 +2356,8 @@ class VideoLoopFile(MediaFile):
             self._loopMode = VideoLoopMode.DontLoop
         elif(loopMode == "DontLoopReverse"):
             self._loopMode = VideoLoopMode.DontLoopReverse
+        elif(loopMode == "KeepLast"):
+            self._loopMode = VideoLoopMode.KeepLast
         else:
             self._loopMode = VideoLoopMode.Normal #Defaults to normal
 
@@ -2403,6 +2405,11 @@ class VideoLoopFile(MediaFile):
             else:
                 mediaSettingsHolder.image = None
                 return False
+        elif(self._loopMode == VideoLoopMode.KeepLast):
+            if(framePos < self._numberOfFrames):
+                mediaSettingsHolder.currentFrame = framePos
+            else:
+                mediaSettingsHolder.currentFrame = self._numberOfFrames - 1
         else: #Normal
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames
 

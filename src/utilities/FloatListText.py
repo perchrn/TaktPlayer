@@ -4,7 +4,7 @@ Created on 6. aug. 2012
 @author: pcn
 '''
 
-def textToFloatValues(string, numberOfFloats):
+def textToFloatValues(string, numberOfFloats, strict = False):
     if(string == None):
         stringSplit = []
     else:
@@ -19,7 +19,10 @@ def textToFloatValues(string, numberOfFloats):
                 value = 0.0
             values.append(value)
         else:
-            values.append(0.0)
+            if(strict == True):
+                values.append(None)
+            else:
+                values.append(0.0)
         i += 1
     if(len(values) == 1):
         return values[0]

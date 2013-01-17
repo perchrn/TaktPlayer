@@ -162,10 +162,10 @@ class NoteState(object):
             return True
         return False
 
-    def isOn(self, note):
+    def isOn(self, note, spp):
         if(note != -1):
             if(self._note == note):
-                return  True
+                return self.isNoteUneleased(spp)
         return False
 
     def printState(self, midiChannel):
@@ -213,6 +213,8 @@ class NoteState(object):
         self._octav = octav
         self._noteLetter = noteLetter
         self._releaseVelocity = velocity
+#        print "DEBUG pcn: note off recieved:     ",
+#        self.printState(self._midiChannel-1)
 
     def quantize(self, quantizeValue):
         self._quantizeValue = quantizeValue
@@ -228,6 +230,8 @@ class NoteState(object):
                     self._noteLegth = self._quantizeValue / 4.0
                 if(self._noteLegth == 0.0):
                     self._noteLegth = 6.0
+#                print "DEBUG pcn: length quantize:     ",
+#                self.printState(self._midiChannel-1)
 
     def moveStartPos(self, moveValue):
         self._noteOnSPP += moveValue
@@ -357,9 +361,9 @@ class MidiChannelStateHolder(object):
         (midiSync, spp) = songPosition
         nextNote = self._nextNotes[note]
         if(noteOn == False):
-            if(self._activeNote.isOn(note)):
+            if(self._activeNote.isOn(note, spp)):
                 self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
-            if(nextNote.isOn(note)):
+            if(nextNote.isOn(note, spp)):
                 nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
         else:
             if(velocity > 0): #NOTE ON!!!
@@ -369,9 +373,9 @@ class MidiChannelStateHolder(object):
                 self._numberOfWaitingNextNotes += 1
             else:
                 #Velocity 0 is the same as note off.
-                if(self._activeNote.isOn(note)):
+                if(self._activeNote.isOn(note, spp)):
                     self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
-                if(nextNote.isOn(note)):
+                if(nextNote.isOn(note, spp)):
                     nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
 
     def polyPreasure(self, note, preasure, songPosition):

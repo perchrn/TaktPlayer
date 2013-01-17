@@ -266,6 +266,7 @@ class MediaFile(object):
                 self._configurationTree.setValue("Type", "Image")
             if(oldType == "VideoLoop"):
                 self._configurationTree.removeParameter("LoopMode")
+                self._configurationTree.removeParameter("AdvancedLoopValues")
             elif(oldType == "Camera"):
                 self._configurationTree.removeParameter("DisplayMode")
             elif(oldType == "KinectCamera"):
@@ -312,7 +313,13 @@ class MediaFile(object):
                 self._configurationTree.setValue("Type", "VideoLoop")
                 oldloopMode = self._configurationTree.getValue("LoopMode")
                 if(oldloopMode == None):
-                    self._configurationTree.setValue("LoopMode", "Normal")
+                    self._configurationTree.addTextParameter("LoopMode", "Normal")
+                if((oldloopMode == "AdvancedLoop") or (oldloopMode == "AdvancedPingPong")):
+                    oldAdvLoopValues = self._configurationTree.getValue("AdvancedLoopValues")
+                    if(oldAdvLoopValues == None):
+                        self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
+                else:
+                    self._configurationTree.removeParameter("AdvancedLoopValues")
                 if(oldType == "KinectCamera"):
 #                    self._configurationTree.removeParameter("DisplayModeModulation")
                     self._configurationTree.removeParameter("FilterValues")
@@ -423,8 +430,16 @@ class MediaFile(object):
             loopMode = sourceConfigTree.getValue("LoopMode")
             if(loopMode != None):
                 self._configurationTree.setValue("LoopMode", loopMode)
+            if((loopMode == "AdvancedLoop") or (loopMode == "AdvancedPingPong")):
+                self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
+                advLoopValues = sourceConfigTree.getValue("AdvancedLoopValues")
+                if(advLoopValues != None):
+                    self._configurationTree.setValue("AdvancedLoopValues", advLoopValues)
+            else:
+                self._configurationTree.removeParameter("AdvancedLoopValues")
         else:
             self._configurationTree.removeParameter("LoopMode")
+            self._configurationTree.removeParameter("AdvancedLoopValues")
 
         if(mediaType == "Image"):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
@@ -708,15 +723,19 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
         self._modeBitmapKeepLast = wx.Bitmap("graphics/modeKeepLast.png") #@UndefinedVariable
+        self._modeBitmapAdvancedLoop = wx.Bitmap("graphics/modeAdvancedLoop.png") #@UndefinedVariable
+        self._modeBitmapAdvancedPingPong = wx.Bitmap("graphics/modeAdvancedPingPong.png") #@UndefinedVariable
         self._modeBitmapGroup = wx.Bitmap("graphics/modeGroup.png") #@UndefinedVariable
         self._modeBitmapModulation = wx.Bitmap("graphics/modeModulation.png") #@UndefinedVariable
 
         self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
-                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapKeepLast, self._modeBitmapCamera, self._modeBitmapImage,
+                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapKeepLast,
+                            self._modeBitmapAdvancedLoop, self._modeBitmapAdvancedPingPong, self._modeBitmapCamera, self._modeBitmapImage,
                             self._modeBitmapImageScroll, self._modeBitmapSprite, self._modeBitmapText, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
                             self._modeBitmapImageSeqModulation, self._modeBitmapGroup, self._modeBitmapModulation]
         self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
-                           "VideoPlayOnce", "VideoPlayOnceReverse", "VideoKeepLast", "Camera", "Image",
+                           "VideoPlayOnce", "VideoPlayOnceReverse", "VideoKeepLast", "VideoAdvancedLoop",
+                           "VideoAdvancedPingPong", "Camera", "Image",
                            "ScrollingImage", "Sprite", "Text", "ImageSeqTime", "ImageSeqReTrigger",
                            "ImageSeqModulation", "Group", "Modulation"]
 
@@ -1744,7 +1763,10 @@ class MediaFileGui(object): #@UndefinedVariable
             text += "PingPong:\tLoops alternating between forward and reverse.\n"
             text += "PingPongReverse:\tLoops alternating between reverse and forward.\n"
             text += "DontLoop:\tPlay video once.\n"
-            text += "DontLoopReverse:\tPlay video onve in reverse.\n"
+            text += "DontLoopReverse:\tPlay video once in reverse.\n"
+            text += "KeepLast:\tPlay video once and keep last image.\n"
+            text += "AdvancedLoop:\tLets you configure start,loopStart,loopEnd and end of clip.\n"
+            text += "AdvancedPingPong:\tLets you configure start,loopStart,loopEnd and end of clip.\n"
             dlg = wx.MessageDialog(self._mediaFileGuiPanel, text, 'Loop mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         elif(self._type == "Image"):
             text = "Decides fit the image to screen.\n"
@@ -1892,7 +1914,7 @@ class MediaFileGui(object): #@UndefinedVariable
         if(self._type == "Image"):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start zoom:", "Start move:", "Start angle:"), self._values1Field, 3, "Start zoom:")
         elif(self._type == "VideoLoop"):
-            self._updateNoteSliders(self._values1Field.GetValue(), ("Pitch bend:", "Hmm1:", "Hmm2:"), self._values1Field, 3, "Video loop test:")
+            self._updateNoteSliders(self._values1Field.GetValue(), ("Start pos:", "Loop start pos:", "Loop end pos:", "End pos:"), self._values1Field, 4, "Advanced loop config:")
         elif((self._type == "Sprite") or (self._type == "Text")):
             self._updateNoteSliders(self._values1Field.GetValue(), ("Start X position:", "Start Y position:", "Zoom out:"), self._values1Field, 3, "Start position:")
         elif(self._type == "Modulation"):
@@ -2321,8 +2343,23 @@ class MediaFileGui(object): #@UndefinedVariable
                     loopMode = self._subModeField.GetValue()
                     self._config.addTextParameter("LoopMode", "Normal")
                     self._config.setValue("LoopMode", loopMode)
+                    if((loopMode == "AdvancedLoop") or (loopMode == "AdvancedPingPong")):
+                        loopConfig = self._values1Field.GetValue()
+                        loopConfigVal = textToFloatValues(loopConfig, 4, True)
+                        if((loopConfigVal[0] == None) or (loopConfigVal[1] == None) or (loopConfigVal[2] == None) or (loopConfigVal[3] == None)):
+                            loopConfigValString = "0.0|0.25|0.75|1.0"
+                        else:
+                            loopConfigValString = floatValuesToString(loopConfigVal)
+                        if(loopConfig != loopConfigValString):
+                            loopConfigValString = "0.0|0.25|0.75|1.0"
+                        self._values1Field.SetValue(loopConfigValString)
+                        self._config.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
+                        self._config.setValue("AdvancedLoopValues", loopConfigValString)
+                    else:
+                        self._config.removeParameter("AdvancedLoopValues")
                 else:
                     self._config.removeParameter("LoopMode")
+                    self._config.removeParameter("AdvancedLoopValues")
 
                 if(self._type == "Image"):
                     fieldValString = self._values1Field.GetValue()
@@ -2837,7 +2874,15 @@ class MediaFileGui(object): #@UndefinedVariable
             self._values1Label.SetLabel("Minimum value:")
             self._noteConfigSizer.Show(self._values1Sizer)
         else:
-            self._noteConfigSizer.Hide(self._values1Sizer)
+            if(self._type == "VideoLoop"):
+                self._selectedSubMode = self._subModeField.GetValue()
+                if((self._selectedSubMode == "AdvancedLoop") or (self._selectedSubMode == "AdvancedPingPong")):
+                    self._values1Label.SetLabel("Advanced loop config:")
+                    self._noteConfigSizer.Show(self._values1Sizer)
+                else:
+                    self._noteConfigSizer.Hide(self._values1Sizer)
+            else:
+                self._noteConfigSizer.Hide(self._values1Sizer)
             if(self._selectedEditor == self.EditSelection.Values1):
                 self._onValues1Edit(None, True)
 
@@ -3179,6 +3224,10 @@ class MediaFileGui(object): #@UndefinedVariable
                 widget.setBitmaps(self._modeBitmapPlayOnceReverse, self._modeBitmapPlayOnceReverse)
             elif(loopMode == "KeepLast"):
                 widget.setBitmaps(self._modeBitmapKeepLast, self._modeBitmapKeepLast)
+            elif(loopMode == "AdvancedLoop"):
+                widget.setBitmaps(self._modeBitmapAdvancedLoop, self._modeBitmapAdvancedLoop)
+            elif(loopMode == "AdvancedPingPong"):
+                widget.setBitmaps(self._modeBitmapAdvancedPingPong, self._modeBitmapAdvancedPingPong)
         elif(mediaType == "ImageSequence"):
             if(configHolder != None):
                 seqMode = configHolder.getValue("SequenceMode")
@@ -3257,6 +3306,14 @@ class MediaFileGui(object): #@UndefinedVariable
             elif(modeText == "VideoKeepLast"):
                 self._type = "VideoLoop"
                 loopMode = "KeepLast"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoAdvancedLoop"):
+                self._type = "VideoLoop"
+                loopMode = "AdvancedLoop"
+                self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
+            elif(modeText == "VideoAdvancedPingPong"):
+                self._type = "VideoLoop"
+                loopMode = "AdvancedPingPong"
                 self._updateLoopModeChoices(self._subModeField, loopMode, "Normal")
             elif(modeText == "Camera"):
                 self._type = "Camera"
@@ -3468,6 +3525,11 @@ class MediaFileGui(object): #@UndefinedVariable
             configMode = self._config.getValue("LoopMode")
             if(guiMode != configMode):
                 return True
+            if((configMode == "AdvancedLoop") or (configMode == "AdvancedPingPong")):
+                guiSubMode = self._values1Field.GetValue()
+                configSubMode = self._config.getValue("AdvancedLoopValues")
+                if(guiSubMode != configSubMode):
+                    return True
         if(self._type == "Image"):
             guiSubMode = self._values1Field.GetValue()
             configSubMode = self._config.getValue("StartValues")

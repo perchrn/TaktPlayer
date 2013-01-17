@@ -2358,8 +2358,19 @@ class VideoLoopFile(MediaFile):
             self._loopMode = VideoLoopMode.DontLoopReverse
         elif(loopMode == "KeepLast"):
             self._loopMode = VideoLoopMode.KeepLast
+        elif(loopMode == "AdvancedLoop"):
+            self._loopMode = VideoLoopMode.AdvancedLoop
+        elif(loopMode == "AdvancedPingPong"):
+            self._loopMode = VideoLoopMode.AdvancedPingPong
         else:
             self._loopMode = VideoLoopMode.Normal #Defaults to normal
+
+        if((self._loopMode == VideoLoopMode.AdvancedLoop) or (self._loopMode == VideoLoopMode.AdvancedPingPong)):
+            self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
+            loopValues = self._configurationTree.getValue("AdvancedLoopValues")
+            self._startPos, self._loopStart, self._loopEnd, self._endPos = textToFloatValues(loopValues, 4)
+        else:
+            self._configurationTree.removeParameter("AdvancedLoopValues")
 
     def close(self):
         pass
@@ -2410,6 +2421,94 @@ class VideoLoopFile(MediaFile):
                 mediaSettingsHolder.currentFrame = framePos
             else:
                 mediaSettingsHolder.currentFrame = self._numberOfFrames - 1
+        elif((self._loopMode == VideoLoopMode.AdvancedLoop) or (self._loopMode == VideoLoopMode.AdvancedPingPong)):
+            if(self._loopMode == VideoLoopMode.AdvancedPingPong):
+                pingPong = True
+            else:
+                pingPong = False
+            positionIsFound = False
+            loopPos = float(framePos) / self._numberOfFrames
+            startPos = 0.0
+            if(self._startPos != None):
+                startPos = self._startPos
+                startPos = max(0.0, min(1.0, startPos))
+            loopStart = 0.0
+            if(self._loopStart != None):
+                loopStart = self._loopStart
+                loopStart = max(0.0, min(1.0, loopStart))
+            startLength = loopStart - startPos
+            loopEnd = 1.0
+            if(self._loopEnd != None):
+                loopEnd = self._loopEnd
+                loopEnd = max(0.0, min(1.0, loopEnd))
+            if(pingPong == True):
+                pingPongLength = (loopEnd - loopStart)
+                loopLength = 2 * pingPongLength
+                endStart = loopStart
+            else:
+                loopLength = loopEnd - loopStart
+                endStart = loopEnd
+            endPos = 1.0
+            if(self._endPos != None):
+                endPos = self._endPos
+                endPos = max(0.0, min(1.0, endPos))
+            endLength = endPos - endStart
+
+#            print "DEBUG pcn: advanced: " + str(currentSongPosition) + " : " + str((loopPos, startPos, startLength, loopStart, loopLength, endStart, endLength)),
+            if(loopPos < 0.0):
+                mediaSettingsHolder.currentFrame = 0
+                positionIsFound = True
+            else:
+                if(loopPos < abs(startLength)):
+                    if(startLength < 0.0):
+                        loopPos = startPos - loopPos
+                    else:
+                        loopPos = startPos + loopPos
+                    positionIsFound = True
+            if(positionIsFound == False):
+                noteLength = midiNoteState.getNoteLength() / syncLength
+                relativePos = loopPos - abs(startLength)
+                if(noteLength > 0.0):
+                    restLength = noteLength - abs(startLength)
+                    numberOfLoops = int(restLength / abs(loopLength))
+                    if((restLength > 0.0) and (restLength % abs(loopLength)) > 0.001):
+                        numberOfLoops += 1
+                    if(numberOfLoops == 0):
+                        numberOfLoops = 1
+                    loopEnd = numberOfLoops * abs(loopLength)
+                    if(loopEnd > relativePos):
+                        if(pingPong == True):
+                            loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                        else:
+                            loopSubPos = relativePos % abs(loopLength)
+                        if(loopLength < 0.0):
+                            loopPos = loopStart - loopSubPos
+                        else:
+                            loopPos = loopStart + loopSubPos
+                        positionIsFound =True
+                    else:
+                        relativePos = relativePos - loopEnd
+                        if(relativePos < abs(endLength)):
+                            if(endLength < 0.0):
+                                loopPos = endStart - relativePos
+                            else:
+                                loopPos = endStart + relativePos
+                            positionIsFound =True
+                        else:
+                            mediaSettingsHolder.image = None
+                            return False
+                else:
+                    if(pingPong == True):
+                        loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                    else:
+                        loopSubPos = relativePos % abs(loopLength)
+                    if(loopLength < 0.0):
+                        loopPos = loopStart - loopSubPos
+                    else:
+                        loopPos = loopStart + loopSubPos
+                    positionIsFound =True
+            mediaSettingsHolder.currentFrame = int(loopPos * self._numberOfFrames)
+#            print " loopPos: " + str(loopPos) + " frame: " + str(mediaSettingsHolder.currentFrame)
         else: #Normal
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames
 

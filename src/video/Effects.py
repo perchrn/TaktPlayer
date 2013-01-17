@@ -161,6 +161,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return FlipEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Mirror):
         return MirrorEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Kaleidoscope):
+        return KaleidoscopeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Rotate):
         return RotateEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Scroll):
@@ -464,9 +466,8 @@ class MirrorEffect(object):
         return self.mirrorImage(image, mode, rotate, move, direction)
 
     def mirrorImage(self, image, mode, rotate, move, direction):
-        rotateMatrix1 = cv.CreateMat(2,3,cv.CV_32F)
-
         if(rotate >= 0.01):
+            rotateMatrix1 = cv.CreateMat(2,3,cv.CV_32F)
             xCenter = self._halfResX
             yCenter = self._halfResY
             if(move > 0.02):
@@ -494,6 +495,59 @@ class MirrorEffect(object):
             src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
             dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
         cv.Copy(src_region, dst_region)
+
+        return image
+
+class KaleidoscopeEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+        self._halfResX = int(self._internalResolutionX / 2)
+        self._halfResY = int(self._internalResolutionY / 2)
+        self._quarterResX = int(self._internalResolutionX / 4)
+        self._quarterResY = int(self._internalResolutionY / 4)
+
+        self._mirrorMat = effectMat1
+        self._rotateMatrix = cv.CreateMat(2,3,cv.CV_32F)
+
+    def getName(self):
+        return "Kaleidoscope"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, songPosition, more, move, unused2, unused3, unused4):
+        return self.kaleidoscope(image, more, move)
+
+    def kaleidoscope(self, image, more, move):
+        cv.Flip(image, self._mirrorMat, 0)
+        src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+        dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+        cv.Copy(src_region, dst_region)
+
+        angle = float(self._internalResolutionY) / self._internalResolutionX * 45
+        xCenter = int(self._quarterResX + (move * self._halfResX))
+        yCenter = int(self._quarterResY + (move * self._halfResY))
+        cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, self._rotateMatrix)
+        cv.WarpAffine(image, self._mirrorMat, self._rotateMatrix)
+
+        cv.SetZero(image)
+        src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX/2, self._halfResY/2, self._halfResX, self._halfResY))
+        dst_region = cv.GetSubRect(image, (self._halfResX, 0, self._halfResX, self._halfResY))
+        cv.Copy(src_region, dst_region)
+        cv.Flip(image, image, 1)
+        cv.Copy(src_region, dst_region)
+        cv.Copy(image, self._mirrorMat)
+        cv.Flip(self._mirrorMat, self._mirrorMat, 0)
+        src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+        dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+        cv.Copy(src_region, dst_region)
+
+        if(more > 0.5):
+            image = self.kaleidoscope(image, 0.0, 0.5)
 
         return image
 
@@ -2253,7 +2307,6 @@ class ImageAddEffect(object):
 #Recording / resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?
-#Complex looping (rollin, rollout, keep last?) (Under time modulation?)
 
 #Wipe animations???
 #calculate subframes when really slow...

@@ -773,6 +773,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
+        self._fxBitmapKaleidoscope = wx.Bitmap("graphics/fxKaleidoscope.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRays = wx.Bitmap("graphics/fxRays.png") #@UndefinedVariable
@@ -3164,6 +3165,8 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._fxBitmapStrobe, self._fxBitmapStrobe)
         elif(effectId == EffectTypes.Mirror):
             widget.setBitmaps(self._fxBitmapMirror, self._fxBitmapMirror)
+        elif(effectId == EffectTypes.Kaleidoscope):
+            widget.setBitmaps(self._fxBitmapKaleidoscope, self._fxBitmapKaleidoscope)
         elif(effectId == EffectTypes.Pixelate):
             widget.setBitmaps(self._fxBitmapPixelate, self._fxBitmapPixelate)
         elif(effectId == EffectTypes.Rays):

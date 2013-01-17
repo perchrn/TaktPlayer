@@ -4,13 +4,14 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(27)
+    Zoom, Flip, Mirror, Kaleidoscope, Rotate, Scroll, Blur, BlurContrast, Feedback, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(28)
 
     def getChoices(self):
         return ["None",
                 "Zoom",
                 "Flip",
                 "Mirror",
+                "Kaleidoscope",
                 "Rotate",
                 "Scroll",
                 "Blur",
@@ -40,6 +41,7 @@ class EffectTypes():
                 "Zoom inn/out and even crop video.",
                 "Flip video horizontal/vertical.",
                 "Mirror effect.",
+                "Kaleidoscope effect.",
                 "Rotate image around a poit.",
                 "Scroll image.",
                 "Blur video.",
@@ -73,6 +75,8 @@ def getEffectId(name):
         return EffectTypes.Flip
     elif(lowername == "mirror"):
         return EffectTypes.Mirror
+    elif(lowername == "kaleidoscope"):
+        return EffectTypes.Kaleidoscope
     elif(lowername == "rotate"):
         return EffectTypes.Rotate
     elif(lowername == "scroll"):
@@ -131,6 +135,8 @@ def getEffectName(effectId):
         return "Flip"
     elif(effectId == EffectTypes.Mirror):
         return "Mirror"
+    elif(effectId == EffectTypes.Kaleidoscope):
+        return "Kaleidoscope"
     elif(effectId == EffectTypes.Rotate):
         return "Rotate"
     elif(effectId == EffectTypes.Scroll):

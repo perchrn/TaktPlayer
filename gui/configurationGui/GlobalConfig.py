@@ -281,6 +281,7 @@ class EffectsGui(object):
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
+        self._fxBitmapKaleidoscope = wx.Bitmap("graphics/fxKaleidoscope.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRays = wx.Bitmap("graphics/fxRays.png") #@UndefinedVariable
         self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
@@ -551,6 +552,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapMirror)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapMirror)
+        index = self._effectImageList.Add(self._fxBitmapKaleidoscope)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapKaleidoscope)
         index = self._effectImageList.Add(self._fxBitmapRotate)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapRotate)
@@ -1497,6 +1501,9 @@ A list of start values for the effect modulation.
         elif(self._chosenEffectId == EffectTypes.Mirror):
             self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
             self._setupValueLabels(self._mirrorModes.getChoices(), None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Kaleidoscope):
+            self._setLabels("More:", "Move:", None, None, None)
+            self._setupValueLabels(["Normal", "More"], None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rotate):
             self._setLabels("Angle", "Move center", "Move angle", "Zoom", None)
             self._setupValueLabels(None, None, None, None, None)

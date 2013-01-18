@@ -2456,7 +2456,7 @@ class VideoLoopFile(MediaFile):
 
 #            print "DEBUG pcn: advanced: " + str(currentSongPosition) + " : " + str((loopPos, startPos, startLength, loopStart, loopLength, endStart, endLength)),
             if(loopPos < 0.0):
-                mediaSettingsHolder.currentFrame = 0
+                loopPos = 0.0
                 positionIsFound = True
             else:
                 if(loopPos < abs(startLength)):
@@ -2470,22 +2470,28 @@ class VideoLoopFile(MediaFile):
                 relativePos = loopPos - abs(startLength)
                 if(noteLength > 0.0):
                     restLength = noteLength - abs(startLength)
-                    numberOfLoops = int(restLength / abs(loopLength))
-                    if((restLength > 0.0) and (restLength % abs(loopLength)) > 0.001):
-                        numberOfLoops += 1
-                    if(numberOfLoops == 0):
-                        numberOfLoops = 1
-                    loopEnd = numberOfLoops * abs(loopLength)
+                    if(loopLength < 0.0001):
+                        loopEnd = max(restLength, 0.0)
+                        loopLength = None
+                    else:
+                        numberOfLoops = int(restLength / abs(loopLength))
+                        if((restLength > 0.0) and (restLength % abs(loopLength)) > 0.001):
+                            numberOfLoops += 1
+                        if(numberOfLoops == 0):
+                            numberOfLoops = 1
+                        loopEnd = numberOfLoops * abs(loopLength)
                     if(loopEnd > relativePos):
-                        if(pingPong == True):
-                            loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                        if(loopLength == None):
+                            loopPos = loopStart
                         else:
-                            loopSubPos = relativePos % abs(loopLength)
-                        if(loopLength < 0.0):
-                            loopPos = loopStart - loopSubPos
-                        else:
-                            loopPos = loopStart + loopSubPos
-                        positionIsFound =True
+                            if(pingPong == True):
+                                loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                            else:
+                                loopSubPos = relativePos % abs(loopLength)
+                            if(loopLength < 0.0):
+                                loopPos = loopStart - loopSubPos
+                            else:
+                                loopPos = loopStart + loopSubPos
                     else:
                         relativePos = relativePos - loopEnd
                         if(relativePos < abs(endLength)):
@@ -2493,21 +2499,25 @@ class VideoLoopFile(MediaFile):
                                 loopPos = endStart - relativePos
                             else:
                                 loopPos = endStart + relativePos
-                            positionIsFound =True
                         else:
                             mediaSettingsHolder.image = None
                             return False
                 else:
-                    if(pingPong == True):
-                        loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                    if(loopLength < 0.0001):
+                        loopSubPos = 0.0
                     else:
-                        loopSubPos = relativePos % abs(loopLength)
+                        if(pingPong == True):
+                            loopSubPos = abs(((relativePos + pingPongLength) % abs(loopLength)) - pingPongLength)
+                        else:
+                            loopSubPos = relativePos % abs(loopLength)
                     if(loopLength < 0.0):
                         loopPos = loopStart - loopSubPos
                     else:
                         loopPos = loopStart + loopSubPos
-                    positionIsFound =True
-            mediaSettingsHolder.currentFrame = int(loopPos * self._numberOfFrames)
+            if((loopPos >= 0.0) and loopPos < 1.0):
+                mediaSettingsHolder.currentFrame = int(loopPos * self._numberOfFrames)
+#            else:
+#                print "DEBUG pcn: bad pos returned from advanced loop: " + str(loopPos)
 #            print " loopPos: " + str(loopPos) + " frame: " + str(mediaSettingsHolder.currentFrame)
         else: #Normal
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames

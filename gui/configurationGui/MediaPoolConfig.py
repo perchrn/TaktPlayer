@@ -207,6 +207,7 @@ class MediaFile(object):
         self._configurationTree.addTextParameter("ModulationValuesMode", "KeepOld")#Default KeepOld
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
+            self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
         elif(mediaType == "Image"):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
@@ -251,6 +252,13 @@ class MediaFile(object):
         if(xmlConfig != None):
             self._configurationTree._updateFromXml(xmlConfig)
 
+        if(mediaType == "VideoLoop"):
+            oldloopMode = self._configurationTree.getValue("LoopMode")
+            if((oldloopMode == "AdvancedLoop") or (oldloopMode == "AdvancedPingPong")):
+                pass
+            else:
+                self._configurationTree.removeParameter("AdvancedLoopValues")
+
     def getConfig(self):
         return self._configurationTree
 
@@ -267,6 +275,7 @@ class MediaFile(object):
             if(oldType == "VideoLoop"):
                 self._configurationTree.removeParameter("LoopMode")
                 self._configurationTree.removeParameter("AdvancedLoopValues")
+                print "DEBUG pcn: updateFileName: removing AdvancedLoopValues 1"
             elif(oldType == "Camera"):
                 self._configurationTree.removeParameter("DisplayMode")
             elif(oldType == "KinectCamera"):
@@ -319,6 +328,7 @@ class MediaFile(object):
                     if(oldAdvLoopValues == None):
                         self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
                 else:
+                    print "DEBUG pcn: updateFileName: removing AdvancedLoopValues 2"
                     self._configurationTree.removeParameter("AdvancedLoopValues")
                 if(oldType == "KinectCamera"):
 #                    self._configurationTree.removeParameter("DisplayModeModulation")
@@ -436,9 +446,11 @@ class MediaFile(object):
                 if(advLoopValues != None):
                     self._configurationTree.setValue("AdvancedLoopValues", advLoopValues)
             else:
+                print "DEBUG pcn: updateFrom: removing AdvancedLoopValues 1"
                 self._configurationTree.removeParameter("AdvancedLoopValues")
         else:
             self._configurationTree.removeParameter("LoopMode")
+            print "DEBUG pcn: updateFrom: removing AdvancedLoopValues 2"
             self._configurationTree.removeParameter("AdvancedLoopValues")
 
         if(mediaType == "Image"):
@@ -2355,11 +2367,14 @@ class MediaFileGui(object): #@UndefinedVariable
                             loopConfigValString = "0.0|0.25|0.75|1.0"
                         self._values1Field.SetValue(loopConfigValString)
                         self._config.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
+                        print "DEBUG pcn: save set value: " + loopConfigValString
                         self._config.setValue("AdvancedLoopValues", loopConfigValString)
                     else:
+                        print "DEBUG pcn: _onSaveButton: removing AdvancedLoopValues 1"
                         self._config.removeParameter("AdvancedLoopValues")
                 else:
                     self._config.removeParameter("LoopMode")
+                    print "DEBUG pcn: _onSaveButton: removing AdvancedLoopValues 2"
                     self._config.removeParameter("AdvancedLoopValues")
 
                 if(self._type == "Image"):
@@ -2596,8 +2611,17 @@ class MediaFileGui(object): #@UndefinedVariable
             self._subModeLabel.SetLabel("Loop mode:")
             if(config != None):
                 self._updateLoopModeChoices(self._subModeField, config.getValue("LoopMode"), "Normal")
+                confString = self._config.getValue("AdvancedLoopValues")
+                if(confString == None):
+                    confValString = "0.0|0.25|0.75|1.0"
+                else:
+                    confVal = textToFloatValues(confString, 4)
+                    confValString = floatValuesToString(confVal)
+                self._values1Field.SetValue(confValString)
+                print "DEBUG pcn: setupSubConfig got value: " + confValString
             else:
                 self._updateLoopModeChoices(self._subModeField, self._subModeField.GetValue(), "Normal")
+                self._values1Field.SetValue("0.0|0.25|0.75|1.0")
         elif(self._type == "ImageSequence"):
             self._subModeLabel.SetLabel("Sequence mode:")
             if(config != None):

@@ -173,6 +173,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return BluredContrastEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Feedback):
         return FeedbackEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Repeat):
+        return RepeatEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Delay):
         return DelayEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Rays):
@@ -434,7 +436,7 @@ class ZoomEffect(object):
             destPoint3 = rotatePoint(-zRotation, destPoint3[0], destPoint3[1], self._halfResolutionX, self._halfResolutionY)
         dstPoints = ((destPoint1[0]+xAdd, destPoint1[1]+yAdd),(destPoint2[0]+xAdd, destPoint2[1]+yAdd),(destPoint3[0]+xAdd,destPoint3[1]+yAdd))
         zoomMatrix = cv.CreateMat(2,3,cv.CV_32F)
-#        print "DEBUG pcn: trasform points source: " + str(srcPoints) + " dest: " + str(dstPoints) 
+#        print "DEBUG pcn: trasform points source: " + str(srcPoints) + " dest: " + str(dstPoints) + " size: " + str((width, height))
         cv.GetAffineTransform(srcPoints, dstPoints, zoomMatrix)
         cv.WarpAffine(image, self._zoomMat, zoomMatrix)
         if(imageMask != None):
@@ -1360,7 +1362,7 @@ class FeedbackEffect(object):
         self._xFlipAngleValue = 0.0
 
     def setExtraConfig(self, values):
-        print("DEBUG pcn: Feedback::setExtraConfig() " + str(values))
+#        print("DEBUG pcn: Feedback::setExtraConfig() " + str(values))
         if(values != None):
             _, advancedZoomString = values
             if(advancedZoomString == None):
@@ -1428,6 +1430,125 @@ class FeedbackEffect(object):
         cv.Add(image, self._tmpMat, self._memoryMat)
 #        cv.Sub(image, self._tmpMat, self._memoryMat)
         cv.Copy(self._memoryMat, image)
+        return image
+
+class RepeatEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+
+        self._radians360 = math.radians(360)
+        self._tmpMat = effectMat2
+        self._replaceMask = effectMask1
+        self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
+        self._zoomMultiplyerValue = 1.0
+        self._zRotationValue = 0.0
+        self._xFlipValue = 0.0
+        self._xFlipAngleValue = 0.0
+
+    def setExtraConfig(self, values):
+#        print("DEBUG pcn: Repeat::setExtraConfig() " + str(values))
+        if(values != None):
+            _, advancedZoomString = values
+            if(advancedZoomString == None):
+                self._zoomMultiplyerValue = 1.0
+                self._zRotationValue = 0.0
+                self._xFlipValue = 0.0
+                self._xFlipAngleValue = 0.0
+            else:
+                zoomVal, rotZVal, flipXVal, rotFlipVal = textToFloatValues(advancedZoomString, 4)
+                if(zoomVal < -1.0):
+                    self._zoomMultiplyerValue = -1.0
+                elif(zoomVal > 1.0):
+                    self._zoomMultiplyerValue = 1.0
+                else:
+                    self._zoomMultiplyerValue = zoomVal
+                self._zRotationValue = rotZVal
+                self._xFlipValue = flipXVal
+                self._xFlipAngleValue = rotFlipVal
+
+    def getName(self):
+        return "Repeat"
+
+    def reset(self):
+        pass
+
+    def applyEffect(self, image, songPosition, amount, arg1, arg2, arg3, arg4):
+        return self.addFeedbackImage(image, amount, arg1, arg2, arg3, arg4)
+
+    def addFeedbackImage(self, image, value, repeat, move, direction, zoom):
+        repeat = int((1.0 - repeat) * 5.99)
+        zoom = 1.0 - zoom
+        zoomMultiplyer = 0.5
+        repeatCounter = 0
+        firstZoomCalc = None
+        oldZoomCalc = None
+        oldXcenter = None
+        oldYcenter = None
+        calcValue = value
+        while(repeat > 0):
+            zoomMultiplyer *= 2
+            repeatCounter += 1
+            repeat -= 1
+            if(value > 0.99):
+                cv.Copy(image, self._tmpMat)
+            else:
+                calcValue = math.log10(10.0 + (90.0 * (1.0 - min(((1.0-value)*math.sqrt(zoomMultiplyer)), 1.0)))) - 1.0
+                if(calcValue < 0.01):
+                    return image
+                cv.ConvertScaleAbs(image, self._tmpMat, calcValue, 0)
+            if((zoom != 0.5) or (move > 0.003)):
+                if(oldZoomCalc != None):
+                    if(zoom == 0.5):
+                        zoomCalc = 1.0
+                    else:
+                        if(zoomMultiplyer <=2.5):
+                            zoomCalc = oldZoomCalc * firstZoomCalc
+                        elif(zoomMultiplyer < 4.5):
+                            zoomCalc = oldZoomCalc * math.pow(firstZoomCalc, 2)
+                        elif(zoomMultiplyer < 8.5):
+                            zoomCalc = oldZoomCalc * math.pow(firstZoomCalc, 4)
+                        else:
+                            zoomCalc = oldZoomCalc * math.pow(firstZoomCalc, 8)
+                        if(oldXcenter == 0.0):
+                            xcenter = 0.0
+                        else:
+                            xcenter = oldXcenter * (2.0 - math.log10(oldZoomCalc))
+                        if(oldYcenter == 0.0):
+                            ycenter = 0.0
+                        else:
+                            ycenter = oldYcenter * (2.0 - math.log10(oldZoomCalc))
+                else:
+                    if(zoom == 0.5):
+                        zoomCalc = 1.0
+                    else:
+                        if(self._zoomMultiplyerValue < 0.0):
+                            zoomValue = ((0.5 - zoom) * -self._zoomMultiplyerValue) + 0.5
+                            zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                        elif(self._zoomMultiplyerValue < 0.003):
+                            zoomCalc = 1.0
+                        else:
+                            zoomValue = ((zoom - 0.5) * self._zoomMultiplyerValue) + 0.5
+                            zoomCalc = self._zoomEffect.calculateZoom(zoomValue, 1.5, 1.5)
+                        firstZoomCalc = zoomCalc
+                    if(move > 0.003):
+                        ycenter = (-0.125 * move * math.sin(self._radians360 * -direction))
+                    else:
+                        ycenter = 0.0
+                    if(move > 0.003):
+                        xcenter = (-0.125 * move * math.cos(self._radians360 * -direction))
+                    else:
+                        xcenter = 0.0
+                flipX = (zoom - 0.5) * self._xFlipValue * repeatCounter
+                flipAngle = (zoom - 0.5) * self._xFlipAngleValue
+                rotZ = (zoom - 0.5) * self._zRotationValue * zoomMultiplyer
+                oldZoomCalc = zoomCalc
+                oldXcenter = xcenter
+                oldYcenter = ycenter
+                xcenter += 0.5
+                ycenter += 0.5
+                self._zoomEffect.zoomImageTransform(self._tmpMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ)
+            cv.Add(image, self._tmpMat, image)
         return image
 
 class DelayEffect(object):
@@ -2266,7 +2387,6 @@ class ImageAddEffect(object):
 #class BaerturEffect(object): #Sigle frame feedback ish ;-)
 
 #class EchoEffect2(object):
-#class KaleidoscopeEffect(object):
 
 #class CromaKeyGeneratorEffect(object):
 

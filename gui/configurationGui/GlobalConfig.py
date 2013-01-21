@@ -280,14 +280,15 @@ class EffectsGui(object):
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
-        self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapKaleidoscope = wx.Bitmap("graphics/fxKaleidoscope.png") #@UndefinedVariable
+        self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRays = wx.Bitmap("graphics/fxRays.png") #@UndefinedVariable
-        self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
+        self._fxBitmapRepeat = wx.Bitmap("graphics/fxRepeat.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
+        self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
         self._fxBitmapStrobe = wx.Bitmap("graphics/fxStrobe.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
@@ -570,6 +571,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapFeedback)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapFeedback)
+        index = self._effectImageList.Add(self._fxBitmapRepeat)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapRepeat)
         index = self._effectImageList.Add(self._fxBitmapDelay)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapDelay)
@@ -1529,6 +1533,22 @@ A list of start values for the effect modulation.
             config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
             self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Repeat):
+            config2helpText = "Sets up advanced zoom options.\n"
+            config2helpText += "\n"
+            config2helpText += "Default is 1.0|0.0|0.0|0.0 (Zoom only.)\n"
+            config2helpText += "\n"
+            config2helpText += "First number is zoom amount.\n"
+            config2helpText += "\t1.0 = use full zoom range.\n"
+            config2helpText += "Second number is rotation amount.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2helpText += "Thirt number is flip amount around X-axis.\n"
+            config2helpText += "\t1.0 = flip 360 degrees.\n"
+            config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
+            config2helpText += "\t1.0 = rotate 360 degrees.\n"
+            config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
+            self._setLabels("Feedback:", "Limit:", "Move:", "Angle:", "Zoom:", None, config2config)
+            self._setupValueLabels(None, ["32", "16", "8", "4", "2", "Off"], None, None, None)
         elif(self._chosenEffectId == EffectTypes.Delay):
             config2helpText = "Sets up advanced zoom options.\n"
             config2helpText += "\n"
@@ -1654,7 +1674,7 @@ A list of start values for the effect modulation.
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
                 return True
-        elif((configEffect == "Feedback") or (configEffect == "Delay")):
+        elif((configEffect == "Feedback") or (configEffect == "Repeat") or (configEffect == "Delay")):
             config2Val = self._config.getValue("FeedbackAdvancedZoom")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):

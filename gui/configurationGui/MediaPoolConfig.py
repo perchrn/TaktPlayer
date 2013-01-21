@@ -789,6 +789,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapMirror = wx.Bitmap("graphics/fxMirror.png") #@UndefinedVariable
         self._fxBitmapPixelate = wx.Bitmap("graphics/fxPixelate.png") #@UndefinedVariable
         self._fxBitmapRays = wx.Bitmap("graphics/fxRays.png") #@UndefinedVariable
+        self._fxBitmapRepeat = wx.Bitmap("graphics/fxRepeat.png") #@UndefinedVariable
         self._fxBitmapRotate = wx.Bitmap("graphics/fxRotate.png") #@UndefinedVariable
         self._fxBitmapScroll = wx.Bitmap("graphics/fxScroll.png") #@UndefinedVariable
         self._fxBitmapSelfDiff = wx.Bitmap("graphics/fxSelfDiff.png") #@UndefinedVariable
@@ -3161,6 +3162,8 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._fxBitmapBlurMul, self._fxBitmapBlurMul)
         elif(effectId == EffectTypes.Feedback):
             widget.setBitmaps(self._fxBitmapFeedback, self._fxBitmapFeedback)
+        elif(effectId == EffectTypes.Repeat):
+            widget.setBitmaps(self._fxBitmapRepeat, self._fxBitmapRepeat)
         elif(effectId == EffectTypes.Delay):
             widget.setBitmaps(self._fxBitmapDelay, self._fxBitmapDelay)
         elif(effectId == EffectTypes.SelfDifference):

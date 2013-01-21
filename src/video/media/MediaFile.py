@@ -139,7 +139,7 @@ class MediaFile(object):
                 mediaSettingsHolder.effect1 = getEffectByName(effect1Name, self._effect1TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
             if(effect1Name == "Zoom"):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
-            elif((effect1Name == "Feedback") or (effect1Name == "Delay")):
+            elif((effect1Name == "Feedback") or (effect1Name == "Repeat") or (effect1Name == "Delay")):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
             elif(effect1Name == "Edge"):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
@@ -150,7 +150,7 @@ class MediaFile(object):
                 mediaSettingsHolder.effect2 = getEffectByName(effect2Name, self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
             if(effect2Name == "Zoom"):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
-            elif((effect2Name == "Feedback") or (effect2Name == "Delay")):
+            elif((effect2Name == "Feedback") or (effect2Name == "Repeat") or (effect2Name == "Delay")):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())
             elif(effect2Name == "Edge"):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())

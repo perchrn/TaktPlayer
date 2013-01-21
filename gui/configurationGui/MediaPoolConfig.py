@@ -782,6 +782,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
         self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
+        self._fxBitmapFreeze = wx.Bitmap("graphics/fxFreeze.png") #@UndefinedVariable
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
@@ -3166,6 +3167,8 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._fxBitmapRepeat, self._fxBitmapRepeat)
         elif(effectId == EffectTypes.Delay):
             widget.setBitmaps(self._fxBitmapDelay, self._fxBitmapDelay)
+        elif(effectId == EffectTypes.Freeze):
+            widget.setBitmaps(self._fxBitmapFreeze, self._fxBitmapFreeze)
         elif(effectId == EffectTypes.SelfDifference):
             widget.setBitmaps(self._fxBitmapSelfDiff, self._fxBitmapSelfDiff)
         elif(effectId == EffectTypes.Colorize):

@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Kaleidoscope, Rotate, Scroll, Blur, BlurContrast, Feedback, Repeat, Delay, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(29)
+    Zoom, Flip, Mirror, Kaleidoscope, Rotate, Scroll, Blur, BlurContrast, Feedback, Repeat, Delay, Freeze, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(30)
 
     def getChoices(self):
         return ["None",
@@ -19,6 +19,7 @@ class EffectTypes():
                 "Feedback",
                 "Repeat",
                 "Delay",
+                "Freeze",
                 "Rays",
                 "SlitScan",
                 "SelfDifference",
@@ -50,6 +51,7 @@ class EffectTypes():
                 "Video feedback effect.",
                 "Feedbacklike effect wihout delay.",
                 "Video delay effect.",
+                "Timed video freeze effect.",
                 "Ray effect.",
                 "Slit-scan effect.",
                 "Delaying video and subtracting it with self.",
@@ -93,6 +95,8 @@ def getEffectId(name):
         return EffectTypes.Repeat
     elif(lowername == "delay"):
         return EffectTypes.Delay
+    elif(lowername == "freeze"):
+        return EffectTypes.Freeze
     elif(lowername == "rays"):
         return EffectTypes.Rays
     elif(lowername == "slitscan"):
@@ -155,6 +159,8 @@ def getEffectName(effectId):
         return "Repeat"
     elif(effectId == EffectTypes.Delay):
         return "Delay"
+    elif(effectId == EffectTypes.Freeze):
+        return "Freeze"
     elif(effectId == EffectTypes.Rays):
         return "Rays"
     elif(effectId == EffectTypes.SlitScan):

@@ -277,6 +277,7 @@ class EffectsGui(object):
         self._fxBitmapDist = wx.Bitmap("graphics/fxDist.png") #@UndefinedVariable
         self._fxBitmapEdge = wx.Bitmap("graphics/fxEdge.png") #@UndefinedVariable
         self._fxBitmapFlip = wx.Bitmap("graphics/fxFlip.png") #@UndefinedVariable
+        self._fxBitmapFreeze = wx.Bitmap("graphics/fxFreeze.png") #@UndefinedVariable
         self._fxBitmapHueSat = wx.Bitmap("graphics/fxHueSat.png") #@UndefinedVariable
         self._fxBitmapImageAdd = wx.Bitmap("graphics/fxImageAdd.png") #@UndefinedVariable
         self._fxBitmapInverse = wx.Bitmap("graphics/fxInverse.png") #@UndefinedVariable
@@ -577,6 +578,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapDelay)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapDelay)
+        index = self._effectImageList.Add(self._fxBitmapFreeze)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapFreeze)
         index = self._effectImageList.Add(self._fxBitmapRays)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapRays)
@@ -1565,6 +1569,9 @@ A list of start values for the effect modulation.
             config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
             self._setLabels("Feedback:", "LumaKey:", "Move:", "Angle:", "Zoom:", None, config2config)
             self._setupValueLabels(None, None, None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Freeze):
+            self._setLabels("Time:", "TimeBase", "Trigger", None, None)
+            self._setupValueLabels(None, ["2", "3", "4", "5", "6", "7", "8", "Trigger"], None, None, None)
         elif(self._chosenEffectId == EffectTypes.Rays):
             self._setLabels("Amount:", "Bend", "Mode:", "Horizontal:", None)
             self._setupValueLabels(None, None, self._rayModes.getChoices(), None, None)

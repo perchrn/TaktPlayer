@@ -177,6 +177,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return RepeatEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Delay):
         return DelayEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Freeze):
+        return FreezeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Rays):
         return RaysEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.SlitScan):
@@ -1651,6 +1653,78 @@ class DelayEffect(object):
         cv.Add(self._innerMask, self._zoomMask, self._memoryMask)
         return image
 
+class FreezeEffect(object):
+    def __init__(self, configurationTree, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        setupEffectMemory(internalResX, internalResY)
+
+        self._lastTime = 0.0
+        self._lastState = None
+        self._freezeMat = createMat(internalResX, internalResY)
+        cv.SetZero(self._freezeMat)
+        self._oldTimeBaseValue = 0.0
+        self._calcTimeBase(2.0, 6)
+        self._triggerMode = False
+
+    def _calcTimeBase(self, freezeBaseTime, freezeSpeedupSteps):
+        if(freezeSpeedupSteps < 1):
+            freezeSpeedupSteps = 1
+        self._freezeBaseTime = float(freezeBaseTime * 96)
+        self._freezeSpeedupSteps = float(int(freezeSpeedupSteps)) + 0.5
+
+    def getName(self):
+        return "Freeze"
+
+    def reset(self):
+        self._lastState = None
+
+    def applyEffect(self, image, songPosition, amount, arg1, arg2, arg3, arg4):
+        return self.addDelayImage(image, songPosition, amount, arg1, arg2)
+
+    def addDelayImage(self, image, songPosition, speed, timeBase, trigger):
+        if(timeBase != self._oldTimeBaseValue):
+            timeBaseValue = int(timeBase * 7.99)
+            if(timeBaseValue < 7):
+                self._calcTimeBase(2 + timeBaseValue, 8)
+                self._triggerMode = False
+            else:
+                self._triggerMode = True
+            self._oldTimeBaseValue = timeBase
+        if(self._triggerMode == True):
+            if(trigger > 0.666):
+                if(self._lastState != 3):
+                    cv.Copy(image, self._freezeMat)
+                else:
+                    cv.Copy(self._freezeMat, image)
+                self._lastState = 3
+            elif(trigger > 0.333):
+                if(self._lastState != 2):
+                    cv.Copy(image, self._freezeMat)
+                else:
+                    cv.Copy(self._freezeMat, image)
+                self._lastState = 2
+            else:
+                self._lastState = 1
+            return image
+        else:
+            if(speed < 0.01):
+                self._lastState = None
+                return image
+            powerFactor = (self._freezeSpeedupSteps) * (1.0 - speed)
+            freezeIntervall = self._freezeBaseTime / math.pow(2, int(powerFactor))
+            freezePhase = (songPosition % freezeIntervall) / freezeIntervall
+            if(freezePhase < 0.5):
+                freezeOnOff = False
+            else:
+                freezeOnOff = True
+#            print "DEBUG pcn: freezeEffect intervall " + str(freezeIntervall) + " phase " + str(freezePhase) + " divider: " + str(int(powerFactor)) + " on: " + str(freezeOnOff)
+            if(freezeOnOff != self._lastState):
+                cv.Copy(image, self._freezeMat)
+            else:
+                cv.Copy(self._freezeMat, image)
+            self._lastState = freezeOnOff
+            return image
+
 class SelfDifferenceEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree
@@ -2383,8 +2457,6 @@ class ImageAddEffect(object):
 
 #class StutterEffect(object):
 #class FreezeFx(object):
-
-#class BaerturEffect(object): #Sigle frame feedback ish ;-)
 
 #class EchoEffect2(object):
 

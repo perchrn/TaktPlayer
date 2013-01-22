@@ -213,6 +213,7 @@ class ConfigurationHolder(object):
             if((configName.endswith(".cfg.autosave") == False) and (configName.endswith(".cfg.bak") == False)):
                 self._loadedFileName = filePath
             self._unsavedConfig = False
+            saveFile.close()
         except:
             print "********** Error saving configuration: \"%s\" **********" %(filePath)
             raise
@@ -430,6 +431,9 @@ class ConfigurationHolder(object):
     def getConfigurationXMLString(self):
         root = self.getConfigurationXML()
         return self._xmlToString(root)
+
+    def getLoadedXMLString(self):
+        return self._xmlToString(self._loadedXML)
 
     def _xmlToString(self, xml):
         xmlString = ElementTree.tostring(xml, encoding="utf-8", method="xml")

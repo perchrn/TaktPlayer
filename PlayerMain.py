@@ -26,7 +26,7 @@ from video.media.MediaPool import MediaPool
 #from video.media.MediaFile import createCvWindow, showCvImage, hasCvWindowStoped, addCvMouseCallback
 
 from midi.MidiTiming import MidiTiming
-from midi.TcpMidiListner import TcpMidiListner
+from midi.TcpMidiListner import TcpMidiListner, RenderFileReader
 from midi.MidiStateHolder import MidiStateHolder, SpecialModulationHolder
 
 #Python standard
@@ -41,11 +41,13 @@ launchGUI = True
 applicationHolder = None
 
 class PlayerMain(wx.Frame):
-    def __init__(self, parent, configDir, configFile, debugMode, title):
+    def __init__(self, parent, configDir, configFile, debugMode, eventlogFileName, renderFileName, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
         self._debugModeOn = debugMode
         self._configDirArgument = configDir
         self._baseTitle = title
+        self._eventlogFileName = eventlogFileName
+        self._renderFileName = renderFileName
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -144,33 +146,55 @@ class PlayerMain(wx.Frame):
                                     self._internalResolutionY, self._playerConfiguration.getVideoDir(),
                                     self._playerConfiguration.getAppDataDirectory())
 
-        self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._configLoadCallback)
-        self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
+        self._configCheckEveryNRound = 60 * 5 #Every 5th second
+        self._configCheckCounter = 0
+
+        self._renderMode = False
+        self._eventlogFileHandle = None
+        self._eventLogSaveQueue = None
+        if(self._renderFileName != ""):
+            if(os.path.isfile(self._renderFileName) == False):
+                self._renderFileName = os.path.join(self._playerConfiguration.getAppDataDirectory(), os.path.basename(self._renderFileName))
+            self._midiListner = RenderFileReader(self._midiTiming, self._midiStateHolder, self._configLoadCallback, self._renderFileName)
+            self._renderMode = True
+        else:
+            try:
+                filePath = os.path.normpath(self._eventlogFileName)
+                self._eventlogFileHandle = open(filePath, 'w')
+            except:
+                pass
+            if(self._eventlogFileHandle != None):
+                self._eventLogSaveQueue = Queue(4096)
+            self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._configLoadCallback, self._eventLogSaveQueue)
+            self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
 
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0
 
-        self._configCheckEveryNRound = 60 * 5 #Every 5th second
-        self._configCheckCounter = 0
-
-        self._guiServer = GuiServer(self._configurationTree, self._playerConfiguration, self._mediaPool, self._midiStateHolder)
-        self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
-        startNote = self._playerConfiguration.getStartNoteNumber()
-        if((startNote > -1) and (startNote < 128)):
-            self._midiStateHolder.noteOn(0, startNote, 0x40, (True, 0.0))
-            self._midiStateHolder.noteOff(0, startNote, 0x40, (True, 0.000000001))
-
         self._guiProcess = None
-        if(launchGUI == True):
-            print "*-*-*-" * 30
-            print "Start GUI process!"
-            self._startGUIProcess()
-            print "*-*-*-" * 30
+        self._guiServer =None
+        if(self._renderMode == False):
+            self._guiServer = GuiServer(self._configurationTree, self._playerConfiguration, self._mediaPool, self._midiStateHolder, self._eventLogSaveQueue)
+            self._guiServer.startGuiServerProcess(self._playerConfiguration.getWebServerAddress(), self._playerConfiguration.getWebServerPort(), None)
+            startNote = self._playerConfiguration.getStartNoteNumber()
+            if((startNote > -1) and (startNote < 128)):
+                self._midiStateHolder.noteOn(0, startNote, 0x40, (True, 0.0))
+                self._midiStateHolder.noteOff(0, startNote, 0x40, (True, 0.000000001))
+
+            if(launchGUI == True):
+                print "*-*-*-" * 30
+                print "Start GUI process!"
+                self._startGUIProcess()
+                print "*-*-*-" * 30
 
 #        print self._configurationTree.getConfigurationXMLString()
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(1000 / 60)#30 times a second
-        self.Bind(wx.EVT_TIMER, self._frameUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
+        if(self._renderMode == False):
+            self.Bind(wx.EVT_TIMER, self._frameUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
+        else:
+            self._renderTime  = None
+            self.Bind(wx.EVT_TIMER, self._renderFile, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_PAINT, self._onPaint) #@UndefinedVariable
         self.Bind(wx.EVT_SIZE, self._onSize) #@UndefinedVariable
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda evt: None)
@@ -193,8 +217,13 @@ class PlayerMain(wx.Frame):
             self.SetTitle(self._baseTitle + "   *** " + message + " ***")
 
 
-    def _configLoadCallback(self, programName):
-        if(programName != ""):
+    def _configLoadCallback(self, programName, configString = None):
+        if(configString != None):
+            if(configString != ""):
+                self._configurationTree.setFromXmlString(configString)
+                self._configCheckCounter = self._configCheckEveryNRound + 1
+                self.checkAndUpdateFromConfiguration()
+        elif(programName != ""):
             activeConfigName = self._configurationTree.getCurrentFileName()
             isConfigNotSaved = self._configurationTree.isConfigNotSaved()
             if(isConfigNotSaved or (activeConfigName != programName)):
@@ -205,6 +234,7 @@ class PlayerMain(wx.Frame):
                 filePath = os.path.join(self._playerConfiguration.getConfigDir(), programName)
                 self._configurationTree.loadConfig(filePath)
                 self._configCheckCounter = self._configCheckEveryNRound + 1
+                return self._configurationTree.getLoadedXMLString()
 
     def checkAndUpdateFromConfiguration(self):
         if(self._configCheckCounter >= self._configCheckEveryNRound):
@@ -394,7 +424,12 @@ class PlayerMain(wx.Frame):
         print "Closeing applicaton"
         if(self._fullscreenMode == True):
             self.ShowFullScreen(False, style=0)
-        self._updateTimer.Stop()
+
+        if(self._renderMode != True):
+            self._updateTimer.Stop()
+
+        if(self._eventlogFileHandle != None):
+            self._eventlogFileHandle.close()
 
         try:
             self._guiServer.requestGuiServerProcessToStop()
@@ -412,7 +447,8 @@ class PlayerMain(wx.Frame):
     def _onShutdownTimer(self, event):
         allDone = False
         if(self._shutdownTimerCounter >= 1000):
-            self._guiServer.forceGuiServerProcessToStop()
+            if(self._guiServer != None):
+                self._guiServer.forceGuiServerProcessToStop()
             self._midiListner.forceTcpMidiListnerProcessToStop()
             self.forceGuiProcessProcessToStop()
             allDone = True
@@ -442,6 +478,31 @@ class PlayerMain(wx.Frame):
                 sys.exit()
             print "Closeing done."
 
+    def _renderFile(self, event):
+        if(self._renderTime == None):
+            framesPerSecond = 60
+            if(self._midiListner.endIsReached() == True):
+                print "Error! No start position found. Canot render video."
+                self._stopPlayer()
+            startTime = self._midiListner.getStartTime()
+            self._renderTime = startTime
+            self._renderDelta = 1.0/framesPerSecond
+            self._mediaMixer.setupVideoWriter("test.avi", framesPerSecond)
+        sleepCount = 0
+        while(self._midiListner.endIsReached() == False):
+            self._midiListner.getData(self._renderTime)
+            self._mediaPool.updateVideo(self._renderTime)
+            mixedImage = self._mediaMixer.getImage(self._outOfMemory)
+            self._mediaMixer.writeImage()
+            self._wxImageBuffer.SetData(mixedImage.tostring())
+            self._updateBuffer()
+            self._renderTime += self._renderDelta
+            sleepCount += 1
+            if(sleepCount > 60):
+                print "S"
+                return
+        self._stopPlayer()
+
     def _frameUpdate(self, event = None):
 #            if (dt > self._timingThreshold):
 #                print("Too slow main schedule " + str(dt))
@@ -470,6 +531,19 @@ class PlayerMain(wx.Frame):
         except MemoryError:
             self._updateTitle("Out of memory error!")
             self._outOfMemory = True
+
+        if(self._eventLogSaveQueue != None):
+            saveLines = ""
+            gotNewLines = False
+            try:
+                while(True):
+                    saveLines += self._eventLogSaveQueue.get_nowait()
+                    gotNewLines = True
+            except:
+                pass
+            if(gotNewLines == True):
+                print saveLines,
+                self._eventlogFileHandle.write(saveLines)
 
         #Check for quit conditions...
         guiStatus = self._checkStatusQueue()
@@ -502,8 +576,10 @@ if __name__ in ('__android__', '__main__'):
     guiOnlyMode = False
     checkForMoreConfigFileName = False
     checkForMoreConfigDirName = False
+    checkForMoreEventFileName = False
     configDir = ""
     configFile = ""
+    renderFile = ""
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--help"):
             if(sys.platform == "darwin"):
@@ -528,35 +604,49 @@ if __name__ in ('__android__', '__main__'):
             helpMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
         elif(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
         elif(sys.argv[i+1].lower() == "--guionly"):
             guiOnlyMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
         elif(sys.argv[i+1].lower() == "--debug"):
             debugMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
         elif(sys.argv[i+1].lower() == "--normalpriority"):
             raisePriority = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
         elif(sys.argv[i+1].startswith("--configDir=")):
             checkForMoreConfigDirName = True
             checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
             configDir = sys.argv[i+1][12:]
         elif(sys.argv[i+1].startswith("--configFile=")):
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = True
+            checkForMoreEventFileName = False
             configFile = sys.argv[i+1][13:]
+        elif(sys.argv[i+1].startswith("--renderFile=")):
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+            checkForMoreEventFileName = True
+            renderFile = sys.argv[i+1][13:]
         else:
             if(checkForMoreConfigDirName == True):
                 configDir += " " + sys.argv[i+1]
             if(checkForMoreConfigFileName == True):
                 configFile += " " + sys.argv[i+1]
+            if(checkForMoreEventFileName == True):
+                renderFile += " " + sys.argv[i+1]
     if(raisePriority == True):
         if(sys.platform == "win32"):
             try:
@@ -575,6 +665,7 @@ if __name__ in ('__android__', '__main__'):
     if(helpMode != True):
         appDataDir, _ = getDefaultDirectories()
         logFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".log"))
+        eventlogFileName = os.path.normpath(os.path.join(appDataDir, APP_NAME + ".eventlog"))
         if(debugMode == True):
             redirectValue = 0
         else:
@@ -585,6 +676,12 @@ if __name__ in ('__android__', '__main__'):
                     shutil.move(logFileName, oldLogFileName)
                 except:
                     pass
+        oldLogFileName = eventlogFileName + ".old"
+        if(os.path.isfile(eventlogFileName)):
+            try:
+                shutil.move(eventlogFileName, oldLogFileName)
+            except:
+                pass
         if(sys.platform == "darwin"):
             os.environ["PATH"] += ":."
             launchGUI = False
@@ -594,7 +691,7 @@ if __name__ in ('__android__', '__main__'):
             startGui(debugMode, configDir)
         else:
             applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-            gui = PlayerMain(None, configDir, configFile, debugMode, title="Takt Player")
+            gui = PlayerMain(None, configDir, configFile, debugMode, eventlogFileName, renderFile, title="Takt Player")
             try:
                 applicationHolder.MainLoop()
             except:

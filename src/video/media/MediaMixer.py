@@ -75,6 +75,8 @@ class MediaMixer(object):
         self._outOfMemoryFileName = os.path.normpath(os.path.join(os.getcwd(), "outOfMemoryPreview.jpg"))
         self._previewName = os.path.normpath(os.path.join(self._appDataDirectory, "thumbs", "preview.jpg"))
 
+        self._videoWriter = None
+
     def getMixMatBuffers(self):
         return self._mixMat1, self._mixMat2
 
@@ -242,6 +244,14 @@ class MediaMixer(object):
             fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(self._defaultFadeSettingsName)
         self._mediaTrackFadeConfigHolders[trackIndex] = fadeAndLevelSettings
         self._mediaTracksWipeSettings[trackIndex] = fadeAndLevelSettings.getWipeSettings()
+
+    def setupVideoWriter(self, fileName, framesPerSecond):
+        fourcc = cv.CV_FOURCC('M','J','P','G')
+        self._videoWriter = cv.CreateVideoWriter(fileName, fourcc, framesPerSecond, (self._internalResolutionX, self._internalResolutionY), 1)
+
+    def writeImage(self):
+        if(self._videoWriter != None):
+            cv.WriteFrame(self._videoWriter, cv.GetImage(self._currentImage))
 
     def getImage(self, outOfMemory):
         self._outOfMemory = outOfMemory

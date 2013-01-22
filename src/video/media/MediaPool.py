@@ -8,7 +8,6 @@ from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
     MediaGroup, TextMedia, ModulationMedia
 from midi import MidiUtilities
-from video.Effects import getEmptyImage
 from video.media.MediaFileModes import forceUnixPath
 from midi.MidiStateHolder import GenericModulationHolder
 import traceback
@@ -26,8 +25,6 @@ class MediaPool(object):
         self._videoDirectory = videoDir
         self._appDataDirectory = appDataDir
 
-        self._emptyImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
-
         self._defaultQuantize = midiTiming.getTicksPerQuarteNote() * 1
 
         self._midiTiming = midiTiming
@@ -36,7 +33,7 @@ class MediaPool(object):
         self._noteModulation = GenericModulationHolder("Note", self._specialModulationHolder)
         self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
         self._mediaMixer = mediaMixer
-        self._mediaMixer.gueueImage(self._emptyImage, None, 1)
+        self._mediaMixer.gueueImage(None, None, 1)
         self._mediaPool = []
         for i in range(128): #@UnusedVariable
             self._mediaPool.append(None)

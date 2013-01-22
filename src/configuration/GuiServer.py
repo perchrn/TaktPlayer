@@ -348,13 +348,14 @@ def guiWebServerProcess(host, port, passwd, appDataDir, serverMessageQueue, serv
 
 
 class GuiServer(object):
-    def __init__(self, configurationTree, playerConfiguration, mediaPool, midiStateHolder):
+    def __init__(self, configurationTree, playerConfiguration, mediaPool, midiStateHolder, eventLogSaveQueue = None):
         self._configurationTree = configurationTree
         self._playerConfiguration = playerConfiguration
         self._configDir = self._playerConfiguration.getConfigDir()
         self._appDataDir = self._playerConfiguration.getAppDataDirectory()
         self._mediaPool = mediaPool
         self._midiStateHolder = midiStateHolder
+        self._eventLogSaveQueue = eventLogSaveQueue
 
         self._serverMessageQueue = None
         self._serverCommandQueue = None
@@ -391,6 +392,13 @@ class GuiServer(object):
                 print "GUI server daemon did not respond to quit command. Terminating."
                 self._guiServerProcess.terminate()
         self._guiServerProcess = None
+
+    def _addEventToSaveLog(self, string):
+        if(self._eventLogSaveQueue != None):
+            try:
+                self._eventLogSaveQueue.put_nowait(string + "\n")
+            except:
+                pass
 
     def processGuiRequests(self):
         try:
@@ -485,6 +493,8 @@ class GuiServer(object):
                 elif(webCommandXml.tag == "configuration"):
                     print "Updating configuration from GUI..."
                     self._configurationTree.setFromXml(webCommandXml)
+                    timeStampString = str(time.time())
+                    self._addEventToSaveLog(timeStampString + "|ConfigSet|Start\n" + webCommand + "\n" + timeStampString + "|ConfigSet|Done")
                     return True
                 elif(webCommandXml.tag == "playerConfigFileTransfer"):
 #                    print "Updating player configuration..."
@@ -504,6 +514,8 @@ class GuiServer(object):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.loadConfig(filePath)
                         retVal = True
+                        timeStampString = str(time.time())
+                        self._addEventToSaveLog(timeStampString + "|ConfigLoad|Start|" + str(filePath) + "\n" + self._configurationTree.getConfigurationXMLString() + "\n" + timeStampString + "|ConfigLoad|Done")
                     elif((reqType == "save") and (fileName != "None")):
                         filePath = os.path.join(self._configDir, fileName)
                         self._configurationTree.saveConfigFile(filePath)

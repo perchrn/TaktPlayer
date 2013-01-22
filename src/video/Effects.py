@@ -2455,16 +2455,12 @@ class ImageAddEffect(object):
 #TODO: add effects
 #class SliceEffect(object):
 
-#class StutterEffect(object):
-#class FreezeFx(object):
-
 #class EchoEffect2(object):
 
 #class CromaKeyGeneratorEffect(object):
 
 #??? TODO ???
 #get coordinates from image blob (I want better tracking (or sorting if you like))
-#Showoff DEMO
 #make ModulationValueMode available and Move ModulationValueMode to EffectConfig.
 #Dont reload all thumbs on config update (only for changed media.) Optemizing ;-)
 

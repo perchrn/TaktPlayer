@@ -8,6 +8,8 @@ import socket
 import time
 from multiprocessing import Process, Queue
 from Queue import Empty
+import traceback
+from midi.MidiStateHolder import quantizePosition
 
 def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue):
     midiSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -74,9 +76,10 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
 
 
 class TcpMidiListner(object):
-    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback = None):
+    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback = None, eventLogSaveQueue = None):
         #Logging etc.
         self._configLoadCallback = configLoadCallback
+        self._eventLogSaveQueue = eventLogSaveQueue
 
         #Daemon variables:
         self._midiListnerProcess = None
@@ -125,6 +128,13 @@ class TcpMidiListner(object):
                 print "TcpMidiListner daemon did not respond to quit command. Terminating."
                 self._midiListnerProcess.terminate()
         self._midiListnerProcess = None
+
+    def _addEventToSaveLog(self, string):
+        if(self._eventLogSaveQueue != None):
+            try:
+                self._eventLogSaveQueue.put_nowait(string + "\n")
+            except:
+                pass
 
     def _decodeMidiEvent(self, dataTimeStamp, command, data1, data2, data3 = 0x00):
         isMidiNote = False
@@ -281,12 +291,16 @@ class TcpMidiListner(object):
                                 else:
                                     if(newSpp < oldSpp): # Looping back (else it is just a jump and we do nothing.)
                                         self._midiStateHolder.fixLoopingNotes(oldSpp, newSpp, self._midiTiming.getTicksPerQuarteNote())
+                            self._addEventToSaveLog(str(dataTimeStamp) + "|" + str(data))
                     if(str(data).startswith("loadProgram|")):
                         programSplit = str(data).split("|")
                         if(len(programSplit) == 2):
                             programName = programSplit[1]
+                            self._addEventToSaveLog(str(dataTimeStamp) + "|" + str(data))
                             if(self._configLoadCallback != None):
-                                self._configLoadCallback(programName)
+                                xmlString = self._configLoadCallback(programName)
+                                self._addEventToSaveLog(xmlString)
+                            self._addEventToSaveLog(str(dataTimeStamp) + "|" + str(data) + "|Done")
                 else:
                     if(dataLen > 3): # MVP MIDI over net
                         command = ord(data[0:1])
@@ -296,7 +310,165 @@ class TcpMidiListner(object):
                         isMidiNote = self._decodeMidiEvent(dataTimeStamp, command, data1, data2, data3)
                         if(isMidiNote == True):
                             gotMidiNote = True
+                        self._addEventToSaveLog(str(dataTimeStamp) + "|MIDI|%02x|%02x|%02x|%02x"%(command, data1, data2, data3))
                     else:
                         print "Short: " + str(len(data))
             else:
                 return gotMidiNote
+
+class RenderFileReader(TcpMidiListner):
+    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback, renderFileName):
+        TcpMidiListner.__init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback, eventLogSaveQueue=None)
+        self._eventLogFileHandle = None
+        self._renderFileOutputName = None
+        self._quantizeValue = 1.0 * self._midiTiming.getTicksPerQuarteNote()
+        self._nextLine = None
+        self._nextTimeStamp = 0.0
+        self._startRecordingTime = -1.0
+        try:
+            self._eventLogFileHandle = open(renderFileName, 'r')
+            self._findStartLine()
+        except:
+            print "Error opening render file with file name: " + str(renderFileName)
+            traceback.print_exc()
+            self._eventLogFileHandle = None
+
+    def startDaemon(self, host, port, useBroadcast):
+        pass
+
+    def requestTcpMidiListnerProcessToStop(self):
+        self._nextLine = None
+
+    def hasTcpMidiListnerProcessToShutdownNicely(self):
+        return True
+
+    def forceTcpMidiListnerProcessToStop(self):
+        self._nextLine = None
+
+    def endIsReached(self):
+        if(self._nextLine == None):
+            return True
+        return False
+
+    def getStartTime(self):
+        return self._startRecordingTime
+
+    def _findStartLine(self):
+        stop = False
+        while(stop == False):
+            try:
+                currentLine = self._eventLogFileHandle.readline()
+                if not currentLine:
+                    break
+            except:
+                break
+            currentLineSplit = currentLine.split('|')
+            if(len(currentLineSplit) > 1):
+                self._loadConfig(currentLineSplit)
+                if(currentLineSplit[1].lower() == "startrecording"):
+                    if(len(currentLineSplit) > 2):
+                        self._renderFileOutputName = currentLineSplit[2]
+                    currentTimeStamp = float(currentLineSplit[0])
+                    self._startRecordingTime = currentTimeStamp
+                    stop = True
+                    print "Ik"*120
+        if(stop == False):
+            self._eventLogFileHandle.seek(0)
+            print "Warning no StartRecording tag found!!!"
+            self._nextLine = None
+        else:
+            self._nextLine = self._eventLogFileHandle.readline()
+            if not self._nextLine:
+                self._nextLine = None
+            else:
+                if(len(currentLineSplit) > 1):
+                    currentTimeStamp = float(currentLineSplit[0])
+                    _, currentMidiTimeStamp = self._midiTiming.getSongPosition(currentTimeStamp)
+                    if(currentLineSplit[1].lower() == "midi"):
+                        currentMidiTimeStamp = quantizePosition(currentMidiTimeStamp, self._quantizeValue)
+                    self._nextTimeStamp = currentMidiTimeStamp
+                else:
+                    self._nextLine = None
+
+    def _loadConfig(self, currentLineSplit):
+        loadStartOk = False
+        if(currentLineSplit[1].lower() == "loadprogram"):
+            if(len(currentLineSplit) > 2):
+                if(currentLineSplit[2] != "Done"):
+                    loadStartOk = True
+                    loadFileName = currentLineSplit[2]
+        configString = ""
+        if(loadStartOk == True):
+            stop = False
+            while(stop == False):
+                try:
+                    currentLine = self._eventLogFileHandle.readline()
+                    if not currentLine:
+                        break
+                except:
+                    break
+                currentLineSplit = currentLine.split('|')
+                if(len(currentLineSplit) > 1):
+                    if(currentLineSplit[1].lower() == "loadprogram"):
+                        if(len(currentLineSplit) > 3):
+                            if(currentLineSplit[3] == "Done\n"):
+                                stop = True
+                    if(currentLineSplit[1].lower() == "vsttime"):
+                        self._updateVstTime(currentLineSplit)
+                if(stop == False):
+                    configString += currentLine
+            if(stop == True):
+                print "Oa"*120
+                self._configLoadCallback(loadFileName, configString)
+                print "Oa"*120
+
+    def _updateVstTime(self, currentLineSplit):
+        if(len(currentLineSplit) == 4):
+            posVal = float(currentLineSplit[2])
+#                            print "t," + str(posVal*24),
+            tempoVal = float(currentLineSplit[3])
+            dataTimeStamp = float(currentLineSplit[0])
+            returnValue = self._midiTiming._updateFromVstTiming(dataTimeStamp, posVal, tempoVal);
+            if(returnValue != None):
+                stopedState, oldSpp, newSpp = returnValue
+                if(stopedState == True): # Clear all on restart
+                    self._midiStateHolder.cleanupFutureNotes(0.0, oldSpp, self._midiTiming.getTicksPerQuarteNote())
+                else:
+                    if(newSpp < oldSpp): # Looping back (else it is just a jump and we do nothing.)
+                        self._midiStateHolder.fixLoopingNotes(oldSpp, newSpp, self._midiTiming.getTicksPerQuarteNote())
+
+    def getData(self, calcTime):
+        currentLineSplit = self._nextLine.split('|')
+        currentMidiTimeStamp = self._nextTimeStamp
+        _, calcMidiTime = self._midiTiming.getSongPosition(calcTime)
+        while(currentMidiTimeStamp <= calcMidiTime):
+            print ".",
+            if(len(currentLineSplit) > 1):
+                self._loadConfig(currentLineSplit)
+                if(currentLineSplit[1].lower() == "stoprecording"):
+                    print "Buu"*120
+                    self._nextLine = None
+                    break
+                if(currentLineSplit[1].lower() == "vsttime"):
+                    print "v",
+                    self._updateVstTime(currentLineSplit)
+                if(currentLineSplit[1].lower() == "midi"):
+                    print "m",
+                    if(len(currentLineSplit) == 6):
+                        command = int(currentLineSplit[2], 16)
+                        data1 = int(currentLineSplit[3], 16)
+                        data2 = int(currentLineSplit[4], 16)
+                        data3 = int(currentLineSplit[5], 16)
+                        self._decodeMidiEvent(float(currentLineSplit[0]), command, data1, data2, data3)
+            currentLine = self._eventLogFileHandle.readline()
+            if not currentLine:
+                self._nextLine = None
+                break
+            currentLineSplit = currentLine.split('|')
+            if(len(currentLineSplit) > 1):
+                currentTimeStamp = float(currentLineSplit[0])
+                _, currentMidiTimeStamp = self._midiTiming.getSongPosition(currentTimeStamp)
+                if(currentLineSplit[1].lower() == "midi"):
+                    currentMidiTimeStamp = quantizePosition(currentMidiTimeStamp, self._quantizeValue)
+            self._nextLine = currentLine
+            self._nextTimeStamp = currentMidiTimeStamp

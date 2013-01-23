@@ -10,6 +10,8 @@ from multiprocessing import Process, Queue
 from Queue import Empty
 import traceback
 from midi.MidiStateHolder import quantizePosition
+from midi.MidiUtilities import noteToOctavAndLetter
+import os
 
 def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue):
     midiSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -317,14 +319,19 @@ class TcpMidiListner(object):
                 return gotMidiNote
 
 class RenderFileReader(TcpMidiListner):
-    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback, renderFileName):
+    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback):
         TcpMidiListner.__init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback, eventLogSaveQueue=None)
         self._eventLogFileHandle = None
         self._renderFileOutputName = None
+        self._loadConfigFileName = None
         self._quantizeValue = 1.0 * self._midiTiming.getTicksPerQuarteNote()
         self._nextLine = None
         self._nextTimeStamp = 0.0
         self._startRecordingTime = -1.0
+        self._eventLogFileHandle = None
+        self._slowStop = False
+
+    def openFile(self, renderFileName):
         try:
             self._eventLogFileHandle = open(renderFileName, 'r')
             self._findStartLine()
@@ -340,6 +347,8 @@ class RenderFileReader(TcpMidiListner):
         self._nextLine = None
 
     def hasTcpMidiListnerProcessToShutdownNicely(self):
+        if(self._slowStop == True):
+            return False
         return True
 
     def forceTcpMidiListnerProcessToStop(self):
@@ -353,8 +362,12 @@ class RenderFileReader(TcpMidiListner):
     def getStartTime(self):
         return self._startRecordingTime
 
+    def getOutputFileName(self):
+        return self._renderFileOutputName
+
     def _findStartLine(self):
         stop = False
+        startFound = False
         while(stop == False):
             try:
                 currentLine = self._eventLogFileHandle.readline()
@@ -367,17 +380,64 @@ class RenderFileReader(TcpMidiListner):
                 self._loadConfig(currentLineSplit)
                 if(currentLineSplit[1].lower() == "startrecording"):
                     if(len(currentLineSplit) > 2):
-                        self._renderFileOutputName = currentLineSplit[2]
+                        self._renderFileOutputName = currentLineSplit[2].split('\n')[0]
                     currentTimeStamp = float(currentLineSplit[0])
                     self._startRecordingTime = currentTimeStamp
+                    startFound = True
                     stop = True
-                    print "Ik"*120
-        if(stop == False):
+                    print "StartRecording tag found at: " + str(currentLineSplit[0])
+        if(startFound == False):
             self._eventLogFileHandle.seek(0)
             print "Warning no StartRecording tag found!!!"
-            self._nextLine = None
-        else:
+            stop = False
+            configIsLoaded = False
+            vstBlockSeekPos = -1
+            vstBlockTimeStamp = 0.0
+            tmpBlockPos = -1
+            tmpBlockTimeStamp = 0.0
+            while(stop == False):
+                try:
+                    currentPos = self._eventLogFileHandle.tell()
+                    currentLine = self._eventLogFileHandle.readline()
+                    if not currentLine:
+                        break
+                except:
+                    break
+                currentLineSplit = currentLine.split('|')
+                if(len(currentLineSplit) > 1):
+                    loadedConfig = self._loadConfig(currentLineSplit)
+                    if(loadedConfig == True):
+                        configIsLoaded = True
+                    if(configIsLoaded):
+                        currentTimeStamp = float(currentLineSplit[0])
+                        if(currentTimeStamp > tmpBlockTimeStamp):
+                            tmpBlockPos = currentPos
+                            tmpBlockTimeStamp = currentTimeStamp
+                        if(currentLineSplit[1].lower() == "vsttime"):
+                            if(len(currentLineSplit) > 2):
+                                vstTimeStamp = float(currentLineSplit[2])
+                                if((vstTimeStamp % 1.0) == 0.0):
+                                    vstBlockSeekPos = tmpBlockPos
+                                    vstBlockTimeStamp = tmpBlockTimeStamp
+                                else:
+                                    if(vstBlockSeekPos > -1):
+                                        self._eventLogFileHandle.seek(vstBlockSeekPos)
+                                        self._startRecordingTime = vstBlockTimeStamp
+                                        startFound = True
+                                        stop = True
+            if(startFound == True):
+                baseLoadName = os.path.basename(self._loadConfigFileName)
+                if(baseLoadName.endswith(".cfg")):
+                    self._renderFileOutputName = baseLoadName[0:(len(baseLoadName)-4)]
+                else:
+                    self._renderFileOutputName = baseLoadName
+            else:
+                self._nextLine = None
+        if(startFound == True):
             self._nextLine = self._eventLogFileHandle.readline()
+            print "S"*120
+            print "Starting on line: " + self._nextLine.split('\n')[0]
+            print "S"*120
             if not self._nextLine:
                 self._nextLine = None
             else:
@@ -396,7 +456,7 @@ class RenderFileReader(TcpMidiListner):
             if(len(currentLineSplit) > 2):
                 if(currentLineSplit[2] != "Done"):
                     loadStartOk = True
-                    loadFileName = currentLineSplit[2]
+                    self._loadConfigFileName = currentLineSplit[2].split('\n')[0]
         configString = ""
         if(loadStartOk == True):
             stop = False
@@ -418,9 +478,13 @@ class RenderFileReader(TcpMidiListner):
                 if(stop == False):
                     configString += currentLine
             if(stop == True):
-                print "Oa"*120
-                self._configLoadCallback(loadFileName, configString)
-                print "Oa"*120
+                print "C"*120
+                print "Loading config: " + str(self._loadConfigFileName)
+                print "C"*120
+                self._configLoadCallback(self._loadConfigFileName, configString)
+                print "C"*120
+                return True
+        return False
 
     def _updateVstTime(self, currentLineSplit):
         if(len(currentLineSplit) == 4):
@@ -443,6 +507,7 @@ class RenderFileReader(TcpMidiListner):
         _, calcMidiTime = self._midiTiming.getSongPosition(calcTime)
         while(currentMidiTimeStamp <= calcMidiTime):
             print ".",
+            self._slowStop = True
             if(len(currentLineSplit) > 1):
                 self._loadConfig(currentLineSplit)
                 if(currentLineSplit[1].lower() == "stoprecording"):
@@ -452,14 +517,27 @@ class RenderFileReader(TcpMidiListner):
                 if(currentLineSplit[1].lower() == "vsttime"):
                     print "v",
                     self._updateVstTime(currentLineSplit)
+                    _, calcMidiTime = self._midiTiming.getSongPosition(calcTime)
                 if(currentLineSplit[1].lower() == "midi"):
-                    print "m",
                     if(len(currentLineSplit) == 6):
                         command = int(currentLineSplit[2], 16)
                         data1 = int(currentLineSplit[3], 16)
                         data2 = int(currentLineSplit[4], 16)
                         data3 = int(currentLineSplit[5], 16)
                         self._decodeMidiEvent(float(currentLineSplit[0]), command, data1, data2, data3)
+                        status = "(other)"
+                        mtype = command & 0xf0
+                        if(mtype == 0x80):
+                            status = "(off)"
+                        if(mtype == 0x90):
+                            (octav, noteLetter) = noteToOctavAndLetter(data1)
+                            status = "(" + str(octav) + str(noteLetter) + ")"
+                        if(mtype == 0xb0):
+                            if(data3 == 0x00):
+                                status = "(ctrl)"
+                            else:
+                                status = "(gui)"
+                        print "m|%d|%d|%d|%s" % ((command & 0x0f), data1, data2, status),
             currentLine = self._eventLogFileHandle.readline()
             if not currentLine:
                 self._nextLine = None
@@ -469,6 +547,8 @@ class RenderFileReader(TcpMidiListner):
                 currentTimeStamp = float(currentLineSplit[0])
                 _, currentMidiTimeStamp = self._midiTiming.getSongPosition(currentTimeStamp)
                 if(currentLineSplit[1].lower() == "midi"):
-                    currentMidiTimeStamp = quantizePosition(currentMidiTimeStamp, self._quantizeValue)
+                    noteTimeStamp = quantizePosition(currentMidiTimeStamp, self._quantizeValue)
+                    if(noteTimeStamp < currentMidiTimeStamp):
+                        currentMidiTimeStamp = noteTimeStamp
             self._nextLine = currentLine
             self._nextTimeStamp = currentMidiTimeStamp

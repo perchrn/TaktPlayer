@@ -41,13 +41,17 @@ launchGUI = True
 applicationHolder = None
 
 class PlayerMain(wx.Frame):
-    def __init__(self, parent, configDir, configFile, debugMode, eventlogFileName, renderFileName, title):
+    def __init__(self, parent, configDir, configFile, debugMode, eventlogFileName, renderConfig, title):
         super(PlayerMain, self).__init__(parent, title=title, size=(800, 600))
         self._debugModeOn = debugMode
         self._configDirArgument = configDir
         self._baseTitle = title
         self._eventlogFileName = eventlogFileName
+        renderModeOn, renderFileName, renderOutputFile, renderFrameRate = renderConfig
+        self._renderMode = renderModeOn
         self._renderFileName = renderFileName
+        self._renderOutputFile = renderOutputFile
+        self._renderFrameRate = renderFrameRate
 
         if(os.path.isfile("graphics/TaktPlayer.ico")):
             wxIcon = wx.Icon(os.path.normpath("graphics/TaktPlayer.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
@@ -149,14 +153,10 @@ class PlayerMain(wx.Frame):
         self._configCheckEveryNRound = 60 * 5 #Every 5th second
         self._configCheckCounter = 0
 
-        self._renderMode = False
         self._eventlogFileHandle = None
         self._eventLogSaveQueue = None
-        if(self._renderFileName != ""):
-            if(os.path.isfile(self._renderFileName) == False):
-                self._renderFileName = os.path.join(self._playerConfiguration.getAppDataDirectory(), os.path.basename(self._renderFileName))
-            self._midiListner = RenderFileReader(self._midiTiming, self._midiStateHolder, self._configLoadCallback, self._renderFileName)
-            self._renderMode = True
+        if(self._renderMode == True):
+            self._midiListner = RenderFileReader(self._midiTiming, self._midiStateHolder, self._configLoadCallback)
         else:
             try:
                 filePath = os.path.normpath(self._eventlogFileName)
@@ -194,6 +194,7 @@ class PlayerMain(wx.Frame):
             self.Bind(wx.EVT_TIMER, self._frameUpdate, id=self._updateTimer.GetId()) #@UndefinedVariable
         else:
             self._renderTime  = None
+            self._renderDelta = None
             self.Bind(wx.EVT_TIMER, self._renderFile, id=self._updateTimer.GetId()) #@UndefinedVariable
         self.Bind(wx.EVT_PAINT, self._onPaint) #@UndefinedVariable
         self.Bind(wx.EVT_SIZE, self._onSize) #@UndefinedVariable
@@ -478,16 +479,93 @@ class PlayerMain(wx.Frame):
                 sys.exit()
             print "Closeing done."
 
+    def _showErrorDialog(self, text, title):
+        print text
+        dlg = wx.MessageDialog(self, text, title, wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _openRenderFile(self):
+        fileOk = False
+        if(self._renderFileName != ""):
+            testFile = self._renderFileName
+            if(os.path.isfile(os.path.normpath(testFile)) == False):
+                testFile = os.path.join(self._playerConfiguration.getAppDataDirectory(), os.path.basename(testFile))
+            if(os.path.isfile(os.path.normpath(testFile)) == False):
+                testFile = os.path.join(self._playerConfiguration.getVideoDir(), os.path.basename(testFile))
+            if(os.path.isfile(os.path.normpath(testFile)) == True):
+                fileOk = True
+            self._renderFileName = testFile
+        if(fileOk == False):
+            dlg = wx.FileDialog(self, "Choose an eventlog file to render:", self._playerConfiguration.getConfigDir(), "TaktPlayer.eventlog", "*.*", wx.OPEN) #@UndefinedVariable
+            if dlg.ShowModal() == wx.ID_OK: #@UndefinedVariable
+                self._renderFileName = os.path.normpath(dlg.GetPath())
+            else:
+                self._stopPlayer()
+                return True
+            if(os.path.isfile(os.path.normpath(self._renderFileName)) == True):
+                fileOk = True
+        if(fileOk == True):
+            self._midiListner.openFile(self._renderFileName)
+            return False
+        else:
+            errorText = "Error! Could not find input file: " + str(os.path.basename(self._renderFileName)) + "\n"
+            self._showErrorDialog(errorText, "Input file error!")
+            self._stopPlayer()
+            return True
+
     def _renderFile(self, event):
         if(self._renderTime == None):
-            framesPerSecond = 60
+            if(self._renderDelta != None):
+                self._updateBuffer()
+                return
+            self._renderDelta = 1.0
+            if(self._openRenderFile() == True):
+                return
             if(self._midiListner.endIsReached() == True):
-                print "Error! No start position found. Canot render video."
+                errorText = "Error! Could not find the starting point in input file: " + str(os.path.basename(self._renderFileName)) + "\n"
+                errorText += "Please add StartRecording tag in event file.\n"
+                errorText += "1358807809.39|StartRecording|Kosmodrom\n"
+                self._showErrorDialog(errorText, "Input error!")
                 self._stopPlayer()
+                return
             startTime = self._midiListner.getStartTime()
+            self._renderFrameRate = max(min(self._renderFrameRate, 1000), 1)
+            self._renderDelta = 1.0/self._renderFrameRate
+            print "DEBUG pcn: framerate: " + str(self._renderFrameRate)
+            if(self._renderOutputFile != ""):
+                if(os.path.isabs(self._renderOutputFile) == False):
+                    videoDir = self._playerConfiguration.getVideoDir()
+                    self._renderOutputFile = os.path.normpath(os.path.join(videoDir, self._renderOutputFile))
+            else:
+                self._renderOutputFile = self._midiListner.getOutputFileName()
+                videoDir = self._playerConfiguration.getVideoDir()
+                self._renderOutputFile = os.path.normpath(os.path.join(videoDir, self._renderOutputFile))
+            if(self._renderOutputFile.endswith(".avi") == False):
+                self._renderOutputFile = self._renderOutputFile + ".avi"
+            if(os.path.isfile(self._renderOutputFile)):
+                print "File \"" + self._renderOutputFile + "\" already exists.\n\nDo you want to overwrite?"
+                dlg = wx.MessageDialog(self, "File \"" + self._renderOutputFile + "\" already exists.\n\nDo you want to overwrite?", 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
+                result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
+                dlg.Destroy()
+                if(result == True):
+                    os.remove(self._renderOutputFile)
+                    if(os.path.isfile(self._renderOutputFile)):
+                        errorText = "Error! Could not delete old file aborting... Is file: \"" + self._renderOutputFile + "\" in use?"
+                        self._showErrorDialog(errorText, "Delete error!")
+                        self._stopPlayer()
+                        return
+                else:
+                    errorText = "Rendering aborted by user. Chose a different output name or move: \"" + self._renderOutputFile + "\""
+                    self._showErrorDialog(errorText, "Aborted!")
+                    self._stopPlayer()
+                    return
+            self._updateTitle("Rendering: " + str(self._renderOutputFile))
+            print "*"*120
+            print "Rendering: " + str(self._renderOutputFile)
+            print "*"*120
+            self._mediaMixer.setupVideoWriter(self._renderOutputFile, self._renderFrameRate)
             self._renderTime = startTime
-            self._renderDelta = 1.0/framesPerSecond
-            self._mediaMixer.setupVideoWriter("test.avi", framesPerSecond)
         sleepCount = 0
         while(self._midiListner.endIsReached() == False):
             self._midiListner.getData(self._renderTime)
@@ -498,7 +576,7 @@ class PlayerMain(wx.Frame):
             self._updateBuffer()
             self._renderTime += self._renderDelta
             sleepCount += 1
-            if(sleepCount > 60):
+            if(sleepCount > self._renderFrameRate):
                 print "S"
                 return
         self._stopPlayer()
@@ -542,7 +620,6 @@ class PlayerMain(wx.Frame):
             except:
                 pass
             if(gotNewLines == True):
-                print saveLines,
                 self._eventlogFileHandle.write(saveLines)
 
         #Check for quit conditions...
@@ -577,9 +654,10 @@ if __name__ in ('__android__', '__main__'):
     checkForMoreConfigFileName = False
     checkForMoreConfigDirName = False
     checkForMoreEventFileName = False
+    checkForMoreRenderOutputFileName = False
     configDir = ""
     configFile = ""
-    renderFile = ""
+    renderConfig = [False, "", "", 60]
     for i in range(len(sys.argv) - 1):
         if(sys.argv[i+1].lower() == "--help"):
             if(sys.platform == "darwin"):
@@ -605,48 +683,79 @@ if __name__ in ('__android__', '__main__'):
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].lower() == "--nogui"):
             launchGUI = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].lower() == "--guionly"):
             guiOnlyMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].lower() == "--debug"):
             debugMode = True
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].lower() == "--normalpriority"):
             raisePriority = False
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].startswith("--configDir=")):
             checkForMoreConfigDirName = True
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
             configDir = sys.argv[i+1][12:]
         elif(sys.argv[i+1].startswith("--configFile=")):
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = True
             checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
             configFile = sys.argv[i+1][13:]
+        elif(sys.argv[i+1].startswith("--renderMode")):
+            renderConfig[0] = True
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
         elif(sys.argv[i+1].startswith("--renderFile=")):
             checkForMoreConfigDirName = False
             checkForMoreConfigFileName = False
             checkForMoreEventFileName = True
-            renderFile = sys.argv[i+1][13:]
+            checkForMoreRenderOutputFileName = False
+            renderConfig[1] = sys.argv[i+1][13:]
+        elif(sys.argv[i+1].startswith("--renderOutputFile=")):
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = True
+            renderConfig[2] = sys.argv[i+1][19:]
+        elif(sys.argv[i+1].startswith("--renderFrameRate=")):
+            checkForMoreConfigDirName = False
+            checkForMoreConfigFileName = False
+            checkForMoreEventFileName = False
+            checkForMoreRenderOutputFileName = False
+            try:
+                renderConfig[3] = int(sys.argv[i+1][18:])
+            except:
+                renderConfig[3] = 60
         else:
             if(checkForMoreConfigDirName == True):
                 configDir += " " + sys.argv[i+1]
             if(checkForMoreConfigFileName == True):
                 configFile += " " + sys.argv[i+1]
             if(checkForMoreEventFileName == True):
-                renderFile += " " + sys.argv[i+1]
+                renderConfig[1] += " " + sys.argv[i+1]
+            if(checkForMoreRenderOutputFileName == True):
+                renderConfig[2] += " " + sys.argv[i+1]
     if(raisePriority == True):
         if(sys.platform == "win32"):
             try:
@@ -676,12 +785,13 @@ if __name__ in ('__android__', '__main__'):
                     shutil.move(logFileName, oldLogFileName)
                 except:
                     pass
-        oldLogFileName = eventlogFileName + ".old"
-        if(os.path.isfile(eventlogFileName)):
-            try:
-                shutil.move(eventlogFileName, oldLogFileName)
-            except:
-                pass
+        if(renderConfig[0] == False):
+            oldLogFileName = eventlogFileName + ".old"
+            if(os.path.isfile(eventlogFileName)):
+                try:
+                    shutil.move(eventlogFileName, oldLogFileName)
+                except:
+                    pass
         if(sys.platform == "darwin"):
             os.environ["PATH"] += ":."
             launchGUI = False
@@ -691,7 +801,7 @@ if __name__ in ('__android__', '__main__'):
             startGui(debugMode, configDir)
         else:
             applicationHolder = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
-            gui = PlayerMain(None, configDir, configFile, debugMode, eventlogFileName, renderFile, title="Takt Player")
+            gui = PlayerMain(None, configDir, configFile, debugMode, eventlogFileName, renderConfig, title="Takt Player")
             try:
                 applicationHolder.MainLoop()
             except:

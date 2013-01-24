@@ -245,8 +245,12 @@ class MediaMixer(object):
         self._mediaTrackFadeConfigHolders[trackIndex] = fadeAndLevelSettings
         self._mediaTracksWipeSettings[trackIndex] = fadeAndLevelSettings.getWipeSettings()
 
-    def setupVideoWriter(self, fileName, framesPerSecond):
-        fourcc = cv.CV_FOURCC('M','J','P','G')
+    def setupVideoWriter(self, fileName, framesPerSecond, iuyMode = False):
+        if(iuyMode == True):
+            fourcc = cv.CV_FOURCC('I','4','2','0') #Strange output
+        else:
+            fourcc = cv.CV_FOURCC('M','J','P','G')
+#        fourcc = cv.CV_FOURCC('M','P','4','2')
         self._videoWriter = cv.CreateVideoWriter(fileName, fourcc, framesPerSecond, (self._internalResolutionX, self._internalResolutionY), 1)
 
     def writeImage(self):

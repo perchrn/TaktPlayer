@@ -8,6 +8,7 @@ Created on 28. nov. 2011
 from configuration.EffectSettings import EffectTemplates, FadeTemplates, EffectImageList,\
     TimeModulationTemplates
 from configuration.GuiServer import GuiServer
+import traceback
 import multiprocessing
 from multiprocessing import Process, Queue
 from configuration.ConfigurationHolder import getDefaultDirectories
@@ -433,8 +434,10 @@ class PlayerMain(wx.Frame):
             self._eventlogFileHandle.close()
 
         try:
-            self._guiServer.requestGuiServerProcessToStop()
-            self._midiListner.requestTcpMidiListnerProcessToStop()
+            if(self._guiServer != None):
+                self._guiServer.requestGuiServerProcessToStop()
+            if(self._midiListner != None):
+                self._midiListner.requestTcpMidiListnerProcessToStop()
             self._requestGuiProcessToStop()
 
             self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
@@ -442,6 +445,7 @@ class PlayerMain(wx.Frame):
             self.Bind(wx.EVT_TIMER, self._onShutdownTimer, id=self._shutdownTimer.GetId()) #@UndefinedVariable
             self._shutdownTimerCounter = 0
         except:
+            traceback.print_exc()
             self._shutdownTimerCounter = 1000
             self._onShutdownTimer(None)
 
@@ -450,24 +454,25 @@ class PlayerMain(wx.Frame):
         if(self._shutdownTimerCounter >= 1000):
             if(self._guiServer != None):
                 self._guiServer.forceGuiServerProcessToStop()
-            self._midiListner.forceTcpMidiListnerProcessToStop()
+            if(self._midiListner != None):
+                self._midiListner.forceTcpMidiListnerProcessToStop()
             self.forceGuiProcessProcessToStop()
             allDone = True
         else:
-            if(self._guiServer.hasGuiServerProcessShutdownNicely()):
-                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
+            if((self._guiServer == None) or (self._guiServer.hasGuiServerProcessShutdownNicely())):
+                if((self._midiListner == None) or (self._midiListner.hasTcpMidiListnerProcessToShutdownNicely())):
                     if(self.hasGuiProcessProcessShutdownNicely()):
                         print "All done. (shutdown timer counter: " + str(self._shutdownTimerCounter) + " )"
                         allDone = True
-            else:
+            if(allDone == False):
                 self._shutdownTimerCounter += 1
                 if(self._shutdownTimerCounter > 200):
                     print "Shutdown timeout!!! Force killing rest..."
-                    if(self._guiServer.hasGuiServerProcessShutdownNicely() != False):
+                    if((self._guiServer != None) and (self._guiServer.hasGuiServerProcessShutdownNicely() == False)):
                         self._guiServer.forceGuiServerProcessToStop()
-                    if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
+                    if((self._midiListner != None) and (self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False)):
                         self._midiListner.forceTcpMidiListnerProcessToStop()
-                    if(self.hasGuiProcessProcessShutdownNicely() != False):
+                    if(self.hasGuiProcessProcessShutdownNicely() == False):
                         self.forceGuiProcessProcessToStop()
                     allDone = True
         if(allDone == True):
@@ -579,6 +584,7 @@ class PlayerMain(wx.Frame):
             if(sleepCount > self._renderFrameRate):
                 print "S"
                 return
+        self._renderTime = None
         self._stopPlayer()
 
     def _frameUpdate(self, event = None):
@@ -662,19 +668,27 @@ if __name__ in ('__android__', '__main__'):
         if(sys.argv[i+1].lower() == "--help"):
             if(sys.platform == "darwin"):
                 print os.path.basename(sys.argv[0]) + " --help --debug --configDir=DIR_NAME --configFile=FILE_NAME"
-                print "\t--help\t\t\tPrint this text and exit"
-                print "\t--debug\t\t\tPrints debug info to console and not to logfile"
-                print "\t--configDir=DIR_NAME\tSet config file to start with"
-                print "\t--configFile=FILE_NAME\tSet configuration directory"
+                print "\t--help\t\t\t\tPrint this text and exit"
+                print "\t--debug\t\t\t\tPrints debug info to console and not to logfile"
+                print "\t--configDir=DIR_NAME\t\tSet config file to start with"
+                print "\t--configFile=FILE_NAME\t\tSet configuration directory"
+                print "\t--renderMode\t\t\tTurns on render mode"
+                print "\t--renderFile=FILE_NAME\t\tSet the event file to render if in render mode."
+                print "\t--renderOutputFile=FILE_NAME\tName of the output video file in render mode."
+                print "\t--renderFrameRate=FPS\t\tSet the number of frames per second in render mode."
             else:
                 print os.path.basename(sys.argv[0]) + " --help --debug --normalpriority --nogui --guionly --configDir=DIR_NAME --configFile=FILE_NAME"
-                print "\t--help\t\t\tPrint this text and exit"
-                print "\t--debug\t\t\tPrints debug info to console and not to logfile"
-                print "\t--normalpriority\tDon't raise priority"
-                print "\t--nogui\t\t\tRun without GUI (always on mac)"
-                print "\t--guionly\t\tRun without Player (not on mac)"
-                print "\t--configDir=DIR_NAME\tSet config file to start with"
-                print "\t--configFile=FILE_NAME\tSet configuration directory"
+                print "\t--help\t\t\t\tPrint this text and exit"
+                print "\t--debug\t\t\t\tPrints debug info to console and not to logfile"
+                print "\t--normalpriority\t\tDon't raise priority"
+                print "\t--nogui\t\t\t\tRun without GUI (always on mac)"
+                print "\t--guionly\t\t\tRun without Player (not on mac)"
+                print "\t--configDir=DIR_NAME\t\tSet config file to start with"
+                print "\t--configFile=FILE_NAME\t\tSet configuration directory"
+                print "\t--renderMode\t\t\tTurns on render mode"
+                print "\t--renderFile=FILE_NAME\t\tSet the event file to render if in render mode."
+                print "\t--renderOutputFile=FILE_NAME\tName of the output video file in render mode."
+                print "\t--renderFrameRate=FPS\t\tSet the number of frames per second in render mode."
             print ""
             print "    TaktPlayer version: " + getVersionNumberString()
             print "        Build date:\t" + getVersionDateString()

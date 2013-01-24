@@ -1398,6 +1398,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     streamcount = 0
                     inputIsVideo = True
                     inputIsAvi = False
+                    inputIsImage = False
                     inputOk = False
                     tryConvert = False
                     for ffmpegLine in ffmpegString.split('\n'):
@@ -1434,12 +1435,15 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                         if(" mjpeg," in ffmpegLine):
                                             print "Jpeg " * 10
                                             inputOk = True
+                                            inputIsImage = True
                                         elif(" gif," in ffmpegLine):
                                             print "GIF " * 10
                                             inputOk = True
+                                            inputIsImage = True
                                         elif(" png," in ffmpegLine):
                                             print "PNG " * 10
                                             inputOk = True
+                                            inputIsImage = True
                                         else:
                                             print ffmpegLine
             if(inputCount > 0):
@@ -1449,12 +1453,16 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if((inputCount == 1) and (streamcount == 1) and (inputOk == True)):
                         print "Press ctrl, command, meta or alt to force convertion."
                         convertBeforeImport = False
+                else:
+                    if(inputIsImage == True):
+                        tryConvert = True
                 if(convertBeforeImport == True):
                     if(tryConvert == True):
                         self._convertionWentOk = False
                         dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
                                                    ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, useWindowsTrick, 
-                                                   self._videoCropMode, self._videoScaleMode, self._videoScaleX, self._videoScaleY)
+                                                   (inputOk and inputIsAvi), self._videoCropMode, self._videoScaleMode,
+                                                   self._videoScaleX, self._videoScaleY)
                         dlg.ShowModal()
                         try:
                             dlg.Destroy()

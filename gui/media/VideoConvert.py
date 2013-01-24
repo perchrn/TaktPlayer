@@ -15,7 +15,7 @@ import shutil
 
 class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
     
-    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, lastDirName, configVideoDir, inputFile, useWindowsTrick, cropValue, scaleModeValue, scaleXValue, scaleYValue):
+    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, lastDirName, configVideoDir, inputFile, useWindowsTrick, alreadyMjpeg, cropValue, scaleModeValue, scaleXValue, scaleYValue):
         super(VideoConverterDialog, self).__init__(parent=parent, title=title, size=(400, 280))
 
         self._valuesSaveCallback = valuesSaveCallback
@@ -24,6 +24,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         self._dirName = lastDirName
         self._inputFile = inputFile
         self._useWindowsTrick = useWindowsTrick
+        self._alreadyMjpeg = alreadyMjpeg
         self._cropMode = cropValue
         self._scaleMode = scaleModeValue
         self._scaleXValue = scaleXValue
@@ -48,6 +49,19 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
         dirSizer.Add(self._dirNameField, 2, wx.ALL, 5) #@UndefinedVariable
         dirSizer.Add(dirOpenButton, 0, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(dirSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        if(self._alreadyMjpeg == True):
+            mjpegFixSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+            mjpegFixLabel = wx.StaticText(self, wx.ID_ANY, "Mjpeg fix:") #@UndefinedVariable
+            self._mjpegFixField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=[], style=wx.CB_READONLY) #@UndefinedVariable
+            self._mjpegFixField.Clear()
+            for choice in ["Normal", "Stream copy fix"]:
+                self._mjpegFixField.Append(choice)
+            self._mjpegFixField.SetStringSelection("Normal")
+#            self.Bind(wx.EVT_COMBOBOX, self._onMjpegFixChosen, id=self._mjpegFixField.GetId()) #@UndefinedVariable
+            mjpegFixSizer.Add(mjpegFixLabel, 1, wx.ALL, 5) #@UndefinedVariable
+            mjpegFixSizer.Add(self._mjpegFixField, 2, wx.ALL, 5) #@UndefinedVariable
+            dialogSizer.Add(mjpegFixSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         cropSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         cropLabel = wx.StaticText(self, wx.ID_ANY, "Crop:") #@UndefinedVariable
@@ -144,14 +158,94 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
             self._dirNameField.SetValue(self._dirName)
         dlg.Destroy()
 
+    def _getImageSequenceAviName(self, filename):
+        if(filename.lower().endswith(".png")):
+            originalLenght = len(filename)
+            newLength = originalLenght - 4
+            return filename[:newLength] + ".avi"
+        elif(filename.lower().endswith(".bmp")):
+            originalLenght = len(filename)
+            newLength = originalLenght - 4
+            return filename[:newLength] + ".avi"
+        elif(filename.lower().endswith(".jpg")):
+            originalLenght = len(filename)
+            newLength = originalLenght - 4
+            return filename[:newLength] + ".avi"
+        elif(filename.lower().endswith(".jpeg")):
+            originalLenght = len(filename)
+            newLength = originalLenght - 5
+            return filename[:newLength] + ".avi"
+        return filename
+
+    def _checkAndFindGroupOfPictures(self, filename, outputDir):
+        filePath = os.path.normpath(os.path.dirname(filename))
+        postString = os.path.basename(filename)
+        strNumList = []
+        while (len(postString) > 0):
+            preString = ""
+            digitsString = ""
+            testString = postString
+            postString = ""
+            for char in testString:
+                if ((char.isdigit()) and (postString == "")):
+                    digitsString += str(char)
+                else:
+                    if(digitsString == ""):
+                        preString += str(char)
+                    else:
+                        postString += str(char)
+            strNumList.append(StrNum(preString, digitsString))
+        startPos = 0
+        while startPos < len(strNumList):
+            preString = ""
+            testFileName = ""
+            ffmpegFileName = ""
+            outputFileName = ""
+            pos = 0
+            for strNum in strNumList:
+                if(pos < startPos):
+                    preString += strNum.getString()
+                else:
+                    if(testFileName != ""):
+                        testFileName += strNum.getString()
+                        ffmpegFileName += strNum.getString()
+                        outputFileName += strNum.getString()
+                    else:
+                        if(strNum.hasNumber()):
+                            testFileName = preString + strNum.getStringPlussOne()
+                            ffmpegFileName = preString + strNum.getFfmpegStr()
+                            outputFileName = preString + strNum.getStr() + "_mjpeg"
+                        else:
+                            preString += strNum.getString()
+                            startPos += 1
+                pos += 1
+            if(testFileName != ""):
+                print "ffmpegFileName: " + ffmpegFileName
+                print "outputFileName: " + outputFileName
+                if(os.path.isfile(os.path.join(filePath, testFileName)) == True):
+                    ffmpegFileName = os.path.join(filePath, ffmpegFileName)
+                    ffmpegOutFileName = os.path.join(outputDir, self._getImageSequenceAviName(outputFileName))
+                    return ffmpegFileName, ffmpegOutFileName
+            startPos += 1
+        return None
+
     def _onConvert(self, event):
-        baseName = os.path.basename(self._inputFile)
-        if(baseName.endswith("_mjpeg.avi")):
-            newName = baseName
-        else:
-            newName = os.path.splitext(baseName)[0] + "_mjpeg.avi"
-        outputFileName = os.path.join(self._videoDirectory, self._dirName, newName)
-        convertFile = True
+        imageSequenceMode = False
+        testFileName = self._inputFile.lower()
+        if((testFileName.endswith(".jpg") == True) or (testFileName.endswith(".jpeg") == True) or (testFileName.endswith(".png") == True) or (testFileName.endswith(".bmp") == True)):
+            result = self._checkAndFindGroupOfPictures(self._inputFile, self._videoDirectory)
+            if(result != None):
+                imageSequenceInputFileName, outputFileName = result
+                imageSequenceMode = True
+                convertFile = True
+        if(imageSequenceMode == False):
+            baseName = os.path.basename(self._inputFile)
+            if(baseName.endswith("_mjpeg.avi")):
+                newName = baseName
+            else:
+                newName = os.path.splitext(baseName)[0] + "_mjpeg.avi"
+            outputFileName = os.path.join(self._videoDirectory, self._dirName, newName)
+            convertFile = True
         if(os.path.isfile(outputFileName)):
             convertFile = False
             dlg = wx.MessageDialog(self, "File \"" + outputFileName + "\" already exists.\n\nDo you want to overwrite?", 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
@@ -179,9 +273,16 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
             scaleOptions = "|-vf|scale=%d:%d" % (xscale, yscale)
 
         if(convertFile == True):
-            print "Open converter dialog..."
-            print "Show ffmpeg output realtime etc."
-            ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
+            streamCopyOnly = False
+            if(self._alreadyMjpeg == True):
+                if(self._mjpegFixField.GetValue() != "Normal"):
+                    streamCopyOnly = True
+            if(imageSequenceMode == True):
+                ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, imageSequenceInputFileName, cropOptions, scaleOptions, outputFileName)
+            elif(streamCopyOnly == True):
+                ffmpegCommand = "%s|-i|%s|-codec|copy|-y|%s" % (self._ffmpegPath, self._inputFile, outputFileName)
+            else:
+                ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
             dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback, self._useWindowsTrick)
             dlg.ShowModal()
             try:
@@ -427,3 +528,24 @@ def callCommandProcess(command, commandQueue, printQueue, returnValueQueue):
     printQueue.put(process.communicate()[0])
     printQueue.put("Done.\n")
     returnValueQueue.put(process.returncode)
+
+class StrNum():
+    def __init__(self, strStr, numStr):
+        self._str = strStr
+        self._numStr = numStr
+        if(self.hasNumber()):
+            self._num = int(numStr)
+    def getStr(self):
+        return self._str
+    def hasNumber(self):
+        return (len(self._numStr) > 0)
+    def getNum(self):
+        return self._num
+    def getString(self):
+        return self._str + self._numStr
+    def getFfmpegStr(self):
+        return self._str + "%0" + str(len(self._numStr)) + "d"
+    def getStringPlussOne(self):
+        formatString = self.getFfmpegStr()
+        return formatString % (self._num + 1)
+

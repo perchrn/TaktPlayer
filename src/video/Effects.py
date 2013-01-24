@@ -2214,6 +2214,26 @@ class InvertEffect(object):
             cv.ConvertScaleAbs(image, image, 1.0, brightnessVal)
             return image
 
+#class InvertEffect(object):
+#    def __init__(self, configurationTree, internalResX, internalResY):
+#        self._configurationTree = configurationTree
+#        setupEffectMemory(internalResX, internalResY)
+#
+#    def getName(self):
+#        return "Invert"
+#
+#    def reset(self):
+#        pass
+#
+#    def applyEffect(self, image, songPosition, amount, dummy1, dummy2, dummy3, dummy4):
+#        return self.invert(image, amount)
+#
+#    def invert(self, image, amount):
+#        if(amount < 0.5):
+#            return image
+#        cv.CvtColor(image, image, cv.CV_BGR2YCrCb)
+#        return image
+
 class StrobeEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):
         self._configurationTree = configurationTree

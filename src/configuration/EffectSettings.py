@@ -231,7 +231,7 @@ class EffectSettings(object):
         else:
             self._configurationTree.removeParameter("ZoomMode")
             self._configurationTree.removeParameter("ZoomRange")
-        if((effectName == "Feedback") or (effectName == "Delay")):
+        if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
         else:
             self._configurationTree.removeParameter("FeedbackAdvancedZoom")
@@ -251,7 +251,7 @@ class EffectSettings(object):
         if(effectName == "Zoom"):
             returnVal1 = self._configurationTree.getValue("ZoomMode")
             returnVal2 = self._configurationTree.getValue("ZoomRange")
-        if((effectName == "Feedback") or (effectName == "Delay")):
+        if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             returnVal2 = self._configurationTree.getValue("FeedbackAdvancedZoom")
         if(effectName == "Edge"):
             returnVal1 = self._configurationTree.getValue("EdgeChannelMode")
@@ -274,7 +274,7 @@ class EffectSettings(object):
         else:
             self._configurationTree.removeParameter("ZoomMode")
             self._configurationTree.removeParameter("ZoomRange")
-        if((effectName == "Feedback") or (effectName == "Delay")):
+        if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
             if(extraConfig2Value != None):
                 advancedVal = textToFloatValues(extraConfig2Value, 4)

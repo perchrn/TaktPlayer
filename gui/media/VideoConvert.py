@@ -15,12 +15,13 @@ import shutil
 
 class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
     
-    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, lastDirName, configVideoDir, inputFile, useWindowsTrick, alreadyMjpeg, cropValue, scaleModeValue, scaleXValue, scaleYValue):
+    def __init__(self, parent, title, valuesSaveCallback, ffmpegPath, ffmpegH264Options, lastDirName, configVideoDir, inputFile, useWindowsTrick, alreadyMjpeg, cropValue, scaleModeValue, scaleXValue, scaleYValue):
         super(VideoConverterDialog, self).__init__(parent=parent, title=title, size=(400, 280))
 
         self._valuesSaveCallback = valuesSaveCallback
         self._videoDirectory = configVideoDir
         self._ffmpegPath = ffmpegPath
+        self._ffmpegH264Options = ffmpegH264Options.replace(" ", "|")
         self._dirName = lastDirName
         self._inputFile = inputFile
         self._useWindowsTrick = useWindowsTrick
@@ -55,7 +56,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
             mjpegFixLabel = wx.StaticText(self, wx.ID_ANY, "Mjpeg fix:") #@UndefinedVariable
             self._mjpegFixField = wx.ComboBox(self, wx.ID_ANY, size=(200, -1), choices=[], style=wx.CB_READONLY) #@UndefinedVariable
             self._mjpegFixField.Clear()
-            for choice in ["Normal", "Stream copy fix"]:
+            for choice in ["Normal", "Stream copy fix", "H264 encoding"]:
                 self._mjpegFixField.Append(choice)
             self._mjpegFixField.SetStringSelection("Normal")
 #            self.Bind(wx.EVT_COMBOBOX, self._onMjpegFixChosen, id=self._mjpegFixField.GetId()) #@UndefinedVariable
@@ -238,6 +239,13 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
                 imageSequenceInputFileName, outputFileName = result
                 imageSequenceMode = True
                 convertFile = True
+        streamCopyOnly = False
+        h264Encoding = False
+        if(self._alreadyMjpeg == True):
+            if(self._mjpegFixField.GetValue() == "Stream copy fix"):
+                streamCopyOnly = True
+            if(self._mjpegFixField.GetValue() == "H264 encoding"):
+                h264Encoding = True
         if(imageSequenceMode == False):
             baseName = os.path.basename(self._inputFile)
             if(baseName.endswith("_mjpeg.avi")):
@@ -246,6 +254,8 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
                 newName = os.path.splitext(baseName)[0] + "_mjpeg.avi"
             outputFileName = os.path.join(self._videoDirectory, self._dirName, newName)
             convertFile = True
+        if(h264Encoding == True):
+            outputFileName = outputFileName.replace("_mjpeg.avi", "_h264.avi")
         if(os.path.isfile(outputFileName)):
             convertFile = False
             dlg = wx.MessageDialog(self, "File \"" + outputFileName + "\" already exists.\n\nDo you want to overwrite?", 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
@@ -273,14 +283,12 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
             scaleOptions = "|-vf|scale=%d:%d" % (xscale, yscale)
 
         if(convertFile == True):
-            streamCopyOnly = False
-            if(self._alreadyMjpeg == True):
-                if(self._mjpegFixField.GetValue() != "Normal"):
-                    streamCopyOnly = True
             if(imageSequenceMode == True):
                 ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, imageSequenceInputFileName, cropOptions, scaleOptions, outputFileName)
             elif(streamCopyOnly == True):
                 ffmpegCommand = "%s|-i|%s|-codec|copy|-y|%s" % (self._ffmpegPath, self._inputFile, outputFileName)
+            elif(h264Encoding == True):
+                ffmpegCommand = "%s|-i|%s%s%s|%s|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, self._ffmpegH264Options, outputFileName)
             else:
                 ffmpegCommand = "%s|-i|%s%s%s|-vcodec|mjpeg|-qscale|1|-an|-y|%s" % (self._ffmpegPath, self._inputFile, cropOptions, scaleOptions, outputFileName)
             dlg = VideoConverterStatusDialog(self, 'Converting file...', ffmpegCommand, self._okConvertionCallback, self._useWindowsTrick)

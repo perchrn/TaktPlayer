@@ -65,6 +65,7 @@ class Configuration(object):
         self._guiVideoConfig = self._guiConfigurationTree.addChildUnique("Video")
         self._guiVideoConfig.addTextParameter("VideoDir", taktVideoDefaultDir)
         self._guiVideoConfig.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
+        self._guiVideoConfig.addTextParameter("FfmpegH264Options", "-c:v libx264 -preset slow -crf 20 -c:a copy")
         self._guiVideoConfig.addIntParameter("ScaleVideoX", -1)
         self._guiVideoConfig.addIntParameter("ScaleVideoY", -1)
         self._guiConfig = self._guiConfigurationTree.addChildUnique("GUI")
@@ -81,9 +82,10 @@ class Configuration(object):
         self._guiPlayerConfig.setValue("WebPort", webPort)
         self._guiPlayerConfig.setValue("MidiEnabled", midiOn)
 
-    def setVideoConfig(self, videoDir, ffmpegBinary, scaleX, scaleY):
+    def setVideoConfig(self, videoDir, ffmpegBinary, ffmpegH264Options, scaleX, scaleY):
         self._guiVideoConfig.setValue("VideoDir", videoDir)
         self._guiVideoConfig.setValue("FfmpegBinary", ffmpegBinary)
+        self._guiVideoConfig.setValue("FfmpegH264Options", ffmpegH264Options)
         self._guiVideoConfig.setValue("ScaleVideoX", scaleX)
         self._guiVideoConfig.setValue("ScaleVideoY", scaleY)
 
@@ -130,6 +132,9 @@ class Configuration(object):
 
     def getFfmpegBinary(self):
         return self._guiVideoConfig.getValue("FfmpegBinary")
+
+    def getFfmpegH264Options(self):
+        return self._guiVideoConfig.getValue("FfmpegH264Options")
 
     def getVideoScaleX(self):
         return self._guiVideoConfig.getValue("ScaleVideoX")

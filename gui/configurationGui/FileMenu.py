@@ -106,7 +106,7 @@ class ConfigNewDialog(wx.Dialog): #@UndefinedVariable
 
 class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, configurationClass):
-        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 520))
+        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 550))
 
         self._configurationClass = configurationClass
 
@@ -221,6 +221,14 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         ffmpegBinarySizer.Add(self._ffmpegBinaryField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(ffmpegBinarySizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        ffmpegH264Options = self._configurationClass.getFfmpegH264Options()
+        ffmpegOptionsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        ffmpegOptionsLabel = wx.StaticText(self, wx.ID_ANY, "ffmpeg h264 options:") #@UndefinedVariable
+        self._ffmpegOptionsField = wx.TextCtrl(self, wx.ID_ANY, str(ffmpegH264Options), size=(120, -1)) #@UndefinedVariable
+        ffmpegOptionsSizer.Add(ffmpegOptionsLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        ffmpegOptionsSizer.Add(self._ffmpegOptionsField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(ffmpegOptionsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
         scaleX = self._configurationClass.getVideoScaleX()
         scaleXSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         scaleXLabel = wx.StaticText(self, wx.ID_ANY, "Default X scale size:") #@UndefinedVariable
@@ -270,9 +278,10 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
 
         videoDir = self._videoDirectoryField.GetValue()
         ffmpegBinary = self._ffmpegBinaryField.GetValue()
+        ffmpegH264Options = self._ffmpegOptionsField.GetValue()
         scaleX = self._scaleXField.GetValue()
         scaleY = self._scaleYField.GetValue()
-        self._configurationClass.setVideoConfig(videoDir, ffmpegBinary, scaleX, scaleY)
+        self._configurationClass.setVideoConfig(videoDir, ffmpegBinary, ffmpegH264Options, scaleX, scaleY)
 
         autoSend = self._autoSendOnField.GetValue()
         midiBcast = self._guiMidiBroadcastField.GetValue()

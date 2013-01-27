@@ -1381,6 +1381,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         inputCount = 0
         useWindowsTrick = False
         ffmpegPath = os.path.normpath(self._configuration.getFfmpegBinary())
+        ffmpegH264Options = self._configuration.getFfmpegH264Options()
         if(destNoteId != None):
             if(destNoteId >= 128):
                 return
@@ -1460,7 +1461,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     if(tryConvert == True):
                         self._convertionWentOk = False
                         dlg = VideoConverterDialog(self, 'Convert file...', self._updateValuesFromConvertDialogCallback,
-                                                   ffmpegPath, self._videoSaveSubDir, self._videoDirectory, fileName, useWindowsTrick, 
+                                                   ffmpegPath, ffmpegH264Options, self._videoSaveSubDir,
+                                                   self._videoDirectory, fileName, useWindowsTrick,
                                                    (inputOk and inputIsAvi), self._videoCropMode, self._videoScaleMode,
                                                    self._videoScaleX, self._videoScaleY)
                         dlg.ShowModal()
@@ -1470,6 +1472,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             pass
                         if(self._convertionWentOk == True):
                             fileName = self._convertionOutputFileName
+                            if(inputIsImage == True):
+                                inputIsVideo = True
                             inputOk = True
                 if(inputOk == True):
                     needsCopy = False

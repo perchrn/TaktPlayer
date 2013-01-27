@@ -250,7 +250,6 @@ class MediaMixer(object):
             fourcc = cv.CV_FOURCC('I','4','2','0') #Strange output
         else:
             fourcc = cv.CV_FOURCC('M','J','P','G')
-#        fourcc = cv.CV_FOURCC('M','P','4','2')
         self._videoWriter = cv.CreateVideoWriter(fileName, fourcc, framesPerSecond, (self._internalResolutionX, self._internalResolutionY), 1)
 
     def writeImage(self):

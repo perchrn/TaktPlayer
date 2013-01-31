@@ -139,6 +139,9 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
         lastY0Pos = None
         lastY1Pos = None
         lastY2Pos = None
+        lastY0Val = None
+        lastY1Val = None
+        lastY2Val = None
         for xPos in range(self._drawSize):
             yValueList = curve.getValue(float(xPos*256)/self._drawSize)
             if(len(yValueList) < 2):
@@ -152,7 +155,7 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                 dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
                 lastY0Pos = yPos
             else:
-                self.setPenColour(dc, True, yValueList[1]==yValueList[0], yValueList[2]==yValueList[0], 1)
+                self.setPenColour(dc, True, (yValueList[1]==yValueList[0]), (yValueList[2]==yValueList[0]), 1)
                 yPos = self._drawSize - (int(yValueList[0] * drawFactor))
                 xPos = int(xPos * drawFactor)
                 if(lastY0Pos == None):
@@ -161,7 +164,7 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                     lastY0Pos += 1
                 dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
                 lastY0Pos = yPos
-                if(yValueList[0] != yValueList[1]):
+                if(((yValueList[0] == yValueList[1]) and (lastY0Val == lastY1Val)) == False):
                     self.setPenColour(dc, yValueList[0]==yValueList[1], True, yValueList[2]==yValueList[1], 1)
                     yPos = self._drawSize - (int(yValueList[1] * drawFactor))
                     xPos = int(xPos * drawFactor)
@@ -171,7 +174,7 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                         lastY1Pos += 1
                     dc.DrawLine(xPos + 1, lastY1Pos - 1, xPos + 1, yPos - 1)
                     lastY1Pos = yPos
-                if((yValueList[0] != yValueList[2]) and (yValueList[1] != yValueList[2])):
+                if(((yValueList[0] == yValueList[2]) and (lastY0Val == lastY2Val) and (yValueList[1] == yValueList[2]) and (lastY1Val == lastY2Val)) == False):
                     self.setPenColour(dc, yValueList[0]==yValueList[2], yValueList[1]==yValueList[2], True, 1)
                     yPos = self._drawSize - (int(yValueList[2] * drawFactor))
                     xPos = int(xPos * drawFactor)

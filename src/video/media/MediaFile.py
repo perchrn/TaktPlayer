@@ -231,22 +231,24 @@ class MediaFile(object):
                     mediaSettingsHolder.resetEffect = True
 
             newCurveString = self._configurationTree.getValue("Curve")
-            if(newCurveString != self._curveConfig.getString()):
+            oldCurveString = self._curveConfig.getString()
+            if(newCurveString != oldCurveString):
                 self._curveConfig.setString(newCurveString)
-                self._curveMode = self._curveConfig.getMode()
-                if(self._curveMode != Curve.Off):
-                    for i in range(256):
-                        curveValues = self._curveConfig.getArray()
-                        if(len(curveValues) == 3):
-                            if(self._curveMode == Curve.HSV):
-                                for i in range(256):
-                                    cv.Set1D(self._curveTableMat, i, (curveValues[0][i], curveValues[1][i], curveValues[2][i]))
+                if(oldCurveString != self._curveConfig.getString()):
+                    self._curveMode = self._curveConfig.getMode()
+                    if(self._curveMode != Curve.Off):
+                        for i in range(256):
+                            curveValues = self._curveConfig.getArray()
+                            if(len(curveValues) == 3):
+                                if(self._curveMode == Curve.HSV):
+                                    for i in range(256):
+                                        cv.Set1D(self._curveTableMat, i, (curveValues[0][i], curveValues[1][i], curveValues[2][i]))
+                                else:
+                                    for i in range(256):
+                                        cv.Set1D(self._curveTableMat, i, (curveValues[2][i], curveValues[1][i], curveValues[0][i]))
                             else:
                                 for i in range(256):
-                                    cv.Set1D(self._curveTableMat, i, (curveValues[2][i], curveValues[1][i], curveValues[0][i]))
-                        else:
-                            for i in range(256):
-                                cv.Set1D(self._curveTableMat, i, (curveValues[i], curveValues[i], curveValues[i]))
+                                    cv.Set1D(self._curveTableMat, i, (curveValues[i], curveValues[i], curveValues[i]))
 
             fadeAndLevelTemplate = self._configurationTree.getValue("FadeConfig")
             self._fadeAndLevelSettings = self._mediaFadeConfigurationTemplates.getTemplate(fadeAndLevelTemplate)

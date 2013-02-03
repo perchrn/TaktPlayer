@@ -523,35 +523,80 @@ class KaleidoscopeEffect(object):
     def reset(self):
         pass
 
-    def applyEffect(self, image, songPosition, more, move, unused2, unused3, unused4):
-        return self.kaleidoscope(image, more, move)
+    def applyEffect(self, image, songPosition, more, move, mode, unused3, unused4):
+        return self.kaleidoscope(image, more, move, mode)
 
-    def kaleidoscope(self, image, more, move):
-        cv.Flip(image, self._mirrorMat, 0)
-        src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
-        dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
-        cv.Copy(src_region, dst_region)
+    def kaleidoscope(self, image, more, move, mode):
+        if(mode < 0.25):
+            cv.Flip(image, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+    
+            angle = float(self._internalResolutionY) / self._internalResolutionX * 45
+            xCenter = int(self._quarterResX + (move * self._halfResX))
+            yCenter = int(self._quarterResY + (move * self._halfResY))
+            cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, self._rotateMatrix)
+            cv.WarpAffine(image, self._mirrorMat, self._rotateMatrix)
 
-        angle = float(self._internalResolutionY) / self._internalResolutionX * 45
-        xCenter = int(self._quarterResX + (move * self._halfResX))
-        yCenter = int(self._quarterResY + (move * self._halfResY))
-        cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, self._rotateMatrix)
-        cv.WarpAffine(image, self._mirrorMat, self._rotateMatrix)
+            cv.SetZero(image)
+            src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX/2, self._halfResY/2, self._halfResX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (self._halfResX, 0, self._halfResX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+            cv.Flip(image, image, 1)
+            cv.Copy(src_region, dst_region)
+            cv.Copy(image, self._mirrorMat)
+            cv.Flip(self._mirrorMat, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+        elif(mode < 0.5):
+            cv.SetZero(self._mirrorMat)
+            src_region = cv.GetSubRect(image, (0, 0, self._internalResolutionX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, 0, self._halfResX, self._halfResY))
+            cv.Resize(src_region, dst_region)
+            cv.Flip(self._mirrorMat, image, 1)
+            src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, 0, self._halfResX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (self._halfResX, 0, self._halfResX, self._halfResY))
+            cv.Copy(src_region, dst_region)
 
-        cv.SetZero(image)
-        src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX/2, self._halfResY/2, self._halfResX, self._halfResY))
-        dst_region = cv.GetSubRect(image, (self._halfResX, 0, self._halfResX, self._halfResY))
-        cv.Copy(src_region, dst_region)
-        cv.Flip(image, image, 1)
-        cv.Copy(src_region, dst_region)
-        cv.Copy(image, self._mirrorMat)
-        cv.Flip(self._mirrorMat, self._mirrorMat, 0)
-        src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
-        dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
-        cv.Copy(src_region, dst_region)
+            cv.Copy(image, self._mirrorMat)
+            cv.Flip(self._mirrorMat, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+        elif(mode < 0.75):
+            cv.SetZero(self._mirrorMat)
+            src_region = cv.GetSubRect(image, (0, 0, self._internalResolutionX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, self._halfResY, self._halfResX, self._halfResY))
+            cv.Resize(src_region, dst_region)
+            cv.Flip(self._mirrorMat, image, 1)
+            src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, self._halfResY, self._halfResX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (self._halfResX, self._halfResY, self._halfResX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+
+            cv.Copy(image, self._mirrorMat)
+            cv.Flip(self._mirrorMat, self._mirrorMat, 0)
+            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, 0, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+        else:
+            cv.SetZero(self._mirrorMat)
+            src_region = cv.GetSubRect(image, (0, 0, self._internalResolutionX, self._internalResolutionY))
+            dst_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, 0, self._halfResX, self._halfResY))
+            cv.Resize(src_region, dst_region)
+            src_region = cv.GetSubRect(self._mirrorMat, (self._halfResX, 0, self._halfResX, self._halfResY))
+            dst_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._halfResX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+
+            src_region = cv.GetSubRect(self._mirrorMat, (0, 0, self._internalResolutionX, self._halfResY))
+            dst_region = cv.GetSubRect(image, (0, 0, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
+            dst_region = cv.GetSubRect(image, (0, self._halfResY, self._internalResolutionX, self._halfResY))
+            cv.Copy(src_region, dst_region)
 
         if(more > 0.5):
-            image = self.kaleidoscope(image, 0.0, 0.5)
+            image = self.kaleidoscope(image, 0.0, 0.5, mode)
 
         return image
 

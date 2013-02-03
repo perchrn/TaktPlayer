@@ -2492,14 +2492,11 @@ class ImageAddEffect(object):
 #Improve thumb requests (bulk thumb requests?)
 
 #Debugging.
-#Check in blip on verse on RulleIGlassskaar, Effects related?
 #Full path bug: could be when importing multipple files (DnD)
 
 #Make Rygg I Rand project (started)
 
 #No screensaver fix
-
-#Keep last image on play once / advanced looping?
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!
@@ -2512,7 +2509,7 @@ class ImageAddEffect(object):
 #TextMedia font directory config.
 #URL image media?
 #Streaming from on player to another media (cameras etc.)
-#Recording / resampler.
+#Resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?
 

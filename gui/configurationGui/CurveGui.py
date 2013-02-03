@@ -183,7 +183,7 @@ class CurveGui(object):
         updateChoices(self._curveModeField, self._curveConfig.getChoices, self._curveModeField.GetValue(), "Off")
         self._curveConfig.changeModeString(self._curveModeField.GetValue())
         self._onCurveChannelChosen(None)
-        if(self._curveConfig.getMode() == Curve.Threshold):
+        if((self._curveConfig.getMode() == Curve.Threshold) or (self._curveConfig.getMode() == Curve.Off)):
             self._mainCurveGuiSizer.Hide(self._curveSubModeSizer)
         else:
             self._mainCurveGuiSizer.Show(self._curveSubModeSizer)
@@ -536,7 +536,7 @@ class CurveGui(object):
         updateChoices(self._curveModeField, self._curveConfig.getChoices, self._curveConfig.getChoices()[self._curveConfig.getMode()], "Off")
         updateChoices(self._curveSubModeField, self._curveConfig.getSubChoices, self._curveConfig.getSubChoices()[self._curveConfig.getSubMode()], "Linear")
         self._onCurveChannelChosen(None)
-        if(self._curveConfig.getMode() == Curve.Threshold):
+        if((self._curveConfig.getMode() == Curve.Threshold) or (self._curveConfig.getMode() == Curve.Off)):
             self._mainCurveGuiSizer.Hide(self._curveSubModeSizer)
         else:
             self._mainCurveGuiSizer.Show(self._curveSubModeSizer)

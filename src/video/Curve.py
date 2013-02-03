@@ -40,7 +40,6 @@ class Curve(object):
                 return [self._curves[0].getValue(xPos), self._curves[1].getValue(xPos), self._curves[2].getValue(xPos)]
 
     def changeModeString(self, modeString):
-        print "DEBUG pcn: changeModeString: " + str(modeString)
         if(self._mode == Curve.Threshold):
             if(modeString.lower() != "threshold"):
                 self.setString("Off")
@@ -106,7 +105,23 @@ class Curve(object):
         if(self._mode == Curve.Off):
             pass
         elif(self._mode == Curve.Threshold):
-            pass
+            settingsLen = len(self._thresholdsSettingsList)
+            for i in range(settingsLen):
+                setting = self._thresholdsSettingsList[i]
+                if(setting[1] == newPoint[0]):
+                    return i
+                elif(setting[1] > newPoint[0]):
+                    if((i-1) >= 0):
+                        newRed = (((setting[0] & 0xff0000) + (self._thresholdsSettingsList[i-1][0] & 0xff0000)) / 2) & 0xff0000
+                        newGreen = (((setting[0] & 0x00ff00) + (self._thresholdsSettingsList[i-1][0] & 0x00ff00)) / 2) & 0x00ff00
+                        newBlue = ((setting[0] & 0x0000ff) + (self._thresholdsSettingsList[i-1][0] & 0x0000ff)) / 2
+                        newValue = newRed + newGreen + newBlue
+                    else:
+                        newValue = setting[0]
+                    self._thresholdsSettingsList.insert(i, (newValue, newPoint[0]))
+                    return i
+            self._thresholdsSettingsList.append((0xffffff, newPoint[0]))
+            return settingsLen
         elif(self._mode == Curve.All):
             self._curves[0].addPoint(newPoint)
             self._curves[1].addPoint(newPoint)
@@ -132,10 +147,8 @@ class Curve(object):
         elif(self._mode == Curve.Threshold):
             return None
         elif(self._mode == Curve.All):
-            print "DEBUG pcn: mode All"
             return self._curves[0].findActivePointId(point)
         else:
-            print "DEBUG pcn: mode other " + str(subId)
             if((subId >= 0) and (subId < 3)):
                 return self._curves[subId].findActivePointId(point)
 
@@ -170,13 +183,13 @@ class Curve(object):
             valPos = updateList[i]
             if(i == 0):
                 if(updateList[i][1] == None):
-                    print "DEBUG pcn: _updateThersholdListPos None: " + str((updateList[i][0], 0))
+#                    print "DEBUG pcn: _updateThersholdListPos None: " + str((updateList[i][0], 0))
                     updateList[i] = (updateList[i][0], 0)
             else:
                 if(valPos[1] == None):
                     posDiff = pos - lastPos
                     newPos = lastPos + (posDiff / max((1 + addListPos - lastListPos), 2))
-                    print "DEBUG pcn: _updateThersholdListPos: " + str((updateList[i][0], newPos)) + "  " + str((pos, lastPos, posDiff, addListPos, lastListPos, (posDiff / max((1 + addListPos - lastListPos), 2))))
+#                    print "DEBUG pcn: _updateThersholdListPos: " + str((updateList[i][0], newPos)) + "  " + str((pos, lastPos, posDiff, addListPos, lastListPos, (posDiff / max((1 + addListPos - lastListPos), 2))))
                     updateList[i] = (updateList[i][0], newPos)
             lastPos = updateList[i][1]
             lastListPos += 1
@@ -189,7 +202,6 @@ class Curve(object):
         addColour = None
         addListPos = 0
         for part in coloursSplit:
-            print "DEBUG pcn: part: " + str(part)
             if(len(part) == 6):
                 addColour = int(part,16)
             elif(len(part) == 7):
@@ -203,13 +215,13 @@ class Curve(object):
                 addPos = None
                 addColour = None
                 addListPos += 1
-        print "DEBUG pcn: preFix: " + str(settingsList)
+#        print "DEBUG pcn: preFix: " + str(settingsList)
         self._updateThersholdListPos(settingsList, 255, len(settingsList))
         if(len(settingsList) < 1):
-            return "off", "off", "off"
+            return "Linear|0,0|255,255", "Linear|0,0|255,255", "Linear|0,0|255,255"
         elif(len(settingsList) == 1):
             if(settingsList[0][1] <= 0):
-                if(addPos > 0):
+                if((addPos == None) or (addPos > 0)):
                     settingsList[0] = (settingsList[0][0], 127)
                 else:
                     settingsList[0] = (settingsList[0][0], addPos)
@@ -220,7 +232,7 @@ class Curve(object):
         settingsListLen = len(settingsList)
         if(settingsList[settingsListLen-1][1] < 255):
             settingsList.append((settingsList[settingsListLen-1][0], 255))
-        print "DEBUG pcn: postFix: " + str(settingsList)
+#        print "DEBUG pcn: postFix: " + str(settingsList)
         curve1 = "Thresh"
         curve2 = "Thresh"
         curve3 = "Thresh"
@@ -275,7 +287,6 @@ class Curve(object):
         return "Threshold;" + configString
 
     def setString(self, newString):
-        print "DEBUG pcn: setString: newString: " + str(newString)
         if(newString.lower() == "off"):
             self._mode = Curve.Off
             self._curves[0].setString("Linear|0,0|255,255")
@@ -295,10 +306,10 @@ class Curve(object):
                 self._curves[0].setString(curve1)
                 self._curves[1].setString(curve2)
                 self._curves[2].setString(curve3)
-                arr0, arr1, arr2 = self.getArray()
-                print "R: " + str((arr0[0],arr0[1],arr0[126],arr0[127],arr0[254],arr0[255])),
-                print " G: " + str((arr1[0],arr1[1],arr1[126],arr1[127],arr1[254],arr1[255])),
-                print " B: " + str((arr2[0],arr2[1],arr2[126],arr2[127],arr2[254],arr2[255]))
+#                arr0, arr1, arr2 = self.getArray()
+#                print "R: " + str((arr0[0],arr0[1],arr0[126],arr0[127],arr0[254],arr0[255])),
+#                print " G: " + str((arr1[0],arr1[1],arr1[126],arr1[127],arr1[254],arr1[255])),
+#                print " B: " + str((arr2[0],arr2[1],arr2[126],arr2[127],arr2[254],arr2[255]))
             else:
                 if(curvesSplit[0] == "RGB"):
                     self._mode = Curve.RGB
@@ -324,7 +335,6 @@ class Curve(object):
             returnString += self._curves[0].getString()
             return returnString
         elif(self._mode == Curve.Threshold):
-            print "DEBUG pcn: getString: Threshold :-D"
             return self._currentCurveString
         elif(self._mode == Curve.RGB):
             returnString = "RGB;"
@@ -525,7 +535,6 @@ class CurveChannel(object):
             self._findNearestPoint(newPoint[0], newPoint[1])
 
     def getActivePointId(self):
-        print "DEBUG pcn: getActivePointId " + str(self._movePointId)
         return self._movePointId
 
     def findActivePointId(self, point):

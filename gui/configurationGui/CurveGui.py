@@ -172,6 +172,7 @@ class CurveGui(object):
         text += "\n"
         text += "Off:\tNo curve modifications are done.\n"
         text += "All:\tOne curve controlls all channels.\n"
+        text += "Threshold:\tSets colours for different levels. Use BW input\n"
         text += "RGB:\tOne curve for each RGB colour.\n"
         text += "HSV:\tOne curve for each HSV channel.\n"
         dlg = wx.MessageDialog(self._mainCurveGuiPlane, text, 'Curve mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
@@ -193,7 +194,6 @@ class CurveGui(object):
         text = "Selects how we edit the curve.\n"
         text += "\n"
         text += "Linear:\tAdd points to define curve.\n"
-        text += "Threshold:\tSets colours for different levels. Use BW input\n"
         text += "Curve:\tAdd points to define bendt curve.\n"
         text += "Array:\tDraw the curve pixel by pixel.\n"
         dlg = wx.MessageDialog(self._mainCurveGuiPlane, text, 'Curve sub mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
@@ -359,6 +359,7 @@ class CurveGui(object):
             self._pointValue1Label.SetLabel("Value:")
         self._mainCurveGuiSizer.Hide(self._pointValue2Sizer)
         self._mainCurveGuiSizer.Hide(self._pointValue3Sizer)
+        self._buttonsSizer.Hide(self._deleteButton)
 
     def _updateThresholdId(self, forceUpdate):
         settingsList = self._curveConfig.getThresholdsSettings()
@@ -375,6 +376,8 @@ class CurveGui(object):
         self._mainCurveGuiSizer.Show(self._pointValue1Sizer)
         self._mainCurveGuiSizer.Show(self._pointValue2Sizer)
         self._mainCurveGuiSizer.Show(self._pointValue3Sizer)
+        self._deleteButton.setBitmaps(self._deleteColourButtonBitmap, self._deleteColourButtonPressedBitmap)
+        self._buttonsSizer.Show(self._deleteButton)
         if(thresholdId >= settingsListLen):
             thresholdId = settingsListLen - 1
         if(thresholdId != self._selectedPointId):
@@ -402,6 +405,8 @@ class CurveGui(object):
         self._mainCurveGuiSizer.Show(self._pointValue1Sizer)
         self._mainCurveGuiSizer.Hide(self._pointValue2Sizer)
         self._mainCurveGuiSizer.Hide(self._pointValue3Sizer)
+        self._deleteButton.setBitmaps(self._deletePointButtonBitmap, self._deletePointButtonPressedBitmap)
+        self._buttonsSizer.Show(self._deleteButton)
         if((subId == -1) and (curveMode != Curve.All)):
             return
         settingsList = self._curveConfig.getPoints(self.getSubId())[0]
@@ -436,7 +441,10 @@ class CurveGui(object):
                 self._updatePointId(True)
 
     def _onCurveDoubleClick(self, event):
-        self._curveConfig.addPoint(self._curveGraphicsDisplay.getLastPos(), self.getSubId())
+        thresholdPointId = self._curveConfig.addPoint(self._curveGraphicsDisplay.getLastPos(), self.getSubId())
+        if(self._curveConfig.getMode() == Curve.Threshold):
+            self._curveConfig.updateFromThresholdsSettings()
+            self._selectedPointId = thresholdPointId
         self._updateCurveGraph()
         self._autoUpdateSliders()
         if((self._curveConfig.getSubMode() == Curve.Linear) or (self._curveConfig.getSubMode() == Curve.Curve)):
@@ -452,7 +460,6 @@ class CurveGui(object):
             self._updateCurveGraph()
         else:
             self._curveConfig.drawingDone(-1)
-#            self._curveConfig.findActivePointId(self.getSubId(), event.mousePosition)
         if(self._curveConfig.getSubMode() == Curve.Array):
             xPos, yPos = event.mousePosition
             self._pointPositionSlider.SetValue(int(xPos))
@@ -483,7 +490,27 @@ class CurveGui(object):
         self._checkForUpdates()
 
     def _onDeleteButton(self, event):
-        pass
+        curveMode = self._curveConfig.getMode()
+        curveSubMode = self._curveConfig.getSubMode()
+        if(curveMode == Curve.Threshold):
+            if(self._selectedPointId != None):
+                settingsList = self._curveConfig.getThresholdsSettings()
+                settingsListLen = len(settingsList)
+                if((self._selectedPointId >= 0) and (self._selectedPointId < settingsListLen)):
+                    settingsList.pop(self._selectedPointId)
+                    self._curveConfig.updateFromThresholdsSettings()
+        elif(curveMode == Curve.Off):
+            pass
+        elif(curveSubMode == Curve.Array):
+            pass
+        else:
+            if(self._selectedPointId != None):
+                settingsList = self._curveConfig.getPoints(self.getSubId())[0]
+                settingsListLen = len(settingsList)
+                if((self._selectedPointId >= 0) and (self._selectedPointId < settingsListLen)):
+                    settingsList.pop(self._selectedPointId)
+        self._autoUpdateSliders()
+        self._updateCurveGraph()
 
     def _checkForUpdates(self, event = None):
         newCurveString = self._curveConfig.getString()

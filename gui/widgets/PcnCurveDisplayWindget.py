@@ -49,7 +49,7 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                 if(blue == True):
                     dc.SetPen(wx.Pen((0,90,90), width)) #@UndefinedVariable
                 else:
-                    dc.SetPen(wx.Pen((0,200,0), width)) #@UndefinedVariable
+                    dc.SetPen(wx.Pen((0,180,0), width)) #@UndefinedVariable
             else:
                 dc.SetPen(wx.Pen((0,0,200), width)) #@UndefinedVariable
 
@@ -154,8 +154,29 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                     lastY0Pos += 1
                 dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
                 lastY0Pos = yPos
+                lastY0Val = yValueList[0]
             else:
-                self.setPenColour(dc, True, (yValueList[1]==yValueList[0]), (yValueList[2]==yValueList[0]), 1)
+                yPos = self._drawSize - (int(yValueList[2] * drawFactor))
+                if((yValueList[0] != yValueList[2]) or (lastY0Val != lastY2Val) or (yValueList[1] != yValueList[2]) or (lastY1Val != lastY2Val)):
+                    self.setPenColour(dc, yValueList[0]==yValueList[2], yValueList[1]==yValueList[2], True, 1)
+                    xPos = int(xPos * drawFactor)
+                    if(lastY2Pos == None):
+                        lastY2Pos = yPos
+                    if(lastY2Pos == yPos):
+                        lastY2Pos += 1
+                    dc.DrawLine(xPos + 1, lastY2Pos - 1, xPos + 1, yPos - 1)
+                lastY2Pos = yPos
+                yPos = self._drawSize - (int(yValueList[1] * drawFactor))
+                if((yValueList[0] != yValueList[1]) or (lastY0Val != lastY1Val)):
+                    self.setPenColour(dc, yValueList[0]==yValueList[1], True, yValueList[2]==yValueList[1], 1)
+                    xPos = int(xPos * drawFactor)
+                    if(lastY1Pos == None):
+                        lastY1Pos = yPos
+                    if(lastY1Pos == yPos):
+                        lastY1Pos += 1
+                    dc.DrawLine(xPos + 1, lastY1Pos - 1, xPos + 1, yPos - 1)
+                lastY1Pos = yPos
+                self.setPenColour(dc, True, (yValueList[1]==yValueList[0]) or (lastY1Val == lastY0Val), (yValueList[2]==yValueList[0]) or (lastY2Val == lastY0Val), 1)
                 yPos = self._drawSize - (int(yValueList[0] * drawFactor))
                 xPos = int(xPos * drawFactor)
                 if(lastY0Pos == None):
@@ -164,26 +185,9 @@ class PcnCurveDisplayWidget(wx.PyControl): #@UndefinedVariable
                     lastY0Pos += 1
                 dc.DrawLine(xPos + 1, lastY0Pos - 1, xPos + 1, yPos - 1)
                 lastY0Pos = yPos
-                if(((yValueList[0] == yValueList[1]) and (lastY0Val == lastY1Val)) == False):
-                    self.setPenColour(dc, yValueList[0]==yValueList[1], True, yValueList[2]==yValueList[1], 1)
-                    yPos = self._drawSize - (int(yValueList[1] * drawFactor))
-                    xPos = int(xPos * drawFactor)
-                    if(lastY1Pos == None):
-                        lastY1Pos = yPos
-                    if(lastY1Pos == yPos):
-                        lastY1Pos += 1
-                    dc.DrawLine(xPos + 1, lastY1Pos - 1, xPos + 1, yPos - 1)
-                    lastY1Pos = yPos
-                if(((yValueList[0] == yValueList[2]) and (lastY0Val == lastY2Val) and (yValueList[1] == yValueList[2]) and (lastY1Val == lastY2Val)) == False):
-                    self.setPenColour(dc, yValueList[0]==yValueList[2], yValueList[1]==yValueList[2], True, 1)
-                    yPos = self._drawSize - (int(yValueList[2] * drawFactor))
-                    xPos = int(xPos * drawFactor)
-                    if(lastY2Pos == None):
-                        lastY2Pos = yPos
-                    if(lastY2Pos == yPos):
-                        lastY2Pos += 1
-                    dc.DrawLine(xPos + 1, lastY2Pos - 1, xPos + 1, yPos - 1)
-                    lastY2Pos = yPos
+                lastY0Val = yValueList[0]
+                lastY1Val = yValueList[1]
+                lastY2Val = yValueList[2]
 
         dc.SelectObject(wx.NullBitmap) #@UndefinedVariable
         self._activeBitmap = workBitmap

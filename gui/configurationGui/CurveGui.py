@@ -382,6 +382,7 @@ class CurveGui(object):
             thresholdId = settingsListLen - 1
         if(thresholdId != self._selectedPointId):
             self._selectedPointId = thresholdId
+            self._pointSelectSlider.SetValue(int((thresholdId + 0.5)*256/settingsListLen))
             self._pointSelectDisplay.SetLabel(str(thresholdId+1))
             colour, xPos = settingsList[thresholdId]
             red = (int(colour)&0xff0000) / 0x010000
@@ -421,7 +422,7 @@ class CurveGui(object):
             pointId = settingsListLen - 1
         if(pointId != self._selectedPointId):
             self._selectedPointId = pointId
-            self._pointSelectSlider.SetValue(int(pointId*256/settingsListLen))
+            self._pointSelectSlider.SetValue(int((pointId + 0.5)*256/settingsListLen))
             self._pointSelectDisplay.SetLabel(str(pointId+1))
             xPos, yPos = settingsList[pointId]
             self._pointPositionSlider.SetValue(int(xPos))

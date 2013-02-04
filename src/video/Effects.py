@@ -1191,6 +1191,8 @@ class RaysEffect(object):
         if(mode < 0.75):
             if(amount < 0.001):
                 return image
+#        scaleCalcY = 0.9 + ((1.0 - amount) * 0.1)
+#        scaleCalcX = 1.0
         scaleCalcX = 0.9 + ((1.0 - amount) * 0.1)
         scaleCalcY = 1.0 - ((1.0 - scaleCalcX) * (1.0 + (3* bend)))
         if(horizontal < 0.5):
@@ -2540,6 +2542,8 @@ class ImageAddEffect(object):
 
 #TODO: add effects
 #class SliceEffect(object):
+
+#fix rays y only (or add another ray effect?)
 
 #class EchoEffect2(object):
 

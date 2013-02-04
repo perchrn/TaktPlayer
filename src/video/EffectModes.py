@@ -213,6 +213,19 @@ class ZoomModes():
                 return i
         return 0
 
+class FeedbackModes():
+    Add, Sub, Mul = range(3)
+
+    def getChoices(self):
+        return ["Add", "Sub", "Mul"]
+
+    def findMode(self, modeString):
+        modesList = self.getChoices()
+        for i in range(len(modesList)):
+            if(modesList[i] == modeString):
+                return i
+        return 0
+
 class ScrollModes():
     NoFlip, Flip = range(2)
 

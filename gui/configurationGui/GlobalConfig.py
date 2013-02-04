@@ -15,7 +15,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
     MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes,\
-    RayModes, SlitDirections, StrobeModes
+    RayModes, SlitDirections, StrobeModes, FeedbackModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -516,6 +516,7 @@ class EffectsGui(object):
         self._mirrorModes = MirrorModes()
         self._blurModes = BlurModes()
         self._zoomModes = ZoomModes()
+        self._feedbackModes = FeedbackModes()
         self._scrollModes = ScrollModes()
         self._rayModes = RayModes()
         self._slitDirs = SlitDirections()
@@ -1510,8 +1511,8 @@ A list of start values for the effect modulation.
             self._setLabels("Mirror mode:", "Angle", "Move center", "Move angle", None)
             self._setupValueLabels(self._mirrorModes.getChoices(), None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Kaleidoscope):
-            self._setLabels("More:", "Move:", None, None, None)
-            self._setupValueLabels(["Normal", "More"], None, None, None, None)
+            self._setLabels("More:", "Move:", "Simple:", None, None)
+            self._setupValueLabels(["Normal", "More"], None, ["Kaleido", "Mirror1", "Mirror2", "Copy"], None, None)
         elif(self._chosenEffectId == EffectTypes.Rotate):
             self._setLabels("Angle", "Move center", "Move angle", "Zoom", None)
             self._setupValueLabels(None, None, None, None, None)
@@ -1522,6 +1523,11 @@ A list of start values for the effect modulation.
             self._setLabels("Amount:", None, None, None, None)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Feedback):
+            config1helpText = "Selects feedback combine mode.\n"
+            config1helpText += "\n"
+            config1helpText += "Add adds the images together.\n"
+            config1helpText += "Sub subtracts from original image.\n"
+            config1config = "Combine mode", self._feedbackModes.getChoices, self._tryToGetConfigValue("FeedbackCombineMode", "Add"), "Add", config1helpText
             config2helpText = "Sets up advanced zoom options.\n"
             config2helpText += "\n"
             config2helpText += "Default is 1.0|0.0|0.0|0.0 (Zoom only.)\n"
@@ -1535,7 +1541,7 @@ A list of start values for the effect modulation.
             config2helpText += "Forth number rotates the flip axis around Z-axis.\n"
             config2helpText += "\t1.0 = rotate 360 degrees.\n"
             config2config = "Advanced zoom values", self._tryToGetConfigValue("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0"), config2helpText, None
-            self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:", None, config2config)
+            self._setLabels("Feedback:", "Inversion:", "Move:", "Angle:", "Zoom:", config1config, config2config)
             self._setupValueLabels(None, None, None, None, None)
         elif(self._chosenEffectId == EffectTypes.Repeat):
             config2helpText = "Sets up advanced zoom options.\n"
@@ -1681,7 +1687,16 @@ A list of start values for the effect modulation.
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):
                 return True
-        elif((configEffect == "Feedback") or (configEffect == "Repeat") or (configEffect == "Delay")):
+        elif((configEffect == "Feedback")):
+            config1Val = self._config.getValue("FeedbackCombineMode")
+            gui1Val = self._conf1Field.GetValue()
+            if(gui1Val != config1Val):
+                return True
+            config2Val = self._config.getValue("FeedbackAdvancedZoom")
+            gui2Val = self._conf2Field.GetValue()
+            if(gui2Val != config2Val):
+                return True
+        elif((configEffect == "Repeat") or (configEffect == "Delay")):
             config2Val = self._config.getValue("FeedbackAdvancedZoom")
             gui2Val = self._conf2Field.GetValue()
             if(gui2Val != config2Val):

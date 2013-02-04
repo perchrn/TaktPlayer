@@ -231,6 +231,10 @@ class EffectSettings(object):
         else:
             self._configurationTree.removeParameter("ZoomMode")
             self._configurationTree.removeParameter("ZoomRange")
+        if((effectName == "Feedback")):
+            self._configurationTree.addTextParameter("FeedbackCombineMode", "Add")
+        else:
+            self._configurationTree.removeParameter("FeedbackCombineMode")
         if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
         else:
@@ -251,6 +255,8 @@ class EffectSettings(object):
         if(effectName == "Zoom"):
             returnVal1 = self._configurationTree.getValue("ZoomMode")
             returnVal2 = self._configurationTree.getValue("ZoomRange")
+        if((effectName == "Feedback")):
+            returnVal1 = self._configurationTree.getValue("FeedbackCombineMode")
         if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             returnVal2 = self._configurationTree.getValue("FeedbackAdvancedZoom")
         if(effectName == "Edge"):
@@ -274,6 +280,12 @@ class EffectSettings(object):
         else:
             self._configurationTree.removeParameter("ZoomMode")
             self._configurationTree.removeParameter("ZoomRange")
+        if((effectName == "Feedback")):
+            self._configurationTree.addTextParameter("FeedbackCombineMode", "Add")
+            if(extraConfig1Value != None):
+                self._configurationTree.setValue("FeedbackCombineMode", extraConfig1Value)
+        else:
+            self._configurationTree.removeParameter("FeedbackCombineMode")
         if((effectName == "Feedback") or (effectName == "Delay") or (effectName == "Repeat")):
             self._configurationTree.addTextParameter("FeedbackAdvancedZoom", "1.0|0.0|0.0|0.0")
             if(extraConfig2Value != None):

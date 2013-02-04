@@ -9,7 +9,7 @@ import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
     ScrollModes, ContrastModes, HueSatModes, ValueToHueModes, BlobDetectModes,\
-    SlitDirections
+    SlitDirections, FeedbackModes
 import math
 import os
 import time
@@ -1403,6 +1403,8 @@ class FeedbackEffect(object):
         self._tmpMat = effectMat2
         self._replaceMask = effectMask1
         self._zoomEffect = ZoomEffect(configurationTree, internalResX, internalResY)
+        self._feedbackModes = FeedbackModes()
+        self._combineMode = self._feedbackModes.Add
         self._zoomMultiplyerValue = 1.0
         self._zRotationValue = 0.0
         self._xFlipValue = 0.0
@@ -1411,7 +1413,11 @@ class FeedbackEffect(object):
     def setExtraConfig(self, values):
 #        print("DEBUG pcn: Feedback::setExtraConfig() " + str(values))
         if(values != None):
-            _, advancedZoomString = values
+            combineModeString, advancedZoomString = values
+            if(combineModeString == None):
+                self._combineMode = self._feedbackModes.Add
+            else:
+                self._combineMode = self._feedbackModes.findMode(combineModeString)
             if(advancedZoomString == None):
                 self._zoomMultiplyerValue = 1.0
                 self._zRotationValue = 0.0
@@ -1445,9 +1451,20 @@ class FeedbackEffect(object):
             return image
         self._gotMemory = True
         #Fade
-        calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
-        invertVal = -256 * invert
-        cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, calcValue, invertVal)
+        if(self._combineMode == self._feedbackModes.Sub):
+            invertVal = -256 * (1.0 - invert)
+            cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, 1.0, invertVal)
+            calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
+            cv.ConvertScaleAbs(self._tmpMat, self._tmpMat, calcValue, 0)
+        elif(self._combineMode == self._feedbackModes.Mul):
+            invertVal = -256 * (invert)
+            cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, 1.0, invertVal)
+            calcValue = 256 * (1.0 -value)
+            cv.ConvertScaleAbs(self._tmpMat, self._tmpMat, 1.0, calcValue)
+        else:
+            calcValue = math.log10(10.0 + (90.0 * value)) - 1.0
+            invertVal = -256 * invert
+            cv.ConvertScaleAbs(self._memoryMat, self._tmpMat, calcValue, invertVal)
         if((zoom != 0.5) or (move > 0.003)):
             zoom = 1.0 - zoom
             if(move > 0.003):
@@ -1474,8 +1491,12 @@ class FeedbackEffect(object):
                 flipAngle = 0.0
                 rotZ = 0.0
             self._zoomEffect.zoomImageTransform(self._tmpMat, xcenter, ycenter, zoomCalc, flipAngle, flipX, rotZ)
-        cv.Add(image, self._tmpMat, self._memoryMat)
-#        cv.Sub(image, self._tmpMat, self._memoryMat)
+        if(self._combineMode == self._feedbackModes.Sub):
+            cv.Sub(image, self._tmpMat, self._memoryMat)
+        elif(self._combineMode == self._feedbackModes.Mul):
+            cv.Mul(image, self._tmpMat, self._memoryMat, 0.004)
+        else:
+            cv.Add(image, self._tmpMat, self._memoryMat)
         cv.Copy(self._memoryMat, image)
         return image
 

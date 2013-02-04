@@ -1527,6 +1527,7 @@ A list of start values for the effect modulation.
             config1helpText += "\n"
             config1helpText += "Add adds the images together.\n"
             config1helpText += "Sub subtracts from original image.\n"
+            config1helpText += "Mul multiplies the images together.\n"
             config1config = "Combine mode", self._feedbackModes.getChoices, self._tryToGetConfigValue("FeedbackCombineMode", "Add"), "Add", config1helpText
             config2helpText = "Sets up advanced zoom options.\n"
             config2helpText += "\n"

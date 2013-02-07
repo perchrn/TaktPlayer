@@ -96,7 +96,7 @@ class DmxListner(object):
                 if(dataLen > 1):
                     dataString = ""
                     for i in range(len(data)):
-                        dataString += "|%02x" % (ord(data[i]))
+                        dataString += "|%02x" % (data[i])
                     self._addEventToSaveLog(str(dataTimeStamp) + "|DMX" + dataString)
                     print str(dataTimeStamp) + "|DMX" + dataString
                 else:

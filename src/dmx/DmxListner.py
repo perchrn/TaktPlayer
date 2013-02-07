@@ -28,9 +28,9 @@ def dmxDaemon(universe, dmxOutputQueue, logQueue):
         client.RegisterUniverse(universe, client.REGISTER, NewDataCallback)
         wrapper.Run()
     except:
-        logQueue.put_nowait("Error setting up DMX in uiniverse: " % (universe))
+        logQueue.put_nowait("Error setting up DMX in uiniverse: %d" % (universe))
         logQueue.put_nowait(traceback.format_exc())
-        logQueue.put_nowait("Error setting up DMX in uiniverse: " % (universe))
+        logQueue.put_nowait("Error setting up DMX in uiniverse: %d" % (universe))
 
 class DmxListner(object):
     def __init__(self, configLoadCallback = None, eventLogSaveQueue = None):

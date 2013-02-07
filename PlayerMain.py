@@ -470,7 +470,7 @@ class PlayerMain(wx.Frame):
         else:
             if((self._guiServer == None) or (self._guiServer.hasGuiServerProcessShutdownNicely())):
                 if((self._midiListner == None) or (self._midiListner.hasTcpMidiListnerProcessToShutdownNicely())):
-                    if((self._dmxListner == None) or (self._dmxListner.forceDmxListnerProcessToStop())):
+                    if((self._dmxListner == None) or (self._dmxListner.hasDmxListnerProcessToShutdownNicely())):
                         if(self.hasGuiProcessProcessShutdownNicely()):
                             print "All done. (shutdown timer counter: " + str(self._shutdownTimerCounter) + " )"
                             allDone = True
@@ -482,7 +482,7 @@ class PlayerMain(wx.Frame):
                         self._guiServer.forceGuiServerProcessToStop()
                     if((self._midiListner != None) and (self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False)):
                         self._midiListner.forceTcpMidiListnerProcessToStop()
-                    if((self._dmxListner == None) and (self._dmxListner.forceDmxListnerProcessToStop())):
+                    if((self._dmxListner == None) and (self._dmxListner.hasDmxListnerProcessToShutdownNicely())):
                         self._dmxListner.forceDmxListnerProcessToStop()
                     if(self.hasGuiProcessProcessShutdownNicely() == False):
                         self.forceGuiProcessProcessToStop()

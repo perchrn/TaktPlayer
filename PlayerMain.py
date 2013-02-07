@@ -482,7 +482,7 @@ class PlayerMain(wx.Frame):
                         self._guiServer.forceGuiServerProcessToStop()
                     if((self._midiListner != None) and (self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False)):
                         self._midiListner.forceTcpMidiListnerProcessToStop()
-                    if((self._dmxListner == None) or (self._dmxListner.forceDmxListnerProcessToStop())):
+                    if((self._dmxListner == None) and (self._dmxListner.forceDmxListnerProcessToStop())):
                         self._dmxListner.forceDmxListnerProcessToStop()
                     if(self.hasGuiProcessProcessShutdownNicely() == False):
                         self.forceGuiProcessProcessToStop()

@@ -94,9 +94,9 @@ class DmxListner(object):
             if data:
                 dataLen = len(data)
                 if(dataLen == 3): # DMX over udp net
-                    data0 = ord(data[0:1])
-                    data1 = ord(data[1:2])
-                    data2 = ord(data[2:3])
+                    data0 = data[0]
+                    data1 = data[1]
+                    data2 = data[2]
                     print str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2)
                     self._addEventToSaveLog(str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2))
                 else:

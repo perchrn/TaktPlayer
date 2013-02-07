@@ -313,6 +313,11 @@ class TcpMidiListner(object):
                         if(isMidiNote == True):
                             gotMidiNote = True
                         self._addEventToSaveLog(str(dataTimeStamp) + "|MIDI|%02x|%02x|%02x|%02x"%(command, data1, data2, data3))
+                    elif(dataLen == 3): # DMX over udp net
+                        data0 = ord(data[0:1])
+                        data1 = ord(data[1:2])
+                        data2 = ord(data[2:3])
+                        self._addEventToSaveLog(str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2))
                     else:
                         print "Short: " + str(len(data))
             else:

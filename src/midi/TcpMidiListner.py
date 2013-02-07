@@ -511,7 +511,6 @@ class RenderFileReader(TcpMidiListner):
             if(len(currentLineSplit) > 1):
                 self._loadConfig(currentLineSplit)
                 if(currentLineSplit[1].lower() == "stoprecording"):
-                    print "Buu"*120
                     self._nextLine = None
                     break
                 if(currentLineSplit[1].lower() == "vsttime"):

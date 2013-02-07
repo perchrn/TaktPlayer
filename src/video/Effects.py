@@ -2571,7 +2571,6 @@ class ImageAddEffect(object):
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!      Full HD Demo/test        !!!
 #!!! More complete startup program !!!
-#!!!          Fancy demo           !!!
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #Media:

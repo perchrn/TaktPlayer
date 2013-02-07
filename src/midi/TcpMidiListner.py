@@ -251,33 +251,10 @@ class TcpMidiListner(object):
         while(True):
             try:
                 dataTimeStamp, self._conectedAddress, data = self._midiQueue.get_nowait()
-#                data, self._conectedAddress = self._socket.recvfrom(1024)
             except:
                 return gotMidiNote
             if data:
                 dataLen = len(data)
-#                if(dataLen > 8): # Midi over Ethernet header
-#                    headerOk = False
-#                    if(ord(data[0:1]) == 0x00):
-#                        if(ord(data[1:2]) == 0x00):
-#                            if(ord(data[2:3]) == 0x00):
-#                                if(ord(data[3:4]) == 0x00):
-#                                    if(ord(data[4:5]) == 0x03):
-#                                        if(ord(data[5:6]) == 0x00):
-#                                            if(ord(data[6:7]) == 0x00):
-#                                                if(ord(data[7:8]) == 0x00):
-#                                                    headerOk = True
-#                                    else:
-#                                        if(ord(data[4:5]) == 0x00):
-#                                            if(ord(data[5:6]) == 0x00):
-#                                                if(ord(data[6:7]) == 0x00):
-#                                                    if(ord(data[7:8]) == 0x00):
-#                                                        self._decodeMidiEvent(0xf8, 0x00, 0x00)
-#                    if(headerOk == True):
-#                        command = ord(data[8:9])
-#                        data1 = ord(data[9:10])
-#                        data2 = ord(data[10:11])
-#                        self._decodeMidiEvent(dataTimeStamp, command, data1, data2)
                 if(dataLen > 8): # VST timing or programName over net!
                     if(str(data).startswith("vstTime|")):
                         vstTimeSplit = str(data).split("|")
@@ -303,6 +280,12 @@ class TcpMidiListner(object):
                                 xmlString = self._configLoadCallback(programName)
                                 self._addEventToSaveLog(xmlString)
                             self._addEventToSaveLog(str(dataTimeStamp) + "|" + str(data) + "|Done")
+                    elif(str(data[0:8]).startswith("dmxData|")): # DMX over udp net
+                        binaryData = data[8:]
+                        dataString = ""
+                        for i in range(len(binaryData)):
+                            dataString += "|%02x" % (ord(binaryData[i:i+1]))
+                        self._addEventToSaveLog(str(dataTimeStamp) + "|DMX" + dataString)
                 else:
                     if(dataLen > 3): # MVP MIDI over net
                         command = ord(data[0:1])
@@ -313,11 +296,6 @@ class TcpMidiListner(object):
                         if(isMidiNote == True):
                             gotMidiNote = True
                         self._addEventToSaveLog(str(dataTimeStamp) + "|MIDI|%02x|%02x|%02x|%02x"%(command, data1, data2, data3))
-                    elif(dataLen == 3): # DMX over udp net
-                        data0 = ord(data[0:1])
-                        data1 = ord(data[1:2])
-                        data2 = ord(data[2:3])
-                        self._addEventToSaveLog(str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2))
                     else:
                         print "Short: " + str(len(data))
             else:

@@ -93,12 +93,12 @@ class DmxListner(object):
                 return gotDmxNote
             if data:
                 dataLen = len(data)
-                if(dataLen == 3): # DMX over udp net
-                    data0 = data[0]
-                    data1 = data[1]
-                    data2 = data[2]
-                    print str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2)
-                    self._addEventToSaveLog(str(dataTimeStamp) + "|DMX|%02x|%02x|%02x"%(data0, data1, data2))
+                if(dataLen > 1):
+                    dataString = ""
+                    for i in range(len(data)):
+                        dataString += "|%02x" % (ord(data[i]))
+                    self._addEventToSaveLog(str(dataTimeStamp) + "|DMX" + dataString)
+                    print str(dataTimeStamp) + "|DMX" + dataString
                 else:
                     print "Bad DMX length: data: " + str(len(data))
             else:

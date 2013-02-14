@@ -283,8 +283,11 @@ class TcpMidiListner(object):
                     elif(str(data[0:8]).startswith("dmxData|")): # DMX over udp net
                         binaryData = data[8:]
                         dataString = ""
+                        sync, spp = self._midiTiming.getSongPosition(dataTimeStamp)
                         for i in range(len(binaryData)):
-                            dataString += "|%02x" % (ord(binaryData[i:i+1]))
+                            dmxValue = ord(binaryData[i:i+1])
+                            dataString += "|%02x" % (dmxValue)
+                            self._midiStateHolder.dmxControllerChange(i, dmxValue, sync, spp)
                         self._addEventToSaveLog(str(dataTimeStamp) + "|DMX" + dataString)
                 else:
                     if(dataLen > 3): # MVP MIDI over net
@@ -520,6 +523,15 @@ class RenderFileReader(TcpMidiListner):
                             else:
                                 status = "(gui)"
                         print "m|%d|%d|%d|%s" % ((command & 0x0f), data1, data2, status),
+                if(currentLineSplit[1].lower() == "dmx"):
+                    splitLen = len(currentLineSplit)
+                    pos = 2
+                    currentTimeStamp = float(currentLineSplit[0])
+                    sync, spp = self._midiTiming.getSongPosition(currentTimeStamp)
+                    while(pos < splitLen):
+                        dmxValue = int(currentLineSplit[pos], 16)
+                        self._midiStateHolder.dmxControllerChange(pos - 2, dmxValue, sync, spp)
+                        pos += 1
             currentLine = self._eventLogFileHandle.readline()
             if not currentLine:
                 self._nextLine = None

@@ -192,10 +192,13 @@ class AttackDecaySustainRelease(object):
         return False
 
 class ModulationSources():
-    NoModulation, MidiChannel, MidiNote, LFO, ADSR, Value, Special = range(7)
+    NoModulation, MidiChannel, MidiNote, DMX512, LFO, ADSR, Value, Special = range(8)
 
-    def getChoices(self):
-        return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value", "Special"]
+    def getChoices(self, dmxEnabled = True):
+        if(dmxEnabled == True):
+            return ["None", "MidiChannel", "MidiNote", "DMX512", "LFO", "ADSR", "Value", "Special"]
+        else:
+            return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value", "Special"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

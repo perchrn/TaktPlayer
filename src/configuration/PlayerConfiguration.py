@@ -134,6 +134,12 @@ class PlayerConfiguration(object):
 #        print "MidiPort: " + str(self._serverConfig.getValue("MidiPort"))
         return self._serverConfig.getValue("MidiPort")
 
+    def getDmxSettings(self):
+        startId = 0
+        channelWidth = 4
+        listenUniverse = 1
+        return (startId, channelWidth, listenUniverse)
+
     def getWebServerAddress(self):
 #        print "WebAdr: " + str(self._serverConfig.getValue("WebBindAddress"))
         return self._serverConfig.getValue("WebBindAddress")

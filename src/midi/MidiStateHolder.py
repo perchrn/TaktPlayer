@@ -184,7 +184,7 @@ class NoteState(object):
     def isNew(self):
         return self._isNew
 
-    def noteOn(self, note, velocity, songPosition, spp, midiSync):
+    def noteOn(self, note, velocity, spp, midiSync):
         self._noteOn = True
         self._noteOnSPP = spp
         self._noteOnInSync = midiSync
@@ -196,7 +196,7 @@ class NoteState(object):
 #        print "DEBUG pcn: note recieved:     ",
 #        self.printState(self._midiChannel-1)
 
-    def noteOff(self, note, velocity, songPosition, spp, midiSync):
+    def noteOff(self, note, velocity, spp, midiSync):
         self._noteOn = False
         self._noteOffSPP = spp
         self._noteOffInSync = midiSync
@@ -250,7 +250,6 @@ class NoteState(object):
             if(self._noteOffQuantizedSPP < 0.0):
                 self._noteOffQuantizedSPP = 0.0
 
-        
 class MidiControllerLatestModified(object):
     def __init__(self):
         self._numberToSave = 10
@@ -362,21 +361,21 @@ class MidiChannelStateHolder(object):
         nextNote = self._nextNotes[note]
         if(noteOn == False):
             if(self._activeNote.isOn(note, spp)):
-                self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
+                self._activeNote.noteOff(note, velocity, spp, midiSync)
             if(nextNote.isOn(note, spp)):
-                nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+                nextNote.noteOff(note, velocity, spp, midiSync)
         else:
             if(velocity > 0): #NOTE ON!!!
                 nextNote = NoteState(self._midiChannel)#reset note
-                nextNote.noteOn(note, velocity, songPosition, spp, midiSync)
+                nextNote.noteOn(note, velocity, spp, midiSync)
                 self._nextNotes[note] = nextNote
                 self._numberOfWaitingNextNotes += 1
             else:
                 #Velocity 0 is the same as note off.
                 if(self._activeNote.isOn(note, spp)):
-                    self._activeNote.noteOff(note, velocity, songPosition, spp, midiSync)
+                    self._activeNote.noteOff(note, velocity, spp, midiSync)
                 if(nextNote.isOn(note, spp)):
-                    nextNote.noteOff(note, velocity, songPosition, spp, midiSync)
+                    nextNote.noteOff(note, velocity, spp, midiSync)
 
     def polyPreasure(self, note, preasure, songPosition):
         self._nextNotes[note].setPreasure(preasure)
@@ -545,6 +544,46 @@ class MidiChannelStateHolder(object):
 
     def printState(self, midiChannel):
         self._activeNote.printState(self._midiChannel)
+
+class DmxStateHolder(object):
+    def __init__(self, dmxSettings, midiChannelStateHolder):
+        self._midiChannelStateHolder = midiChannelStateHolder
+        self._dmxChannelStart, self._dmxChannelWidth, _ = dmxSettings
+        if(self._dmxChannelStart < 0):
+            self._dmxChannelStart = 0
+        if(self._dmxChannelWidth < 2):
+            self._dmxChannelWidth = 2
+        self._dmxWidthSum = self._dmxChannelWidth * 16
+        if(self._dmxWidthSum > 512):
+            self._dmxChannelWidth = 512 / 16
+            self._dmxWidthSum = 512
+        if((self._dmxChannelStart + self._dmxWidthSum) > 512):
+            self._dmxChannelStart = 512 - self._dmxWidthSum
+        self._dmxChannelEnd = self._dmxChannelStart + self._dmxWidthSum
+        self._dmxChannelValues = []
+        for _ in range(16):
+            channelList = []
+            for _ in range(self._dmxChannelWidth):
+                channelList.append(0)
+            self._dmxChannelValues.append(channelList)
+        self._dmxValue = []
+        for _ in range(512):
+            self._dmxValue.append(0)
+
+    def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
+        dmxId = max(min(dmxId, 512), 0)
+        self._dmxValue[dmxId] = dmxValue
+        if((dmxId >= self._dmxChannelStart) and (dmxId <= self._dmxChannelEnd)):
+            channelId = (dmxId - self._dmxChannelStart) / self._dmxChannelWidth
+            subId = (dmxId - self._dmxChannelStart) % self._dmxChannelWidth
+            if(subId == 0):
+                oldValue = self._dmxChannelValues[channelId][0]
+                if(oldValue != dmxValue):
+                    activeNote = self._midiChannelStateHolder[channelId].getActiveNote(spp)
+                    if((activeNote != None) and (activeNote.isActive())):
+                        activeNote.noteOff(activeNote.getNote(), 127, spp, sync)
+                    self._midiChannelStateHolder[channelId].noteEvent(True, dmxValue, 127, (sync, spp))
+            self._dmxChannelValues[channelId][subId] = dmxValue
 
 class GuiControllerValues(object):
     def __init__(self, myId):
@@ -805,7 +844,7 @@ class GenericModulationHolder(object):
         self._values[subId] = value
 
 class MidiStateHolder(object):
-    def __init__(self):
+    def __init__(self, dmxSettings):
         self._midiChannelStateHolder = []
         self._midiControllerLatestModified = MidiControllerLatestModified()
         for i in range(16):
@@ -816,6 +855,7 @@ class MidiStateHolder(object):
         self._guiControllerChannelValues = []
         for i in range(16):
             self._guiControllerChannelValues.append(GuiControllerValues(i))
+        self._dmxStateHolder = DmxStateHolder(dmxSettings, self._midiChannelStateHolder)
 
     def noteOn(self, midiChannel, data1, data2, songPosition):
 #        print "DEBUG pcn: Note on: " + str(data1) + " spp: " + str(songPosition)
@@ -829,6 +869,9 @@ class MidiStateHolder(object):
 
     def controller(self, midiChannel, data1, data2, songPosition):
         self._midiChannelStateHolder[midiChannel].controllerChange(data1, data2, songPosition)
+
+    def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
+        self._dmxStateHolder.dmxControllerChange(dmxId, dmxValue, sync, spp)
 
     def guiController(self, midiChannel, data1, data2, data3):
         if((data3 & 0xf0) == 0xf0):
@@ -905,6 +948,9 @@ class DummyMidiStateHolder(object):
     def controller(self, midiChannel, data1, data2, songPosition):
         self._lastMidiEventTime = time.time()
 #        print "Got ctrl! " + str(self._lastMidiEventTime)
+
+    def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
+        self._lastMidiEventTime = time.time()
 
     def guiController(self, midiChannel, data1, data2, data3):
         self._lastMidiEventTime = time.time()

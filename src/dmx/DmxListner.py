@@ -33,8 +33,10 @@ def dmxDaemon(universe, dmxOutputQueue, logQueue):
         logQueue.put_nowait("Error setting up DMX in uiniverse: %d" % (universe))
 
 class DmxListner(object):
-    def __init__(self, configLoadCallback = None, eventLogSaveQueue = None):
-        #Logging etc.
+    def __init__(self, midiTimingClass, midiStateHolderClass, configLoadCallback = None, eventLogSaveQueue = None):
+
+        self._midiTiming = midiTimingClass
+        self._midiStateHolder = midiStateHolderClass
         self._configLoadCallback = configLoadCallback
         self._eventLogSaveQueue = eventLogSaveQueue
 
@@ -44,8 +46,9 @@ class DmxListner(object):
         self._dmxListnerPrintQueue = Queue(1024)
         self._conectedAddress = None
 
-    def startDaemon(self, universe):
+    def startDaemon(self, dmxSettings):
         if(olaOk):
+            _, _, universe = dmxSettings
             print "Starting DmxListner daemon in universe: " + str(universe)
             self._dmxListnerProcess = Process(target=dmxDaemon, args=(universe, self._dmxQueue, self._dmxListnerPrintQueue))
             self._dmxListnerProcess.name = "dmxListner"
@@ -94,9 +97,11 @@ class DmxListner(object):
             if data:
                 dataLen = len(data)
                 if(dataLen > 1):
+                    sync, spp = self._midiTiming.getSongPosition(dataTimeStamp)
                     dataString = ""
                     for i in range(len(data)):
                         dataString += "|%02x" % (data[i])
+                        self._midiStateHolder.dmxControllerChange(i, data[i], sync, spp)
                     self._addEventToSaveLog(str(dataTimeStamp) + "|DMX" + dataString)
                     print str(dataTimeStamp) + "|DMX" + dataString
                 else:

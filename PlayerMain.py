@@ -129,7 +129,7 @@ class PlayerMain(wx.Frame):
         self._onSize(None)
 
         self._midiTiming = MidiTiming()
-        self._midiStateHolder = MidiStateHolder()
+        self._midiStateHolder = MidiStateHolder(self._playerConfiguration.getDmxSettings())
         self._specialModulationHolder = SpecialModulationHolder()
 
 
@@ -171,8 +171,8 @@ class PlayerMain(wx.Frame):
                 self._eventLogSaveQueue = Queue(4096)
             self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder, self._configLoadCallback, self._eventLogSaveQueue)
             self._midiListner.startDaemon(self._playerConfiguration.getMidiServerAddress(), self._playerConfiguration.getMidiServerPort(), self._playerConfiguration.getMidiServerUsesBroadcast())
-            self._dmxListner = DmxListner(self._configLoadCallback, self._eventLogSaveQueue)
-            self._dmxListner.startDaemon(1)
+            self._dmxListner = DmxListner(self._midiTiming, self._midiStateHolder, self._configLoadCallback, self._eventLogSaveQueue)
+            self._dmxListner.startDaemon(self._playerConfiguration.getDmxSettings())
 
         self._timingThreshold = 2.0/60
         self._lastDelta = -1.0

@@ -573,14 +573,14 @@ class DmxStateHolder(object):
     def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
         dmxId = max(min(dmxId, 512), 0)
         self._dmxValue[dmxId] = dmxValue
-        if((dmxId >= self._dmxChannelStart) and (dmxId <= self._dmxChannelEnd)):
+        if((dmxId >= self._dmxChannelStart) and (dmxId < self._dmxChannelEnd)):
             channelId = (dmxId - self._dmxChannelStart) / self._dmxChannelWidth
             subId = (dmxId - self._dmxChannelStart) % self._dmxChannelWidth
             if(subId == 0):
                 oldValue = self._dmxChannelValues[channelId][0]
                 if(oldValue != dmxValue):
                     activeNote = self._midiChannelStateHolder[channelId].getActiveNote(spp)
-                    if((activeNote != None) and (activeNote.isActive())):
+                    if((activeNote != None) and (activeNote.isActive(spp))):
                         activeNote.noteOff(activeNote.getNote(), 127, spp, sync)
                     self._midiChannelStateHolder[channelId].noteEvent(True, dmxValue, 127, (sync, spp))
             self._dmxChannelValues[channelId][subId] = dmxValue

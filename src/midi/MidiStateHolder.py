@@ -551,8 +551,8 @@ class DmxStateHolder(object):
         self._dmxChannelStart, self._dmxChannelWidth, _ = dmxSettings
         if(self._dmxChannelStart < 0):
             self._dmxChannelStart = 0
-        if(self._dmxChannelWidth < 2):
-            self._dmxChannelWidth = 2
+        if(self._dmxChannelWidth < 1):
+            self._dmxChannelWidth = 1
         self._dmxWidthSum = self._dmxChannelWidth * 16
         if(self._dmxWidthSum > 512):
             self._dmxChannelWidth = 512 / 16
@@ -587,6 +587,16 @@ class DmxStateHolder(object):
                 self._dmxChannelValues[channelId][subId] = noteValue
             else:
                 self._dmxChannelValues[channelId][subId] = dmxValue
+
+    def getValue(self, dmxId, midiChannel):
+        if(midiChannel != None):
+            if((dmxId >= 0) and (dmxId < self._dmxChannelWidth)):
+                midiChannel = max(min(midiChannel, 15), 0)
+                return float(self._dmxChannelValues[midiChannel][dmxId]) / 255
+            return 0.0
+        else:
+            dmxId = max(min(dmxId, 511), 0)
+            return float(self._dmxValue[dmxId]) / 255
 
 class GuiControllerValues(object):
     def __init__(self, myId):
@@ -924,6 +934,9 @@ class MidiStateHolder(object):
 
     def getMidiChannelState(self, midiChannel):
         return self._midiChannelStateHolder[midiChannel]
+
+    def getDmxState(self):
+        return self._dmxStateHolder
 
     def getLatestMidiControllersString(self):
         return self._midiControllerLatestModified.getLatestControllersString()

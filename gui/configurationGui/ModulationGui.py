@@ -10,7 +10,7 @@ from widgets.PcnLfoDisplayWindget import PcnLfoDisplayWidget
 
 from midi.MidiModulation import ModulationSources, AdsrShapes, LfoShapes,\
     MidiModulation, AttackDecaySustainRelease, getLfoShapeId,\
-    LowFrequencyOscilator, getAdsrShapeId
+    LowFrequencyOscilator, getAdsrShapeId, DmxTypes
 from midi.MidiStateHolder import MidiChannelModulationSources,\
     NoteModulationSources, SpecialTypes
 from midi.MidiController import MidiControllers
@@ -34,6 +34,7 @@ class ModulationGui(object):
         self._blankModBitmap = wx.Bitmap("graphics/modulationBlank.png") #@UndefinedVariable
         self._modBitmatController = wx.Bitmap("graphics/modulationController.png") #@UndefinedVariable
         self._modBitmatNote = wx.Bitmap("graphics/modulationNote.png") #@UndefinedVariable
+        self._modBitmatDmx = wx.Bitmap("graphics/modulationDmx.png") #@UndefinedVariable
         self._modBitmatLfo = wx.Bitmap("graphics/modulationLfo.png") #@UndefinedVariable
         self._modBitmatAdsr = wx.Bitmap("graphics/modulationAdsr.png") #@UndefinedVariable
         self._modBitmatValue = wx.Bitmap("graphics/modulationValue.png") #@UndefinedVariable
@@ -42,6 +43,7 @@ class ModulationGui(object):
         self._modBitmatControllerBig = wx.Bitmap("graphics/modulationControllerBig.png") #@UndefinedVariable
         self._modBitmatNoteBig = wx.Bitmap("graphics/modulationNoteBig.png") #@UndefinedVariable
         self._modBitmatLfoBig = wx.Bitmap("graphics/modulationLfoBig.png") #@UndefinedVariable
+        self._modBitmatDmxBig = wx.Bitmap("graphics/modulationDmxBig.png") #@UndefinedVariable
         self._modBitmatAdsrBig = wx.Bitmap("graphics/modulationAdsrBig.png") #@UndefinedVariable
         self._modBitmatValueBig = wx.Bitmap("graphics/modulationValueBig.png") #@UndefinedVariable
 
@@ -138,6 +140,43 @@ class ModulationGui(object):
         self._midiNoteSourceSizer.Add(midiNoteSourceButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainModulationGuiSizer.Add(self._midiNoteSourceSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
         self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._checkForUpdates, id=self._midiNoteSourceField.GetId()) #@UndefinedVariable
+
+        """DMX"""
+
+        self._dmxTypeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText6 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "DMX type:") #@UndefinedVariable
+        self._dmxType = DmxTypes()
+        self._dmxTypeField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["Direct"], style=wx.CB_READONLY) #@UndefinedVariable
+        updateChoices(self._dmxTypeField, self._dmxType.getChoices, "Direct", "Direct")
+        dmxTypeButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        dmxTypeButton.Bind(wx.EVT_BUTTON, self._onDmxTypeHelp) #@UndefinedVariable
+        self._dmxTypeSizer.Add(tmpText6, 1, wx.ALL, 5) #@UndefinedVariable
+        self._dmxTypeSizer.Add(self._dmxTypeField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._dmxTypeSizer.Add(dmxTypeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._dmxTypeSizer, proportion=0, flag=wx.EXPAND) #@UndefinedVariable
+        self._mainModulationGuiPlane.Bind(wx.EVT_COMBOBOX, self._onDmxTypeChosen, id=self._dmxTypeField.GetId()) #@UndefinedVariable
+
+        self._dmxIdSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "DMX id:") #@UndefinedVariable
+        self._dmxIdField = wx.SpinCtrl(self._mainModulationGuiPlane, value=str(0), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxIdField.SetRange(0, 511)
+        dmxIdButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        dmxIdButton.Bind(wx.EVT_BUTTON, self._onDmxIdHelp) #@UndefinedVariable
+        self._dmxIdSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._dmxIdSizer.Add(self._dmxIdField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._dmxIdSizer.Add(dmxIdButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._dmxIdSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        self._dmxChannelSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        tmpText7 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "DMX sub id:") #@UndefinedVariable
+        self._dmxChannelField = wx.SpinCtrl(self._mainModulationGuiPlane, value=str(0), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxChannelField.SetRange(0, 31)
+        dmxChannelButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        dmxChannelButton.Bind(wx.EVT_BUTTON, self._onDmxChannelHelp) #@UndefinedVariable
+        self._dmxChannelSizer.Add(tmpText7, 1, wx.ALL, 5) #@UndefinedVariable
+        self._dmxChannelSizer.Add(self._dmxChannelField, 2, wx.ALL, 5) #@UndefinedVariable
+        self._dmxChannelSizer.Add(dmxChannelButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainModulationGuiSizer.Add(self._dmxChannelSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         """LFO"""
 
@@ -403,6 +442,11 @@ class ModulationGui(object):
             self._mainModulationGuiSizer.Show(self._midiNoteSourceSizer)
         else:
             self._mainModulationGuiSizer.Hide(self._midiNoteSourceSizer)
+        if(choice == "DMX"):
+            self._mainModulationGuiSizer.Show(self._dmxTypeSizer)
+            self._onDmxTypeChosen(event)
+        else:
+            self._mainModulationGuiSizer.Hide(self._dmxTypeSizer)
         if(choice == "LFO"):
             self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
             self._onLfoTypeChosen(event)
@@ -450,6 +494,7 @@ Selects modulation type.
 
 MidiChannel:\tChannel wide MIDI controllers.
 MidiNote:\t\tVelocity and note pressures.
+DMX:\t\tDMX input.
 LFO:\t\tLow Frequency Oscillator
 ADSR:\t\tAttach/Release based on note timing.
 Value:\t\tStatic value.
@@ -546,6 +591,37 @@ NotePreasure:\tPolyphonic pressure.
         dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'MIDI note help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
+
+    def _onDmxTypeHelp(self, event):
+        text = """
+Selects DMX type.
+
+Direct:\tRaw DMX id.
+Chennel:\tChannel sub id.
+"""
+        dlg = wx.MessageDialog(self._mainModulationGuiPlane, text, 'DMX mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onDmxTypeChosen(self, event):
+        dmxType = self._dmxTypeField.GetValue()
+        if(dmxType == "Direct"):
+            self._mainModulationGuiSizer.Show(self._dmxIdSizer)
+            self._mainModulationGuiSizer.Hide(self._dmxChannelSizer)
+            self._mainModulationGuiSizer.Layout()
+            self._parentSizer.Layout()
+        else:
+            self._mainModulationGuiSizer.Hide(self._dmxIdSizer)
+            self._mainModulationGuiSizer.Show(self._dmxChannelSizer)
+            self._mainModulationGuiSizer.Layout()
+            self._parentSizer.Layout()
+        self._checkForUpdates()
+
+    def _onDmxIdHelp(self, event):
+        pass
+
+    def _onDmxChannelHelp(self, event):
+        pass
 
     def _onLfoTypeHelp(self, event):
         text = """
@@ -862,6 +938,14 @@ Choose which blob modulation value to use.
         if(modType == "MidiNote"):
             noteMod = self._midiNoteSourceField.GetValue()
             modeString += "." + noteMod
+        if(modType == "DMX"):
+            dmxType = self._dmxTypeField.GetValue()
+            modeString += "." + dmxType
+            if(dmxType == "Direct"):
+                valueString = str(self._dmxIdField.GetValue())
+            else:
+                valueString = str(self._dmxChannelField.GetValue())
+            modeString += "." + valueString
         if(modType == "LFO"):
             lfoType = self._lfoTypeField.GetValue()
             modeString += "." + lfoType
@@ -960,6 +1044,8 @@ Choose which blob modulation value to use.
                 return ModulationSources.MidiChannel
             elif(modulationIdTuplet[0] == ModulationSources.MidiNote):
                 return ModulationSources.MidiNote
+            elif(modulationIdTuplet[0] == ModulationSources.DMX512):
+                return ModulationSources.DMX512
             elif(modulationIdTuplet[0] == ModulationSources.LFO):
                 return ModulationSources.LFO
             elif(modulationIdTuplet[0] == ModulationSources.ADSR):
@@ -979,6 +1065,8 @@ Choose which blob modulation value to use.
             return self._modBitmatController
         elif(index == ModulationSources.MidiNote):
             return self._modBitmatNote
+        elif(index == ModulationSources.DMX512):
+            return self._modBitmatDmx
         elif(index == ModulationSources.LFO):
             return self._modBitmatLfo
         elif(index == ModulationSources.ADSR):
@@ -997,6 +1085,8 @@ Choose which blob modulation value to use.
             return self._modBitmatControllerBig
         elif(index == ModulationSources.MidiNote):
             return self._modBitmatNoteBig
+        elif(index == ModulationSources.DMX512):
+            return self._modBitmatDmxBig
         elif(index == ModulationSources.LFO):
             return self._modBitmatLfoBig
         elif(index == ModulationSources.ADSR):
@@ -1045,6 +1135,19 @@ Choose which blob modulation value to use.
                     subModId = subModId[0]
                 subModeName = self._midiNoteSource.getNames(subModId)
                 self._midiNoteSourceField.SetValue(subModeName)
+            elif(modulationIdTuplet[0] == ModulationSources.DMX512):
+                subModId = modulationIdTuplet[1]
+                isInt = isinstance(subModId, int)
+                if(isInt == True):
+                    subModId = [subModId]
+                subModName = self._dmxType.getNames(subModId[0])
+                updateChoices(self._dmxTypeField, self._dmxType.getChoices, subModName, "Direct")
+                if((subModName == "Direct") and (len(subModId) > 1)):
+                    self._dmxIdField.SetValue(int(subModId[1]))
+                    self._dmxChannelField.SetValue(0)
+                else:
+                    self._dmxChannelField.SetValue(int(subModId[1]))
+                    self._dmxIdField.SetValue(0)
             elif(modulationIdTuplet[0] == ModulationSources.LFO):
                 subModId = modulationIdTuplet[1]
                 isInt = isinstance(subModId, int)
@@ -1160,6 +1263,10 @@ Choose which blob modulation value to use.
             self._midiControllerField.SetValue("ModWheel")
         if(updatedId != "MidiNote"):
             self._midiNoteSourceField.SetValue("Velocity")
+        if(updatedId != "DMX"):
+            self._dmxTypeField.SetValue("Direct")
+            self._dmxIdField.SetValue(0)
+            self._dmxChannelField.SetValue(0)
         if(updatedId != "LFO"):
             self._lfoTypeField.SetValue("Triangle")
             self._lfoLengthSlider.SetValue(20)

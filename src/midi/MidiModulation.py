@@ -94,6 +94,26 @@ def getLfoShapeId(shapeName):
     else:
         return None
 
+class DmxTypes():
+    Direct, Channel = range(2)
+
+    def getChoices(self):
+        return ["Direct", "Channel"]
+
+    def getNames(self, typeId):
+        for i in range(len(self.getChoices())):
+            if(typeId == i):
+                return self.getChoices()[i]
+        return self.getChoices()[0]
+
+def getDmxTypeId(typeName):
+    if(typeName == "Direct"):
+        return DmxTypes.Direct
+    elif(typeName == "Channel"):
+        return DmxTypes.Channel
+    else:
+        return None
+
 class AdsrShapes():
     ADSR, AR = range(2)#TODO: Add curved attack release... (for fades)
 
@@ -196,7 +216,7 @@ class ModulationSources():
 
     def getChoices(self, dmxEnabled = True):
         if(dmxEnabled == True):
-            return ["None", "MidiChannel", "MidiNote", "DMX512", "LFO", "ADSR", "Value", "Special"]
+            return ["None", "MidiChannel", "MidiNote", "DMX", "LFO", "ADSR", "Value", "Special"]
         else:
             return ["None", "MidiChannel", "MidiNote", "LFO", "ADSR", "Value", "Special"]
 
@@ -279,6 +299,18 @@ class MidiModulation(object):
             modId = self._tmpMidiNoteClass.getModulationId(sourceSplit[1])
             if(modId != None):
                 return (ModulationSources.MidiNote, modId)
+        elif( sourceSplit[0] == "DMX" ):
+            if(len(sourceSplit) > 1):
+                mode = getDmxTypeId(sourceSplit[1])
+            else:
+                mode = None
+            if(mode != None):
+                if(len(sourceSplit) > 2):
+                    value = int(sourceSplit[2])
+                else:
+                    value = 0
+                print "DEBUG pcn: DMX id: " + str((ModulationSources.DMX512, (mode, value))) 
+                return (ModulationSources.DMX512, (mode, value))
         elif( sourceSplit[0] == "LFO" ):
             if(len(sourceSplit) > 1):
                 mode = getLfoShapeId(sourceSplit[1])
@@ -410,6 +442,19 @@ class MidiModulation(object):
             noteModulationSources = NoteModulationSources()
             subModeName = noteModulationSources.getNames(subModId)
             returnString += "." + subModeName
+        elif(modulationSource == ModulationSources.DMX512):
+            returnString = "DMX"
+            isInt = isinstance(subModId, int)
+            if(isInt == True):
+                subModId = [subModId]
+            dmxTypes = DmxTypes()
+            subModeName = dmxTypes.getNames(subModId[0])
+            returnString += "." + subModeName
+            if(len(subModId) > 1):
+                value = int(subModId[1])
+            else:
+                value = 0
+            returnString += "." + str(value)
         elif(modulationSource == ModulationSources.LFO):
             returnString = "LFO"
             isInt = isinstance(subModId, int)
@@ -518,13 +563,18 @@ class MidiModulation(object):
     def _getAdsrId(self, mode, attack, decay, sustain, release):
         return (mode, attack, decay, sustain, release)
 
-    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, argument = 0.0, plussMinus = False):
+    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, argument, plussMinus = False):
         if(combinedId != None):
             sourceId, subId = combinedId
             if(sourceId == ModulationSources.MidiChannel):
                 return midiChannelStateHolder.getModulationValue(subId, argument)
             elif(sourceId == ModulationSources.MidiNote):
                 return midiNoteStateHolder.getModulationValue(subId, argument)
+            elif(sourceId == ModulationSources.DMX512):
+                midiChannel = None
+                if(subId[0] == DmxTypes.Channel):
+                    midiChannel = midiChannelStateHolder.getMidiChannel()
+                return dmxStateHolder.getValue(subId, midiChannel)
             elif(sourceId == ModulationSources.LFO):
                 return self._getLfo(subId).getValue(songPosition, argument)
             elif(sourceId == ModulationSources.ADSR):

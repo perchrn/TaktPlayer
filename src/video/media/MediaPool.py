@@ -372,13 +372,13 @@ class MediaPool(object):
                 if(newMedia != None):
                     activeMedia = newMedia
                     if(noteMediaIsModulationType == False):
-                        newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, midiChannelState, noteIsNew)
+                        newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState, noteIsNew)
             elif(midiNoteState.isActive(-1.0)):
                 activeMedia = self._mediaTracks[midiChannel]
                 activeMediaState = self._mediaTrackStateHolders[midiChannel]
             if(activeMedia != None):
                 try:
-                    noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, midiChannelState)
+                    noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState)
                     if(noteIsDone == True):
                         midiChannelState.removeDoneActiveNote()
                     self._mediaMixer.gueueImage(activeMedia, activeMediaState, midiChannel)

@@ -2,7 +2,7 @@
 
 rm -rf build dist setup.py
 
-PYTHONPATH=src:gui:pythonExtra:$PYTHONPATH
+PYTHONPATH=src:gui:pythonExtra:/opt/local/lib/python2.7/site-packages:$PYTHONPATH
 export PYTHONPATH
 
 PATH=/opt/local/bin:$PATH

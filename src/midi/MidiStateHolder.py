@@ -577,13 +577,16 @@ class DmxStateHolder(object):
             channelId = (dmxId - self._dmxChannelStart) / self._dmxChannelWidth
             subId = (dmxId - self._dmxChannelStart) % self._dmxChannelWidth
             if(subId == 0):
+                noteValue = max(min(dmxValue / 2, 127), 0)
                 oldValue = self._dmxChannelValues[channelId][0]
-                if(oldValue != dmxValue):
+                if(oldValue != noteValue):
                     activeNote = self._midiChannelStateHolder[channelId].getActiveNote(spp)
                     if((activeNote != None) and (activeNote.isActive(spp))):
                         activeNote.noteOff(activeNote.getNote(), 127, spp, sync)
-                    self._midiChannelStateHolder[channelId].noteEvent(True, dmxValue, 127, (sync, spp))
-            self._dmxChannelValues[channelId][subId] = dmxValue
+                    self._midiChannelStateHolder[channelId].noteEvent(True, noteValue, 127, (sync, spp))
+                self._dmxChannelValues[channelId][subId] = noteValue
+            else:
+                self._dmxChannelValues[channelId][subId] = dmxValue
 
 class GuiControllerValues(object):
     def __init__(self, myId):

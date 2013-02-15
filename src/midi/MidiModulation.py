@@ -574,7 +574,7 @@ class MidiModulation(object):
                 midiChannel = None
                 if(subId[0] == DmxTypes.Channel):
                     midiChannel = midiChannelStateHolder.getMidiChannel()
-                return dmxStateHolder.getValue(subId, midiChannel)
+                return dmxStateHolder.getValue(subId[1], midiChannel)
             elif(sourceId == ModulationSources.LFO):
                 return self._getLfo(subId).getValue(songPosition, argument)
             elif(sourceId == ModulationSources.ADSR):

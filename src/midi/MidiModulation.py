@@ -309,7 +309,6 @@ class MidiModulation(object):
                     value = int(sourceSplit[2])
                 else:
                     value = 0
-                print "DEBUG pcn: DMX id: " + str((ModulationSources.DMX512, (mode, value))) 
                 return (ModulationSources.DMX512, (mode, value))
         elif( sourceSplit[0] == "LFO" ):
             if(len(sourceSplit) > 1):

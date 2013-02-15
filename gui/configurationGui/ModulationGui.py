@@ -447,6 +447,8 @@ class ModulationGui(object):
             self._onDmxTypeChosen(event)
         else:
             self._mainModulationGuiSizer.Hide(self._dmxTypeSizer)
+            self._mainModulationGuiSizer.Hide(self._dmxIdSizer)
+            self._mainModulationGuiSizer.Hide(self._dmxChannelSizer)
         if(choice == "LFO"):
             self._mainModulationGuiSizer.Show(self._lfoTypeSizer)
             self._onLfoTypeChosen(event)

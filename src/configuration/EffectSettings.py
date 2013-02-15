@@ -377,12 +377,12 @@ class EffectSettings(object):
     def updateFromXml(self, xmlFile):
         self._configurationTree._updateFromXml(xmlFile)
 
-    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
-        amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        arg1 =  self._midiModulation.getModlulationValue(self._effectArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        arg2 =  self._midiModulation.getModlulationValue(self._effectArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        arg3 =  self._midiModulation.getModlulationValue(self._effectArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        arg4 =  self._midiModulation.getModlulationValue(self._effectArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
+    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, specialModulationHolder):
+        amount =  self._midiModulation.getModlulationValue(self._effectAmountModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
+        arg1 =  self._midiModulation.getModlulationValue(self._effectArg1ModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
+        arg2 =  self._midiModulation.getModlulationValue(self._effectArg2ModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
+        arg3 =  self._midiModulation.getModlulationValue(self._effectArg3ModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
+        arg4 =  self._midiModulation.getModlulationValue(self._effectArg4ModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
         return (amount, arg1, arg2, arg3, arg4)
 
     def getStartValues(self):
@@ -567,9 +567,9 @@ class FadeSettings(object):
     def getWipeSettings(self):
         return self._wipeMode, self._wipePostMix, self._wipeSettings
 
-    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
-        fadeVal =  self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
-        levelVal =  self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
+    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, specialModulationHolder):
+        fadeVal =  self._midiModulation.getModlulationValue(self._fadeModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
+        levelVal =  self._midiModulation.getModlulationValue(self._levelModulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
         return (fadeVal, levelVal)
 
 class TimeModulationTemplates(ConfigurationTemplates):
@@ -695,8 +695,8 @@ class TimeModulationSettings(object):
     def updateFromXml(self, xmlFile):
         self._configurationTree._updateFromXml(xmlFile)
 
-    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, specialModulationHolder):
-        modulation =  self._midiModulation.getModlulationValue(self._modulationId, midiChannelStateHolder, midiNoteStateHolder, songPosition, specialModulationHolder, 0.0)
+    def getValues(self, songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, specialModulationHolder):
+        modulation =  self._midiModulation.getModlulationValue(self._modulationId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, 0.0)
 #        print "DEBUG pcn: TimeModulationSettings.getValues() -> " + str((self._modulationId, modulation, self._range, self._rangeQuantize))
         return (self._mode, modulation, self._range, self._rangeQuantize)
 

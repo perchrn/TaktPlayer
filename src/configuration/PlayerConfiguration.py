@@ -8,6 +8,7 @@ from configuration.ConfigurationHolder import ConfigurationHolder,\
     getDefaultDirectories
 import sys
 import os
+from midi.MidiStateHolder import DmxStateHolder
 
 class PlayerConfiguration(object):
     def __init__(self, configDir, loadAndSave = True):
@@ -48,6 +49,10 @@ class PlayerConfiguration(object):
         self._serverConfig.addIntParameter("MidiPort", 2020)
         self._serverConfig.addTextParameter("WebBindAddress", "0.0.0.0")
         self._serverConfig.addIntParameter("WebPort", 2021)
+        self._serverConfig.addIntParameter("DmxUniverse", 1)
+        self._serverConfig.addIntParameter("DmxChannelStart", 0)
+        self._serverConfig.addIntParameter("DmxChannelWidth", 4)
+        self._serverConfig.addIntParameter("DmxNumberOfChannels", 16)
 
         if(loadAndSave == True):
             self._playerConfigurationTree.saveConfigFile(self._configurationFile)
@@ -100,12 +105,18 @@ class PlayerConfiguration(object):
         else:
             self._screenConfig.setValue("Position", str(posX) + "," + str(posY))
  
-    def setServerConfig(self, midiBcast, midiAddress, midiPort, webAddress, webPort):
+    def setServerConfig(self, midiBcast, midiAddress, midiPort, webAddress, webPort, dmxUniverse, dmxChannelStart, dmxChannelWidth, dmxNumChannels):
         self._serverConfig.setValue("MidiBroadcast", midiBcast)
         self._serverConfig.setValue("MidiBindAddress", midiAddress)
         self._serverConfig.setValue("MidiPort", midiPort)
         self._serverConfig.setValue("WebBindAddress", webAddress)
         self._serverConfig.setValue("WebPort", webPort)
+        validator = DmxStateHolder((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse))
+        dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse = validator.validateSettings((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse))
+        self._serverConfig.setValue("DmxUniverse", dmxUniverse)
+        self._serverConfig.setValue("DmxChannelStart", dmxChannelStart)
+        self._serverConfig.setValue("DmxChannelWidth", dmxChannelWidth)
+        self._serverConfig.setValue("DmxNumberOfChannels", dmxNumChannels)
 
     def getResolution(self):
         return (self._internalResolutionX, self._internalResolutionY)
@@ -135,10 +146,11 @@ class PlayerConfiguration(object):
         return self._serverConfig.getValue("MidiPort")
 
     def getDmxSettings(self):
-        startId = 0
-        channelWidth = 4
-        listenUniverse = 1
-        return (startId, channelWidth, listenUniverse)
+        startId = self._serverConfig.getValue("DmxChannelStart")
+        numChannels = self._serverConfig.getValue("DmxNumberOfChannels")
+        channelWidth = self._serverConfig.getValue("DmxChannelWidth")
+        listenUniverse = self._serverConfig.getValue("DmxUniverse")
+        return (startId, numChannels, channelWidth, listenUniverse)
 
     def getWebServerAddress(self):
 #        print "WebAdr: " + str(self._serverConfig.getValue("WebBindAddress"))

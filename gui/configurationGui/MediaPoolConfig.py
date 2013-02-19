@@ -735,17 +735,30 @@ class MediaFileGui(object): #@UndefinedVariable
         self._modeBitmapPlayOnce = wx.Bitmap("graphics/modePlayOnce.png") #@UndefinedVariable
         self._modeBitmapPlayOnceReverse = wx.Bitmap("graphics/modePlayOnceReverse.png") #@UndefinedVariable
         self._modeBitmapKeepLast = wx.Bitmap("graphics/modeKeepLast.png") #@UndefinedVariable
+        self._modeBitmapKinect = wx.Bitmap("graphics/modeKinect.png") #@UndefinedVariable
         self._modeBitmapAdvancedLoop = wx.Bitmap("graphics/modeAdvancedLoop.png") #@UndefinedVariable
         self._modeBitmapAdvancedPingPong = wx.Bitmap("graphics/modeAdvancedPingPong.png") #@UndefinedVariable
         self._modeBitmapGroup = wx.Bitmap("graphics/modeGroup.png") #@UndefinedVariable
         self._modeBitmapModulation = wx.Bitmap("graphics/modeModulation.png") #@UndefinedVariable
 
-        self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
+        if(self._mainConfig.isShowKinect()):
+            self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
+                            self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapKeepLast,
+                            self._modeBitmapAdvancedLoop, self._modeBitmapAdvancedPingPong, self._modeBitmapCamera, self._modeBitmapKinect, self._modeBitmapImage,
+                            self._modeBitmapImageScroll, self._modeBitmapSprite, self._modeBitmapText, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
+                            self._modeBitmapImageSeqModulation, self._modeBitmapGroup, self._modeBitmapModulation]
+            self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
+                           "VideoPlayOnce", "VideoPlayOnceReverse", "VideoKeepLast", "VideoAdvancedLoop",
+                           "VideoAdvancedPingPong", "Camera", "KinectCamera", "Image",
+                           "ScrollingImage", "Sprite", "Text", "ImageSeqTime", "ImageSeqReTrigger",
+                           "ImageSeqModulation", "Group", "Modulation"]
+        else:
+            self._modeImages = [self._modeBitmapLoop, self._modeBitmapLoopReverse, self._modeBitmapPingPong, self._modeBitmapPingPongReverse,
                             self._modeBitmapPlayOnce, self._modeBitmapPlayOnceReverse, self._modeBitmapKeepLast,
                             self._modeBitmapAdvancedLoop, self._modeBitmapAdvancedPingPong, self._modeBitmapCamera, self._modeBitmapImage,
                             self._modeBitmapImageScroll, self._modeBitmapSprite, self._modeBitmapText, self._modeBitmapImageSeqTime, self._modeBitmapImageSeqReTrigger,
                             self._modeBitmapImageSeqModulation, self._modeBitmapGroup, self._modeBitmapModulation]
-        self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
+            self._modeLabels = ["VideoLoop", "VideoLoopReverse", "VideoPingPong", "VideoPingPongReverse",
                            "VideoPlayOnce", "VideoPlayOnceReverse", "VideoKeepLast", "VideoAdvancedLoop",
                            "VideoAdvancedPingPong", "Camera", "Image",
                            "ScrollingImage", "Sprite", "Text", "ImageSeqTime", "ImageSeqReTrigger",
@@ -1705,7 +1718,7 @@ class MediaFileGui(object): #@UndefinedVariable
                 lowerName = basename.lower()
                 if(lowerName.endswith(".jpg") or lowerName.endswith(".jpeg") or lowerName.endswith(".gif") or lowerName.endswith(".png")):
                     selectedTypeId = self._typeField.GetSelection()
-                    oldType = self._typeModes.getNames(selectedTypeId)
+                    oldType = self._typeModes.getNames(selectedTypeId, self._mainConfig.isShowKinect())
                     if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite")):
                         self._type = oldType
                     else:
@@ -1725,7 +1738,7 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._fileName += ","
                 self._fileName += noteName
                 selectedTypeId = self._typeField.GetSelection()
-                self._type = self._typeModes.getNames(selectedTypeId)
+                self._type = self._typeModes.getNames(selectedTypeId, self._mainConfig.isShowKinect())
                 self._fileNameField.SetValue(self._fileName)
         self._clearDragCursorCallback()
         event.Skip(True)
@@ -1740,7 +1753,7 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onTypeChosen(self, event):
         selectedTypeId = self._typeField.GetSelection()
-        self._type = self._typeModes.getNames(selectedTypeId)
+        self._type = self._typeModes.getNames(selectedTypeId, self._mainConfig.isShowKinect())
         if(self._type == "Camera" or self._type == "KinectCamera"):
             self._fileNameField.SetValue(str(self._cameraId))
         else:
@@ -3090,7 +3103,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateChoices(widget, self._getInvertChoises, value, defaultValue)
 
     def _updateTypeChoices(self, widget, value, defaultValue):
-        self._updateChoices(widget, self._typeModes.getChoices, value, defaultValue)
+        updateChoices(widget, None, value, defaultValue, self._typeModes.getChoices(self._mainConfig.isShowKinect()))
 
     def _getCombineModulation1Choises(self):
         return ["Add", "Subtract", "Mutiply", "Mask", "If (1st > 0.5) Then:"]
@@ -3224,8 +3237,10 @@ class MediaFileGui(object): #@UndefinedVariable
             mediaType = configHolder.getValue("Type")
         else:
             mediaType = self._type
-        if(mediaType == "Camera" or self._type == "KinectCamera"):
+        if(mediaType == "Camera" ):
             widget.setBitmaps(self._modeBitmapCamera, self._modeBitmapCamera)
+        if(self._type == "KinectCamera"):
+            widget.setBitmaps(self._modeBitmapKinect, self._modeBitmapKinect)
         elif(mediaType == "Image"):
             widget.setBitmaps(self._modeBitmapImage, self._modeBitmapImage)
         elif(mediaType == "ScrollImage"):

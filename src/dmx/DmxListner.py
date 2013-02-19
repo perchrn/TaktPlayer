@@ -48,7 +48,7 @@ class DmxListner(object):
 
     def startDaemon(self, dmxSettings):
         if(olaOk):
-            _, _, universe = dmxSettings
+            _, _, _, universe = dmxSettings
             print "Starting DmxListner daemon in universe: " + str(universe)
             self._dmxListnerProcess = Process(target=dmxDaemon, args=(universe, self._dmxQueue, self._dmxListnerPrintQueue))
             self._dmxListnerProcess.name = "dmxListner"

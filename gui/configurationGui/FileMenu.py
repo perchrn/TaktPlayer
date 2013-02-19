@@ -106,7 +106,7 @@ class ConfigNewDialog(wx.Dialog): #@UndefinedVariable
 
 class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, configurationClass):
-        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 550))
+        super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 600))
 
         self._configurationClass = configurationClass
 
@@ -207,6 +207,23 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         windowPosSizer.Add(self._windowPosField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(windowPosSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
+        showDmx = self._configurationClass.isShowDMX()
+        showDmxSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        showDmxLabel = wx.StaticText(self, wx.ID_ANY, "DMX:") #@UndefinedVariable
+        self._showDmxField = wx.CheckBox(self, wx.ID_ANY, "Show DMX in GUI.") #@UndefinedVariable
+        self._showDmxField.SetValue(showDmx)
+        showDmxSizer.Add(showDmxLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        showDmxSizer.Add(self._showDmxField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(showDmxSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        showKinect = self._configurationClass.isShowKinect()
+        showKinectSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        showKinectLabel = wx.StaticText(self, wx.ID_ANY, "Kinect:") #@UndefinedVariable
+        self._showKinectField = wx.CheckBox(self, wx.ID_ANY, "Show Kinect in GUI.") #@UndefinedVariable
+        self._showKinectField.SetValue(showKinect)
+        showKinectSizer.Add(showKinectLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        showKinectSizer.Add(self._showKinectField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(showKinectSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
 
         infoText = wx.StaticText(self, wx.ID_ANY, "Convertion:") #@UndefinedVariable
@@ -289,7 +306,9 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         midiPort2 = self._guiMidiPortField.GetValue()
         winSize = self._windowSizeField.GetValue()
         winPos = self._windowPosField.GetValue()
-        self._configurationClass.setGuiConfig(autoSend, midiBcast, midiBindAddress, midiPort2, winSize, winPos)
+        showDmx = self._showDmxField.GetValue()
+        showKinect = self._showKinectField.GetValue()
+        self._configurationClass.setGuiConfig(autoSend, midiBcast, midiBindAddress, midiPort2, winSize, winPos, showDmx, showKinect)
 
         self._configurationClass.saveConfig()
         wx.MessageBox('You must restart GUI to make sure all changes to take effect!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
@@ -300,7 +319,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
 
 class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
     def __init__(self, parent, title, sendConfigCallback, configurationXmlString):
-        super(ConfigPlayerDialog, self).__init__(parent=parent, title=title, size=(440, 540))
+        super(ConfigPlayerDialog, self).__init__(parent=parent, title=title, size=(440, 660))
 
         self._sendConfigCallback = sendConfigCallback
         self._configurationClass = PlayerConfiguration("", False)
@@ -357,6 +376,40 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         playerWebPortSizer.Add(playerWebPortLabel, 1, wx.ALL, 5) #@UndefinedVariable
         playerWebPortSizer.Add(self._playerWebPortField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(playerWebPortSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        startId, numChannels, channelWidth, listenUniverse = self._configurationClass.getDmxSettings()
+        dmxUniverseSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        dmxUniverseLabel = wx.StaticText(self, wx.ID_ANY, "DMX Universe:") #@UndefinedVariable
+        self._dmxUniverseField = wx.SpinCtrl(self, value=str(listenUniverse), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxUniverseField.SetRange(0, 1024)
+        dmxUniverseSizer.Add(dmxUniverseLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        dmxUniverseSizer.Add(self._dmxUniverseField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(dmxUniverseSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        dmxStartIdSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        dmxStartIdLabel = wx.StaticText(self, wx.ID_ANY, "DMX Start ID:") #@UndefinedVariable
+        self._dmxStartIdField = wx.SpinCtrl(self, value=str(startId), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxStartIdField.SetRange(0, 511)
+        dmxStartIdSizer.Add(dmxStartIdLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        dmxStartIdSizer.Add(self._dmxStartIdField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(dmxStartIdSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        dmxChannelWidthSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        dmxChannelWidthLabel = wx.StaticText(self, wx.ID_ANY, "DMX channel width:") #@UndefinedVariable
+        self._dmxChannelWidthField = wx.SpinCtrl(self, value=str(channelWidth), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxChannelWidthField.SetRange(1, 32)
+        dmxChannelWidthSizer.Add(dmxChannelWidthLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        dmxChannelWidthSizer.Add(self._dmxChannelWidthField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(dmxChannelWidthSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        dmxNumChannelsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
+        dmxNumChannelsLabel = wx.StaticText(self, wx.ID_ANY, "DMX channels:") #@UndefinedVariable
+        self._dmxNumChannelsField = wx.SpinCtrl(self, value=str(numChannels), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
+        self._dmxNumChannelsField.SetRange(0, 16)
+        dmxNumChannelsSizer.Add(dmxNumChannelsLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        dmxNumChannelsSizer.Add(self._dmxNumChannelsField, 2, wx.ALL, 5) #@UndefinedVariable
+        dialogSizer.Add(dmxNumChannelsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
 
         infoText = wx.StaticText(self, wx.ID_ANY, "Window:") #@UndefinedVariable
         infoText.SetFont(boldFont)
@@ -498,7 +551,11 @@ class ConfigPlayerDialog(wx.Dialog): #@UndefinedVariable
         midiPort = self._playerMidiPortField.GetValue()
         webAddress = self._playerWebBindNameField.GetValue()
         webPort = self._playerWebPortField.GetValue()
-        self._configurationClass.setServerConfig(midiBcast, midiAddress, midiPort, webAddress, webPort)
+        dmxUniverse = self._dmxUniverseField.GetValue()
+        dmxChannelStart = self._dmxStartIdField.GetValue()
+        dmxChannelWidth = self._dmxChannelWidthField.GetValue()
+        dmxNumChannels = self._dmxNumChannelsField.GetValue()
+        self._configurationClass.setServerConfig(midiBcast, midiAddress, midiPort, webAddress, webPort, dmxUniverse, dmxChannelStart, dmxChannelWidth, dmxNumChannels)
         xmlString = self._configurationClass.getXmlString()
         self._sendConfigCallback(xmlString)
         wx.MessageBox('You must restart Player to make sure all changes to take effect!', 'Info', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable

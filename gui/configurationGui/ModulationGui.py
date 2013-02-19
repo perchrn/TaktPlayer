@@ -78,7 +78,7 @@ class ModulationGui(object):
         modulationSorcesSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         tmpText1 = wx.StaticText(self._mainModulationGuiPlane, wx.ID_ANY, "Modulation:") #@UndefinedVariable
         self._modulationSorcesField = wx.ComboBox(self._mainModulationGuiPlane, wx.ID_ANY, size=(200, -1), choices=["None"], style=wx.CB_READONLY) #@UndefinedVariable
-        updateChoices(self._modulationSorcesField, self._modulationSorces.getChoices, "None", "None")
+        updateChoices(self._modulationSorcesField, None, "None", "None", self._modulationSorces.getChoices(self._mainConfig.isShowDMX()))
         modulationSorcesButton = PcnImageButton(self._mainModulationGuiPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
         modulationSorcesButton.Bind(wx.EVT_BUTTON, self._onModulationModeHelp) #@UndefinedVariable
         modulationSorcesSizer.Add(tmpText1, 1, wx.ALL, 5) #@UndefinedVariable

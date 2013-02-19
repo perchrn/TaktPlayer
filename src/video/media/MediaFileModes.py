@@ -137,14 +137,17 @@ class KinectMode:
 class MediaTypes:
     VideoLoop, Image, ImageSequence, ScrollImage, Sprite, Text, Camera, KinectCamera, Group, Modulation = range(10)
 
-    def getChoices(self):
-        return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "KinectCamera", "Group", "Modulation"]
+    def getChoices(self, kinectEnabled):
+        if(kinectEnabled == True):
+            return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "KinectCamera", "Group", "Modulation"]
+        else:
+            return ["VideoLoop", "Image", "ImageSequence", "ScrollImage", "Sprite", "Text", "Camera", "Group", "Modulation"]
 
-    def getNames(self, typeId):
-        for i in range(len(self.getChoices())):
+    def getNames(self, typeId, kinectEnabled):
+        for i in range(len(self.getChoices(kinectEnabled))):
             if(typeId == i):
-                return self.getChoices()[i]
-        return self.getChoices()[0]
+                return self.getChoices(kinectEnabled)[i]
+        return self.getChoices(kinectEnabled)[0]
 
 class TimeModulationMode():
     Off, SpeedModulation, TriggeredJump, TriggeredLoop = range(4)

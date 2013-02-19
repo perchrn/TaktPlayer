@@ -548,20 +548,9 @@ class MidiChannelStateHolder(object):
 class DmxStateHolder(object):
     def __init__(self, dmxSettings, midiChannelStateHolder):
         self._midiChannelStateHolder = midiChannelStateHolder
-        self._dmxChannelStart, self._dmxChannelWidth, _ = dmxSettings
-        if(self._dmxChannelStart < 0):
-            self._dmxChannelStart = 0
-        if(self._dmxChannelWidth < 1):
-            self._dmxChannelWidth = 1
-        self._dmxWidthSum = self._dmxChannelWidth * 16
-        if(self._dmxWidthSum > 512):
-            self._dmxChannelWidth = 512 / 16
-            self._dmxWidthSum = 512
-        if((self._dmxChannelStart + self._dmxWidthSum) > 512):
-            self._dmxChannelStart = 512 - self._dmxWidthSum
-        self._dmxChannelEnd = self._dmxChannelStart + self._dmxWidthSum
+        self.validateSettings(dmxSettings)
         self._dmxChannelValues = []
-        for _ in range(16):
+        for _ in range(self._dmxNumChannels):
             channelList = []
             for _ in range(self._dmxChannelWidth):
                 channelList.append(0)
@@ -569,6 +558,22 @@ class DmxStateHolder(object):
         self._dmxValue = []
         for _ in range(512):
             self._dmxValue.append(0)
+
+    def validateSettings(self, dmxSettings):
+        self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe = dmxSettings
+        if(self._dmxChannelStart < 0):
+            self._dmxChannelStart = 0
+        self._dmxNumChannels = max(min(self._dmxNumChannels, 16), 0)
+        if(self._dmxChannelWidth < 1):
+            self._dmxChannelWidth = 1
+        self._dmxWidthSum = self._dmxChannelWidth * self._dmxNumChannels
+        if(self._dmxWidthSum > 512):
+            self._dmxChannelWidth = 512 / self._dmxNumChannels
+            self._dmxWidthSum = 512
+        if((self._dmxChannelStart + self._dmxWidthSum) > 512):
+            self._dmxChannelStart = 512 - self._dmxWidthSum
+        self._dmxChannelEnd = self._dmxChannelStart + self._dmxWidthSum
+        return (self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe)
 
     def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
         dmxId = max(min(dmxId, 512), 0)

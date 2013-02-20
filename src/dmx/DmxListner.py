@@ -8,6 +8,8 @@ import time
 from multiprocessing import Process, Queue
 import traceback
 import subprocess
+import os
+import signal
 
 try:
     from ola.ClientWrapper import ClientWrapper
@@ -15,13 +17,16 @@ try:
 except:
     olaOk = False
 
+dmxServerProcessInfo = None
+
+def dmxDaemon():
+    global dmxServerProcessInfo
+    dmxServerProcessInfo = subprocess.Popen(['olad'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
 outputQueue = None
 
 def NewDataCallback(data):
     outputQueue.put_nowait((time.time(), data))
-
-def dmxDaemon():
-    subprocess.call("olad")
 
 def dmxListnerDaemon(universe, dmxOutputQueue, logQueue):
     global outputQueue
@@ -54,13 +59,16 @@ class DmxListner(object):
     def startDaemon(self, dmxSettings):
         if(olaOk):
             _, _, _, universe = dmxSettings
+            print "Trying to start DmxServer daemon."
+            self._dmxDaemonProcess = Process(target=dmxDaemon, args=())
+            self._dmxDaemonProcess.name = "dmxDaemon"
+            self._dmxDaemonProcess.start()
+            time.sleep(1)
             print "Starting DmxListner daemon in universe: " + str(universe)
             self._dmxListnerProcess = Process(target=dmxListnerDaemon, args=(universe, self._dmxQueue, self._dmxListnerPrintQueue))
             self._dmxListnerProcess.name = "dmxListner"
             self._dmxListnerProcess.start()
-            self._dmxDaemonProcess = Process(target=dmxDaemon, args=())
-            self._dmxDaemonProcess.name = "dmxDaemon"
-            self._dmxDaemonProcess.start()
+            self.hasDmxListnerProcessToShutdownNicely()
 
     def requestDmxListnerProcessToStop(self):
         if(self._dmxListnerProcess != None):
@@ -68,6 +76,9 @@ class DmxListner(object):
             self._dmxListnerProcess.terminate()
         if(self._dmxDaemonProcess != None):
             print "Stopping DmxServer daemon"
+            if(dmxServerProcessInfo != None):
+                os.kill(dmxServerProcessInfo.pid, signal.SIGINT)
+                dmxServerProcessInfo = None
             self._dmxDaemonProcess.terminate()
 
     def hasDmxListnerProcessToShutdownNicely(self):

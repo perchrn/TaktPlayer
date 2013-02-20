@@ -17,11 +17,6 @@ try:
 except:
     olaOk = False
 
-dmxServerProcessInfo = None
-
-def dmxDaemon():
-    global dmxServerProcessInfo
-    dmxServerProcessInfo = subprocess.Popen(['olad'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 outputQueue = None
 
@@ -51,7 +46,7 @@ class DmxListner(object):
 
         #Daemon variables:
         self._dmxListnerProcess = None
-        self._dmxDaemonProcess = None
+        self._dmxServerProcessInfo = None
         self._dmxQueue = Queue(1024)
         self._dmxListnerPrintQueue = Queue(1024)
         self._conectedAddress = None
@@ -60,9 +55,7 @@ class DmxListner(object):
         if(olaOk):
             _, _, _, universe = dmxSettings
             print "Trying to start DmxServer daemon."
-            self._dmxDaemonProcess = Process(target=dmxDaemon, args=())
-            self._dmxDaemonProcess.name = "dmxDaemon"
-            self._dmxDaemonProcess.start()
+            self._dmxServerProcessInfo = subprocess.Popen(['olad'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             time.sleep(1)
             print "Starting DmxListner daemon in universe: " + str(universe)
             self._dmxListnerProcess = Process(target=dmxListnerDaemon, args=(universe, self._dmxQueue, self._dmxListnerPrintQueue))
@@ -74,13 +67,11 @@ class DmxListner(object):
         if(self._dmxListnerProcess != None):
             print "Stopping DmxListner daemon"
             self._dmxListnerProcess.terminate()
-        if(self._dmxDaemonProcess != None):
+        if(self._dmxServerProcessInfo != None):
             print "Stopping DmxServer daemon"
-            global dmxServerProcessInfo
-            if(dmxServerProcessInfo != None):
-                os.kill(dmxServerProcessInfo.pid, signal.SIGINT)
-                dmxServerProcessInfo = None
-            self._dmxDaemonProcess.terminate()
+            print "Killing olad process whith id: " + str(self._dmxServerProcessInfo.pid)
+            os.kill(self._dmxServerProcessInfo.pid, signal.SIGINT)
+            self._dmxServerProcessInfo = None
 
     def hasDmxListnerProcessToShutdownNicely(self):
         if(self._dmxListnerProcess != None):
@@ -88,11 +79,8 @@ class DmxListner(object):
                 self._dmxListnerProcess = None
             else:
                 return False
-        if(self._dmxDaemonProcess != None):
-            if(self._dmxDaemonProcess.is_alive() == False):
-                self._dmxDaemonProcess = None
-            else:
-                return False
+        if(self._dmxServerProcessInfo != None):
+            return False
         return True
 
     def forceDmxListnerProcessToStop(self):
@@ -101,11 +89,10 @@ class DmxListner(object):
                 print "DmxListner daemon did not respond to quit command. Terminating."
                 self._dmxListnerProcess.terminate()
         self._dmxListnerProcess = None
-        if(self._dmxDaemonProcess != None):
-            if(self._dmxDaemonProcess.is_alive()):
-                print "DmxServer daemon did not respond to quit command. Terminating."
-                self._dmxDaemonProcess.terminate()
-        self._dmxDaemonProcess = None
+        if(self._dmxServerProcessInfo != None):
+            print "DmxServer daemon did not respond to quit command. Terminating."
+            os.kill(self._dmxServerProcessInfo.pid, signal.SIGINT)
+        self._dmxServerProcessInfo = None
 
     def _addEventToSaveLog(self, string):
         if(self._eventLogSaveQueue != None):

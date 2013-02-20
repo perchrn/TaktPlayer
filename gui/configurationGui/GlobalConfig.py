@@ -10,7 +10,8 @@ import wx
 from wx.lib.agw import ultimatelistctrl #@UnresolvedImport
 from midi.MidiModulation import MidiModulation
 from midi.MidiController import MidiControllers
-from video.media.MediaFileModes import TimeModulationMode, WipeMode
+from video.media.MediaFileModes import TimeModulationMode, WipeMode,\
+    ModulationValueMode
 from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes,\
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
@@ -180,8 +181,8 @@ class GlobalConfig(object):
     def getEffectTemplateByIndex(self, index):
         return self._effectsConfiguration.getTemplateByIndex(index)
 
-    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
-        return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+    def makeEffectTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, startModeString):
+        return self._effectsConfiguration.createTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, startModeString)
 
     def deleteEffectTemplate(self, configName):
         self._effectsConfiguration.deleteTemplate(configName)
@@ -496,6 +497,19 @@ class EffectsGui(object):
         startValuesSizer.Add(self._startValuesField, 2, wx.ALL, 5) #@UndefinedVariable
         startValuesSizer.Add(startValuesButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._mainEffectsGuiSizer.Add(startValuesSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
+
+        startModeSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
+        startModeLabel = wx.StaticText(self._mainEffectsPlane, wx.ID_ANY, "Start mode:") #@UndefinedVariable
+        self._startModesHolder = ModulationValueMode()
+        self._startModeField = wx.ComboBox(self._mainEffectsPlane, wx.ID_ANY, size=(200, -1), choices=["KeepLast"], style=wx.CB_READONLY) #@UndefinedVariable
+        updateChoices(self._startModeField, self._startModesHolder.getChoices, "KeepLast", "KeepLast")
+        self._startModeField.Bind(wx.EVT_COMBOBOX, self._onUpdate) #@UndefinedVariable
+        startModeButton = PcnImageButton(self._mainEffectsPlane, self._helpBitmap, self._helpPressedBitmap, (-1, -1), wx.ID_ANY, size=(17, 17)) #@UndefinedVariable
+        startModeButton.Bind(wx.EVT_BUTTON, self._onStartModeHelp) #@UndefinedVariable
+        startModeSizer.Add(startModeLabel, 1, wx.ALL, 5) #@UndefinedVariable
+        startModeSizer.Add(self._startModeField, 2, wx.ALL, 5) #@UndefinedVariable
+        startModeSizer.Add(startModeButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._mainEffectsGuiSizer.Add(startModeSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
         self._buttonsSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable |||
         closeButton = PcnImageButton(self._mainEffectsPlane, self._closeButtonBitmap, self._closeButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(55, 17)) #@UndefinedVariable
@@ -877,7 +891,21 @@ Selects the effect.
         text = """
 A list of start values for the effect modulation.
 """
-        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Template name help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Star values help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _onStartModeHelp(self, event):
+        text = """
+Decides which value to choose when effect is reset for media effect.
+
+KeepLast:\t\tStart with start values and keep latest values.
+ResetToDefault:\tAlways return ro start values.
+RawInput:\t\tAlways use raw modulation values.
+
+This only affect Note media after switching media and not retrigger same Note. Track effect always use KeepLast.
+"""
+        dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Start mode help', wx.OK|wx.ICON_INFORMATION) #@UndefinedVariable
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -1072,6 +1100,7 @@ A list of start values for the effect modulation.
         arg3Mod = self._midiModulation.validateModulationString(self._arg3Field.GetValue())
         arg4Mod = self._midiModulation.validateModulationString(self._arg4Field.GetValue())
         startValuesString = self._startValuesField.GetValue()
+        startModeString = self._startModeField.GetValue()
         if(cancel == True):
             self._ammountField.SetValue(ammountMod)
             self._arg1Field.SetValue(arg1Mod)
@@ -1085,12 +1114,12 @@ A list of start values for the effect modulation.
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
             if(oldTemplate == None):
-                savedTemplate = self._globalConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+                savedTemplate = self._globalConfig.makeEffectTemplate(saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, startModeString)
                 if(move == True):
                     self._mainConfig.renameEffectTemplateUsed(self._startConfigName, saveName)
                 self._mainConfig.verifyEffectTemplateUsed()
             else:
-                oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+                oldTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, startModeString)
                 savedTemplate = oldTemplate
             savedTemplate.updateWithExtraValues((self._conf1Field.GetValue(), self._conf2Field.GetValue()))
             self.updateGui(savedTemplate, self._midiNote, self._activeEffectId, self._editFieldWidget)
@@ -1679,6 +1708,10 @@ A list of start values for the effect modulation.
         configStart = self._config.getValue("StartValues")
         if(guiStart != configStart):
             return True
+        guiStartMode = self._startModeField.GetValue()
+        configStartMode = self._config.getValue("ReStartMode")
+        if(guiStartMode != configStartMode):
+            return True
         if(configEffect == "Zoom"):
             config1Val = self._config.getValue("ZoomMode")
             gui1Val = self._conf1Field.GetValue()
@@ -1818,6 +1851,7 @@ A list of start values for the effect modulation.
         self._arg3Field.SetValue(self._config.getValue("Arg3"))
         self._arg4Field.SetValue(self._config.getValue("Arg4"))
         self._startValuesField.SetValue(self._config.getValue("StartValues"))
+        updateChoices(self._startModeField, self._startModesHolder.getChoices, self._config.getValue("ReStartMode"), "KeepLast")
         self._sliderButtonsSizer.Hide(self._editButton)
         self._sliderButtonsSizer.Show(self._updateButton)
         self._sliderButtonsSizer.Layout()

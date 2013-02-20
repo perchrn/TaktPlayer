@@ -51,12 +51,24 @@ class DmxListner(object):
         self._dmxListnerPrintQueue = Queue(1024)
         self._conectedAddress = None
 
-    def startDaemon(self, dmxSettings):
-        if(olaOk):
-            _, _, _, universe = dmxSettings
-            print "Trying to start DmxServer daemon."
+    def _tryToStartDaemon(self, daemonBinary):
+        try:
+            print "Trying to start DmxServer daemon: " + str(daemonBinary)
             self._dmxServerProcessInfo = subprocess.Popen(['olad'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             time.sleep(1)
+        except:
+            print "Error starting olad daemon!"
+            traceback.print_exc()
+            self._dmxServerProcessInfo = None
+
+    def startDaemon(self, dmxSettings):
+        if(olaOk):
+            _, _, _, universe, daemonBinary = dmxSettings
+            self._tryToStartDaemon(daemonBinary)
+            if(self._dmxServerProcessInfo == None):
+                self._tryToStartDaemon("olad")
+            if(self._dmxServerProcessInfo == None):
+                self._tryToStartDaemon("/opt/local/bin/olad")
             print "Starting DmxListner daemon in universe: " + str(universe)
             self._dmxListnerProcess = Process(target=dmxListnerDaemon, args=(universe, self._dmxQueue, self._dmxListnerPrintQueue))
             self._dmxListnerProcess.name = "dmxListner"

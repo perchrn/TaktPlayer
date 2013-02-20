@@ -53,6 +53,7 @@ class PlayerConfiguration(object):
         self._serverConfig.addIntParameter("DmxChannelStart", 0)
         self._serverConfig.addIntParameter("DmxChannelWidth", 4)
         self._serverConfig.addIntParameter("DmxNumberOfChannels", 16)
+        self._serverConfig.addTextParameter("DmxBinary", "/opt/local/bin/olad")
 
         if(loadAndSave == True):
             self._playerConfigurationTree.saveConfigFile(self._configurationFile)
@@ -105,18 +106,19 @@ class PlayerConfiguration(object):
         else:
             self._screenConfig.setValue("Position", str(posX) + "," + str(posY))
  
-    def setServerConfig(self, midiBcast, midiAddress, midiPort, webAddress, webPort, dmxUniverse, dmxChannelStart, dmxChannelWidth, dmxNumChannels):
+    def setServerConfig(self, midiBcast, midiAddress, midiPort, webAddress, webPort, dmxUniverse, dmxChannelStart, dmxChannelWidth, dmxNumChannels, daemonBinary):
         self._serverConfig.setValue("MidiBroadcast", midiBcast)
         self._serverConfig.setValue("MidiBindAddress", midiAddress)
         self._serverConfig.setValue("MidiPort", midiPort)
         self._serverConfig.setValue("WebBindAddress", webAddress)
         self._serverConfig.setValue("WebPort", webPort)
         validator = DmxStateHolder((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse))
-        dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse = validator.validateSettings((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse))
+        dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse, daemonBinary = validator.validateSettings((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse, daemonBinary))
         self._serverConfig.setValue("DmxUniverse", dmxUniverse)
         self._serverConfig.setValue("DmxChannelStart", dmxChannelStart)
         self._serverConfig.setValue("DmxChannelWidth", dmxChannelWidth)
         self._serverConfig.setValue("DmxNumberOfChannels", dmxNumChannels)
+        self._serverConfig.setValue("DmxBinary", daemonBinary)
 
     def getResolution(self):
         return (self._internalResolutionX, self._internalResolutionY)
@@ -150,7 +152,8 @@ class PlayerConfiguration(object):
         numChannels = self._serverConfig.getValue("DmxNumberOfChannels")
         channelWidth = self._serverConfig.getValue("DmxChannelWidth")
         listenUniverse = self._serverConfig.getValue("DmxUniverse")
-        return (startId, numChannels, channelWidth, listenUniverse)
+        daemonBinary = self._serverConfig.getValue("DmxBinary")
+        return (startId, numChannels, channelWidth, listenUniverse, daemonBinary)
 
     def getWebServerAddress(self):
 #        print "WebAdr: " + str(self._serverConfig.getValue("WebBindAddress"))

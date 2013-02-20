@@ -12,8 +12,7 @@ from video.Effects import createMat, getEffectByName, getEmptyImage, createMask,
     copyImage, setupEffectMemory
 import hashlib
 from video.media.MediaFileModes import MixMode, VideoLoopMode, ImageSequenceMode,\
-    getMixModeFromName, ModulationValueMode,\
-    getModulationValueModeFromName, KinectMode, TimeModulationMode, WipeMode
+    getMixModeFromName, ModulationValueMode, KinectMode, TimeModulationMode, WipeMode
 import math
 from utilities.FloatListText import textToFloatValues
 import PIL.Image as Image
@@ -180,7 +179,6 @@ class MediaFile(object):
         self._wipeModeHolder = WipeMode()
         self._wipeSettings = WipeMode.Fade , False, (0.0)
 
-        self._modulationRestartMode = ModulationValueMode.KeepOld
         self._effect1Settings = None
         self._effect2Settings = None
         self._timeModulationSettings = None
@@ -261,9 +259,6 @@ class MediaFile(object):
 
         self.setMidiLengthInBeats(self._configurationTree.getValue("SyncLength"))
         self.setQuantizeInBeats(self._configurationTree.getValue("QuantizeLength"))
-
-        modulationRestartMode = self._configurationTree.getValue("ModulationValuesMode")
-        self._modulationRestartMode = getModulationValueModeFromName(modulationRestartMode)
 
         for mediaSettingsHolder in self._mediaSettingsHolder.getSettingsList():
             self._updateMediaSettingsHolder(mediaSettingsHolder)
@@ -392,21 +387,25 @@ class MediaFile(object):
 #        return self._currentFrame
 
     def _resetEffects(self, mediaSettingsHolder, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder):
-        if(self._modulationRestartMode != ModulationValueMode.RawInput):
+        if(self._effect1Settings.getReStartMode() != ModulationValueMode.RawInput):
             mediaSettingsHolder.effect1StartMidiValues = self._effect1Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, self._specialModulationHolder)
             mediaSettingsHolder.effect1StartSumValues = mediaSettingsHolder.effect1StartMidiValues
-            mediaSettingsHolder.effect2StartMidiValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, self._specialModulationHolder)
-            mediaSettingsHolder.effect2StartSumValues = mediaSettingsHolder.effect2StartMidiValues
         else:
             mediaSettingsHolder.effect1StartMidiValues = (None, None, None, None, None)
             mediaSettingsHolder.effect1StartSumValues = mediaSettingsHolder.effect1StartMidiValues
+        if(self._effect2Settings.getReStartMode() != ModulationValueMode.RawInput):
+            mediaSettingsHolder.effect2StartMidiValues = self._effect2Settings.getValues(songPosition, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, self._specialModulationHolder)
+            mediaSettingsHolder.effect2StartSumValues = mediaSettingsHolder.effect2StartMidiValues
+        else:
             mediaSettingsHolder.effect2StartMidiValues = (None, None, None, None, None)
             mediaSettingsHolder.effect2StartSumValues = mediaSettingsHolder.effect2StartMidiValues
-        if(self._modulationRestartMode == ModulationValueMode.ResetToDefault):
+        if(self._effect1Settings.getReStartMode() == ModulationValueMode.ResetToDefault):
             mediaSettingsHolder.effect1StartValues = self._effect1Settings.getStartValues()
-            mediaSettingsHolder.effect2StartValues = self._effect2Settings.getStartValues()
         else: #KeepOldValues
             mediaSettingsHolder.effect1StartValues = mediaSettingsHolder.effect1OldValues
+        if(self._effect2Settings.getReStartMode() == ModulationValueMode.ResetToDefault):
+            mediaSettingsHolder.effect2StartValues = self._effect2Settings.getStartValues()
+        else:
             mediaSettingsHolder.effect2StartValues = mediaSettingsHolder.effect2OldValues
 
         if(mediaSettingsHolder.effect1 != None):

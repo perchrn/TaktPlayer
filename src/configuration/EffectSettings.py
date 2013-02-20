@@ -5,7 +5,8 @@ Created on 25. jan. 2012
 '''
 from midi.MidiModulation import MidiModulation
 from video.media.MediaFileModes import forceUnixPath,\
-    TimeModulationMode, WipeMode
+    TimeModulationMode, WipeMode, getModulationValueModeFromName,\
+    ModulationValueMode
 import os
 from utilities.FloatListText import textToFloatValues, floatValuesToString
 
@@ -169,10 +170,10 @@ class EffectTemplates(ConfigurationTemplates):
         newTemplate.updateFromXml(xmlConfig)
         return newTemplate
 
-    def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
+    def createTemplate(self, saveName, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, restartModeString):
         effectConfigTree = self._templateConfig.addChildUniqueId(self._templateName, self._templateId, saveName, saveName)
         newTemplate = EffectSettings(self._templateName, self._specialModulationHolder, saveName, self, effectConfigTree, self._templateConfig, self._templateId)
-        newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+        newTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, restartModeString)
         self._configurationTemplates.append(newTemplate)
         return newTemplate
 
@@ -206,6 +207,7 @@ class EffectSettings(object):
         self._templateId = templateId
         self._internalResolutionX, self._internalResolutionY = self._effectTemplates.getInternalResolution()
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._startModesHolder = ModulationValueMode()
         self._setupConfiguration()
         self._getConfiguration()
 
@@ -219,7 +221,8 @@ class EffectSettings(object):
         arg3Mod = self._configurationTree.getValue("Arg3")
         arg4Mod = self._configurationTree.getValue("Arg4")
         startValuesString = self.getStartValuesString()
-        copyTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString)
+        restartModeString = self._startModesHolder.getNames(self._reStartMode)
+        copyTemplate.update(effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, restartModeString)
         self.updateWithExtraValues(self.getExtraValues())
         return copyTemplate
 
@@ -336,6 +339,9 @@ class EffectSettings(object):
         self._effectArg3StartValue = 0.0
         self._effectArg4StartValue = 0.0
 
+        self._configurationTree.addTextParameter("ReStartMode", "KeepOld")
+        self._reStartMode = ModulationValueMode.KeepOld
+
     def getConfigHolder(self):
         return self._configurationTree
 
@@ -348,6 +354,8 @@ class EffectSettings(object):
         self._effectName = self._configurationTree.getValue("Effect")
         startValues = self._configurationTree.getValue("StartValues")
         self._setStartValuesString(startValues)
+        modulationRestartMode = self._configurationTree.getValue("ReStartMode")
+        self._reStartMode = getModulationValueModeFromName(modulationRestartMode)
 
     def updateConfiguration(self):
         self._getConfiguration()
@@ -356,7 +364,7 @@ class EffectSettings(object):
         self._effectName = self._configurationTree.getValue("Effect")
         return self._effectName
 
-    def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString):
+    def update(self, effectName, ammountMod, arg1Mod, arg2Mod, arg3Mod, arg4Mod, startValuesString, reStartModeString):
         self._configurationTree.setValue("Effect", effectName)
         self._midiModulation.setValue("Amount", ammountMod)
         self._midiModulation.setValue("Arg1", arg1Mod)
@@ -366,6 +374,8 @@ class EffectSettings(object):
         #Validate and set:
         self._setStartValuesString(startValuesString)
         self._configurationTree.setValue("StartValues", self.getStartValuesString())
+        self._reStartMode = getModulationValueModeFromName(reStartModeString)
+        self._configurationTree.setValue("ReStartMode", self._startModesHolder.getNames(self._reStartMode))
         
     def checkAndUpdateFromConfiguration(self):
         if(self._configurationTree.isConfigurationUpdated()):
@@ -405,6 +415,9 @@ class EffectSettings(object):
         valueString += "|" + str(self._effectArg3StartValue)
         valueString += "|" + str(self._effectArg4StartValue)
         return valueString
+
+    def getReStartMode(self):
+        return self._reStartMode
 
     def getXmlString(self):
         return self._configurationTree.getConfigurationXMLString()

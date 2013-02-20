@@ -560,7 +560,7 @@ class DmxStateHolder(object):
             self._dmxValue.append(0)
 
     def validateSettings(self, dmxSettings):
-        self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe = dmxSettings
+        self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe, binaryName = dmxSettings
         if(self._dmxChannelStart < 0):
             self._dmxChannelStart = 0
         self._dmxNumChannels = max(min(self._dmxNumChannels, 16), 0)
@@ -573,7 +573,7 @@ class DmxStateHolder(object):
         if((self._dmxChannelStart + self._dmxWidthSum) > 512):
             self._dmxChannelStart = 512 - self._dmxWidthSum
         self._dmxChannelEnd = self._dmxChannelStart + self._dmxWidthSum
-        return (self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe)
+        return (self._dmxChannelStart, self._dmxNumChannels, self._dmxChannelWidth, universe, binaryName)
 
     def dmxControllerChange(self, dmxId, dmxValue, sync, spp):
         dmxId = max(min(dmxId, 512), 0)

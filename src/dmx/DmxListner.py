@@ -76,6 +76,7 @@ class DmxListner(object):
             self._dmxListnerProcess.terminate()
         if(self._dmxDaemonProcess != None):
             print "Stopping DmxServer daemon"
+            global dmxServerProcessInfo
             if(dmxServerProcessInfo != None):
                 os.kill(dmxServerProcessInfo.pid, signal.SIGINT)
                 dmxServerProcessInfo = None

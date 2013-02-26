@@ -1832,17 +1832,18 @@ class OpenCvCameras(object):
             self._cameraFrameRates.append(0.0)
             blankImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
             self._bufferdImages.append(blankImage)
+        openOk = False
         if(self._cameraList[cameraId] == None):
             try:
                 self._cameraList[cameraId] = cv.CaptureFromCAM(cameraId)
                 captureImage = cv.QueryFrame(self._cameraList[cameraId])
                 if(captureImage != None):
                     self._bufferdImages[cameraId] = captureImage
+                    openOk = True
                 self._cameraFrameRates[cameraId] = int(cv.GetCaptureProperty(self._cameraList[cameraId], cv.CV_CAP_PROP_FPS))
             except:
                 traceback.print_exc()
-                return False # Failed to open camera id.
-        return True
+        return openOk
 
     def getFirstImage(self, cameraId):
         return self.getCameraImage(cameraId, None)
@@ -1980,6 +1981,47 @@ class CameraInput(MediaFile):
             self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         print "Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate
+        self._fileOk = True
+
+class RawCamera(object):
+    def __init__(self, cameraId):
+        self._cameraId = int(cameraId)
+        self._cameraMode = self.CameraModes.OpenCV
+        self._internalResolutionX = 800
+        self._internalResolutionY = 600
+
+    class CameraModes():
+        OpenCV, VideoCapture = range(2)
+
+    def getFrames(self, captureTime):
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            captureImage = openCvCameras.getCameraImage(self._cameraId, captureTime)
+        else:
+            captureImage = videoCaptureCameras.getCameraImage(self._cameraId, captureTime)
+        return captureImage
+
+    def openFile(self):
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            if(openCvCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY) == False):
+                raise MediaError("Could not open OpenCV camera with ID: %d!" %(self._cameraId))
+        else:
+            if(videoCaptureCameras.openCamera(self._cameraId, self._internalResolutionX, self._internalResolutionY) == False):
+                raise MediaError("Could not open VideoCapture camera with ID: %d!" %(self._cameraId))
+        try:
+            if(self._cameraMode == self.CameraModes.OpenCV):
+                captureImage = openCvCameras.getFirstImage(self._cameraId)
+            else:
+                captureImage = videoCaptureCameras.getFirstImage(self._cameraId)
+        except:
+            traceback.print_exc()
+            print "Exception while opening camera with ID: %s" % (self._cameraId)
+            raise MediaError("File caused exception!")
+        if (captureImage == None):
+            print "Could not read frames from camera with ID: %d" % (self._cameraId)
+            raise MediaError("Could not open camera with ID: %d!" % (self._cameraId))
+        if(self._cameraMode == self.CameraModes.OpenCV):
+            self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
+        print "Opened camera %d with framerate %d" %(self._cameraId, self._originalFrameRate)
         self._fileOk = True
 
 class KinectCameras(object):

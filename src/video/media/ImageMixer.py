@@ -4,9 +4,11 @@ Created on 10. des. 2012
 @author: pcn
 '''
 
+import os
 from cv2 import cv #@UnresolvedImport
+
 from video.media.MediaFileModes import WipeMode, MixMode
-from video.Effects import getNoizeMask, createMask, rotatePoint
+from video.Effects import getNoizeMask, createMask, rotatePoint, createMat
 
 class ImageMixer(object):
     def __init__(self, internalResolutionX, internalResolutionY):
@@ -392,3 +394,81 @@ class ImageMixer(object):
             return self._mixImageReplace(wipeSettings, level, image1, image2, mixMat)
         #Default is Add!
         return self._mixImageAdd(wipeSettings, level, image1, image2, mixMat)
+
+class CameraDisplayMixer(object):
+    def __init__(self, internalResolutionX, internalResolutionY, numCameras, configHolder):
+        self._internalResolutionX =  internalResolutionX
+        self._internalResolutionY =  internalResolutionY
+        self._videoDir = configHolder.getVideoDir()
+
+        self._selectedCameraId = 0
+        self._currentNumCameras = numCameras
+
+        self._miniSizeX = self._internalResolutionX / 5
+        self._miniSizeY = self._internalResolutionY / 5
+        self._numMiniRows = int(self._internalResolutionY / self._miniSizeY)
+        self._numMiniColumns = 1 + int(numCameras / self._numMiniRows)
+        self._maxImages = self._numMiniColumns * self._numMiniRows
+        self._miniAreaWidth = self._numMiniColumns * self._miniSizeX
+        self._bigAreaWidth = self._internalResolutionX - self._miniAreaWidth
+        self._bigAreaHeight = int((float(self._bigAreaWidth) / self._internalResolutionX) * self._internalResolutionY)
+        self._bigAreaTop = int((self._internalResolutionY - self._bigAreaHeight) / 2)
+
+        self._mixMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._convertedMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        cv.SetZero(self._mixMat)
+
+        self._bigRegion = cv.GetSubRect(self._mixMat, (0, self._bigAreaTop, self._bigAreaWidth, self._bigAreaHeight))
+        self._smallImageAreaList = []
+        self._cameraBaseFileNameList = []
+        for i in range(self._maxImages):
+            columnId = int(i / self._numMiniRows)
+            xpos = self._bigAreaWidth + (columnId * self._miniSizeX)
+            ypos = int(i % self._numMiniRows) * self._miniSizeY
+            smallRegion = cv.GetSubRect(self._mixMat, (xpos, ypos, self._miniSizeX, self._miniSizeY))
+            self._smallImageAreaList.append(smallRegion)
+            self._cameraBaseFileNameList.append("cam" + str(i) + "_")
+
+        self._debugCounter = 0
+
+    def placeImages(self, imageList):
+        imageListLength = min(len(imageList), self._maxImages)
+        self._currentNumCameras = imageListLength
+        for i in range(imageListLength):
+            image = imageList[i]
+            if(i == self._selectedCameraId):
+                cv.Resize(image, self._bigRegion)
+            smallRegion = self._smallImageAreaList[i]
+            cv.Resize(image, smallRegion)
+
+        cv.ConvertImage(self._mixMat, self._convertedMat, cv.CV_CVTIMG_SWAP_RB)
+        return self._convertedMat
+
+    def saveImages(self, imageList, timestamp):
+        timeStampString = "%0.3f" %(timestamp)
+        dirName = str(int(timestamp / 100))
+        videoDir = os.path.join(self._videoDir, dirName)
+        if(os.path.isdir(videoDir) == False):
+            os.makedirs(videoDir)
+            print "DEBUG pcn: images: " + str(self._debugCounter)
+            self._debugCounter = 0
+        self._debugCounter += 1
+        imageListLength = min(len(imageList), self._maxImages)
+        fileNameList = []
+        for i in range(imageListLength):
+            image = imageList[i]
+            filename = os.path.join(videoDir, self._cameraBaseFileNameList[i] + timeStampString + ".jpg")
+            cv.SaveImage(filename, image)
+            fileNameList.append(filename)
+        return fileNameList
+
+    def selectSmallImage(self, xPos, yPos):
+        xPos = xPos - self._bigAreaWidth
+        testId = -1
+        if(xPos > 0):
+            if((yPos >= 0) and (yPos < self._internalResolutionY)):
+                column = int(xPos / self._miniSizeX)
+                row = int(yPos / self._miniSizeY)
+                testId = (column * self._numMiniRows) + row
+        if((testId >= 0) and (testId < self._currentNumCameras)):
+            self._selectedCameraId = testId

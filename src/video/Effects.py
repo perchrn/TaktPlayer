@@ -2551,11 +2551,9 @@ class ImageAddEffect(object):
 
 #??? TODO ???
 #get coordinates from image blob (I want better tracking (or sorting if you like))
-#make ModulationValueMode available and Move ModulationValueMode to EffectConfig.
 #Dont reload all thumbs on config update (only for changed media.) Optemizing ;-)
 
 #ADSR add A AHoldR HoldR modes
-#DMX512
 #Tap tempo
 #Playback GUI
 #UDP -> multicast
@@ -2578,6 +2576,7 @@ class ImageAddEffect(object):
 #TextMedia font directory config.
 #URL image media?
 #Streaming from on player to another media (cameras etc.)
+#Camera server (instead of streaming?)
 #Resampler.
 #Bypass media or (FX media.)
 #    Send to locked midi channel?

@@ -12,7 +12,7 @@ import os
 import signal
 
 try:
-    from ola.ClientWrapper import ClientWrapper
+    from ola.ClientWrapper import ClientWrapper #@UnresolvedImport
     olaOk = True
 except:
     olaOk = False

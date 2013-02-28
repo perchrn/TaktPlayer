@@ -22,8 +22,13 @@ from midi.MidiStateHolder import NoteState
 import traceback
 from video.media.ImageMixer import ImageMixer
 from video.Curve import Curve
+from multiprocessing import Process, Queue
+from video.media.ImageDownloaderClient import imageDownloaderProcess
+from utilities.MiniXml import stringToXml
+from Queue import Empty
+
 try:
-    import freenect
+    import freenect #@UnresolvedImport
 except:
     freenect = None
 
@@ -1981,6 +1986,136 @@ class CameraInput(MediaFile):
             self._originalFrameRate = openCvCameras.getFrameRate(self._cameraId)
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         print "Opened camera %d with framerate %d",self._cameraId, self._originalFrameRate
+        self._fileOk = True
+
+class RemoteCameraInput(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._cameraId = int(fileName)
+        self._cropMode = "Crop"
+        self._configurationTree.addTextParameter("DisplayMode", "Crop")
+        self._configurationTree.addTextParameter("CameraHost", "127.0.0.1:2025")
+
+        self._zoomResizeMat = createMat(self._internalResolutionX, self._internalResolutionY)
+        self._getConfiguration()
+        self._firstImageInitialized = False
+
+        self._imageDownloaderMessageQueue = Queue(256)
+        self._imageDownloaderProcess = None
+
+    def _setupMediaSettingsHolder(self, mediaSettingsHolder):
+        MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._cropMode = self._configurationTree.getValue("DisplayMode")
+        self._cameraHost = self._configurationTree.getValue("CameraHost")
+        if(len(self._cameraHost.split(":")) < 2):
+            self._cameraHost += ":80"
+        self._cameraClientSaveName = os.path.join(self._videoDirectory, "remoteCamera_%s_%d.jpg" % (self._cameraHost, self._cameraId))
+        self._cameraUrlArguments = "?cameraId=%d" % (self._cameraId)
+        print "DEBUG pcn: Setup remote cam config: " + self._cameraClientSaveName + " urlArgs: " + self._cameraUrlArguments
+
+    def getType(self):
+        return "RemoteCamera"
+
+    def getThumbnailUniqueString(self):
+        return self.getType() + ":" + str(self._cameraId)
+
+    def close(self):
+        self._stopImageDownloadClientProcess()
+
+    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, dmxState, midiChannelState, timeMultiplyer = None):
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, dmxState, midiChannelState)
+        if(fadeValue < 0.00001):
+            mediaSettingsHolder.image = None
+            return noteDone
+
+        self._printImageDownloadClietMessages()
+        captureImage = mediaSettingsHolder.captureImage
+        try:
+            remoteImage = cv.LoadImage(self._cameraClientSaveName)
+            if(remoteImage != None):
+                captureImage = remoteImage
+                if(self._firstImageInitialized == False):
+                    self._firstImage = copyImage(captureImage)
+        except:
+            pass
+
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, dmxState, midiChannelState)
+
+        if(captureImage != None):
+            if(self._cropMode != "Stretch"):
+                imageSize = cv.GetSize(captureImage)
+                xRatio = float(imageSize[0]) / self._internalResolutionX
+                yRatio = float(imageSize[1]) / self._internalResolutionY
+                if(self._cropMode == "Crop"):
+                    left = 0
+                    top = 0
+                    if(xRatio > yRatio):
+                        xSize = int(imageSize[0] / xRatio * yRatio)
+                        ySize = imageSize[1]
+                    else:
+                        xSize = imageSize[0]
+                        ySize = int(imageSize[1] / yRatio * xRatio)
+                    if(xSize < imageSize[0]):
+                        left = int((imageSize[0] - xSize) / 2)
+                    if(ySize < imageSize[1]):
+                        top = int((imageSize[1] - ySize) / 2)
+                    src_region = cv.GetSubRect(captureImage, (left, top, xSize, ySize) )
+                    cv.Resize(src_region, self._zoomResizeMat)
+                    copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
+                elif(self._cropMode == "Scale"):
+                    left = 0
+                    top = 0
+                    if(xRatio > yRatio):
+                        xSize = self._internalResolutionX
+                        ySize = int(self._internalResolutionY / xRatio * yRatio)
+                    else:
+                        xSize = int(self._internalResolutionX / yRatio * xRatio)
+                        ySize = self._internalResolutionY
+                    if(xSize < self._internalResolutionX):
+                        left = int((self._internalResolutionX - xSize) / 2)
+                    if(ySize < self._internalResolutionY):
+                        top = int((self._internalResolutionY - ySize) / 2)
+    #                print "DEBUG pcn: Scale: dst_region: " + str((left, top, xSize, ySize))
+                    dst_region = cv.GetSubRect(self._zoomResizeMat, (left, top, xSize, ySize) )
+                    cv.SetZero(self._zoomResizeMat)
+                    cv.Resize(captureImage, dst_region)
+                    copyOrResizeImage(self._zoomResizeMat, mediaSettingsHolder.captureImage)
+
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, dmxState, self._wipeSettings, fadeValue)
+        return False
+
+    def _startImageDownloadClientProcess(self):
+        self._imageDownloaderMessageQueue = Queue(256)
+        self._imageDownloaderProcess = Process(target=imageDownloaderProcess, args=(self._cameraHost, self._cameraUrlArguments, False, self._cameraClientSaveName, self._imageDownloaderMessageQueue))
+        self._imageDownloaderProcess.name = "imageDownloaderClient"
+        self._imageDownloaderProcess.start()
+
+    def _stopImageDownloadClientProcess(self):
+        if(self._imageDownloaderProcess != None):
+            if(self._imageDownloaderProcess.is_alive()):
+                print "ImageDownloderClient terminated."
+                self._imageDownloaderProcess.terminate()
+        self._imageDownloaderProcess = None
+
+    def _printImageDownloadClietMessages(self):
+        try:
+            serverResponse = self._imageDownloaderMessageQueue.get_nowait()
+            serverXml = stringToXml(serverResponse)
+            if(serverXml != None):
+                if(serverXml.tag == "servermessage"):
+                    print "GuiClient Message: " + serverXml.get("message")
+        except Empty:
+            pass
+
+    def openFile(self, midiLength):
+        self._startImageDownloadClientProcess()
+        self._firstImage = getEmptyImage(self._internalResolutionX, self._internalResolutionY)
+        copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
+        print "Opened remote camera on host: %s with id %d" %(self._cameraHost, self._cameraId)
         self._fileOk = True
 
 class RawCamera(object):

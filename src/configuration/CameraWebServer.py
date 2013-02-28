@@ -140,17 +140,51 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                     checkResult = MiniXml("checkresult", os.path.basename(fileName))
                     self._returnXmlRespose(checkResult.getXmlString())
         else:
-            serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (parsed_path.query, self.client_address[0], self.client_address[1]))
-            self.send_error(404, "Unknown request!")
-            webInputQueue.put(serverMessageXml.getXmlString())
+            webPage = "<html><head>\n"
+            webPage += "<script type=\"text/JavaScript\">\n"
+            webPage += "<!--\n"
+            webPage += "var cameraId = 0;\n"
+            webPage += "var chacheRequest = \"&chacheDummy=\";\n"
+            webPage += "var refreshInterval = 100;\n"
+            webPage += "var chacheImage = new Image();\n"
+            webPage += "chacheImage.src = \"?cameraId=0\";\n"
+            webPage += "function updateImage() {\n"
+            webPage += "    if(chacheImage.complete) {\n"
+            webPage += "        document.getElementById(\"taktImage\").src = chacheImage.src;\n"
+            webPage += "        chacheImage = new Image();\n"
+            webPage += "        chacheImage.src = \"?cameraId=\" + cameraId + chacheRequest + new Date().getTime();\n"
+            webPage += "    }\n"
+            webPage += "    setTimeout(updateImage, refreshInterval)\n"
+            webPage += "}\n"
+            webPage += "function startImageUpdate(seconds) {\n"
+            webPage += "        refreshInterval = seconds * 1000;\n"
+            webPage += "        updateImage();\n"
+            webPage += "}\n"
+            webPage += "// -->\n"
+            webPage += "</script>\n"
+            webPage += "</head>\n"
+            webPage += "<body onload=\"JavaScript:startImageUpdate(0.5);\">\n"
+            webPage += "<img src=\"?cameraId=0\" id=\"taktImage\" alt=\"Camera image\">\n"
+            webPage += "</body></html>\n"
+            self._returnHtmlRespose(webPage)
+#            serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (parsed_path.query, self.client_address[0], self.client_address[1]))
+#            self.send_error(404, "Unknown request!")
+#            webInputQueue.put(serverMessageXml.getXmlString())
         return
 
     def do_POST(self):
-        pass
+        self.send_error(404, "Unknown POST request!")
 
     def _returnXmlRespose(self, message):
         self.send_response(200)
         self.send_header("Content-type", "text/xml")
+        self.send_header("Content-length", str(len(message)))
+        self.end_headers()
+        self.wfile.write(message)
+
+    def _returnHtmlRespose(self, message):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
         self.send_header("Content-length", str(len(message)))
         self.end_headers()
         self.wfile.write(message)
@@ -268,8 +302,8 @@ class CameraWebServer(object):
             if(serverMessageXml != None):
                 if(serverMessageXml.tag == "servermessage"):
                     print "CameraWebServer Message: " + serverMessageXml.get("message")
-#                elif(serverMessageXml.tag == "serverLog"):
-#                    print "CameraWebServerLog: " + serverMessageXml.get("server"), serverMessageXml.get("timeStamp"), serverMessageXml.get("message")
+                elif(serverMessageXml.tag == "serverLog"):
+                    print "CameraWebServerLog: " + serverMessageXml.get("server"), serverMessageXml.get("timeStamp"), serverMessageXml.get("message")
         except Empty:
             pass
 

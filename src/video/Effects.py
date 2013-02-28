@@ -30,7 +30,9 @@ class MediaError(Exception):
 def getEmptyImage(x, y):
     try:
         resizeMat = createMat(x,y)
-        return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
+        cv.SetZero(resizeMat)
+        return resizeMat
+#        return resizeImage(cv.CreateImage((x,y), cv.IPL_DEPTH_8U, 3), resizeMat)
     except cv2.error:
         raise MediaError("getEmptyImage() Out of memory! Message: " + sys.exc_info()[1].message)
 

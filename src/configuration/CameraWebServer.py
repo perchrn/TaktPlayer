@@ -105,27 +105,28 @@ class PcnWebHandler(BaseHTTPRequestHandler):
 
         queryDict = urlparse.parse_qsl(parsed_path.query)
 
+        listOk = False
+        fileNameList = None
+        try:
+            fileNameList = webOutputQueue.get(False)
+            if(fileNameList != None):
+                listOk = True
+        except Empty:
+            if(oldFileNameList != None):
+                fileNameList = oldFileNameList
+                listOk = True
+        oldFileNameList = fileNameList
+        if(listOk == False):
+            serverMessageXml = MiniXml("servermessage", "No file list found!")
+            self.send_error(404, "List error! Please wait until server is done initializing...")
+            webInputQueue.put(serverMessageXml.getXmlString())
+            return
+
         cameraIdString = self._getKeyValueFromList(queryDict, 'cameraId', None)
         checkOnlyString = self._getKeyValueFromList(queryDict, 'check', None)
         timeStampString = self._getKeyValueFromList(queryDict, 'timeStamp', None)
 
         if(cameraIdString != None):
-            listOk = False
-            fileNameList = None
-            try:
-                fileNameList = webOutputQueue.get(False)
-                if(fileNameList != None):
-                    listOk = True
-            except Empty:
-                if(oldFileNameList != None):
-                    fileNameList = oldFileNameList
-                    listOk = True
-            oldFileNameList = fileNameList
-            if(listOk == False):
-                serverMessageXml = MiniXml("servermessage", "No file list found!")
-                self.send_error(404, "List error!")
-                webInputQueue.put(serverMessageXml.getXmlString())
-                return
             try:
                 cameraId = int(cameraIdString)
                 fileName = fileNameList[cameraId]
@@ -140,11 +141,18 @@ class PcnWebHandler(BaseHTTPRequestHandler):
                     checkResult = MiniXml("checkresult", os.path.basename(fileName))
                     self._returnXmlRespose(checkResult.getXmlString())
         else:
+            isMobile = False
+            for agentLines in self.headers.getheaders("User-Agent"):
+                if(agentLines.count("Mobile") > 0):
+                    isMobile = True
             webPage = "<html><head>\n"
             webPage += "<script type=\"text/JavaScript\">\n"
             webPage += "<!--\n"
             webPage += "var cameraId = 0;\n"
-            webPage += "var chacheRequest = \"&chacheDummy=\";\n"
+            if(isMobile):
+                webPage += "var chacheRequest = \"&chacheDummy=\";\n"
+            else:
+                webPage += "var chacheRequest = \"#\";\n"
             webPage += "var refreshInterval = 100;\n"
             webPage += "var chacheImage = new Image();\n"
             webPage += "chacheImage.src = \"?cameraId=0\";\n"
@@ -160,15 +168,20 @@ class PcnWebHandler(BaseHTTPRequestHandler):
             webPage += "        refreshInterval = seconds * 1000;\n"
             webPage += "        updateImage();\n"
             webPage += "}\n"
+            webPage += "function changeCamera(newId) {\n"
+            webPage += "        cameraId = newId;\n"
+            webPage += "}\n"
             webPage += "// -->\n"
             webPage += "</script>\n"
             webPage += "</head>\n"
             webPage += "<body onload=\"JavaScript:startImageUpdate(0.5);\">\n"
-            webPage += "<img src=\"?cameraId=0\" id=\"taktImage\" alt=\"Camera image\">\n"
+            webPage += "<img src=\"?cameraId=0\" id=\"taktImage\" alt=\"Camera image\"><br>\n"
+            for i in range(len(fileNameList)):
+                webPage += "<input id=\"Camera " + str(i) + "\" type=\"button\" value=\"Camera " + str(i) + "\" onclick=\"changeCamera(" + str(i) + ");\"/>\n"
             webPage += "</body></html>\n"
             self._returnHtmlRespose(webPage)
-#            serverMessageXml = MiniXml("servermessage", "Bad request from client. Query: %s Client: %s:%d" % (parsed_path.query, self.client_address[0], self.client_address[1]))
-#            self.send_error(404, "Unknown request!")
+
+#            serverMessageXml = MiniXml("servermessage", "DEBUG pcn: %s %s ***%s***" % (parsed_path.query, str(self.headers), str(self.headers.getheaders("User-Agent"))))
 #            webInputQueue.put(serverMessageXml.getXmlString())
         return
 
@@ -302,8 +315,8 @@ class CameraWebServer(object):
             if(serverMessageXml != None):
                 if(serverMessageXml.tag == "servermessage"):
                     print "CameraWebServer Message: " + serverMessageXml.get("message")
-                elif(serverMessageXml.tag == "serverLog"):
-                    print "CameraWebServerLog: " + serverMessageXml.get("server"), serverMessageXml.get("timeStamp"), serverMessageXml.get("message")
+#                elif(serverMessageXml.tag == "serverLog"):
+#                    print "CameraWebServerLog: " + serverMessageXml.get("server"), serverMessageXml.get("timeStamp"), serverMessageXml.get("message")
         except Empty:
             pass
 

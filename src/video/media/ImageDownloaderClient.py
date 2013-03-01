@@ -10,30 +10,37 @@ import socket
 import shutil
 import time
 
-def imageDownloaderProcess(hotPort, urlArgs, useChacheTrick, fileName, messageQueue):
-    if((hotPort == None) or (hotPort == "")):
+def imageDownloaderProcess(hostPort, urlArgs, useChacheTrick, fileName, messageQueue):
+    if((hostPort == None) or (hostPort == "")):
         serverMessageXml = MiniXml("servermessage", "Cannot start image downloader without host information!")
         messageQueue.put(serverMessageXml)
         return
     if((urlArgs == None)):
-        serverMessageXml = MiniXml("servermessage", "Cannot start image downloader without URL information! Host: " + str(hotPort))
+        serverMessageXml = MiniXml("servermessage", "Cannot start image downloader without URL information! Host: " + str(hostPort))
         messageQueue.put(serverMessageXml)
         return
     if((fileName == None) or (fileName == "")):
-        serverMessageXml = MiniXml("servermessage", "Cannot start image downloader without fileName! URL: " + str(hotPort) + "/" + str(urlArgs))
+        serverMessageXml = MiniXml("servermessage", "Cannot start image downloader without fileName! URL: " + str(hostPort) + "/" + str(urlArgs))
         messageQueue.put(serverMessageXml)
         return
 
     run = True
+    httpConnection = None
     while(run):
-        errorMessageXmlString = requestUrl(hotPort, urlArgs, useChacheTrick, fileName)
-        if(errorMessageXmlString != None):
-            messageQueue.put(errorMessageXmlString)
+        if(httpConnection == None):
+            try:
+                httpConnection = httplib.HTTPConnection(hostPort, timeout=5)
+            except:
+                serverMessageXml = MiniXml("servermessage", "Failed to open HTTP connection: " + str(hostPort) + "/" + str(urlArgs))
+                messageQueue.put(serverMessageXml)
+        if(httpConnection != None):
+            errorMessageXmlString = requestUrl(httpConnection, hostPort, urlArgs, useChacheTrick, fileName)
+            if(errorMessageXmlString != None):
+                messageQueue.put(errorMessageXmlString)
 
-def requestUrl(hostPort, urlArgs, useChacheTrick, saveFileName):
+def requestUrl(httpConnection, hostPort, urlArgs, useChacheTrick, saveFileName):
     excpectedMimeType = "image/jpg"
     try:
-        httpConnection = httplib.HTTPConnection(hostPort, timeout=5)
         if(useChacheTrick == True):
             urlArgs += "#" + time.time()
         httpConnection.request("GET", urlArgs)

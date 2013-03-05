@@ -176,8 +176,10 @@ class PcnWebHandler(BaseHTTPRequestHandler):
             webPage += "</head>\n"
             webPage += "<body onload=\"JavaScript:startImageUpdate(0.5);\">\n"
             webPage += "<img src=\"?cameraId=0\" id=\"taktImage\" alt=\"Camera image\"><br>\n"
-            for i in range(len(fileNameList)):
-                webPage += "<input id=\"Camera " + str(i) + "\" type=\"button\" value=\"Camera " + str(i) + "\" onclick=\"changeCamera(" + str(i) + ");\"/>\n"
+            numCameras = len(fileNameList)
+            if(numCameras > 1):
+                for i in range(len(fileNameList)):
+                    webPage += "<input id=\"Camera " + str(i) + "\" type=\"button\" value=\"Camera " + str(i) + "\" onclick=\"changeCamera(" + str(i) + ");\"/>\n"
             webPage += "</body></html>\n"
             self._returnHtmlRespose(webPage)
 

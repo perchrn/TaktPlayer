@@ -98,6 +98,10 @@ class PcnWebHandler(BaseHTTPRequestHandler):
     def setup(self):
         self.request.settimeout(10)
         BaseHTTPRequestHandler.setup(self)
+        self._debugCounter = 0
+        self._debugUniqueCounter = 0
+        self._debugTimeStamp = int(time.time() / 100)
+        self._debugLastFileName = ""
 
     def do_GET(self):
         global oldFileNameList
@@ -163,6 +167,16 @@ class PcnWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(fileHandle.read())
             fileHandle.close()
+            self._debugCounter += 1
+            if(self._debugLastFileName != fileName):
+                self._debugUniqueCounter += 1
+                self._debugLastFileName = fileName
+            timeStampId = int(time.time() / 100)
+            if(timeStampId != self._debugTimeStamp):
+                serverMessageXml = MiniXml("servermessage", "DEBUG pcn: Delivered %d images. %d unique." % (self._debugCounter, self._debugUniqueCounter))
+                self._debugTimeStamp = timeStampId
+                self._debugCounter = 0
+                self._debugUniqueCounter = 0
         else:
             serverMessageXml = MiniXml("servermessage", "File not found sending 404: %s" % (fileName))
             self.send_error(404, "Returnfile: File not found: %s" % (fileName))

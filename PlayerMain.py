@@ -438,6 +438,8 @@ class PlayerMain(wx.Frame):
         if(self._eventlogFileHandle != None):
             self._eventlogFileHandle.close()
 
+        self._mediaPool.closeAll()
+
         try:
             if(self._guiServer != None):
                 self._guiServer.requestGuiServerProcessToStop()

@@ -194,9 +194,11 @@ def postXMLFile(urlSignaturer, hostPort, fileType, fileName, xmlString, xmlError
         clientMessageXml = MiniXml(xmlErrorResponseName, "Got exception while posting file: " + fileName)
         if(errno == 10060):
             clientMessageXml.addAttribute("exception", "timeout")
-        elif(errno == 10061):
+        elif((errno == 10061) or (errno == 61)):
             clientMessageXml.addAttribute("exception", "connectionRefused")
-        elif(errno == 11004):
+        elif((errno == 10065) or (errno == 65)):
+            clientMessageXml.addAttribute("exception", "noRouteToHost")
+        elif((errno == 11004) or (errno == 8)):
             clientMessageXml.addAttribute("exception", "resolvError")
         else:
             clientMessageXml.addAttribute("exception", str(errno))

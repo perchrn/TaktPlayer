@@ -235,6 +235,10 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("PlaybackModulation", "None")
         elif(mediaType == "Camera"):
             self._configurationTree.addTextParameter("DisplayMode", "Crop")
+            self._configurationTree.addTextParameter("CameraHost", "127.0.0.1:2025")
+        elif(mediaType == "RemoteCamera"):
+            self._configurationTree.addTextParameter("DisplayMode", "Crop")
+            self._configurationTree.addTextParameter("CameraHost", "127.0.0.1:2025")
         elif(mediaType == "KinectCamera"):
 #            self._configurationTree.addTextParameter("DisplayModeModulation", "None")
             self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")

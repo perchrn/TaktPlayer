@@ -562,7 +562,7 @@ class MidiModulation(object):
     def _getAdsrId(self, mode, attack, decay, sustain, release):
         return (mode, attack, decay, sustain, release)
 
-    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, argument, plussMinus = False):
+    def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, argument = 0.0, plussMinus = False):
         if(combinedId != None):
             sourceId, subId = combinedId
             if(sourceId == ModulationSources.MidiChannel):
@@ -570,6 +570,8 @@ class MidiModulation(object):
             elif(sourceId == ModulationSources.MidiNote):
                 return midiNoteStateHolder.getModulationValue(subId, argument)
             elif(sourceId == ModulationSources.DMX512):
+                if(dmxStateHolder == None):
+                    return 0.0
                 midiChannel = None
                 if(subId[0] == DmxTypes.Channel):
                     midiChannel = midiChannelStateHolder.getMidiChannel() - 1

@@ -2796,6 +2796,7 @@ class ModulationMedia(MediaFile):
         self._configurationTree.addTextParameter("Smoother", "Off")
 
         self._noteModulationHolder = None
+        self._dmxStateHolder = None
         if(self._specialModulationHolder != None):
             self._noteModulationHolder = self._specialModulationHolder.getSubHolder("Note")
         self._sumModulationDestId = None

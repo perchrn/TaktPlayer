@@ -66,7 +66,6 @@ def requestUrl(httpConnection, hostPort, urlArgs, useChacheTrick, saveFileName):
         else:
             clientMessageXml = MiniXml("servermessage", "Server trouble. Server returned status: %d Reason: %s" %(serverResponse.status, serverResponse.reason))
             return clientMessageXml.getXmlString()
-        httpConnection.close()
     except socket.timeout:
         clientMessageXml = MiniXml("servermessage", "Got timeout exception while requesting URL: " + urlArgs)
         clientMessageXml.addAttribute("exception", "timeout")

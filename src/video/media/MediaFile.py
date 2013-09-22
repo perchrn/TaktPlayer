@@ -26,6 +26,7 @@ from multiprocessing import Process, Queue
 from video.media.ImageDownloaderClient import imageDownloaderProcess
 from utilities.MiniXml import stringToXml
 from Queue import Empty
+import random
 
 try:
     import freenect #@UnresolvedImport
@@ -99,6 +100,7 @@ class MediaFile(object):
         mediaSettingsHolder.captureImage = createMat(self._internalResolutionX, self._internalResolutionY)
         mediaSettingsHolder.captureMask = None
         mediaSettingsHolder.currentFrame = 0
+        mediaSettingsHolder.lastNoneRandomFrame = -1
         mediaSettingsHolder.startSongPosition = 0.0
 
         mediaSettingsHolder.lastFramePos = 0.0
@@ -2432,6 +2434,10 @@ class ImageSequenceFile(MediaFile):
         seqMode = self._configurationTree.getValue("SequenceMode")
         if(seqMode == "ReTrigger"):
             self._sequenceMode = ImageSequenceMode.ReTrigger
+        elif(seqMode == "ReTriggerRandom"):
+            self._sequenceMode = ImageSequenceMode.ReTriggerRandom
+        elif(seqMode == "TimeRandom"):
+            self._sequenceMode = ImageSequenceMode.TimeRandom
         elif(seqMode == "Modulation"):
             self._sequenceMode = ImageSequenceMode.Modulation
         else:
@@ -2451,6 +2457,7 @@ class ImageSequenceFile(MediaFile):
                 mediaSettingsHolder.startSongPosition = startSpp
                 self._resetEffects(mediaSettingsHolder, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder)
                 mediaSettingsHolder.triggerSongPosition = startSpp
+                mediaSettingsHolder.noteTriggerCounter = 0
             else:
                 mediaSettingsHolder.noteTriggerCounter += 1
                 mediaSettingsHolder.triggerSongPosition = startSpp
@@ -2478,8 +2485,26 @@ class ImageSequenceFile(MediaFile):
             unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
             modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
             mediaSettingsHolder.currentFrame = int(modifiedFramePos / self._numberOfFrames) % self._numberOfFrames
+        elif(self._sequenceMode == ImageSequenceMode.TimeRandom):
+            unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
+            modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
+            oldNoneRandomFrame = mediaSettingsHolder.lastNoneRandomFrame
+            mediaSettingsHolder.lastNoneRandomFrame = int(modifiedFramePos / self._numberOfFrames) % self._numberOfFrames
+            if((oldNoneRandomFrame != mediaSettingsHolder.lastNoneRandomFrame) and (self._numberOfFrames > 1)):
+                oldCurrentFrame = mediaSettingsHolder.currentFrame
+                mediaSettingsHolder.currentFrame = int(random.random() * self._numberOfFrames)
+                while(oldCurrentFrame == mediaSettingsHolder.currentFrame):
+                    mediaSettingsHolder.currentFrame = int(random.random() * self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceMode.ReTrigger):
             mediaSettingsHolder.currentFrame =  (mediaSettingsHolder.noteTriggerCounter % self._numberOfFrames)
+        elif(self._sequenceMode == ImageSequenceMode.ReTriggerRandom):
+            oldNoneRandomFrame = mediaSettingsHolder.lastNoneRandomFrame
+            mediaSettingsHolder.lastNoneRandomFrame =  (mediaSettingsHolder.noteTriggerCounter % self._numberOfFrames)
+            if((oldNoneRandomFrame != mediaSettingsHolder.lastNoneRandomFrame) and (self._numberOfFrames > 1)):
+                oldCurrentFrame = mediaSettingsHolder.currentFrame
+                mediaSettingsHolder.currentFrame = int(random.random() * self._numberOfFrames)
+                while(oldCurrentFrame == mediaSettingsHolder.currentFrame):
+                    mediaSettingsHolder.currentFrame = int(random.random() * self._numberOfFrames)
         elif(self._sequenceMode == ImageSequenceMode.Modulation):
             mediaSettingsHolder.currentFrame = int(self.getPlaybackModulation(currentSongPosition, midiChannelState, midiNoteState, dmxState) * (self._numberOfFrames - 1))
 
@@ -2796,6 +2821,7 @@ class ModulationMedia(MediaFile):
         self._configurationTree.addTextParameter("Smoother", "Off")
 
         self._noteModulationHolder = None
+        self._dmxStateHolder = None
         if(self._specialModulationHolder != None):
             self._noteModulationHolder = self._specialModulationHolder.getSubHolder("Note")
         self._sumModulationDestId = None

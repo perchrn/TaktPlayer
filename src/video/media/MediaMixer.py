@@ -302,10 +302,10 @@ class MediaMixer(object):
                     postCtrlValues = self._mediaTracksPostEffectControllerValues[midiChannel]
                     if(preCtrlValues == None):
                         if(effects[1] != None):
-                            preCtrlValues = effects[1].getValues(midiTime, midiChannelState, midiNoteState, dmxState, self._midiStateHolder.getDmxState(), self._specialModulationHolder)
+                            preCtrlValues = effects[1].getValues(midiTime, midiChannelState, midiNoteState, dmxState, self._specialModulationHolder)
                     if(postCtrlValues == None):
                         if(effects[4] != None):
-                            postCtrlValues = effects[4].getValues(midiTime, midiChannelState, midiNoteState, dmxState, self._midiStateHolder.getDmxState(), self._specialModulationHolder)
+                            postCtrlValues = effects[4].getValues(midiTime, midiChannelState, midiNoteState, dmxState, self._specialModulationHolder)
                     if(imageMix == None):
                         imageTest = currenMedia.getImage(currenMediaState)
                         if(imageTest != None):

@@ -111,10 +111,10 @@ class VideoLoopMode:
         return self.getChoices()[0]
 
 class ImageSequenceMode:
-    Time, ReTrigger, Modulation = range(3)
+    Time, TimeRandom, ReTrigger, ReTriggerRandom, Modulation = range(5)
 
     def getChoices(self):
-        return ["Time", "ReTrigger", "Modulation"]
+        return ["Time", "TimeRandom", "ReTrigger", "ReTriggerRandom", "Modulation"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):

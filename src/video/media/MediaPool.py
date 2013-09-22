@@ -335,7 +335,7 @@ class MediaPool(object):
                 oldMedia = self._mediaTracks[midiChannel]
                 oldMediaState = self._mediaTrackStateHolders[midiChannel]
                 if((newMedia != None) and (newMedia.getType() == "Modulation")):
-                    newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, midiChannelState, noteIsNew)
+                    newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState, noteIsNew)
                     newMedia = oldMedia
                     noteMediaIsModulationType = True
                 if(oldMedia == None):

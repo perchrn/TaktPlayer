@@ -1527,9 +1527,9 @@ class SpriteMediaBase(MediaFile):
                 width = int(sourceX * zoom)
                 height = int(sourceY * zoom)
                 xMovmentRange = self._internalResolutionX + sourceX
-                yMovmentRange = self._internalResolutionY + sourceX
+                yMovmentRange = self._internalResolutionY + sourceY
                 left = int(xMovmentRange * posX) - sourceX
-                top = int(yMovmentRange * (1.0 - posY)) - sourceX
+                top = int(yMovmentRange * (1.0 - posY)) - sourceY
                 if(zoom < 1.0):
                     left = left + int((sourceX - width) / 2)
                     top = top + int((sourceY - height) / 2)

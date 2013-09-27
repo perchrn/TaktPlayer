@@ -26,6 +26,7 @@ import re
 from configurationGui.UtilityDialogs import ThreeChoiceMessageDialog,\
     updateChoices
 from configurationGui.CurveGui import CurveGui
+from warnings import catch_warnings
 
 class GlobalConfig(object):
     def __init__(self, configParent, mainConfig, specialModulationHolder, effectsModulation):
@@ -1038,7 +1039,10 @@ This only affect Note media after switching media and not retrigger same Note. T
                 text = "\"%s\" already exists!!! Do you want to overwrite?" % (saveName)
                 dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Overwrite?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                dlg.Destroy()
+                try:
+                    dlg.Destroy()
+                except:
+                    pass
                 if(result == False):
                     cancel = True
                 else:
@@ -1048,7 +1052,10 @@ This only affect Note media after switching media and not retrigger same Note. T
                             text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                             dlg = ThreeChoiceMessageDialog(self._mainEffectsPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
                             dlg.ShowModal()
-                            dlg.Destroy()
+                            try:
+                                dlg.Destroy()
+                            except:
+                                pass
                             if(self._dialogResult == 1):
                                 moveOne = True
                             elif(self._dialogResult == 2):
@@ -1057,14 +1064,20 @@ This only affect Note media after switching media and not retrigger same Note. T
                             text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                             dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                             result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                            dlg.Destroy()
+                            try:
+                                dlg.Destroy()
+                            except:
+                                pass
                             if(result == True):
                                 move = True
                     else:
                         text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
                         dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                         result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                        dlg.Destroy()
+                        try:
+                            dlg.Destroy()
+                        except:
+                            pass
                         if(result == True):
                             rename = True
             else:
@@ -1074,7 +1087,10 @@ This only affect Note media after switching media and not retrigger same Note. T
                         text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                         dlg = ThreeChoiceMessageDialog(self._mainEffectsPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
                         dlg.ShowModal()
-                        dlg.Destroy()
+                        try:
+                            dlg.Destroy()
+                        except:
+                            pass
                         if(self._dialogResult == 1):
                             moveOne = True
                         elif(self._dialogResult == 2):
@@ -1083,14 +1099,20 @@ This only affect Note media after switching media and not retrigger same Note. T
                         text = "Do you want to move all instances of \"%s\" to the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                         dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Move?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                         result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                        dlg.Destroy()
+                        try:
+                            dlg.Destroy()
+                        except:
+                            pass
                         if(result == True):
                             move = True
                 else:
                     text = "Do you want to rename \"%s\" to the new configuration \"%s\" (a copy will be made if you select No)" % (self._startConfigName, saveName)
                     dlg = wx.MessageDialog(self._mainEffectsPlane, text, 'Rename?', wx.YES_NO | wx.ICON_QUESTION) #@UndefinedVariable
                     result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
-                    dlg.Destroy()
+                    try:
+                        dlg.Destroy()
+                    except:
+                        pass
                     if(result == True):
                         rename = True
         effectName = self._effectNameField.GetValue()

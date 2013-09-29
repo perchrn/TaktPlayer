@@ -152,7 +152,7 @@ class MediaFile(object):
             elif(effect1Name == "Curve"):
                 mediaSettingsHolder.effect1.setExtraConfig(self._effect1Settings.getExtraValues())
             effect2Name = self._effect2Settings.getEffectName()
-            if((mediaSettingsHolder.effect2 == None) or (effect2Name != self._effect2Settings.getEffectName())):
+            if((mediaSettingsHolder.effect2 == None) or (mediaSettingsHolder.effect2.getName() != effect2Name)):
                 mediaSettingsHolder.effect2 = getEffectByName(effect2Name, self._effect2TemplateName, self._configurationTree, self._effectImagesConfigurationTemplates, self._specialModulationHolder, self._internalResolutionX, self._internalResolutionY)
             if(effect2Name == "Zoom"):
                 mediaSettingsHolder.effect2.setExtraConfig(self._effect2Settings.getExtraValues())

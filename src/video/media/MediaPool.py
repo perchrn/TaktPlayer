@@ -198,7 +198,7 @@ class MediaPool(object):
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "Camera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
-                        mediaFile = RemoteCameraInput(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
+                        mediaFile = CameraInput(fileName, self._midiTiming,  self._timeModulationConfiguration, self._specialModulationHolder, self._effectsConfigurationTemplates, self._effectImagesConfigurationTemplates, self._mediaFadeConfigurationTemplates, clipConf, self._internalResolutionX, self._internalResolutionY, self._videoDirectory)
                         mediaFile.openFile(midiLength)
                     elif(mediaType == "RemoteCamera"):
                         clipConf = self._configurationTree.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)

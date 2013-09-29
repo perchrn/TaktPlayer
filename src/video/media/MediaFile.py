@@ -1850,6 +1850,13 @@ class OpenCvCameras(object):
                 self._cameraFrameRates[cameraId] = int(cv.GetCaptureProperty(self._cameraList[cameraId], cv.CV_CAP_PROP_FPS))
             except:
                 traceback.print_exc()
+        else:
+            try:
+                captureImage = cv.QueryFrame(self._cameraList[cameraId])
+                if(captureImage != None):
+                    openOk = True
+            except:
+                traceback.print_exc()
         return openOk
 
     def getFirstImage(self, cameraId):

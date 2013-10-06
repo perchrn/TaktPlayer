@@ -15,7 +15,6 @@ import socket
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import time
 import cgi
-import SocketServer
 from SocketServer import TCPServer
 
 

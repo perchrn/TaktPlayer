@@ -15,6 +15,8 @@ import socket
 from utilities.UrlSignature import UrlSignature, getDefaultUrlSignaturePasswd
 import time
 import cgi
+import SocketServer
+from SocketServer import TCPServer
 
 
 webInputQueue = None
@@ -23,6 +25,10 @@ urlSignaturer = None
 taktPlayerAppDataDirectory = ""
 
 class ErrorHandelingHTTPServer(HTTPServer):
+    def server_activate(self):
+        self.allow_reuse_address = True
+        TCPServer.server_activate(self)
+
     def handle_error(self, request, client_address):
         """Handle socket errors.    """
         import traceback

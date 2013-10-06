@@ -52,7 +52,7 @@ class UrlSignature(object):
             if(abs(time.time() - queryTime) < 30.0):
                 return query
             else:
-                print "abs(time.time() - queryTime) >= 30.0 " + str(abs(time.time() - queryTime)) + " time: " + str(time.time()) + "queryTime: " + str(queryTime)
+                print "abs(time.time() - queryTime) >= 30.0 " + str(abs(time.time() - queryTime)) + " time: " + str(time.time()) + " queryTime: " + str(queryTime)
         else:
             print "self._getSignature(query) != querySignature " + str(self._getSignature(query)) + " X " + str(querySignature)
         return None

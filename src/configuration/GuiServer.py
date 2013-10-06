@@ -24,10 +24,6 @@ urlSignaturer = None
 taktPlayerAppDataDirectory = ""
 
 class ErrorHandelingHTTPServer(HTTPServer):
-    def server_activate(self):
-        self.allow_reuse_address = True
-        TCPServer.server_activate(self)
-
     def handle_error(self, request, client_address):
         """Handle socket errors.    """
         import traceback
@@ -57,6 +53,11 @@ class PcnWebHandler(BaseHTTPRequestHandler):
     def setup(self):
         self.request.settimeout(10)
         BaseHTTPRequestHandler.setup(self)
+
+    def address_string(self):
+        # avoiding dns lookup here
+        host, _ = self.client_address[:2]
+        return host
 
     def do_GET(self):
         parsed_path = urlparse.urlparse(self.path)

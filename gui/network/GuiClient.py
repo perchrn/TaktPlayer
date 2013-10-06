@@ -152,9 +152,11 @@ def requestUrl(hostPort, urlArgs, excpectedMimeType, appDataDirectory=None, xmlE
         description = ""
         if(errno == 10060):
             exception =  "timeout"
-        elif(errno == 10061):
+        elif((errno == 10061) or (errno == 61)):
             exception = "connectionRefused"
-        elif(errno == 11004):
+        elif((errno == 10065) or (errno == 65)):
+            exception = "noRouteToHost"
+        elif((errno == 11004) or (errno == 8)):
             exception = "resolvError"
         else:
             exception = str(errno)

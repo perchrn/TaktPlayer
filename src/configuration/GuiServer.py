@@ -45,7 +45,7 @@ class ErrorHandelingHTTPServer(HTTPServer):
         else:
             print '-'*40
             print 'Exception happened during processing of request from' + str(client_address)
-            traceback.print_exc() # XXX But this goes to stderr!
+            print traceback.format_exc() # XXX But this goes to stderr!
             print '-'*40
 
 class PcnWebHandler(BaseHTTPRequestHandler):
@@ -323,6 +323,7 @@ def guiWebServerProcess(host, port, passwd, appDataDir, serverMessageQueue, serv
     global webOutputQueue
     global urlSignaturer
     global taktPlayerAppDataDirectory
+    import traceback
     webInputQueue = webIQ
     webOutputQueue = webOQ
     urlSignaturer = UrlSignature(passwd)
@@ -336,6 +337,8 @@ def guiWebServerProcess(host, port, passwd, appDataDir, serverMessageQueue, serv
         try:
             server.handle_request()
         except:
+            serverMessageXml = MiniXml("servermessage", "Handle request exception! " + traceback.format_exc())
+            serverMessageQueue.put(serverMessageXml.getXmlString())
             pass
         try:
             result = serverCommandQueue.get_nowait()

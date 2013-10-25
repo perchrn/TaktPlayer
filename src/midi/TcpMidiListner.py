@@ -5,6 +5,7 @@ Created on 12. des. 2011
 '''
 
 import socket
+import struct
 import time
 from multiprocessing import Process, Queue
 from Queue import Empty
@@ -19,10 +20,10 @@ def networkDaemon(host, port, useBroadcast, outputQueue, commandQueue, logQueue)
         midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         host = ''
 #    else:
-#        processLogger.error("DEBUG pcn: Setting up multicast for: %s:%d" % (host, port))
+#        logQueue.put_nowait("DEBUG pcn: Setting up multicast for: %s:%d" % (host, port))
 #        midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#        midiSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 #        mcastAddress = host
-#        host = ''
     try:
         midiSocket.bind((host, port))
     except:
@@ -99,7 +100,6 @@ class TcpMidiListner(object):
         print "Starting TcpMidiListner daemon"
         self._midiListnerProcess = Process(target=networkDaemon, args=(host, port, useBroadcast, self._midiQueue, self._midiListnerCommandQueue, self._midiListnerPrintQueue))
         self._midiListnerProcess.name = "midiUdpListner"
-#        self._midiListnerProcess.daemon = True
         self._midiListnerProcess.start()
 
     def stopDaemon(self):

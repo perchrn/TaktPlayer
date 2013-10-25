@@ -2547,8 +2547,6 @@ class ImageAddEffect(object):
 
 #fix rays y only (or add another ray effect?)
 
-#class EchoEffect2(object):
-
 #class CromaKeyGeneratorEffect(object):
 
 #??? TODO ???
@@ -2563,8 +2561,6 @@ class ImageAddEffect(object):
 
 #Debugging.
 #Full path bug: could be when importing multipple files (DnD)
-
-#Make Rygg I Rand project (started)
 
 #No screensaver fix
 

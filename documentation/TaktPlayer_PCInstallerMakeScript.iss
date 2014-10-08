@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TaktPlayer"
-#define MyAppVersion "1.1.0"
-#define MyAppVersionForFlie "1_1_0"
+#define MyAppVersion "1.1.2"
+#define MyAppVersionForFlie "1_1_2"
 #define MyAppPublisher "Takt Industries AS"
 #define MyAppURL "http://www.taktindustries.com/"
 #define MyAppExeName "TaktPlayer.exe"
@@ -28,7 +28,7 @@ SetupIconFile=C:\Users\pcn\Workspace\MusicalVideoPlayer_Player\graphics\TaktPlay
 Compression=lzma/Max
 SolidCompression=true
 MinVersion=5.1.2600
-AppCopyright=Takt Industries AS 2013
+AppCopyright=Takt Industries AS 2014
 AppVerName={#MyAppVersion}
 PrivilegesRequired=none
 

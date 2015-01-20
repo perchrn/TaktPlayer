@@ -112,7 +112,8 @@ class PlayerConfiguration(object):
         self._serverConfig.setValue("MidiPort", midiPort)
         self._serverConfig.setValue("WebBindAddress", webAddress)
         self._serverConfig.setValue("WebPort", webPort)
-        validator = DmxStateHolder((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse))
+        validator = DmxStateHolder((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse, None), None)
+
         dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse, daemonBinary = validator.validateSettings((dmxChannelStart, dmxNumChannels, dmxChannelWidth, dmxUniverse, daemonBinary))
         self._serverConfig.setValue("DmxUniverse", dmxUniverse)
         self._serverConfig.setValue("DmxChannelStart", dmxChannelStart)

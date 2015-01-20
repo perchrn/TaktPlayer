@@ -8,10 +8,10 @@ import time
 class MidiTiming(object):
     def __init__(self):
         #MIDI timing variables:
-        self._midiOurSongPosition = 0;
+        self._midiOurSongPosition = 0
         self._midiLastTimeEventWasSPP = False
         self._vstStopDetectionCount = 0
-#        self._midiTimeing = (4,4);
+#        self._midiTimeing = (4,4)
         self._midiTicksPerQuarteNote = 24
         self._midiTicksPerBar = self._midiTicksPerQuarteNote * 4
         self._midiTicksTimestampsLength = 96

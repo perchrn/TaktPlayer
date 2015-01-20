@@ -10,6 +10,7 @@ from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton, addTrackBu
     PcnPopupMenu, EVT_DOUBLE_CLICK_EVENT
 
 from network.GuiClient import GuiClient
+from network.CueWebServer import CueWebServer
 from midi.MidiUtilities import noteToNoteString
 import time
 from configurationGui.Configuration import Configuration
@@ -440,6 +441,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._midiStateHolder = DummyMidiStateHolder()
         self._midiListner = None
         self.setupMidiListner()
+        self.setupCueServer()
 
         self._updateTimer = wx.Timer(self, -1) #@UndefinedVariable
         self._updateTimer.Start(1000 / 30)#30 times a second
@@ -562,6 +564,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         host, port = self._configuration.getWebConfig()
         self._guiClient.startGuiClientProcess(host, port, None)
 
+    def setupCueServer(self):
+        self._cueServer = CueWebServer(self._configuration)
+        self._cueServer.startCueWebServerProcess()
+        self._cueServer.updateFromConfig(self._configuration, self._activeConfig)
+
     def setupMidiListner(self):        
         self._midiListner = TcpMidiListner(self._midiTiming, self._midiStateHolder)
         bcast, host, port = self._configuration.getMidiListenConfig()
@@ -595,6 +602,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._requestConfigList()
         self._requestLatestControllers()
         self._midiListner.getData(False)
+        self._cueServer.processCueWebServerMessages()
         self._updateTimingDisplay()
         self._checkConfigState()
 
@@ -817,6 +825,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             self._globalConfig.updateEffectList(None)
                             self._globalConfig.updateFadeList(None)
                             self._globalConfig.updateEffectImageList()
+                            self._cueServer.updateFromConfig(self._configuration, self._activeConfig)
 #                            print "#" * 150
 #                            self._configuration.printConfiguration()
 #                            print "#" * 150
@@ -1036,6 +1045,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._inputButton.setBitmaps(self._inputGreenBitmap, self._inputGreenBitmap)
         else:
             self._inputButton.setBitmaps(self._inputGrayBitmap, self._inputGrayBitmap)
+        self._cueServer.updateTimingInfo(bar, beat)
 
 #TODO: Better refresh...
 #        self._scrollingEditAreaPanel.Layout()
@@ -1675,6 +1685,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onClose(self, event):
         print "User has closed window!"
+        self._cueServer.requestCueWebServerProcessToStop()
         self._guiClient.requestGuiClientProcessToStop()
         self._midiListner.requestTcpMidiListnerProcessToStop()
         if(self._statusQueue != None):
@@ -1689,7 +1700,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._mainSizer.Hide(self._scrollingKeyboardPannel)
 
     def _onShutdownTimer(self, event):
-        if(self._guiClient.hasGuiClientProcessToShutdownNicely() and self._midiListner.hasTcpMidiListnerProcessToShutdownNicely()):
+        if(self._guiClient.hasGuiClientProcessToShutdownNicely() and self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() and self._cueServer.hasCueWebServerProcessShutdownNicely()):
             print "All done."
             if(sys.platform != "darwin"):
                 self.Destroy()
@@ -1697,10 +1708,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):
-                if(self._guiClient.hasGuiClientProcessToShutdownNicely() != False):
+                if(self._guiClient.hasGuiClientProcessToShutdownNicely() == False):
                     self._guiClient.forceGuiClientProcessToStop()
-                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() != False):
+                if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False):
                     self._midiListner.forceTcpMidiListnerProcessToStop()
+                if(self._cueServer.hasCueWebServerProcessShutdownNicely() == False):
+                    self._cueServer.forceCueWebServerProcessToStop()
                 if(sys.platform != "darwin"):
                     self.Destroy()
                 wx.Exit() #@UndefinedVariable

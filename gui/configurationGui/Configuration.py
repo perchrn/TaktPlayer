@@ -77,6 +77,10 @@ class Configuration(object):
         self._guiConfig.addTextParameter("WindowPosition", "-1,-1") #auto, xpos,ypos, 0,0 etc.
         self._guiConfig.addBoolParameter("ShowDMX", False)
         self._guiConfig.addBoolParameter("ShowKinect", False)
+        self._cueServerConfig = self._guiConfigurationTree.addChildUnique("CueServer")
+        self._cueServerConfig.addTextParameter("CueWebBindAddress", "0.0.0.0")
+        self._cueServerConfig.addIntParameter("CueWebPort", 2222)
+        self._cueServerConfig.addTextParameter("CueStreamList", "Main")
 
     def setPlayerConfig(self, playerHost, midiPort, webPort, midiOn):
         self._guiPlayerConfig.setValue("PlayerHost", playerHost)
@@ -201,6 +205,15 @@ class Configuration(object):
 
     def setAutoSendEnable(self, newValue):
         self._guiConfig.setValue("AutoSend", newValue)
+
+    def getCueWebServerAddress(self):
+        return self._cueServerConfig.getValue("CueWebBindAddress")
+
+    def getCueWebServerPort(self):
+        return self._cueServerConfig.getValue("CueWebPort")
+
+    def getCueStreamList(self):
+        return self._cueServerConfig.getValue("CueStreamList").split(",")
 
     def setFromXml(self, config):
         self._playerConfigurationTree.setFromXml(config)

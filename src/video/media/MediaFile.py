@@ -817,6 +817,7 @@ class MediaSettings(object):
 class MediaGroup(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
         self._mediaList = []
+        self._mediaListLength = 0
         MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
         self._getMediaCallback = None
         self._noteList = fileName.split(",")
@@ -857,13 +858,13 @@ class MediaGroup(MediaFile):
             self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder)
             mediaSettingsHolder.startSongPosition = startSpp
             self._resetEffects(mediaSettingsHolder, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder)
-            for i in range(len(self._mediaList)):
+            for i in range(self._mediaListLength):
                 media = self._mediaList[i]
                 mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
                 media.setStartPosition(startSpp, mediaSettings, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder, noteIsNew)
 
     def releaseMedia(self, mediaSettingsHolder):
-        for i in range(len(self._mediaList)):
+        for i in range(self._mediaListLength):
             media = self._mediaList[i]
             mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
             media.releaseMedia(mediaSettings)
@@ -884,13 +885,13 @@ class MediaGroup(MediaFile):
             mediaSettingsHolder.image = None
             return noteDone
 
-        for i in range(len(self._mediaList)):
+        for i in range(self._mediaListLength):
             media = self._mediaList[i]
             mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
             media.skipFrames(mediaSettings, currentSongPosition, midiNoteState, dmxState, midiChannelState, timeMultiplyer)
 
         imageMix = None
-        for i in range(len(self._mediaList)):
+        for i in range(self._mediaListLength):
             media = self._mediaList[i]
             mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
             mixLevel = 1.0
@@ -944,20 +945,21 @@ class MediaGroup(MediaFile):
             media = self._getMediaCallback(noteId)
             if(media != None):
                 newMediaList.append(media)
-            if(i < len(self._mediaList)):
+            if(i < self._mediaListLength):
                 oldMedia = self._mediaList[i]
                 if(oldMedia != media):
                     mediaListUpdated = True
-        if(len(self._mediaList) != len(newMediaList)):
+        if(self._mediaListLength != len(newMediaList)):
             mediaListUpdated = True
         if(mediaListUpdated == True):
             subMediaSettingsList = self._mediaSettingsHolder.getSettingsList()
             for i in range(len(subMediaSettingsList)):
                 mediaSettings = subMediaSettingsList[i]
-                for j in range(len(self._mediaList)):
+                for j in range(self._mediaListLength):
                     media = self._mediaList[j]
                     media.releaseMedia(mediaSettings)
             self._mediaList = newMediaList
+            self._mediaListLength = len(self._mediaList)
             for mediaSettings in self._mediaSettingsHolder.getSettingsList():
                 if(mediaSettings.needsUpdate() == True):
                     for mediaSettingsSettings in mediaSettings.mediaSettingsList:
@@ -966,6 +968,147 @@ class MediaGroup(MediaFile):
                     for media in self._mediaList:
                         mediaSettings.mediaSettingsList.append(media.getMediaStateHolder())
         MediaFile.doPostConfigurations(self)
+
+class MediaMatrix(MediaFile):
+    def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
+        self._mediaList = []
+        self._mediaListLength = 0
+        MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
+        self._getMediaCallback = None
+        self._noteList = fileName.split(",")
+        self._groupName = fileName
+
+        self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
+        self._midiModulation.setModulationReceiver("MediaSelectModulation", "LFO.Triangle.4.0|0.0|0.0|1.0")#None
+        self._mediaSelectModulationId = None
+
+        self._getConfiguration()
+
+    def _setupMediaSettingsHolder(self, mediaSettingsHolder):
+        MediaFile._setupMediaSettingsHolder(self, mediaSettingsHolder)
+        mediaSettingsHolder.mediaSettingsList = []
+        for media in self._mediaList:
+            mediaSettingsHolder.mediaSettingsList.append(media.getMediaStateHolder())
+
+    def _getConfiguration(self):
+        MediaFile._getConfiguration(self)
+        self._mediaSelectModulationId = self._midiModulation.connectModulation("MediaSelectModulation")
+
+    def getType(self):
+        return "Matrix"
+
+    def getThumbnailUniqueString(self):
+        groupIdString = self._groupName + ":"
+        for media in self._mediaList:
+            if(groupIdString != ""):
+                groupIdString += ","
+            groupIdString += "," + media.getThumbnailUniqueString()
+        return groupIdString
+
+    def close(self):
+        pass
+
+    def setStartPosition(self, startSpp, mediaSettingsHolder, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder, noteIsNew):
+        if(noteIsNew):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder)
+            mediaSettingsHolder.startSongPosition = startSpp
+            self._resetEffects(mediaSettingsHolder, songPosition, midiNoteStateHolder, dmxStateHolder, midiChannelStateHolder)
+
+    def releaseMedia(self, mediaSettingsHolder):
+        for i in range(self._mediaListLength):
+            media = self._mediaList[i]
+            mediaSettings = mediaSettingsHolder.mediaSettingsList[i]
+            media.releaseMedia(mediaSettings)
+        mediaSettingsHolder.release()
+
+    def skipFrames(self, mediaSettingsHolder, currentSongPosition, midiNoteState, dmxState, midiChannelState, timeMultiplyer = None):
+        if(mediaSettingsHolder.guiCtrlStateHolder == None):
+            self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, dmxState, midiChannelState)
+
+        syncLength = self._syncLength
+        if(timeMultiplyer != None):
+            syncLength = self._syncLength * timeMultiplyer
+
+        fadeValue, noteDone = self._getFadeValue(currentSongPosition, midiNoteState, dmxState, midiChannelState)
+        if(fadeValue < 0.00001):
+            mediaSettingsHolder.image = None
+            return noteDone
+
+        unmodifiedPos = (currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength
+        modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
+        framePos = modifiedPos % 1.0
+
+        mediaSelectModulationValue = framePos#self._midiModulation.getModlulationValue(self._mediaSelectModulationId, midiChannelState, midiNoteState, dmxState, currentSongPosition, self._specialModulationHolder)
+        selectedMediaId = int((mediaSelectModulationValue * self._mediaListLength))
+        if(selectedMediaId >= self._mediaListLength):
+            selectedMediaId = self._mediaListLength - 1
+        print "DEBUG pcn: " + str(framePos) + " -> " + str(selectedMediaId) + "  of " + str(self._mediaListLength) + "  sync " + str(syncLength) + "  sync2 " + str(self._syncLength)
+        media = self._mediaList[selectedMediaId]
+        mediaSettings = mediaSettingsHolder.mediaSettingsList[selectedMediaId]
+        currentFrame = media.getFramePos(framePos)
+        media.actuallySkipFrames(currentFrame, mediaSettings.currentFrame, mediaSettings)
+        mediaSettings.currentFrame = currentFrame
+
+        imageMix = mediaSettings.captureImage
+
+        if(imageMix != None):
+            copyOrResizeImage(imageMix, mediaSettingsHolder.captureImage)
+        else:
+            cv.SetZero(mediaSettingsHolder.captureImage)
+
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, dmxState, self._wipeSettings, fadeValue)
+
+        return False
+
+    def setGetMediaCallback(self, callback):
+        self._getMediaCallback = callback
+
+    def openFile(self, midiLength):
+        self._mediaList = []
+        fontPath = findOsFontPath()
+        try:
+            fontPILImage, _ = generateTextImageAndMask("Group\\n" + self._groupName, "Arial", fontPath, 12, 255, 255, 255)
+        except:
+            traceback.print_exc()
+            raise MediaError("Error generating text!")
+        labelImage = pilToCvImage(fontPILImage)
+        copyOrResizeImage(labelImage, self._mediaSettingsHolder.captureImage)
+        self._firstImage = self._mediaSettingsHolder.captureImage
+        self._fileOk = True
+
+    def doPostConfigurations(self):
+        newMediaList = []
+        mediaListUpdated = False
+        for i in range(len(self._noteList)):
+            noteString = self._noteList[i]
+            noteId = noteStringToNoteNumber(noteString)
+            media = self._getMediaCallback(noteId)
+            if(media != None):
+                newMediaList.append(media)
+            if(i < self._mediaListLength):
+                oldMedia = self._mediaList[i]
+                if(oldMedia != media):
+                    mediaListUpdated = True
+        if(self._mediaListLength != len(newMediaList)):
+            mediaListUpdated = True
+        if(mediaListUpdated == True):
+            subMediaSettingsList = self._mediaSettingsHolder.getSettingsList()
+            for i in range(len(subMediaSettingsList)):
+                mediaSettings = subMediaSettingsList[i]
+                for j in range(self._mediaListLength):
+                    media = self._mediaList[j]
+                    media.releaseMedia(mediaSettings)
+            self._mediaList = newMediaList
+            self._mediaListLength = len(self._mediaList)
+            for mediaSettings in self._mediaSettingsHolder.getSettingsList():
+                if(mediaSettings.needsUpdate() == True):
+                    for mediaSettingsSettings in mediaSettings.mediaSettingsList:
+                        mediaSettingsSettings.release()
+                    mediaSettings.mediaSettingsList = []
+                    for media in self._mediaList:
+                        mediaSettings.mediaSettingsList.append(media.getMediaStateHolder())
+        MediaFile.doPostConfigurations(self)
+
 
 class ImageFile(MediaFile):
     def __init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir):
@@ -2598,14 +2741,20 @@ class VideoLoopFile(MediaFile):
         if(mediaSettingsHolder.guiCtrlStateHolder == None):
             self._setupGuiCtrlStateHolder(mediaSettingsHolder, midiNoteState, dmxState, midiChannelState)
 
-        syncLength = self._syncLength
+        if(self._syncLength < 0.00001):
+            if(self._syncLength > -0.00001):
+                syncLength = -1
+            else:
+                syncLength = -self._syncLength
+        else:
+            syncLength = self._syncLength
         if(timeMultiplyer != None):
             syncLength = self._syncLength * timeMultiplyer
-
+    
         unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
         modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
-
         framePos = int(modifiedFramePos)
+
         if(self._loopMode == VideoLoopMode.Normal):
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames
         elif(self._loopMode == VideoLoopMode.Reverse):
@@ -2680,7 +2829,7 @@ class VideoLoopFile(MediaFile):
                 relativePos = loopPos - abs(startLength)
                 if(noteLength > 0.0):
                     restLength = noteLength - abs(startLength)
-                    if(loopLength < 0.0001):
+                    if(loopLength < 0.00001):
                         loopEnd = max(restLength, 0.0)
                         loopLength = None
                     else:
@@ -2713,7 +2862,7 @@ class VideoLoopFile(MediaFile):
                             mediaSettingsHolder.image = None
                             return False
                 else:
-                    if(loopLength < 0.0001):
+                    if(loopLength < 0.00001):
                         loopSubPos = 0.0
                     else:
                         if(pingPong == True):
@@ -2732,24 +2881,30 @@ class VideoLoopFile(MediaFile):
         else: #Normal
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames
 
-        if(lastFrame != mediaSettingsHolder.currentFrame):
-            cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, mediaSettingsHolder.currentFrame)
-            if(mediaSettingsHolder.currentFrame == 0):
+        self.actuallySkipFrames(mediaSettingsHolder.currentFrame, lastFrame, mediaSettingsHolder)
+
+        self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, dmxState, self._wipeSettings, fadeValue)
+        return False
+
+    def getFramePos(self, loopPos):
+        return int(loopPos * self._numberOfFrames) % self._numberOfFrames
+
+    def actuallySkipFrames(self, currentFrame, lastFrame, mediaSettingsHolder):
+        if(lastFrame != currentFrame):
+            cv.SetCaptureProperty(self._videoFile, cv.CV_CAP_PROP_POS_FRAMES, currentFrame)
+            if(currentFrame == 0):
                 copyOrResizeImage(self._firstImage, mediaSettingsHolder.captureImage)
-            elif(mediaSettingsHolder.currentFrame == 1):
+            elif(currentFrame == 1):
                 copyOrResizeImage(self._secondImage, mediaSettingsHolder.captureImage)
             else:
                 captureFrame = cv.QueryFrame(self._videoFile)
                 if(captureFrame != None):
                     copyOrResizeImage(captureFrame, mediaSettingsHolder.captureImage)
                 else:
-                    print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(mediaSettingsHolder.currentFrame) + " of: " + str(self._numberOfFrames)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, dmxState, self._wipeSettings, fadeValue)
-            return False
-        else:
-#            print "DEBUG pcn: Same frame %d for holderId %d" % (mediaSettingsHolder.currentFrame, mediaSettingsHolder._uid)
-            self._applyEffects(mediaSettingsHolder, currentSongPosition, midiChannelState, midiNoteState, dmxState, self._wipeSettings, fadeValue)
-            return False
+                    print "Warning! Bad capture! Keeping last frame instead of frame number: " + str(currentFrame) + " of: " + str(self._numberOfFrames)
+#        else:
+#            print "DEBUG pcn: Same frame %d for holderId %d" % (currentFrame, mediaSettingsHolder._uid)
+        
 
     def openFile(self, midiLength):
         self.openVideoFile(midiLength)

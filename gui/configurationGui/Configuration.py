@@ -20,7 +20,7 @@ class Configuration(object):
         self._effectsModulation = GenericModulationHolder("Effect", self._specialModulationHolder)
 
         self._guiConfigurationTree = ConfigurationHolder("TaktGUI")
-        self._guiConfigurationTree.setSelfclosingTags(['video', 'player', 'gui'])
+        self._guiConfigurationTree.setSelfclosingTags(['video', 'player1', 'player2', 'player3', 'gui'])
         self.setupGuiConfiguration()
         if((configDir != "") and (configDir != None)):
             self._configurationDefaultDirectory = configDir
@@ -57,11 +57,21 @@ class Configuration(object):
         self._configurationDefaultDirectory, taktVideoDefaultDir  = getDefaultDirectories()
         self._taktGuiAppDataDir = self._configurationDefaultDirectory
 
-        self._guiPlayerConfig = self._guiConfigurationTree.addChildUnique("Player")
-        self._guiPlayerConfig.addTextParameter("PlayerHost", "127.0.0.1")
-        self._guiPlayerConfig.addIntParameter("MidiPort", 2020)
-        self._guiPlayerConfig.addIntParameter("WebPort", 2021)
-        self._guiPlayerConfig.addBoolParameter("MidiEnabled", True)
+        self._guiPlayer1Config = self._guiConfigurationTree.addChildUnique("Player1")
+        self._guiPlayer1Config.addTextParameter("PlayerHost1", "127.0.0.1")
+        self._guiPlayer1Config.addIntParameter("MidiPort1", 2020)
+        self._guiPlayer1Config.addIntParameter("WebPort1", 2021)
+        self._guiPlayer1Config.addBoolParameter("MidiEnabled1", True)
+        self._guiPlayer2Config = self._guiConfigurationTree.addChildUnique("Player2")
+        self._guiPlayer2Config.addTextParameter("PlayerHost2", "127.0.0.1")
+        self._guiPlayer2Config.addIntParameter("MidiPort2", 2020)
+        self._guiPlayer2Config.addIntParameter("WebPort2", 2021)
+        self._guiPlayer2Config.addBoolParameter("MidiEnabled2", True)
+        self._guiPlayer3Config = self._guiConfigurationTree.addChildUnique("Player3")
+        self._guiPlayer3Config.addTextParameter("PlayerHost3", "127.0.0.1")
+        self._guiPlayer3Config.addIntParameter("MidiPort3", 2020)
+        self._guiPlayer3Config.addIntParameter("WebPort3", 2021)
+        self._guiPlayer3Config.addBoolParameter("MidiEnabled3", True)
         self._guiVideoConfig = self._guiConfigurationTree.addChildUnique("Video")
         self._guiVideoConfig.addTextParameter("VideoDir", taktVideoDefaultDir)
         self._guiVideoConfig.addTextParameter("FfmpegBinary", os.path.normpath("ffmpeg"))
@@ -77,12 +87,27 @@ class Configuration(object):
         self._guiConfig.addTextParameter("WindowPosition", "-1,-1") #auto, xpos,ypos, 0,0 etc.
         self._guiConfig.addBoolParameter("ShowDMX", False)
         self._guiConfig.addBoolParameter("ShowKinect", False)
+        self._cueServerConfig = self._guiConfigurationTree.addChildUnique("CueServer")
+        self._cueServerConfig.addTextParameter("CueWebBindAddress", "0.0.0.0")
+        self._cueServerConfig.addIntParameter("CueWebPort", 2222)
+        self._cueServerConfig.addTextParameter("CueStreamList", "Main")
 
-    def setPlayerConfig(self, playerHost, midiPort, webPort, midiOn):
-        self._guiPlayerConfig.setValue("PlayerHost", playerHost)
-        self._guiPlayerConfig.setValue("MidiPort", midiPort)
-        self._guiPlayerConfig.setValue("WebPort", webPort)
-        self._guiPlayerConfig.setValue("MidiEnabled", midiOn)
+    def setPlayerConfig(self, hostId, playerHost, midiPort, webPort, midiOn):
+        if(hostId == 3):
+            self._guiPlayer3Config.setValue("PlayerHost3", playerHost)
+            self._guiPlayer3Config.setValue("MidiPort3", midiPort)
+            self._guiPlayer3Config.setValue("WebPort3", webPort)
+            self._guiPlayer3Config.setValue("MidiEnabled3", midiOn)
+        elif(hostId == 2):
+            self._guiPlayer2Config.setValue("PlayerHost2", playerHost)
+            self._guiPlayer2Config.setValue("MidiPort2", midiPort)
+            self._guiPlayer2Config.setValue("WebPort2", webPort)
+            self._guiPlayer2Config.setValue("MidiEnabled2", midiOn)
+        else:
+            self._guiPlayer1Config.setValue("PlayerHost1", playerHost)
+            self._guiPlayer1Config.setValue("MidiPort1", midiPort)
+            self._guiPlayer1Config.setValue("WebPort1", webPort)
+            self._guiPlayer1Config.setValue("MidiEnabled1", midiOn)
 
     def setVideoConfig(self, videoDir, ffmpegBinary, ffmpegH264Options, scaleX, scaleY):
         self._guiVideoConfig.setValue("VideoDir", videoDir)
@@ -105,17 +130,31 @@ class Configuration(object):
         self._guiConfigurationTree.saveConfigFile(self._configurationFile)
 
     def setupMidiSender(self):
-        host, port, mode = self.getMidiConfig()
+        host, port, mode = self.getMidiConfig(1)
         self._midiSender = SendMidiOverNet(host, port, mode)
 
-    def getWebConfig(self):
-        host = self._guiPlayerConfig.getValue("PlayerHost")
-        port = self._guiPlayerConfig.getValue("WebPort")
+    def getWebConfig(self, hostId):
+        if(hostId == 3):
+            host = self._guiPlayer3Config.getValue("PlayerHost3")
+            port = self._guiPlayer3Config.getValue("WebPort3")
+        elif(hostId == 2):
+            host = self._guiPlayer2Config.getValue("PlayerHost2")
+            port = self._guiPlayer2Config.getValue("WebPort2")
+        else:
+            host = self._guiPlayer1Config.getValue("PlayerHost1")
+            port = self._guiPlayer1Config.getValue("WebPort1")
         return (host, port)
 
-    def getMidiConfig(self):
-        host = self._guiPlayerConfig.getValue("PlayerHost")
-        port = self._guiPlayerConfig.getValue("MidiPort")
+    def getMidiConfig(self, hostId):
+        if(hostId == 3):
+            host = self._guiPlayer3Config.getValue("PlayerHost3")
+            port = self._guiPlayer3Config.getValue("MidiPort3")
+        elif(hostId == 2):
+            host = self._guiPlayer2Config.getValue("PlayerHost2")
+            port = self._guiPlayer2Config.getValue("MidiPort2")
+        else:
+            host = self._guiPlayer1Config.getValue("PlayerHost1")
+            port = self._guiPlayer1Config.getValue("MidiPort1")
         mode = SendModes.Mcast #TODO: add multicast mode!
         return (host, port, mode)
 
@@ -190,8 +229,13 @@ class Configuration(object):
     def setEffectStateRequestCallback(self, callback):
         self._effectStateRequestCallback = callback
 
-    def isMidiEnabled(self):
-        return self._guiConfig.getValue("MidiBroadcast")
+    def isMidiEnabled(self, hostId):
+        if(hostId == 3):
+            return self._guiPlayer3Config.getValue("MidiEnabled3")
+        elif(hostId == 2):
+            return self._guiPlayer2Config.getValue("MidiEnabled2")
+        else:
+            return self._guiPlayer1Config.getValue("MidiEnabled1")
 
     def setMidiEnable(self, newValue):
         self._guiConfig.setValue("MidiBroadcast", newValue)
@@ -201,6 +245,15 @@ class Configuration(object):
 
     def setAutoSendEnable(self, newValue):
         self._guiConfig.setValue("AutoSend", newValue)
+
+    def getCueWebServerAddress(self):
+        return self._cueServerConfig.getValue("CueWebBindAddress")
+
+    def getCueWebServerPort(self):
+        return self._cueServerConfig.getValue("CueWebPort")
+
+    def getCueStreamList(self):
+        return self._cueServerConfig.getValue("CueStreamList").split(",")
 
     def setFromXml(self, config):
         self._playerConfigurationTree.setFromXml(config)

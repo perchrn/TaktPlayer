@@ -209,6 +209,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._activeConfig = ""
         self._serverConfigIsSaved = False
         self._updateTitle(self._activeConfig)
+        self._selectedPlayerId = 1
 
         wxIcon = wx.Icon(os.path.normpath("graphics/TaktGui.ico"), wx.BITMAP_TYPE_ICO) #@UndefinedVariable
         self.SetIcon(wxIcon)
@@ -216,6 +217,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._configuration = Configuration(configDir)
         self._globalConfig = self._configuration.getGlobalConfig()
         self._configuration.setLatestMidiControllerRequestCallback(self.getLatestControllers)
+        self._configuration.printConfiguration()
 
         windowSizeX, windowSizeY = self._configuration.getWindowSize()
         configPositionX, configPositionY = self._configuration.getWindowPosition()
@@ -339,6 +341,19 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._midiOffPressedBitmap = wx.Bitmap("graphics/midiOnButtonOffPressed.png") #@UndefinedVariable
         self._midiNoContactBitmap = wx.Bitmap("graphics/midiOnButtonNoContact.png") #@UndefinedVariable
 
+        self._player1ButtonBitmap = wx.Bitmap("graphics/player1Button.png") #@UndefinedVariable
+        self._player1ButtonPressedBitmap = wx.Bitmap("graphics/player1ButtonPressed.png") #@UndefinedVariable
+        self._player1ButtonGreenBitmap = wx.Bitmap("graphics/player1ButtonGreen.png") #@UndefinedVariable
+        self._player1ButtonGreenPressedBitmap = wx.Bitmap("graphics/player1ButtonGreenPressed.png") #@UndefinedVariable
+        self._player2ButtonBitmap = wx.Bitmap("graphics/player2Button.png") #@UndefinedVariable
+        self._player2ButtonPressedBitmap = wx.Bitmap("graphics/player2ButtonPressed.png") #@UndefinedVariable
+        self._player2ButtonGreenBitmap = wx.Bitmap("graphics/player2ButtonGreen.png") #@UndefinedVariable
+        self._player2ButtonGreenPressedBitmap = wx.Bitmap("graphics/player2ButtonGreenPressed.png") #@UndefinedVariable
+        self._player3ButtonBitmap = wx.Bitmap("graphics/player3Button.png") #@UndefinedVariable
+        self._player3ButtonPressedBitmap = wx.Bitmap("graphics/player3ButtonPressed.png") #@UndefinedVariable
+        self._player3ButtonGreenBitmap = wx.Bitmap("graphics/player3ButtonGreen.png") #@UndefinedVariable
+        self._player3ButtonGreenPressedBitmap = wx.Bitmap("graphics/player3ButtonGreenPressed.png") #@UndefinedVariable
+
         self._inputGreenBitmap = wx.Bitmap("graphics/inputIndicatorGreen.png") #@UndefinedVariable
         self._inputGrayBitmap = wx.Bitmap("graphics/inputIndicatorGray.png") #@UndefinedVariable
 
@@ -370,12 +385,21 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._timingField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(70, -1)) #@UndefinedVariable
         self._bpmField = wx.TextCtrl(self._menuPanel, wx.ID_ANY, "N/A", size=(50, -1)) #@UndefinedVariable
         self._inputButton = PcnImageButton(self._menuPanel, self._inputGrayBitmap, self._inputGrayBitmap, (-1, -1), wx.ID_ANY, size=(34, 17)) #@UndefinedVariable
+        self._player1Button = PcnImageButton(self._menuPanel, self._player1ButtonBitmap, self._player1ButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(64, 17)) #@UndefinedVariable
+        self._player1Button.Bind(wx.EVT_BUTTON, self._onPlayer1Button) #@UndefinedVariable
+        self._player2Button = PcnImageButton(self._menuPanel, self._player2ButtonBitmap, self._player2ButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(64, 17)) #@UndefinedVariable
+        self._player2Button.Bind(wx.EVT_BUTTON, self._onPlayer2Button) #@UndefinedVariable
+        self._player3Button = PcnImageButton(self._menuPanel, self._player3ButtonBitmap, self._player3ButtonPressedBitmap, (-1, -1), wx.ID_ANY, size=(64, 17)) #@UndefinedVariable
+        self._player3Button.Bind(wx.EVT_BUTTON, self._onPlayer3Button) #@UndefinedVariable
         self._menuSizer.Add(self._fileButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._sendButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._midiButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._timingField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._bpmField, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
         self._menuSizer.Add(self._inputButton, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._player1Button, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._player2Button, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
+        self._menuSizer.Add(self._player3Button, 0, wx.EXPAND|wx.ALL, 3) #@UndefinedVariable
 
         self._whiteNoteBitmap = wx.Bitmap("graphics/whiteNote.png") #@UndefinedVariable
         self._blackNoteBitmapLeft = wx.Bitmap("graphics/blackNoteLeft.png") #@UndefinedVariable
@@ -559,10 +583,23 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._statusQueue = statusQueue
 
     def setupClientProcess(self):
-        self._guiClient = GuiClient(self._configuration.getAppDataDirectory())
         self._configuration.setEffectStateRequestCallback(self.requestEffectState)
-        host, port = self._configuration.getWebConfig()
-        self._guiClient.startGuiClientProcess(host, port, None)
+        self._guiClient2 = None
+        self._guiClient3 = None
+
+        host, port = self._configuration.getWebConfig(1)
+        self._guiClient1 = GuiClient(self._configuration.getAppDataDirectory())
+        self._guiClient1.startGuiClientProcess(host, port, None)
+        host, port = self._configuration.getWebConfig(2)
+        if(host != None and host != ""):
+            self._guiClient2 = GuiClient(self._configuration.getAppDataDirectory())
+            self._guiClient2.startGuiClientProcess(host, port, None)
+        if(host != None and host != ""):
+            host, port = self._configuration.getWebConfig(3)
+            self._guiClient3 = GuiClient(self._configuration.getAppDataDirectory())
+        self._guiClient3.startGuiClientProcess(host, port, None)
+        
+        self._guiClient = self._guiClient1
 
     def setupCueServer(self):
         self._cueServer = CueWebServer(self._configuration)
@@ -1060,7 +1097,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def _checkConfigState(self):
         if(self._skippedCheckConfigState > 3):
             self._skippedCheckConfigState = 0
-            self._updateMidiButtonColor(self._configuration.isMidiEnabled())
+            self._updateMidiButtonColor(self._configuration.isMidiEnabled(self._selectedPlayerId))
+            self._updatePlayerButtonsColor()
             currentGuiConfigString = self._configuration.getXmlString()
             if(self._oldGuiConfigurationString != currentGuiConfigString):
                 self._configuration.setupSpecialModulations()
@@ -1133,7 +1171,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 print "Warning! Cannot edit Player config without network contact!"
                 wx.MessageBox('Cannot edit Player config without network contact!', 'Warning', wx.OK | wx.ICON_INFORMATION) #@UndefinedVariable
         elif(menuString == "GUI Config"):
-            dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration)
+            dlg = ConfigGuiDialog(self, 'GUI config.', self._configuration, self._selectedPlayerId)
             dlg.ShowModal()
             try:
                 dlg.Destroy()
@@ -1201,6 +1239,41 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             self._configuration.setMidiEnable(midiOn)
         self._updateMidiButtonColor(midiOn)
 
+    def _updatePlayerButtonsColor(self):
+        if(self._selectedPlayerId == 3):
+            self._player3Button.setBitmaps(self._player3ButtonGreenBitmap, self._player3ButtonGreenPressedBitmap)
+            self._player1Button.setBitmaps(self._player1ButtonBitmap, self._player1ButtonPressedBitmap)
+            self._player2Button.setBitmaps(self._player2ButtonBitmap, self._player2ButtonPressedBitmap)
+        elif(self._selectedPlayerId == 2):
+            self._player2Button.setBitmaps(self._player2ButtonGreenBitmap, self._player2ButtonGreenPressedBitmap)
+            self._player1Button.setBitmaps(self._player1ButtonBitmap, self._player1ButtonPressedBitmap)
+            self._player3Button.setBitmaps(self._player3ButtonBitmap, self._player3ButtonPressedBitmap)
+        else:
+            self._player1Button.setBitmaps(self._player1ButtonGreenBitmap, self._player1ButtonGreenPressedBitmap)
+            self._player2Button.setBitmaps(self._player2ButtonBitmap, self._player2ButtonPressedBitmap)
+            self._player3Button.setBitmaps(self._player3ButtonBitmap, self._player3ButtonPressedBitmap)
+
+    def _onPlayer1Button(self, event):
+        self._selectedPlayerId = 1
+        self._guiClient = self._guiClient1
+        self._updatePlayerButtonsColor()
+
+    def _onPlayer2Button(self, event):
+        self._selectedPlayerId = 2
+        if(self._guiClient2 != None):
+            self._guiClient = self._guiClient2
+        else:
+            self._guiClient = self._guiClient1
+        self._updatePlayerButtonsColor()
+
+    def _onPlayer3Button(self, event):
+        self._selectedPlayerId = 3
+        if(self._guiClient3 != None):
+            self._guiClient = self._guiClient3
+        else:
+            self._guiClient = self._guiClient1
+        self._updatePlayerButtonsColor()
+
     def _selectKeyboardKey(self, keyId):
         if((keyId >= 0) and (keyId < 128)):
             self._noteWidgets[keyId].setSelected()
@@ -1211,7 +1284,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _selectTrack(self, trackId):
         if((trackId >= 0) and (trackId < 16)):
-            self._trackGuiSettings[trackId].setSelected(self._configuration.isMidiEnabled())
+            self._trackGuiSettings[trackId].setSelected(self._configuration.isMidiEnabled(self._selectedPlayerId))
         for i in range(16):
             settings = self._trackGuiSettings[i]
             if(i != trackId):
@@ -1686,7 +1759,11 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def _onClose(self, event):
         print "User has closed window!"
         self._cueServer.requestCueWebServerProcessToStop()
-        self._guiClient.requestGuiClientProcessToStop()
+        self._guiClient1.requestGuiClientProcessToStop()
+        if(self._guiClient2 != None):
+            self._guiClient2.requestGuiClientProcessToStop()
+        if(self._guiClient3 != None):
+            self._guiClient3.requestGuiClientProcessToStop()
         self._midiListner.requestTcpMidiListnerProcessToStop()
         if(self._statusQueue != None):
             print "Telling player process that we are quitting."
@@ -1708,8 +1785,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             self._shutdownTimerCounter += 1
             if(self._shutdownTimerCounter > 200):
-                if(self._guiClient.hasGuiClientProcessToShutdownNicely() == False):
-                    self._guiClient.forceGuiClientProcessToStop()
+                if(self._guiClient1.hasGuiClientProcessToShutdownNicely() == False):
+                    self._guiClient1.forceGuiClientProcessToStop()
+                if(self._guiClient2 != None and self._guiClient2.hasGuiClientProcessToShutdownNicely() == False):
+                    self._guiClient2.forceGuiClientProcessToStop()
+                if(self._guiClient3 != None and self._guiClient3.hasGuiClientProcessToShutdownNicely() == False):
+                    self._guiClient3.forceGuiClientProcessToStop()
                 if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False):
                     self._midiListner.forceTcpMidiListnerProcessToStop()
                 if(self._cueServer.hasCueWebServerProcessShutdownNicely() == False):

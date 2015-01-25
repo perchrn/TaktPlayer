@@ -105,10 +105,11 @@ class ConfigNewDialog(wx.Dialog): #@UndefinedVariable
         self.Destroy()
 
 class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
-    def __init__(self, parent, title, configurationClass):
+    def __init__(self, parent, title, configurationClass, playerId):
         super(ConfigGuiDialog, self).__init__(parent=parent, title=title, size=(440, 600))
 
         self._configurationClass = configurationClass
+        self._playerId = playerId
 
         dialogSizer = wx.BoxSizer(wx.VERTICAL) #@UndefinedVariable
         self.SetBackgroundColour((180,180,180))
@@ -119,9 +120,9 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         infoText.SetFont(boldFont)
         dialogSizer.Add(infoText, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        playerHostName, playerWebPort = self._configurationClass.getWebConfig()
+        playerHostName, playerWebPort = self._configurationClass.getWebConfig(self._playerId)
 
-        isMidiOn = self._configurationClass.isMidiEnabled()
+        isMidiOn = self._configurationClass.isMidiEnabled(self._playerId)
         playerMidiOnSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         playerMidiOnLabel = wx.StaticText(self, wx.ID_ANY, "MIDI:") #@UndefinedVariable
         self._playerMidiOnField = wx.CheckBox(self, wx.ID_ANY, "Send MIDI notes from GUI to player.") #@UndefinedVariable
@@ -137,7 +138,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         playerHostNameSizer.Add(self._playerHostNameField, 2, wx.ALL, 5) #@UndefinedVariable
         dialogSizer.Add(playerHostNameSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
 
-        playerHostName, playerMidiPort, playerMode = self._configurationClass.getMidiConfig()
+        playerHostName, playerMidiPort, playerMode = self._configurationClass.getMidiConfig(self._playerId)
         playerMidiPortSizer = wx.BoxSizer(wx.HORIZONTAL) #@UndefinedVariable
         playerMidiPortLabel = wx.StaticText(self, wx.ID_ANY, "MIDI port:") #@UndefinedVariable
         self._playerMidiPortField = wx.SpinCtrl(self, value=str(playerMidiPort), pos=(-1, -1), size=(60, -1)) #@UndefinedVariable
@@ -291,7 +292,7 @@ class ConfigGuiDialog(wx.Dialog): #@UndefinedVariable
         midiPort = self._playerMidiPortField.GetValue()
         webPort = self._playerWebPortField.GetValue()
         midiOn = self._playerMidiOnField.GetValue()
-        self._configurationClass.setPlayerConfig(playerHost, midiPort, webPort, midiOn)
+        self._configurationClass.setPlayerConfig(self._playerId, playerHost, midiPort, webPort, midiOn)
 
         videoDir = self._videoDirectoryField.GetValue()
         ffmpegBinary = self._ffmpegBinaryField.GetValue()

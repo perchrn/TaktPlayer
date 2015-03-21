@@ -465,6 +465,12 @@ class MidiChannelStateHolder(object):
 #                print "DEBUG pcn: _findWaitingNextNote() returned Active note!" + " for " + str(self._midiChannel-1)
                 self._activateNextNote(nextNote)
                 self._activeNote.setNewState(True)
+                noteId = nextNote.getNote()
+                for i in range(128):
+                    testNote = self._activeNotes[i]
+                    if(testNote.getNote() != noteId):
+                        if(testNote.isNoteReleased(spp)):
+                            self._activeNotes[i] = NoteState(self._midiChannel)#reset note
 #            elif(nextNote != None):
 #                print "DEBUG pcn: nextNote != None ",
 #                nextNote.printState(self._midiChannel-1)

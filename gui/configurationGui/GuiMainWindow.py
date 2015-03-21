@@ -1226,7 +1226,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 self._midiButton.setBitmaps(self._midiOffBitmap, self._midiOffPressedBitmap)
 
     def _midiToggle(self, event):
-        midiOn = self._configuration.isMidiEnabled()
+        midiOn = self._configuration.isMidiEnabled(self._selectedPlayerId)
         if(midiOn == True):
             midiOn = False
             self._configuration.setMidiEnable(midiOn)
@@ -1637,7 +1637,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
     def setActiveTrackId(self, trackId):
         self._activeTrackId = trackId
         self._selectTrack(trackId)
-        if(self._configuration.isMidiEnabled()):
+        if(self._configuration.isMidiEnabled(self._selectedPlayerId)):
             self._selectedMidiChannel = trackId
         else:
             self._selectedMidiChannel = -1
@@ -1729,7 +1729,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 self._selectedMidiChannel = -1
                 self._selectTrack(-1)
             else:
-                if(self._configuration.isMidiEnabled()):
+                if(self._configuration.isMidiEnabled(self._selectedPlayerId)):
                     self._selectedMidiChannel = foundTrackId
             self._selectTrack(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)

@@ -2557,6 +2557,8 @@ class ImageAddEffect(object):
 #Tap tempo
 #Playback GUI
 #UDP -> multicast
+#http://stackoverflow.com/questions/603852/multicast-in-python
+
 #Improve thumb requests (bulk thumb requests?)
 
 #Debugging.

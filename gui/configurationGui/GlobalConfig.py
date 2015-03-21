@@ -2319,7 +2319,7 @@ Sets the size of the noize particles.
                     text = "Do you want to move one or all instances of \"%s\"\nto the new configuration \"%s\" (%d in all)" % (self._startConfigName, saveName, inUseNumber)
                     dlg = ThreeChoiceMessageDialog(self._mainFadeGuiPlane, "Move?", self._dialogResultCallback, text, "One", "All", "None")
                     dlg.ShowModal()
-                    dlg.Destroy()
+                    #dlg.Destroy()
                     if(self._dialogResult == 1):
                         renameOne = True
                     elif(self._dialogResult == 2):

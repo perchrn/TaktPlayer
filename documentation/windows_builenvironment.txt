@@ -1,0 +1,36 @@
+
+
+python 2.7 32bit
+
+ffmpeg static
+
+BeautifulSoup.py
+        copy BeautifulSoup.py to Lib/site-packages (under python installation)
+
+
+wxPython2.8-win32-unicode-2.8.12.1-py27.exe
+
+opencv verson: (2.3.1 superpack)
+        copy cv.py and cv2.pyd to Lib/site-packages (under python installation)
+
+PIL-fork-1.1.7.win32-py2.7.exe
+
+
+add src and gui to python path
+    mark directories as source roots if you use Pycharm
+    add to PYTHONPATH in run configuration(s) if you use eclipse
+
+
+
+Build install package:
+Install Inno Script Studio
+    Update documentation\TaktPlayer_PCInstallerMakeScript.iss with your path to the TaktPlayer directory.
+    Update TaktPlayer_pcUpdateVersion.bat and TaktPlayer_pcMake.bar with your path to the TaktPlayer directory.
+
+Install pyinstaller
+    Remember to run Configure.py
+    Update TaktPlayer_pcMake.bar with your path to the pyinstaller directory.
+
+Run TaktPlayer_PCInstallerMakeScript.iss
+
+[run bat files directly to debug]

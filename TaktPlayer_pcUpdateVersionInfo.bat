@@ -1,2 +1,2 @@
-cd "c:\Users\pcn\Workspace\MusicalVideoPlayer_Player\"
+cd "C:\Users\pcn\PycharmProjects\TaktPlayer\"
 git log -1 > VersionInfo.log

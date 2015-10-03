@@ -2748,12 +2748,15 @@ class VideoLoopFile(MediaFile):
                 syncLength = -self._syncLength
         else:
             syncLength = self._syncLength
-        if(timeMultiplyer != None):
-            syncLength = self._syncLength * timeMultiplyer
-    
-        unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
-        modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
-        framePos = int(modifiedFramePos)
+        if(syncLength == -1):
+            secondsFromStart = ((currentSongPosition - mediaSettingsHolder.startSongPosition) * 60) / (self._midiTiming.getTicksPerQuarteNote() * self._midiTiming.getBpm())
+            framePos = secondsFromStart * self._originalFrameRate
+        else:
+            if(timeMultiplyer != None):
+                syncLength = self._syncLength * timeMultiplyer
+            unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
+            modifiedFramePos = self._timeModulatePos(unmodifiedFramePos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
+            framePos = int(modifiedFramePos)
 
         if(self._loopMode == VideoLoopMode.Normal):
             mediaSettingsHolder.currentFrame = framePos % self._numberOfFrames

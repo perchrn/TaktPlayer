@@ -9,7 +9,7 @@ import numpy
 from video.EffectModes import EffectTypes, ZoomModes, FlipModes, DistortionModes,\
     EdgeModes, DesaturateModes, ColorizeModes, EdgeColourModes, getEffectId,\
     ScrollModes, ContrastModes, HueSatModes, ValueToHueModes, BlobDetectModes,\
-    SlitDirections, FeedbackModes
+    SlitDirections, FeedbackModes, TileifyModes
 import math
 import os
 import time
@@ -191,6 +191,8 @@ def getEffectById(effectType, templateName, configurationTree, effectImagesConfi
         return DistortionEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Pixelate):
         return PixelateEffect(configurationTree, internalResX, internalResY)
+    elif(effectType == EffectTypes.Tileify):
+        return TileifyEffect(configurationTree, effectImagesConfiguration, internalResX, internalResY)
     elif(effectType == EffectTypes.TVNoize):
         return TVNoizeEffect(configurationTree, internalResX, internalResY)
     elif(effectType == EffectTypes.Edge):
@@ -901,6 +903,158 @@ class PixelateEffect(object):
                 self._updateTable(quantize)
             cv.LUT(image, image, self._colourTableMat)
         return image
+
+class TileifyEffect(object):
+    def __init__(self, configurationTree, effectImagesConfiguration, internalResX, internalResY):
+        self._configurationTree = configurationTree
+        self._imageConfiguration = effectImagesConfiguration
+        self._videoDirectory = self._imageConfiguration.getVideoDir()
+        if(self._videoDirectory == None):
+            self._videoDirectory = ""
+        setupEffectMemory(internalResX, internalResY)
+
+        self._internalResolutionX = internalResX
+        self._internalResolutionY = internalResY
+
+        self._oldAmount = -1.0
+
+        self._blockMat = None
+        self._tiledImage = effectMat1
+        self._colourTableMat = cv.CreateMat(1, 256, cv.CV_8UC1)
+        self._updateColourTable(16)
+        self._scaleArray = [1,2,3,4,6,8,9,12,16,18,24,32,48,64]
+
+        self._imageId = 0
+        self._oldImageId = -1
+        self._image = None
+
+    def loadImage(self, fileName):
+        image = None
+        imageFileName = os.path.normpath(fileName)
+        fullFilePath = os.path.join(os.path.normpath(self._videoDirectory), imageFileName)
+        packageFilePath = os.path.join(os.getcwd(), "testFiles", imageFileName)
+        if(os.path.isfile(fullFilePath) == False):
+            fullFilePath = packageFilePath
+        try:
+            image = cv.LoadImage(fullFilePath)
+            imageSize = cv.GetSize(image)
+            if((imageSize[0] != self._internalResolutionX) or (imageSize[1] != self._internalResolutionY)):
+                scaleMat = createMat(self._internalResolutionX, self._internalResolutionY)
+                cv.Resize(image, scaleMat)
+                image =  scaleMat
+        except:
+            print "Exception while reading effect image: " + fileName
+        return image
+
+    def getImage(self, imageId):
+        imageList  = self._imageConfiguration.getChoices()
+        numImages = len(imageList)
+        if(numImages < 1):
+            return None
+        if(imageId >= numImages):
+            imageId = numImages -1
+        if(len(effectImageList) < numImages):
+            for i in range(len(effectImageList), numImages):
+                fileName = imageList[i]
+                image = self.loadImage(fileName)
+                effectImageList.append(image)
+                effectImageFileNameList.append(fileName)
+        imageFileName = imageList[imageId]
+        oldImageName = effectImageFileNameList[imageId]
+        if(imageFileName != oldImageName):
+            newImage = self.loadImage(imageFileName)
+            effectImageList [imageId] = newImage
+            effectImageFileNameList[imageId] = imageFileName
+        return effectImageList[imageId]
+
+    def _updateImage(self, imageId):
+        if(self._imageId != imageId):
+            self._imageId = imageId
+            if(imageId < 1):
+                self._image = None
+            else:
+                self._image = self.getImage(imageId - 1)
+
+    def getName(self):
+        return "Tileify"
+
+    def reset(self):
+        pass
+
+    def _updateColourTable(self, quantize):
+        stepSize = 256.0 / quantize
+        for i in range(256):
+            if(int(i/stepSize) == 0):
+                cv.Set1D(self._colourTableMat, i, 0)
+            else:
+                cv.Set1D(self._colourTableMat, i, int((1+int(i/stepSize))*stepSize))
+        self._colourTableLastValue = quantize
+
+    def applyEffect(self, image, songPosition, amount, imageId, mode, colours, unused3):
+        return self.tileifyImage(image, amount, imageId, mode, colours)
+
+    def colourReduce(self, image, colours):
+        if (colours > 0.01):
+            colVal = 1.0 - colours
+            quantize = 2 + int(colVal * 30)
+            if (self._colourTableLastValue != quantize):
+                self._updateColourTable(quantize)
+            cv.LUT(image, image, self._colourTableMat)
+
+    def tileifyImage(self, image, amount, imageId, mode, colours):
+        if(amount > 0.01 or imageId > 0.01):
+            imageId = int(imageId * 63)
+            self._updateImage(imageId)
+            scaleSelector = int(amount * len(self._scaleArray)-0.01)
+            scaleQuantized = self._scaleArray[scaleSelector]
+            miniImageSizeX = int(self._internalResolutionX / scaleQuantized)
+            miniImageSizeY = int(self._internalResolutionY / scaleQuantized)
+            if(self._oldAmount != scaleQuantized or self._oldImageId != self._imageId):
+                self._oldAmount = scaleQuantized
+                self._oldImageId = self._imageId
+                self._blockMat = createMat(miniImageSizeX, miniImageSizeY)
+                cv.SetZero(self._tiledImage)
+                if(self._image != None):
+                    self.tileOneImage(self._image, self._blockMat, self._tiledImage, miniImageSizeX, miniImageSizeY)
+                    self._blockMat = createMat(scaleQuantized, scaleQuantized)
+            if(self._image != None):
+                modeSelected = int(mode*5.99)
+                if(modeSelected == TileifyModes.Multiply):
+                    cv.Mul(image, self._tiledImage, image, 0.004)
+                elif(modeSelected == TileifyModes.Add):
+                    cv.Add(image, self._tiledImage, image, None)
+                elif(modeSelected == TileifyModes.Subtract):
+                    cv.Sub(image, self._tiledImage, image, None)
+                elif(modeSelected == TileifyModes.PixelateMultiply):
+                    cv.Resize(image, self._blockMat, cv.CV_INTER_CUBIC)
+                    cv.Resize(self._blockMat, image, cv.CV_INTER_NN)
+                    self.colourReduce(image, colours)
+                    cv.Mul(image, self._tiledImage, image, 0.004)
+                elif(modeSelected == TileifyModes.PixelateAdd):
+                    cv.Resize(image, self._blockMat, cv.CV_INTER_CUBIC)
+                    cv.Resize(self._blockMat, image, cv.CV_INTER_NN)
+                    self.colourReduce(image, colours)
+                    cv.Add(image, self._tiledImage, image, None)
+                else:
+                    cv.Resize(image, self._blockMat, cv.CV_INTER_CUBIC)
+                    cv.Resize(self._blockMat, image, cv.CV_INTER_NN)
+                    self.colourReduce(image, colours)
+                    cv.Sub(image, self._tiledImage, image, None)
+            else:
+                self.tileOneImage(image, self._blockMat, image, miniImageSizeX, miniImageSizeY)
+        return image
+
+    def tileOneImage(self, source, scaleMat, destination, miniImageSizeX, miniImageSizeY):
+        cv.Resize(source, scaleMat, cv.CV_INTER_CUBIC)
+        #cv.SetZero(image)
+        for xNum in range(self._internalResolutionX / miniImageSizeX):
+            dst_region = cv.GetSubRect(destination, ((xNum * miniImageSizeX), 0, miniImageSizeX, miniImageSizeY))
+            cv.Copy(scaleMat, dst_region)
+        src_region = cv.GetSubRect(destination, (0, 0, self._internalResolutionX, miniImageSizeY))
+        for yNumish in range((self._internalResolutionY / miniImageSizeY)-1):
+            yNum = yNumish + 1
+            dst_region = cv.GetSubRect(destination, (0, (yNum * miniImageSizeY), self._internalResolutionX, miniImageSizeY))
+            cv.Copy(src_region, dst_region)
 
 class ScrollEffect(object):
     def __init__(self, configurationTree, internalResX, internalResY):

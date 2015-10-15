@@ -25,10 +25,10 @@ def forceUnixPath(pathPart):
         return lastPart
 
 class MixMode:
-    Default, Add, Subtract, Multiply, LumaKey, WhiteLumaKey, AlphaMask, Replace = range(8)
+    Default, Add, Subtract, Multiply, LumaKey, WhiteLumaKey, HueKey, SaturationKey, AlphaMask, Replace = range(10)
 
     def getChoices(self):
-        return ["Default", "Add", "Subtract", "Multiply", "LumaKey", "WhiteLumaKey", "AlphaMask", "Replace"]
+        return ["Default", "Add", "Subtract", "Multiply", "LumaKey", "WhiteLumaKey", "HueKey", "SaturationKey", "AlphaMask", "Replace"]
 
     def getNames(self, typeId):
         for i in range(len(self.getChoices())):
@@ -47,6 +47,10 @@ def getMixModeFromName(name):
         return MixMode.LumaKey
     elif(name == "WhiteLumaKey"):
         return MixMode.WhiteLumaKey
+    elif(name == "HueKey"):
+        return MixMode.HueKey
+    elif(name == "SaturationKey"):
+        return MixMode.SaturationKey
     elif(name == "AlphaMask"):
         return MixMode.AlphaMask
     elif(name == "Replace"):

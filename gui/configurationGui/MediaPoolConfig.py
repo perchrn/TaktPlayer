@@ -775,12 +775,14 @@ class MediaFileGui(object): #@UndefinedVariable
         self._mixBitmapDefault = wx.Bitmap("graphics/mixDefault.png") #@UndefinedVariable
         self._mixBitmapLumaKey = wx.Bitmap("graphics/mixLumaKey.png") #@UndefinedVariable
         self._mixBitmapWhiteLumaKey = wx.Bitmap("graphics/mixWhiteLumaKey.png") #@UndefinedVariable
+        self._mixBitmapHueKey = wx.Bitmap("graphics/mixMaskHue.png") #@UndefinedVariable
+        self._mixBitmapSatLumaKey = wx.Bitmap("graphics/mixMaskSat.png") #@UndefinedVariable
         self._mixBitmapMultiply = wx.Bitmap("graphics/mixMultiply.png") #@UndefinedVariable
         self._mixBitmapReplace = wx.Bitmap("graphics/mixReplace.png") #@UndefinedVariable
         self._mixBitmapSubtract = wx.Bitmap("graphics/mixSubtract.png") #@UndefinedVariable
 
         self._mixImages = [self._mixBitmapDefault, self._mixBitmapAdd, self._mixBitmapSubtract, self._mixBitmapMultiply,
-                            self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapAlpha, self._mixBitmapReplace]
+                            self._mixBitmapLumaKey, self._mixBitmapWhiteLumaKey, self._mixBitmapHueKey, self._mixBitmapSatLumaKey, self._mixBitmapAlpha, self._mixBitmapReplace]
         self._mixLabels = self._mixModes.getChoices()
 
         self._wipeModeImages, self._wipeModeLabels = self._globalConfig.getFadeModeLists()
@@ -814,6 +816,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
         self._fxBitmapStrobe = wx.Bitmap("graphics/fxStrobe.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapTileify = wx.Bitmap("graphics/fxTileify.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
@@ -3158,6 +3161,10 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._mixBitmapLumaKey, self._mixBitmapLumaKey)
         elif(mixModeId == self._mixModes.WhiteLumaKey):
             widget.setBitmaps(self._mixBitmapWhiteLumaKey, self._mixBitmapWhiteLumaKey)
+        elif(mixModeId == self._mixModes.HueKey):
+            widget.setBitmaps(self._mixBitmapHueKey, self._mixBitmapHueKey)
+        elif(mixModeId == self._mixModes.SaturationKey):
+            widget.setBitmaps(self._mixBitmapSatLumaKey, self._mixBitmapSatLumaKey)
         elif(mixModeId == self._mixModes.Multiply):
             widget.setBitmaps(self._mixBitmapMultiply, self._mixBitmapMultiply)
         elif(mixModeId == self._mixModes.Replace):
@@ -3226,6 +3233,8 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._fxBitmapScroll, self._fxBitmapScroll)
         elif(effectId == EffectTypes.Threshold):
             widget.setBitmaps(self._fxBitmapThreshold, self._fxBitmapThreshold)
+        elif(effectId == EffectTypes.Tileify):
+            widget.setBitmaps(self._fxBitmapTileify, self._fxBitmapTileify)
         elif(effectId == EffectTypes.TVNoize):
             widget.setBitmaps(self._fxBitmapTVNoize, self._fxBitmapTVNoize)
         elif(effectId == EffectTypes.ValueToHue):

@@ -16,7 +16,7 @@ from video.EffectModes import EffectTypes, FlipModes, ZoomModes, DistortionModes
     EdgeModes, DesaturateModes, getEffectId, getEffectName, ColorizeModes,\
     EdgeColourModes, ContrastModes, HueSatModes, ScrollModes, ValueToHueModes,\
     MirrorModes, BlobDetectModes, PixelateModes, TVNoizeModes, BlurModes,\
-    RayModes, SlitDirections, StrobeModes, FeedbackModes
+    RayModes, SlitDirections, StrobeModes, FeedbackModes, TileifyModes
 from configurationGui.ModulationGui import ModulationGui
 import sys
 from configurationGui.EffectImagesListGui import EffectImagesListGui
@@ -294,6 +294,7 @@ class EffectsGui(object):
         self._fxBitmapSlitScan = wx.Bitmap("graphics/fxSlitScan.png") #@UndefinedVariable
         self._fxBitmapStrobe = wx.Bitmap("graphics/fxStrobe.png") #@UndefinedVariable
         self._fxBitmapThreshold = wx.Bitmap("graphics/fxThreshold.png") #@UndefinedVariable
+        self._fxBitmapTileify = wx.Bitmap("graphics/fxTileify.png") #@UndefinedVariable
         self._fxBitmapTVNoize = wx.Bitmap("graphics/fxTVNoize.png") #@UndefinedVariable
         self._fxBitmapVal2Hue = wx.Bitmap("graphics/fxVal2Hue.png") #@UndefinedVariable
         self._fxBitmapZoom = wx.Bitmap("graphics/fxZoom.png") #@UndefinedVariable
@@ -537,6 +538,7 @@ class EffectsGui(object):
         self._slitDirs = SlitDirections()
         self._distortionModes = DistortionModes()
         self._pixelateModes = PixelateModes()
+        self._tileifyeModes = TileifyModes()
         self._tvNoizeModes = TVNoizeModes()
         self._edgeModes = EdgeModes()
         self._edgeColourModes = EdgeColourModes()
@@ -612,6 +614,9 @@ class EffectsGui(object):
         index = self._effectImageList.Add(self._fxBitmapPixelate)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapPixelate)
+        index = self._effectImageList.Add(self._fxBitmapTileify)
+        self._fxIdImageIndex.append(index)
+        self._fxBitmapList.append(self._fxBitmapTileify)
         index = self._effectImageList.Add(self._fxBitmapTVNoize)
         self._fxIdImageIndex.append(index)
         self._fxBitmapList.append(self._fxBitmapTVNoize)
@@ -1645,6 +1650,9 @@ This only affect Note media after switching media and not retrigger same Note. T
         elif(self._chosenEffectId == EffectTypes.Pixelate):
             self._setLabels("Pixel size:", "Pixel mode", "Colour reduce", None, None)
             self._setupValueLabels(None, self._pixelateModes.getChoices(), None, None, None)
+        elif(self._chosenEffectId == EffectTypes.Tileify):
+            self._setLabels("Number of tiles:", "Tile image", "Tile image mode", None, None)
+            self._setupValueLabels(None, None, self._tileifyeModes.getChoices(), None, None)
         elif(self._chosenEffectId == EffectTypes.TVNoize):
             self._setLabels("Noize amount:", "Noize scale", "Scale mode", None, None)
             self._setupValueLabels(None, None, self._tvNoizeModes.getChoices(), None, None)

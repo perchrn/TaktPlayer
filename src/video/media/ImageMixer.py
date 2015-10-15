@@ -110,7 +110,7 @@ class ImageMixer(object):
             if(image1 == None):
                 cv.SetZero(mixMat)
                 cv.Copy(image2, mixMat, noizeMask)
-                return  mixMat
+                return mixMat
             cv.Copy(image2, image1, noizeMask)
             return image1
         if(wipeMode == WipeMode.Zoom):
@@ -261,13 +261,33 @@ class ImageMixer(object):
         return image, self._mixMixMask1
     
     def _mixImageSelfMask(self, wipeSettings, level, image1, image2, mixMat, whiteMode):
-        cv.CvtColor(image2, self._mixImageMask, cv.CV_BGR2GRAY);
+        cv.CvtColor(image2, self._mixImageMask, cv.CV_BGR2GRAY)
         if(whiteMode == True):
             cv.CmpS(self._mixImageMask, 250, self._mixImageMask, cv.CV_CMP_LT)
         else:
             cv.CmpS(self._mixImageMask, 5, self._mixImageMask, cv.CV_CMP_GT)
         return self._mixImageAlphaMask(wipeSettings, level, image1, image2, self._mixImageMask, mixMat)
-    
+
+    def _mixImageSelfMaskSaturation(self, wipeSettings, level, image1, image2, mixMat):
+        cv.CvtColor(image1, mixMat, cv.CV_RGB2HSV)
+        cv.Split(mixMat, None, self._mixMixMask1, None, None)
+        cv.CvtColor(image2, mixMat, cv.CV_RGB2HSV)
+        cv.Split(mixMat, None, self._mixMixMask1, None, None)
+        cv.Sub(self._mixMixMask2, self._mixMixMask1, self._mixImageMask)
+
+        cv.CmpS(self._mixImageMask, 255-int((level*254)), self._mixImageMask, cv.CV_CMP_GT)
+        return self._mixImageAlphaMask(wipeSettings, level, image1, image2, self._mixImageMask, mixMat)
+
+    def _mixImageSelfMaskHue(self, wipeSettings, level, image1, image2, mixMat):
+        cv.CvtColor(image1, mixMat, cv.CV_RGB2HSV)
+        cv.Split(mixMat, self._mixMixMask1, None, None, None)
+        cv.CvtColor(image2, mixMat, cv.CV_RGB2HSV)
+        cv.Split(mixMat, self._mixMixMask2, None, None, None)
+        cv.Sub(self._mixMixMask2, self._mixMixMask1, self._mixImageMask)
+
+        cv.CmpS(self._mixImageMask, 255-int((level*254)), self._mixImageMask, cv.CV_CMP_GT)
+        return self._mixImageAlphaMask(wipeSettings, level, image1, image2, self._mixImageMask, mixMat)
+
     def _mixImageAlphaMask(self, wipeSettings, level, image1, image2, image2mask, mixMat):
         if(level < 0.99):
             wipeMode, wipePostMix, wipeConfig = wipeSettings
@@ -386,6 +406,10 @@ class ImageMixer(object):
             return self._mixImageSelfMask(wipeSettings, level, image1, image2, mixMat, False)
         elif(mode == MixMode.WhiteLumaKey):
             return self._mixImageSelfMask(wipeSettings, level, image1, image2, mixMat, True)
+        elif(mode == MixMode.HueKey):
+            return self._mixImageSelfMaskHue(wipeSettings, level, image1, image2, mixMat)
+        elif(mode == MixMode.SaturationKey):
+            return self._mixImageSelfMaskSaturation(wipeSettings, level, image1, image2, mixMat)
         elif(mode == MixMode.AlphaMask):
             if(image2mask != None):
                 return self._mixImageAlphaMask(wipeSettings, level, image1, image2, image2mask, mixMat)

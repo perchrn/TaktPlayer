@@ -4,7 +4,7 @@ Created on 14. feb. 2012
 @author: pcn
 '''
 class EffectTypes():
-    Zoom, Flip, Mirror, Kaleidoscope, Rotate, Scroll, Blur, BlurContrast, Feedback, Repeat, Delay, Freeze, Rays, SlitScan, SelfDifference, Distortion, Pixelate, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(30)
+    Zoom, Flip, Mirror, Kaleidoscope, Rotate, Scroll, Blur, BlurContrast, Feedback, Repeat, Delay, Freeze, Rays, SlitScan, SelfDifference, Distortion, Pixelate, Tileify, TVNoize, Edge, BlobDetect, Curve, Desaturate, Contrast, HueSaturation, Colorize, Invert, Strobe, ValueToHue, Threshold, ImageAdd = range(31)
 
     def getChoices(self):
         return ["None",
@@ -25,6 +25,7 @@ class EffectTypes():
                 "SelfDifference",
                 "Distortion",
                 "Pixelate",
+                "Tileify",
                 "TVNoize",
                 "Edge",
                 "BlobDetect",
@@ -57,6 +58,7 @@ class EffectTypes():
                 "Delaying video and subtracting it with self.",
                 "Distort image to black or white.",
                 "Pixelate image",
+                "Make or add tiles",
                 "TVNoize adder.",
                 "Edge detection effects.",
                 "Blob detection effects.",
@@ -107,6 +109,8 @@ def getEffectId(name):
         return EffectTypes.Distortion
     elif(lowername == "pixelate"):
         return EffectTypes.Pixelate
+    elif(lowername == "tileify"):
+        return EffectTypes.Tileify
     elif(lowername == "tvnoize"):
         return EffectTypes.TVNoize
     elif(lowername == "edge"):
@@ -171,6 +175,8 @@ def getEffectName(effectId):
         return "Distortion"
     elif(effectId == EffectTypes.Pixelate):
         return "Pixelate"
+    elif(effectId == EffectTypes.Tileify):
+        return "Tileify"
     elif(effectId == EffectTypes.TVNoize):
         return "TVNoize"
     elif(effectId == EffectTypes.Edge):
@@ -336,6 +342,12 @@ class PixelateModes():
 
     def getChoices(self):
         return ["Clean", "Round", "Star"]
+
+class TileifyModes():
+    Multiply, Add, Subtract, PixelateMultiply, PixelateAdd, PixelateSubtract = range(6)
+
+    def getChoices(self):
+        return ["Mul", "Add", "Sub", "Pxl mul", "Pxl add", "Pxl sub"]
 
 class TVNoizeModes():
     Star, Round, Clean = range(3)

@@ -3103,21 +3103,21 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateChoices(widget, self._getCropChoises, value, defaultValue)
 
     @staticmethod
-    def _getScrollChoises(self):
+    def _getScrollChoises():
         return ["Horizontal", "Vertical"]
 
     def _updateScrollModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getScrollChoises, value, defaultValue)
 
     @staticmethod
-    def _getReverseChoises(self):
+    def _getReverseChoises():
         return ["Off", "On"]
 
     def _updateReverseModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getReverseChoises, value, defaultValue)
 
     @staticmethod
-    def _getInvertChoises(self):
+    def _getInvertChoises():
         return ["Normal", "Invert mask"]
 
     def _updateInvertModeChoices(self, widget, value, defaultValue):
@@ -3127,18 +3127,18 @@ class MediaFileGui(object): #@UndefinedVariable
         updateChoices(widget, None, value, defaultValue, self._typeModes.getChoices(self._mainConfig.isShowKinect()))
 
     @staticmethod
-    def _getCombineModulation1Choises(self):
+    def _getCombineModulation1Choises():
         return ["Add", "Subtract", "Mutiply", "Mask", "If (1st > 0.5) Then:"]
 
     def _updateSubModulationMode1Choices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCombineModulation1Choises, value, defaultValue)
 
     @staticmethod
-    def _getCombineModulation2Choises(self):
+    def _getCombineModulation2Choises():
         return ["Add", "Subtract", "Mutiply", "Mask"]
 
     @staticmethod
-    def _getCombineModulation2Choises2(self):
+    def _getCombineModulation2Choises2():
         return ["Else"]
 
     def _updateSubModulationMode2Choices(self, widget, value, defaultValue, ifMode=False):
@@ -3148,7 +3148,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._updateChoices(widget, self._getCombineModulation2Choises, value, defaultValue)
 
     @staticmethod
-    def _getModulationSmootherChoises(self):
+    def _getModulationSmootherChoises():
         return ["Off", "Smoothish", "Smooth", "Smoother","Smoothest"]
 
     def _updateSubModulationSmootherChoices(self, widget, value, defaultValue):

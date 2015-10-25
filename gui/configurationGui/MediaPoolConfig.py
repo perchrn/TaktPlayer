@@ -1,8 +1,8 @@
-'''
+"""
 Created on 6. feb. 2012
 
 @author: pcn
-'''
+"""
 from midi.MidiUtilities import noteToNoteString, noteStringToNoteNumber
 import wx
 from widgets.PcnImageButton import PcnKeyboardButton, PcnImageButton,\
@@ -45,7 +45,7 @@ class MediaPoolConfig(object):
         for i in range(128):
             mediaPoolState.append(False)
         mediaFileChildren = self._configurationTree.findXmlChildrenList("MediaFile")
-        if(mediaFileChildren != None):
+        if(mediaFileChildren is not None):
             for xmlConfig in mediaFileChildren:
                 midiNote = self.addXmlMedia(xmlConfig)
                 mediaPoolState[midiNote] = True
@@ -66,7 +66,7 @@ class MediaPoolConfig(object):
         midiNote = min(max(midiNote, 0), 127)
 
         #remove old:
-        if(self._mediaPool[midiNote] != None):
+        if(self._mediaPool[midiNote] is not None):
             if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
                 print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
 #            else:
@@ -87,11 +87,11 @@ class MediaPoolConfig(object):
 
     def setupSpecialNoteModulations(self):
         for note in self._mediaPool:
-#            if(note == None):
+#            if(note is None):
 #                print "n",
 #            else:
 #                print note.getType(),
-            if((note != None) and (note.getType() == "Modulation")):
+            if((note is not None) and (note.getType() == "Modulation")):
                 noteName = note.getName()
                 descSum = "Modulation;" + noteName + ";Any;Sum"
                 desc1st = "Modulation;" + noteName + ";Any;1st"
@@ -132,60 +132,60 @@ class MediaPoolConfig(object):
     def countNumberOfTimeTimeModulationTemplateUsed(self, effectConfigName):
         returnNumer = 0
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 returnNumer += noteConfig.countNumberOfTimeTimeModulationTemplateUsed(effectConfigName)
         return returnNumer
 
     def countNumberOfTimeEffectTemplateUsed(self, effectConfigName):
         returnNumer = 0
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 returnNumer += noteConfig.countNumberOfTimeEffectTemplateUsed(effectConfigName)
         return returnNumer
 
     def countNumberOfTimeFadeTemplateUsed(self, fadeConfigName):
         returnNumer = 0
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 returnNumer += noteConfig.countNumberOfTimeFadeTemplateUsed(fadeConfigName)
         return returnNumer
 
     def renameTimeModulationTemplateUsed(self, oldName, newName):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.renameTimeModulationTemplateUsed(oldName, newName)
 
     def renameEffectTemplateUsed(self, oldName, newName):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.renameEffectTemplateUsed(oldName, newName)
 
     def renameFadeTemplateUsed(self, oldName, newName):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.renameFadeTemplateUsed(oldName, newName)
 
     def verifyTimeModulationTemplateUsed(self, fadeConfigNameList):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.verifyTimeModulationTemplateUsed(fadeConfigNameList)
 
     def verifyEffectTemplateUsed(self, effectConfigNameList):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.verifyEffectTemplateUsed(effectConfigNameList)
 
     def verifyFadeTemplateUsed(self, fadeConfigNameList):
         for noteConfig in self._mediaPool:
-            if(noteConfig != None):
+            if(noteConfig is not None):
                 noteConfig.verifyFadeTemplateUsed(fadeConfigNameList)
 
 class MediaFile(object):
     def __init__(self, configParent, fileName, noteLetter, midiNote, xmlConfig):
         mediaType = None
-        if(xmlConfig != None):
+        if(xmlConfig is not None):
             mediaType = xmlConfig.get("type")
-        if(mediaType == None):
+        if(mediaType is None):
             mediaType = "VideoLoop"
         self._configurationTree = configParent.addChildUniqueId("MediaFile", "Note", noteLetter, midiNote)
         self._configurationTree.addTextParameter("FileName", "")
@@ -253,7 +253,7 @@ class MediaFile(object):
             self._configurationTree.addFloatParameter("MaxValue", 1.0)
             self._configurationTree.addTextParameter("Smoother", "Off")
 
-        if(xmlConfig != None):
+        if(xmlConfig is not None):
             self._configurationTree._updateFromXml(xmlConfig)
 
         if(mediaType == "VideoLoop"):
@@ -325,11 +325,11 @@ class MediaFile(object):
             if((oldType == "Image") or (oldType == "ScrollImage") or (oldType == "Sprite") or (oldType == "Camera") or (oldType == "KinectCamera") or (oldType == "Modulation")):
                 self._configurationTree.setValue("Type", "VideoLoop")
                 oldloopMode = self._configurationTree.getValue("LoopMode")
-                if(oldloopMode == None):
+                if(oldloopMode is None):
                     self._configurationTree.addTextParameter("LoopMode", "Normal")
                 if((oldloopMode == "AdvancedLoop") or (oldloopMode == "AdvancedPingPong")):
                     oldAdvLoopValues = self._configurationTree.getValue("AdvancedLoopValues")
-                    if(oldAdvLoopValues == None):
+                    if(oldAdvLoopValues is None):
                         self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
                 else:
                     print "DEBUG pcn: updateFileName: removing AdvancedLoopValues 2"
@@ -393,14 +393,14 @@ class MediaFile(object):
     def getMixMode(self):
         retValue = "None"
         mediaType = self._configurationTree.getValue("Type")
-        if((mediaType != None) and (mediaType != "Modulation")):
+        if((mediaType is not None) and (mediaType != "Modulation")):
             retValue = self._configurationTree.getValue("MixMode")
         return retValue
 
     def getFadeConfigName(self):
         retValue = "None"
         mediaType = self._configurationTree.getValue("Type")
-        if((mediaType != None) and (mediaType != "Modulation")):
+        if((mediaType is not None) and (mediaType != "Modulation")):
             retValue = self._configurationTree.getValue("FadeConfig")
         return retValue
 
@@ -442,12 +442,12 @@ class MediaFile(object):
         if(mediaType == "VideoLoop"):
             self._configurationTree.addTextParameter("LoopMode", "Normal")
             loopMode = sourceConfigTree.getValue("LoopMode")
-            if(loopMode != None):
+            if(loopMode is not None):
                 self._configurationTree.setValue("LoopMode", loopMode)
             if((loopMode == "AdvancedLoop") or (loopMode == "AdvancedPingPong")):
                 self._configurationTree.addTextParameter("AdvancedLoopValues", "0.0|0.25|0.75|1.0")
                 advLoopValues = sourceConfigTree.getValue("AdvancedLoopValues")
-                if(advLoopValues != None):
+                if(advLoopValues is not None):
                     self._configurationTree.setValue("AdvancedLoopValues", advLoopValues)
             else:
                 print "DEBUG pcn: updateFrom: removing AdvancedLoopValues 1"
@@ -461,10 +461,10 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("StartValues", "0.0|0.0|0.0")
             self._configurationTree.addTextParameter("EndValues", "0.0|0.0|0.0")
             startVal = sourceConfigTree.getValue("StartValues")
-            if(startVal != None):
+            if(startVal is not None):
                 self._configurationTree.setValue("StartValues", startVal)
             endVal = sourceConfigTree.getValue("EndValues")
-            if(endVal != None):
+            if(endVal is not None):
                 self._configurationTree.setValue("EndValues", endVal)
         else:
             self._configurationTree.removeParameter("StartValues")
@@ -473,7 +473,7 @@ class MediaFile(object):
         if((mediaType == "Image") or (mediaType == "Camera")):
             self._configurationTree.addTextParameter("DisplayMode", "Crop")
             cropMode = sourceConfigTree.getValue("DisplayMode")
-            if(cropMode != None):
+            if(cropMode is not None):
                 self._configurationTree.setValue("DisplayMode", cropMode)
         else:
             self._configurationTree.removeParameter("DisplayMode")
@@ -483,13 +483,13 @@ class MediaFile(object):
             self._configurationTree.addBoolParameter("HorizontalMode", True)
             self._configurationTree.addBoolParameter("ReverseMode", False)
             scrollVal = sourceConfigTree.getValue("ScrollModulation")
-            if(scrollVal != None):
+            if(scrollVal is not None):
                 self._configurationTree.setValue("ScrollModulation", scrollVal)
             horVal = sourceConfigTree.getValue("HorizontalMode")
-            if(horVal != None):
+            if(horVal is not None):
                 self._configurationTree.setValue("HorizontalMode", horVal)
             revMode = sourceConfigTree.getValue("ReverseMode")
-            if(revMode != None):
+            if(revMode is not None):
                 self._configurationTree.setValue("ReverseMode", revMode)
         else:
             self._configurationTree.removeParameter("ScrollModulation")
@@ -503,19 +503,19 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addTextParameter("ZModulation", "None")
             startVal = sourceConfigTree.getValue("StartPosition")
-            if(startVal != None):
+            if(startVal is not None):
                 self._configurationTree.setValue("StartPosition", startVal)
             endVal = sourceConfigTree.getValue("EndPosition")
-            if(endVal != None):
+            if(endVal is not None):
                 self._configurationTree.setValue("EndPosition", endVal)
             xVal = sourceConfigTree.getValue("XModulation")
-            if(xVal != None):
+            if(xVal is not None):
                 self._configurationTree.setValue("XModulation", xVal)
             yVal = sourceConfigTree.getValue("YModulation")
-            if(yVal != None):
+            if(yVal is not None):
                 self._configurationTree.setValue("YModulation", yVal)
             zVal = sourceConfigTree.getValue("ZModulation")
-            if(zVal != None):
+            if(zVal is not None):
                 self._configurationTree.setValue("ZModulation", zVal)
         else:
             self._configurationTree.removeParameter("StartPosition")
@@ -527,7 +527,7 @@ class MediaFile(object):
         if(mediaType == "Sprite"):
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
             invMode = sourceConfigTree.getValue("InvertFirstFrameMask")
-            if(invMode != None):
+            if(invMode is not None):
                 self._configurationTree.setValue("InvertFirstFrameMask", invMode)
         else:
             self._configurationTree.removeParameter("InvertFirstFrameMask")
@@ -535,7 +535,7 @@ class MediaFile(object):
         if(mediaType == "Text"):
             self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
             font = sourceConfigTree.getValue("Font")
-            if(font != None):
+            if(font is not None):
                 self._configurationTree.setValue("Font", font)
         else:
             self._configurationTree.removeParameter("Font")
@@ -544,10 +544,10 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
             self._configurationTree.addTextParameter("PlaybackModulation", "None")
             sequenceMode = sourceConfigTree.getValue("SequenceMode")
-            if(sequenceMode != None):
+            if(sequenceMode is not None):
                 self._configurationTree.setValue("SequenceMode", sequenceMode)
             playBackMod = sourceConfigTree.getValue("PlaybackModulation")
-            if(playBackMod != None):
+            if(playBackMod is not None):
                 self._configurationTree.setValue("PlaybackModulation", playBackMod)
         else:
             self._configurationTree.removeParameter("SequenceMode")
@@ -558,13 +558,13 @@ class MediaFile(object):
             self._configurationTree.addTextParameter("FilterValues", "0.0|0.0|0.0|0.0")
             self._configurationTree.addTextParameter("ZoomValues", "0.5|0.5|0.5|0.5")
 #            tmpModulation = sourceConfigTree.getValue("DisplayModeModulation")
-#            if(tmpModulation != None):
+#            if(tmpModulation is not None):
 #                self._configurationTree.setValue("DisplayModeModulation", tmpModulation)
             filterVal = sourceConfigTree.getValue("FilterValues")
-            if(filterVal != None):
+            if(filterVal is not None):
                 self._configurationTree.setValue("FilterValues", filterVal)
             filterVal = sourceConfigTree.getValue("ZoomValues")
-            if(filterVal != None):
+            if(filterVal is not None):
                 self._configurationTree.setValue("ZoomValues", filterVal)
         else:
             self._configurationTree.removeParameter("DisplayModeModulation")
@@ -573,35 +573,35 @@ class MediaFile(object):
         if(mediaType == "Modulation"):
             self._configurationTree.addTextParameter("FirstModulation", "None")
             tmpModulation = sourceConfigTree.getValue("FirstModulation")
-            if(tmpModulation != None):
+            if(tmpModulation is not None):
                 self._configurationTree.setValue("FirstModulation", tmpModulation)
             self._configurationTree.addTextParameter("ModulationCombiner1", "Add")
             tmpMod = sourceConfigTree.getValue("ModulationCombiner1")
-            if(tmpModulation != None):
+            if(tmpModulation is not None):
                 self._configurationTree.setValue("ModulationCombiner1", tmpMod)
             self._configurationTree.addTextParameter("SecondModulation", "None")
             tmpModulation = sourceConfigTree.getValue("SecondModulation")
-            if(tmpModulation != None):
+            if(tmpModulation is not None):
                 self._configurationTree.setValue("SecondModulation", tmpModulation)
             self._configurationTree.addTextParameter("ModulationCombiner2", "Add")
             tmpMod = sourceConfigTree.getValue("ModulationCombiner2")
-            if(tmpModulation != None):
+            if(tmpModulation is not None):
                 self._configurationTree.setValue("ModulationCombiner2", tmpMod)
             self._configurationTree.addTextParameter("ThirdModulation", "None")
             tmpModulation = sourceConfigTree.getValue("ThirdModulation")
-            if(tmpModulation != None):
+            if(tmpModulation is not None):
                 self._configurationTree.setValue("ThirdModulation", tmpModulation)
             self._configurationTree.addFloatParameter("MinValue", 0.0)
             tmpValue = sourceConfigTree.getValue("MinValue")
-            if(tmpValue != None):
+            if(tmpValue is not None):
                 self._configurationTree.setValue("MinValue", tmpValue)
             self._configurationTree.addFloatParameter("MaxValue", 1.0)
             tmpValue = sourceConfigTree.getValue("MaxValue")
-            if(tmpValue != None):
+            if(tmpValue is not None):
                 self._configurationTree.setValue("MaxValue", tmpValue)
             self._configurationTree.addTextParameter("Smoother", "Off")
             tmpValue = sourceConfigTree.getValue("Smoother")
-            if(tmpValue != None):
+            if(tmpValue is not None):
                 self._configurationTree.setValue("Smoother", tmpValue)
         else:
             self._configurationTree.removeParameter("FirstModulation")
@@ -1247,13 +1247,14 @@ class MediaFileGui(object): #@UndefinedVariable
         deleteButton.Bind(wx.EVT_BUTTON, self._onDeleteButton) #@UndefinedVariable
         self._saveButton = PcnImageButton(self._noteConfigPanel, self._saveBigGreyBitmap, self._saveBigGreyBitmap, (-1, -1), wx.ID_ANY, size=(52, 17)) #@UndefinedVariable
         self._saveButton.Bind(wx.EVT_BUTTON, self._onSaveButton) #@UndefinedVariable
+        self._editImageSequenceButton = PcnImageButton(self._noteConfigPanel, self._editBigBitmap, self._editBigPressedBitmap, (-1, -1), wx.ID_ANY, size=(52, 17)) #@UndefinedVariable
+        self._editImageSequenceButton.Bind(wx.EVT_BUTTON, self._onEditImageSequenceButton) #@UndefinedVariable
         self._buttonsSizer.Add(closeButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(thumbButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(deleteButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._buttonsSizer.Add(self._saveButton, 0, wx.ALL, 5) #@UndefinedVariable
+        self._buttonsSizer.Add(self._editImageSequenceButton, 0, wx.ALL, 5) #@UndefinedVariable
         self._noteConfigSizer.Add(self._buttonsSizer, proportion=1, flag=wx.EXPAND) #@UndefinedVariable
-
-#        wx.StaticText(self._noteConfigPanel, wx.ID_ANY, ".", pos=(445, 560)) #@UndefinedVariable
 
         self._mainSelection = self.MainSelection.Unselected
         self._selectedEditor = self.EditSelection.Unselected
@@ -1559,7 +1560,7 @@ class MediaFileGui(object): #@UndefinedVariable
         return floatValuesToString(values)
 
     def _onSliderUpdateButton(self, event):
-        if(self._noteValuesWidget != None):
+        if(self._noteValuesWidget is not None):
             self._valuesString = self._getSlideValuesString()
             self._noteValuesWidget.SetValue(self._valuesString)
             self._updateNoteSliders(self._valuesString, self._labelList, self._noteValuesWidget, self._noteValuesNumValues, self._infoText)
@@ -1572,7 +1573,7 @@ class MediaFileGui(object): #@UndefinedVariable
     def _onSlide(self, event):
         sliderId = event.GetEventObject().GetId()
         baseId = 10
-        if((self._midiNote == None) or (self._midiNote < 0) or (self._midiNote >= 128)):
+        if((self._midiNote is None) or (self._midiNote < 0) or (self._midiNote >= 128)):
             print "No note selected for note controller message!"
         else:
             if(sliderId == self._noteSlider1Id):
@@ -1604,7 +1605,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._updateButton.setBitmaps(self._updateButtonBitmap, self._updateButtonPressedBitmap)
 
     def sendGuiRelease(self, note, guiControllerId):
-        if((note == None) or (note < 0) or (note >= 128)):
+        if((note is None) or (note < 0) or (note >= 128)):
             print "No note selected for note controller message!"
         else:
             channel = 0
@@ -2317,7 +2318,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._requestThumbCallback(self._midiNote, -1.0, True)
 
     def _onDeleteButton(self, event):
-        if(self._config == None):
+        if(self._config is None):
             return
         noteLetter = noteToNoteString(self._midiNote)
         self._mainConfig.deleteNoteConfig(self._midiNote, noteLetter)
@@ -2362,17 +2363,17 @@ class MediaFileGui(object): #@UndefinedVariable
             self._onDeleteButton(None)
         else:
             noteLetter = noteToNoteString(self._midiNote)
-            if(self._config == None):
+            if(self._config is None):
                 newConfig = self._mainConfig.makeNoteConfig(noteFileName, noteLetter, self._midiNote)
                 if(noteFileName != ""):
                     self._mainConfig.setNewNoteThumb(self._midiNote)
-                if(newConfig != None):
+                if(newConfig is not None):
                     self._config = newConfig.getConfig()
             else:
                 if(self._config.getValue("FileName") != noteFileName):
                     self._mainConfig.setNewNoteThumb(self._midiNote)
                 self._config.setValue("FileName", noteFileName)
-            if(self._config != None):
+            if(self._config is not None):
                 self._config.setValue("Type", self._type)
                 if(self._type == "VideoLoop"):
                     loopMode = self._subModeField.GetValue()
@@ -2381,7 +2382,7 @@ class MediaFileGui(object): #@UndefinedVariable
                     if((loopMode == "AdvancedLoop") or (loopMode == "AdvancedPingPong")):
                         loopConfig = self._values1Field.GetValue()
                         loopConfigVal = textToFloatValues(loopConfig, 4, True)
-                        if((loopConfigVal[0] == None) or (loopConfigVal[1] == None) or (loopConfigVal[2] == None) or (loopConfigVal[3] == None)):
+                        if((loopConfigVal[0] is None) or (loopConfigVal[1] is None) or (loopConfigVal[2] is None) or (loopConfigVal[3] is None)):
                             loopConfigValString = "0.0|0.25|0.75|1.0"
                         else:
                             loopConfigValString = floatValuesToString(loopConfigVal)
@@ -2619,6 +2620,9 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._config.setValue("QuantizeLength", quantizeLength)
                 self.updateGui(None, None)
 
+    def _onEditImageSequenceButton(self, event):
+        print "Here"
+
     def _showOrHideSubModeModulation(self):
         if(self._selectedSubMode == "Modulation"):
             self._noteConfigSizer.Show(self._subModulationSizer)
@@ -2631,10 +2635,10 @@ class MediaFileGui(object): #@UndefinedVariable
     def _setupSubConfig(self, config):
         if(self._type == "VideoLoop"):
             self._subModeLabel.SetLabel("Loop mode:")
-            if(config != None):
+            if(config is not None):
                 self._updateLoopModeChoices(self._subModeField, config.getValue("LoopMode"), "Normal")
                 confString = self._config.getValue("AdvancedLoopValues")
-                if(confString == None):
+                if(confString is None):
                     confValString = "0.0|0.25|0.75|1.0"
                 else:
                     confVal = textToFloatValues(confString, 4)
@@ -2646,7 +2650,7 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._values1Field.SetValue("0.0|0.25|0.75|1.0")
         elif(self._type == "ImageSequence"):
             self._subModeLabel.SetLabel("Sequence mode:")
-            if(config != None):
+            if(config is not None):
                 self._selectedSubMode = config.getValue("SequenceMode")
                 self._updateSequenceModeChoices(self._subModeField, self._selectedSubMode, "Time")
                 playbackMod = config.getValue("PlaybackModulation")
@@ -2657,9 +2661,9 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._subModulationField.SetValue("None")
         elif(self._type == "Image"):
             self._subModeLabel.SetLabel("Resize mode:")
-            if(config != None):
+            if(config is not None):
                 cropMode = config.getValue("DisplayMode")
-                if(cropMode == None):
+                if(cropMode is None):
                     self._selectedSubMode = "Crop"
                 else:
                     self._selectedSubMode = cropMode
@@ -2679,9 +2683,9 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._values2Field.SetValue("0.0|0.0|0.0")
         elif(self._type == "ScrollImage"):
             self._subModeLabel.SetLabel("Scroll direction:")
-            if(config != None):
+            if(config is not None):
                 horMode = config.getValue("HorizontalMode")
-                if((horMode == None) or (horMode == True)):
+                if((horMode is None) or (horMode == True)):
                     self._selectedSubMode = "Horizontal"
                 else:
                     self._selectedSubMode = "Vertical"
@@ -2703,7 +2707,7 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._subModulationField.SetValue("None")
         elif((self._type == "Sprite") or (self._type == "Text")):
             self._subModeLabel.SetLabel("First frame mask mode:")
-            if(config != None):
+            if(config is not None):
                 if(self._type == "Sprite"):
                     invMode = config.getValue("InvertFirstFrameMask")
                     if(invMode == True):
@@ -2713,19 +2717,19 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 else:
                     font = config.getValue("Font")
-                    if(font == None):
+                    if(font is None):
                         self._fontField.SetValue("Arial;32;#FFFFFF")
                     else:
                         self._fontField.SetValue(font)
                 confString = self._config.getValue("StartPosition")
-                if(confString == None):
+                if(confString is None):
                     confValString = "0.5|0.5|0.0"
                 else:
                     confVal = textToFloatValues(confString, 3)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
-                if(confString == None):
+                if(confString is None):
                     confValString = "0.5|0.5|0.0"
                 else:
                     confVal = textToFloatValues(confString, 3)
@@ -2750,9 +2754,9 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._subModulation3Field.SetValue("None")
         elif(self._type == "Camera"):
             self._subModeLabel.SetLabel("Resize mode:")
-            if(config != None):
+            if(config is not None):
                 cropMode = config.getValue("DisplayMode")
-                if(cropMode == None):
+                if(cropMode is None):
                     self._selectedSubMode = "Crop"
                 else:
                     self._selectedSubMode = cropMode
@@ -2761,18 +2765,18 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._selectedSubMode = self._subModeField.GetValue()
                 self._updateCropModeChoices(self._subModeField, self._selectedSubMode, "Crop")
         elif(self._type == "KinectCamera"):
-            if(config != None):
+            if(config is not None):
 #                dispMod = config.getValue("DisplayModeModulation")
 #                self._subModulationField.SetValue(str(dispMod))
                 confString = self._config.getValue("FilterValues")
-                if(confString == None):
+                if(confString is None):
                     confValString = "0.0|0.0|0.0|0.0"
                 else:
                     confVal = textToFloatValues(confString, 4)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("ZoomValues")
-                if(confString == None):
+                if(confString is None):
                     confValString = "0.5|0.5|0.5|0.5"
                 else:
                     confVal = textToFloatValues(confString, 4)
@@ -2783,7 +2787,7 @@ class MediaFileGui(object): #@UndefinedVariable
                 self._values1Field.SetValue("0.0|0.0|0.0|0.0")
                 self._values2Field.SetValue("0.5|0.5|0.5|0.5")
         elif(self._type == "Modulation"):
-            if(config != None):
+            if(config is not None):
                 confMod = config.getValue("FirstModulation")
                 self._subModulationField.SetValue(str(confMod))
                 firstConfMode = config.getValue("ModulationCombiner1")
@@ -2798,11 +2802,11 @@ class MediaFileGui(object): #@UndefinedVariable
                 confMod = config.getValue("ThirdModulation")
                 self._subModulation3Field.SetValue(str(confMod))
                 confVal = self._config.getValue("MinValue")
-                if(confVal == None):
+                if(confVal is None):
                     confVal = 0.0
                 self._values1Field.SetValue(str(confVal))
                 confVal = self._config.getValue("MaxValue")
-                if(confVal == None):
+                if(confVal is None):
                     confVal = 1.0
                 self._values2Field.SetValue(str(confVal))
                 firstConfMode = config.getValue("Smoother")
@@ -2866,6 +2870,12 @@ class MediaFileGui(object): #@UndefinedVariable
             self._noteConfigSizer.Hide(self._subModulationSizer)
             if(self._selectedEditor == self.EditSelection.SubModulation1):
                 self._onSubmodulationEdit(None, True)
+
+        # if(self._type == "ImageSequence"): # TODO put back in!
+        #     self._buttonsSizer.Show(self._editImageSequenceButton)
+        # else:
+        #     self._buttonsSizer.Hide(self._editImageSequenceButton)
+        self._buttonsSizer.Hide(self._editImageSequenceButton)
 
         if(self._type == "Sprite"):
             self._subModulation2Label.SetLabel("Y position modulation:")
@@ -2970,14 +2980,14 @@ class MediaFileGui(object): #@UndefinedVariable
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
         else:
-            if(config != None):
+            if(config is not None):
                 timeModulationTemplate = config.getValue("TimeModulationConfig")
                 self._updateTimeModulationChoices(self._timeModulationField, timeModulationTemplate, "Default")
             else:
                 oldTimeModulationTemplate = self._timeModulationField.GetValue()
                 self._updateTimeModulationChoices(self._timeModulationField, oldTimeModulationTemplate, "Default")
             self._noteConfigSizer.Show(self._timeModulationSizer)
-            if(config != None):
+            if(config is not None):
                 curveString = config.getValue("Curve")
                 self._curveField.SetValue(curveString)
             else:
@@ -3027,12 +3037,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateTimeModulationChoices(widget, value, value, False)
         if(saveValue == True):
             timeModulation = self._timeModulationField.GetValue()
-            if(self._config != None):
+            if(self._config is not None):
                 self._config.setValue("TimeModulationConfig", timeModulation)
         self._showOrHideSaveButton()
 
     def _updateTimeModulationChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._globalConfig == None):
+        if(self._globalConfig is None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._globalConfig.getTimeModulationChoices, value, defaultValue, updateSaveButton)
@@ -3049,7 +3059,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._showOrHideSaveButton()
 
     def _updateEffecChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._globalConfig == None):
+        if(self._globalConfig is None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._globalConfig.getEffectChoices, value, defaultValue, updateSaveButton)
@@ -3058,12 +3068,12 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateFadeChoices(widget, value, value, False)
         if(saveValue == True):
             fadeConfig = self._fadeField.GetValue()
-            if(self._config != None):
+            if(self._config is not None):
                 self._config.setValue("FadeConfig", fadeConfig)
         self._showOrHideSaveButton()
 
     def _updateFadeChoices(self, widget, value, defaultValue, updateSaveButton = False):
-        if(self._globalConfig == None):
+        if(self._globalConfig is None):
             self._updateChoices(widget, None, value, defaultValue, updateSaveButton)
         else:
             self._updateChoices(widget, self._globalConfig.getFadeChoices, value, defaultValue, updateSaveButton)
@@ -3085,24 +3095,28 @@ class MediaFileGui(object): #@UndefinedVariable
     def _updateSequenceModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._sequenceModes.getChoices, value, defaultValue)
 
-    def _getCropChoises(self):
+    @staticmethod
+    def _getCropChoises():
         return ["Crop", "Stretch", "Scale"]
 
     def _updateCropModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCropChoises, value, defaultValue)
 
+    @staticmethod
     def _getScrollChoises(self):
         return ["Horizontal", "Vertical"]
 
     def _updateScrollModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getScrollChoises, value, defaultValue)
 
+    @staticmethod
     def _getReverseChoises(self):
         return ["Off", "On"]
 
     def _updateReverseModeChoices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getReverseChoises, value, defaultValue)
 
+    @staticmethod
     def _getInvertChoises(self):
         return ["Normal", "Invert mask"]
 
@@ -3112,15 +3126,18 @@ class MediaFileGui(object): #@UndefinedVariable
     def _updateTypeChoices(self, widget, value, defaultValue):
         updateChoices(widget, None, value, defaultValue, self._typeModes.getChoices(self._mainConfig.isShowKinect()))
 
+    @staticmethod
     def _getCombineModulation1Choises(self):
         return ["Add", "Subtract", "Mutiply", "Mask", "If (1st > 0.5) Then:"]
 
     def _updateSubModulationMode1Choices(self, widget, value, defaultValue):
         self._updateChoices(widget, self._getCombineModulation1Choises, value, defaultValue)
 
+    @staticmethod
     def _getCombineModulation2Choises(self):
         return ["Add", "Subtract", "Mutiply", "Mask"]
 
+    @staticmethod
     def _getCombineModulation2Choises2(self):
         return ["Else"]
 
@@ -3130,6 +3147,7 @@ class MediaFileGui(object): #@UndefinedVariable
         else:
             self._updateChoices(widget, self._getCombineModulation2Choises, value, defaultValue)
 
+    @staticmethod
     def _getModulationSmootherChoises(self):
         return ["Off", "Smoothish", "Smooth", "Smoother","Smoothest"]
 
@@ -3177,7 +3195,7 @@ class MediaFileGui(object): #@UndefinedVariable
         effectTemplate.checkAndUpdateFromConfiguration()
         effectName = effectTemplate.getEffectName()
         effectId = getEffectId(effectName)
-        if(effectId == None):
+        if(effectId is None):
             widget.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
         elif(effectId == EffectTypes.BlobDetect):
             widget.setBitmaps(self._fxBitmapBlobDetect, self._fxBitmapBlobDetect)
@@ -3246,7 +3264,7 @@ class MediaFileGui(object): #@UndefinedVariable
             widget.setBitmaps(self._blankFxBitmap, self._blankFxBitmap)
 
     def updateMediaTypeThumb(self, widget, configHolder):
-        if(configHolder != None):
+        if(configHolder is not None):
             mediaType = configHolder.getValue("Type")
         else:
             mediaType = self._type
@@ -3267,7 +3285,7 @@ class MediaFileGui(object): #@UndefinedVariable
         elif(mediaType == "Modulation"):
             widget.setBitmaps(self._modeBitmapModulation, self._modeBitmapModulation)
         elif(mediaType == "VideoLoop"):
-            if(configHolder != None):
+            if(configHolder is not None):
                 loopMode = configHolder.getValue("LoopMode")
             else:
                 loopMode = self._subModeField.GetValue()
@@ -3290,7 +3308,7 @@ class MediaFileGui(object): #@UndefinedVariable
             elif(loopMode == "AdvancedPingPong"):
                 widget.setBitmaps(self._modeBitmapAdvancedPingPong, self._modeBitmapAdvancedPingPong)
         elif(mediaType == "ImageSequence"):
-            if(configHolder != None):
+            if(configHolder is not None):
                 seqMode = configHolder.getValue("SequenceMode")
             else:
                 seqMode = self._subModeField.GetValue()
@@ -3319,7 +3337,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._onSaveButton(event)
 
     def _onMouseRelease(self, event):
-        print "DEBUG mouse RELEASE " * 5
+        # print "DEBUG mouse RELEASE " * 5
         self._globalConfig.getDraggedFxName()
         self._clearDragCursorCallback()
 
@@ -3409,12 +3427,12 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onClipFadeModeChosen(self, index):
         if((index >= 0) and (index < len(self._wipeModeLabels))):
-            if(self._midiNote != None):
+            if(self._midiNote is not None):
                 wipeMode = self._wipeModeLabels[index]
-                if(self._config != None):
+                if(self._config is not None):
                     fadeConfigName = self._config.getValue("FadeConfig")
                     fadeConfig = self._globalConfig.getFadeTemplate(fadeConfigName)
-                    if(fadeConfig != None):
+                    if(fadeConfig is not None):
                         if(fadeConfig.getFadeMode() != wipeMode):
                             makeNew = False
                             if(fadeConfigName == "Default"):
@@ -3428,7 +3446,7 @@ class MediaFileGui(object): #@UndefinedVariable
                             if(makeNew == True):
                                 newFadeConfigName = "NoteFade_" + noteToNoteString(self._midiNote)
                                 oldConfig = self._globalConfig.getFadeTemplate(newFadeConfigName)
-                                if(oldConfig == None):
+                                if(oldConfig is None):
                                     text = "Do you want to make a new configuration: \"%s\"" % (newFadeConfigName)
                                 else:
                                     text = "Do you want to update configuration: \"%s\"" % (newFadeConfigName)
@@ -3436,9 +3454,9 @@ class MediaFileGui(object): #@UndefinedVariable
                                 result = dlg.ShowModal() == wx.ID_YES #@UndefinedVariable
                                 dlg.Destroy()
                                 if(result == True):
-                                    if(oldConfig == None):
+                                    if(oldConfig is None):
                                         self._globalConfig.makeFadeTemplate(newFadeConfigName, wipeMode, False, 0.0, "None", "None")
-                                        if(self._config != None):
+                                        if(self._config is not None):
                                             self._config.setValue("FadeConfig", newFadeConfigName)
                                     else:
                                         oldConfig.update(wipeMode, None, None, None, None)
@@ -3456,7 +3474,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._onFadeEdit(event)
 
     def _onLengthDoubbleButton(self, event):
-        if(self._config != None):
+        if(self._config is not None):
             oldLength = float(self._syncField.GetValue())
             newLength = oldLength * 2
             self._syncField.SetValue(str(newLength))
@@ -3466,7 +3484,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._showOrHideSaveButton()
 
     def _onLengthHalfButton(self, event):
-        if(self._config != None):
+        if(self._config is not None):
             oldLength = float(self._syncField.GetValue())
             newLength = oldLength / 2
             self._syncField.SetValue(str(newLength))
@@ -3476,7 +3494,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._showOrHideSaveButton()
 
     def _onSyncDoubbleButton(self, event):
-        if(self._config != None):
+        if(self._config is not None):
             oldLength = float(self._quantizeField.GetValue())
             newLength = oldLength * 2
             self._quantizeField.SetValue(str(newLength))
@@ -3486,7 +3504,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._showOrHideSaveButton()
 
     def _onSyncHalfButton(self, event):
-        if(self._config != None):
+        if(self._config is not None):
             oldLength = float(self._quantizeField.GetValue())
             newLength = oldLength / 2
             self._quantizeField.SetValue(str(newLength))
@@ -3497,8 +3515,8 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onDragFx1Done(self, event):
         fxName = self._globalConfig.getDraggedFxName()
-        if(fxName != None):
-            if(self._midiNote != None):
+        if(fxName is not None):
+            if(self._midiNote is not None):
                 self._updateEffecChoices(self._effect1Field, fxName, "MediaDefault1")
                 self.updateEffectThumb(self._overviewFx1Button, fxName)
                 self._showOrHideSaveButton()
@@ -3506,8 +3524,8 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onDragFx2Done(self, event):
         fxName = self._globalConfig.getDraggedFxName()
-        if(fxName != None):
-            if(self._midiNote != None):
+        if(fxName is not None):
+            if(self._midiNote is not None):
                 self._updateEffecChoices(self._effect2Field, fxName, "MediaDefault2")
                 self.updateEffectThumb(self._overviewFx2Button, fxName)
                 self._showOrHideSaveButton()
@@ -3518,7 +3536,7 @@ class MediaFileGui(object): #@UndefinedVariable
         effectConfigName = None
         effectId = None
         midiNote = None
-        if(self._config != None):
+        if(self._config is not None):
             if(buttonId == self._overviewFx1Button.GetId()):
                 effectConfigName = self._config.getValue("Effect1Config")
                 effectId = "Effect1"
@@ -3535,7 +3553,7 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._selectedEditor = self.EditSelection.Effect2
                 else:
                     self._selectedEditor = self.EditSelection.Unselected
-        if(effectConfigName != None):
+        if(effectConfigName is not None):
             self._globalConfig.updateEffectsGui(effectConfigName, midiNote, effectId, None)
             self._globalConfig.showSliderGuiEditButton()
             self.showSlidersGui()
@@ -3544,7 +3562,7 @@ class MediaFileGui(object): #@UndefinedVariable
     def _onFxButtonDouble(self, event):
         buttonId = event.GetEventObject().GetId()
         effectConfigName = None
-        if(self._config != None):
+        if(self._config is not None):
             if(buttonId == self._overviewFx1Button.GetId()):
                 effectConfigName = self._config.getValue("Effect1Config")
             if(buttonId == self._overviewFx2Button.GetId()):
@@ -3554,20 +3572,20 @@ class MediaFileGui(object): #@UndefinedVariable
 
     def _onClipFadeButtonDouble(self, event):
         fadeConfigName = None
-        if(self._config != None):
+        if(self._config is not None):
             fadeConfigName = self._config.getValue("FadeConfig")
         self._globalConfig.updateFadeList(fadeConfigName)
         self.showFadeListGui()
 
     def updateOverviewClipBitmap(self, clipBitmap):
-        if(clipBitmap != None):
+        if(clipBitmap is not None):
             self._overviewClipButton.setBitmap(clipBitmap)
         else:
             self._overviewClipButton.setBitmap(self._emptyBitMap)
 
     def _checkIfUpdated(self):
         guiFileName = self._fileNameField.GetValue()
-        if(self._config == None):
+        if(self._config is None):
             if(guiFileName != ""):
                 return True
             else:
@@ -3769,11 +3787,11 @@ class MediaFileGui(object): #@UndefinedVariable
             self._overviewClipSaveButtonDissabled = False
         
     def updateGui(self, noteConfig, midiNote):
-        if(noteConfig != None):
+        if(noteConfig is not None):
             config = noteConfig.getConfig()
             self._config = config
             self._midiNote = midiNote
-        if(self._config == None):
+        if(self._config is None):
             return
         self._type = self._config.getValue("Type")
         if(self._type == "Camera" or self._type == "KinectCamera"):
@@ -3830,7 +3848,7 @@ class MediaFileGui(object): #@UndefinedVariable
             self._updateFadeChoices(self._fadeField, fadeConfigName, "Default")
             self._globalConfig.updateFadeGuiButtons(fadeConfigName, None, self._overviewClipFadeModeButton, self._overviewClipFadeModulationButton, self._overviewClipFadeLevelButton)
 
-        if(self._selectedEditor != None):
+        if(self._selectedEditor is not None):
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect1):
@@ -3873,7 +3891,7 @@ class MediaFileGui(object): #@UndefinedVariable
         self._updateEffecChoices(self._effect2Field, "MediaDefault2", "MediaDefault2")
         self._updateFadeChoices(self._fadeField, "Default", "Default")
 
-        if(self._selectedEditor != None):
+        if(self._selectedEditor is not None):
             if(self._selectedEditor == self.EditSelection.TimeModulation):
                 self._onTimeModulationEdit(None, False)
             elif(self._selectedEditor == self.EditSelection.Effect1):

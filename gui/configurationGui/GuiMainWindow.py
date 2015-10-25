@@ -94,7 +94,7 @@ class FileDrop(wx.FileDropTarget): #@UndefinedVariable
     def OnDropFiles(self, x, y, filenames):
         nameId = 0
         for name in filenames:
-            if(name != None):
+            if(name is not None):
                 self._callbackFunction(self._widgetId, name, nameId)
                 nameId += 1
 
@@ -230,10 +230,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._videoDirectory = self._configuration.getGuiVideoDir()
         self._videoSaveSubDir = ""
         self._videoScaleX = self._configuration.getVideoScaleX()
-        if(self._videoScaleX == None):
+        if(self._videoScaleX is None):
             self._videoScaleX = -1
         self._videoScaleY = self._configuration.getVideoScaleY()
-        if(self._videoScaleY == None):
+        if(self._videoScaleY is None):
             self._videoScaleY = -1
         if((self._videoScaleX == -1) or (self._videoScaleY == -1)):
             self._videoScaleMode = "No scale"
@@ -591,10 +591,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._guiClient1 = GuiClient(self._configuration.getAppDataDirectory())
         self._guiClient1.startGuiClientProcess(host, port, None)
         host, port = self._configuration.getWebConfig(2)
-        if(host != None and host != ""):
+        if(host is not None and host != ""):
             self._guiClient2 = GuiClient(self._configuration.getAppDataDirectory())
             self._guiClient2.startGuiClientProcess(host, port, None)
-        if(host != None and host != ""):
+        if(host is not None and host != ""):
             host, port = self._configuration.getWebConfig(3)
             self._guiClient3 = GuiClient(self._configuration.getAppDataDirectory())
         self._guiClient3.startGuiClientProcess(host, port, None)
@@ -621,8 +621,8 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         foundTask = None
         for task in self._taskQueue:
             if(task.getType() == taskType):
-                if((uniqueId == None) or (task.getUniqueId() == uniqueId)):
-                    if(foundTask != None):
+                if((uniqueId is None) or (task.getUniqueId() == uniqueId)):
+                    if(foundTask is not None):
                         if(deleteDuplicates == True):
                             self._taskQueue.remove(task)
                     else:
@@ -644,7 +644,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         self._checkConfigState()
 
     def _checkForProcessCommands(self):
-        if(self._commandQueue != None):
+        if(self._commandQueue is not None):
             try:
                 command = self._commandQueue.get_nowait()
                 if(command == "QUIT"):
@@ -654,10 +654,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _checkServerResponse(self):
         result = self._guiClient.getServerResponse()
-        if(result[0] != None):
+        if(result[0] is not None):
             if(result[0] == GuiClient.ResponseTypes.FileDownload):
 #                print "GuiClient.ResponseTypes.FileDownload"
-                if(result[1] != None):
+                if(result[1] is not None):
                     fileName, playerFileName = result[1]
                     playerFileName = os.path.normpath(playerFileName)
                     if(playerFileName == os.path.normpath("thumbs/preview.jpg")):
@@ -665,12 +665,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
                         osFileName = os.path.normpath(fileName)
                         self._trackGui.updatePreviewImage(osFileName)
-                        if(foundTask != None):
+                        if(foundTask is not None):
                             foundTask.taskDone()
                             self._taskQueue.remove(foundTask)
                     else:
                         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.File, playerFileName, False)
-                        if(foundTask == None):
+                        if(foundTask is None):
                             print "Could not find task that belongs to this answer: " + playerFileName
                         else:
                             fileSetOk = False
@@ -686,12 +686,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.ThumbRequest):
 #                print "GuiClient.ResponseTypes.ThumbRequest"
-                if(result[1] != None):
+                if(result[1] is not None):
                     noteTxt, noteTime, fileName = result[1] #@UnusedVariable
                     noteId = max(min(int(noteTxt), 127), 0)
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Note, noteId)
                     forceUpdate = foundTask.getExtraData()
-                    if(foundTask == None):
+                    if(foundTask is None):
                         print "Could not find task that belongs to this answer: " + noteTxt + ":" + noteTime + " -> " + fileName
                     else:
                         if(fileName.startswith("thumbs")):
@@ -716,7 +716,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(result[0] == GuiClient.ResponseTypes.NoteList):
 #                print "GuiClient.ResponseTypes.NoteList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ActiveNotes, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     noteList = result[1]
                     for i in range(128):
                         found = False
@@ -730,20 +730,20 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         if(found == False):
                             widget = self._noteWidgets[i]
                             widget.clearKeyboardButton()
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.TrackStateError):
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
                 if((result[1] == "timeout") or (result[1] == "connectionRefused") or (result[1] == "resolvError")):
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
                         self._skippedTrackStateRequests = 99
             if(result[0] == GuiClient.ResponseTypes.TrackState):
 #                print "GuiClient.ResponseTypes.TrackState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     if(self._stoppingWebRequests == True):
                         self._updateTitle("Connecting to server...")
                     self._stoppingWebRequests = False
@@ -762,12 +762,12 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         else:
                             noteWidget = self._noteWidgets[note]
                             noteBitmap = noteWidget.getBitmap()
-                            if(noteBitmap != None):
+                            if(noteBitmap is not None):
                                 settings.setThumb(noteBitmap)
                             else:
                                 settings.clearThumb()
                             activeNoteConfig = self._configuration.getNoteConfiguration(note)
-                            if(activeNoteConfig == None):
+                            if(activeNoteConfig is None):
                                 self._trackGui.updateTrackMixModeThumb(i, trackConfig, "None")
                                 self._trackGui.updateTrackFadeThumb(i, trackConfig, None)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
@@ -782,24 +782,24 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                                 self._trackGui.updateTrackFadeThumb(i, trackConfig, noteWipeMode)
                                 self._trackGui.updateTrackEffectsThumb(i, trackConfig)
                             settings.setActiveNoteId(note)
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.EffectState):
 #                print "GuiClient.ResponseTypes.EffectState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.EffectState, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     valuesString = result[1][0]
                     guiString = result[1][1]
                     self._globalConfig.updateEffectsSliders(valuesString, guiString)
 #                    print "DEBUG values: %s gui: %s" %(valuesString, guiString)
-                if(foundTask != None):
+                if(foundTask is not None):
                     foundTask.taskDone()
                     self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.ConfigState):
 #                print "GuiClient.ResponseTypes.ConfigState"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     configId = result[1]
                     if(configId != self._lastConfigState):
                         print "Config is updated on server.... ID: " + str(self._lastConfigState) + " != " + str(configId)
@@ -812,13 +812,13 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         self._guiClient.requestPlayerConfiguration()
                         playerConfigRequestTask.setState(TaskHolder.States.Sendt)
                     self._lastConfigState = configId
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.Configuration):
 #                print "GuiClient.ResponseTypes.Configuration"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Configuration, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     newConfigXml = result[1]
                     newConfigString = xmlToPrettyString(newConfigXml)
                     if(self._oldServerConfigurationString != newConfigString):
@@ -850,7 +850,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                             self._configuration.setFromXml(newConfigXml)
                             self._oldGuiConfigurationString = self._configuration.getXmlString()
                             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
-                            if(noteConfig == None):
+                            if(noteConfig is None):
                                 self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
                                 self._noteGui.clearGui(self._activeNoteId)
                             else:
@@ -868,14 +868,14 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 #                            print "#" * 150
                         self.updateKeyboardImages()
                         self._oldServerConfigurationString = newConfigString
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         try:
                             self._taskQueue.remove(foundTask)
                         except:
                             pass
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         try:
                             self._taskQueue.remove(foundTask)
@@ -886,30 +886,30 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
                 self._skippedConfigStateRequests = 99
                 self._requestConfigState()
-                if(foundTask != None):
+                if(foundTask is not None):
                     foundTask.taskDone()
                     self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.PlayerConfiguration):
 #                print "GuiClient.ResponseTypes.PlayerConfiguration"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.PlayerConfiguration, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     newConfigXmlString = result[1]
                     self._playerConfigString = newConfigXmlString
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.LatestControllers):
 #                print "GuiClient.ResponseTypes.LatestControllers"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     self._latestControllersRequestResult = result[1]
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
             if(result[0] == GuiClient.ResponseTypes.ConfigFileList):
 #                print "GuiClient.ResponseTypes.ConfigFileList"
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
-                if(result[1] != None):
+                if(result[1] is not None):
                     configurationFileListString, activeConfig, isConfigSaved = result[1]
                     self._serverConfigIsSaved = isConfigSaved
                     if((self._oldServerConfigList != configurationFileListString) or (self._oldServerActiveConfig != activeConfig)):
@@ -922,7 +922,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     else:
                         self._updateTitle(activeConfig)
                     self._oldServerConfigList = configurationFileListString
-                    if(foundTask != None):
+                    if(foundTask is not None):
                         foundTask.taskDone()
                         self._taskQueue.remove(foundTask)
 
@@ -987,7 +987,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         if(self._skippedTrackStateRequests > 5):
             self._skippedTrackStateRequests = 0
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Track, None)
-            if(foundTask == None):
+            if(foundTask is None):
                 trackRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Track, None, None)
                 self._taskQueue.append(trackRequestTask)
                 self._guiClient.requestTrackState()
@@ -1004,7 +1004,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def requestEffectState(self, channel, note):
         foundTask = self._findQueuedTask(TaskHolder.RequestTypes.EffectState, None)
-        if(foundTask == None):
+        if(foundTask is None):
             effectStateRequestTask = TaskHolder("Effect state request for " + str(note) + " or " + str(channel), TaskHolder.RequestTypes.EffectState, None, None)
             self._taskQueue.append(effectStateRequestTask)
             self._guiClient.requestEffectState(channel, note)
@@ -1015,7 +1015,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._stoppingWebRequests == False):
                 self._skippedPreviewRequests = 0
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.Preview, None)
-                if(foundTask == None):
+                if(foundTask is None):
                     previewRequestTask = TaskHolder("Track state request", TaskHolder.RequestTypes.Preview, None, None)
                     self._taskQueue.append(previewRequestTask)
                     self._guiClient.requestPreview()
@@ -1028,7 +1028,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._stoppingWebRequests == False):
                 self._skippedConfigStateRequests = 0
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigState, None)
-                if(foundTask == None):
+                if(foundTask is None):
                     configStateRequestTask = TaskHolder("Config state request", TaskHolder.RequestTypes.ConfigState, None, None)
                     self._taskQueue.append(configStateRequestTask)
                     self._guiClient.requestConfigState(self._lastConfigState)
@@ -1041,7 +1041,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._stoppingWebRequests == False):
                 self._skippedConfigListRequests = 0
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.ConfigFileList, None)
-                if(foundTask == None):
+                if(foundTask is None):
                     configStateRequestTask = TaskHolder("Config list request", TaskHolder.RequestTypes.ConfigFileList, None, None)
                     self._taskQueue.append(configStateRequestTask)
                     self._guiClient.requestConfigList()
@@ -1054,7 +1054,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._stoppingWebRequests == False):
                 self._skippedLatestControllersRequests = 0
                 foundTask = self._findQueuedTask(TaskHolder.RequestTypes.LatestControllers, None)
-                if(foundTask == None):
+                if(foundTask is None):
                     controllersRequestTask = TaskHolder("Latest MIDI controllers request", TaskHolder.RequestTypes.LatestControllers, None, None)
                     self._taskQueue.append(controllersRequestTask)
                     self._guiClient.requestLatestControllers()
@@ -1106,7 +1106,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     self._sendButton.setBitmaps(self._sendConfigNoContactRedBitmap, self._sendConfigNoContactRedBitmap)
                 else:
                     foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-                    if(foundTask == None):
+                    if(foundTask is None):
                         if(self._configuration.isAutoSendEnabled() == True):
                             self._sendButton.setBitmaps(self._sendConfigSendingBitmap, self._sendConfigSendingBitmap)
                             self._onSendButton(None)
@@ -1160,7 +1160,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 print "SAVE: " + str(selectedConfig)
                 self._guiClient.requestConfigSave(selectedConfig)
         elif(menuString == "Player Config"):
-            if(self._playerConfigString != None):
+            if(self._playerConfigString is not None):
                 dlg = ConfigPlayerDialog(self, 'Player config.', self._updatePlayerConfiguration, self._playerConfigString)
                 dlg.ShowModal()
                 try:
@@ -1201,7 +1201,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 #            print "DEBUG pcn: _onSendButton()"
             xmlString = self._configuration.getXmlString()
             foundTask = self._findQueuedTask(TaskHolder.RequestTypes.SendConfig, None)
-            if(foundTask != None):
+            if(foundTask is not None):
                 foundTask.taskDone()
                 try:
                     self._taskQueue.remove(foundTask)
@@ -1260,7 +1260,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onPlayer2Button(self, event):
         self._selectedPlayerId = 2
-        if(self._guiClient2 != None):
+        if(self._guiClient2 is not None):
             self._guiClient = self._guiClient2
         else:
             self._guiClient = self._guiClient1
@@ -1268,7 +1268,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onPlayer3Button(self, event):
         self._selectedPlayerId = 3
-        if(self._guiClient3 != None):
+        if(self._guiClient3 is not None):
             self._guiClient = self._guiClient3
         else:
             self._guiClient = self._guiClient1
@@ -1298,13 +1298,13 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                 foundNoteId = i
                 break
 
-        if(foundNoteId != None):
+        if(foundNoteId is not None):
             self._activeNoteId = foundNoteId
             self._selectKeyboardKey(self._activeNoteId)
             if(self._selectedMidiChannel > -1):
                 self._configuration.getMidiSender().sendNoteOnOff(self._selectedMidiChannel, self._activeNoteId)
             noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
-            if(noteConfig == None):
+            if(noteConfig is None):
                 self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
                 self._noteGui.clearGui(self._activeNoteId)
             else:
@@ -1335,10 +1335,10 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             for i in range(128):
                 if(self._noteWidgetIds[i] == self._dragSource):
                     sourceConfig = self._configuration.getNoteConfiguration(i)
-                    if(sourceConfig != None):
+                    if(sourceConfig is not None):
                         dragBitmap = self._noteWidgets[i].getBitmap()
                     break
-            if(dragBitmap == None):
+            if(dragBitmap is None):
                 self._dragSource = None
                 self.clearDragCursor()
                 return
@@ -1347,7 +1347,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             cursorImage = wx.ImageFromBitmap(dragBitmap) #@UndefinedVariable
             cursor = wx.CursorFromImage(cursorImage) #@UndefinedVariable
         elif(fxMode == True):
-            if(bitmap == None):
+            if(bitmap is None):
                 self._dragSource = None
                 self.clearDragCursor()
                 return
@@ -1386,28 +1386,28 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _onDragDone(self, event):
         self.clearDragCursor()
-        if(self._dragSource != None):
+        if(self._dragSource is not None):
             sourceNoteId = None
             for i in range(128):
                 if(self._noteWidgetIds[i] == self._dragSource):
                     sourceNoteId = i
                     break
-            if(sourceNoteId != None):
+            if(sourceNoteId is not None):
                 buttonId =  event.GetEventObject().GetId()
                 destNoteId = None
                 for i in range(128):
                     if(self._noteWidgetIds[i] == buttonId):
                         destNoteId = i
                         break
-                if(destNoteId != None):
+                if(destNoteId is not None):
                     if(destNoteId != sourceNoteId):
                         print "Drag and drop from noteId %d to %d" % (sourceNoteId, destNoteId)
                         sourceConfig = self._configuration.getNoteConfiguration(sourceNoteId)
-                        if(sourceConfig != None):
+                        if(sourceConfig is not None):
                             destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
-                            if(destinationConfig == None):
+                            if(destinationConfig is None):
                                 destinationConfig = self._configuration.makeNoteConfig("", noteToNoteString(destNoteId), destNoteId)
-                            if(destinationConfig != None):
+                            if(destinationConfig is not None):
                                 destinationConfig.updateFrom(sourceConfig, True)
                                 self._noteGui.updateGui(destinationConfig, destNoteId)
                                 noteBitmap = self._noteWidgets[sourceNoteId].getBitmap()
@@ -1436,7 +1436,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         else:
             while True:
                 out = process.stdout.read(1)
-                if out == '' and process.poll() != None:
+                if out == '' and process.poll() is not None:
                     break
                 if out != '':
                     outputString += out
@@ -1465,7 +1465,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         useWindowsTrick = False
         ffmpegPath = os.path.normpath(self._configuration.getFfmpegBinary())
         ffmpegH264Options = self._configuration.getFfmpegH264Options()
-        if(destNoteId != None):
+        if(destNoteId is not None):
             if(destNoteId >= 128):
                 return
             for tries in range(2):
@@ -1477,7 +1477,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                         ffmpegFileName = fileName.encode('cp1252')
                         useWindowsTrick = True
                     ffmpegString = self._call_command(ffmpegPath, "-i", ffmpegFileName)
-                    if(ffmpegString == None):
+                    if(ffmpegString is None):
                         return
                     streamcount = 0
                     inputIsVideo = True
@@ -1584,9 +1584,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     relativeFileName = forceUnixPath(relativeFileName)
                     print "Setting %d (%s) to fileName: %s" % (destNoteId, noteToNoteString(destNoteId), relativeFileName)
                     destinationConfig = self._configuration.getNoteConfiguration(destNoteId)
-                    if(destinationConfig == None):
+                    if(destinationConfig is None):
                         destinationConfig = self._configuration.makeNoteConfig(relativeFileName, noteToNoteString(destNoteId), destNoteId)
-                    if(destinationConfig != None):
+                    if(destinationConfig is not None):
                         destinationConfig.updateFileName(relativeFileName, inputIsVideo)
                         if(fileNameIndex == 0):
                             self._noteWidgets[destNoteId].setBitmap(self._newNoteBitmap)
@@ -1617,9 +1617,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
 
     def _updateValuesFromCopyDialogCallback(self, fileOk, copyOutputFileName = None, videoSaveSubDir = None):
         self._copyWentOk = fileOk
-        if(copyOutputFileName != None):
+        if(copyOutputFileName is not None):
             self._copyOutputFileName = copyOutputFileName
-        if(videoSaveSubDir != None):
+        if(videoSaveSubDir is not None):
             self._videoSaveSubDir = videoSaveSubDir
 
     def getNoteConfig(self, trackId):
@@ -1628,7 +1628,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
         activeNoteMixMode = "Default"
         if((activeNoteId >= 0) and (activeNoteId < 128)):
             activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-            if(activeNoteConfig != None):
+            if(activeNoteConfig is not None):
                 activeNoteMixMode = activeNoteConfig.getMixMode()
         else:
             activeNoteMixMode = "None"
@@ -1650,14 +1650,14 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackGuiSettings[i].hasEditWidgetId(buttonId)):
                 foundTrackId = i
                 break
-        if(foundTrackId != None):
+        if(foundTrackId is not None):
             if((self._activeTrackId == foundTrackId) and self._noteGui.isTrackEditorOpen()):
                 self._activeTrackId = -1
                 self._noteGui.hideTrackGui()
             else:
                 self._activeTrackId = foundTrackId
                 destinationConfig = self._configuration.getTrackConfiguration(self._activeTrackId)
-                if(destinationConfig != None):
+                if(destinationConfig is not None):
                     activeNoteId, activeNoteMixMode = self.getNoteConfig(self._activeTrackId)
                     self._trackGui.updateGui(destinationConfig, foundTrackId, activeNoteId, activeNoteMixMode)
                     self._noteGui.showTrackGui()
@@ -1672,16 +1672,16 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackGuiSettings[i].hasTrackWidgetId(buttonId)):
                 foundTrackId = i
                 break
-        if(foundTrackId != None):
+        if(foundTrackId is not None):
             self.setActiveTrackId(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
-            if(destinationConfig != None):
+            if(destinationConfig is not None):
                 settings = self._trackGuiSettings[foundTrackId]
                 activeNoteId = settings.getActiveNoteId()
                 noteMixMode = "Default"
                 if((activeNoteId >= 0) and (activeNoteId < 128)):
                     activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                    if(activeNoteConfig != None):
+                    if(activeNoteConfig is not None):
                         noteMixMode = activeNoteConfig.getMixMode()
                 else:
                     noteMixMode = "None"
@@ -1694,17 +1694,17 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackGuiSettings[i].hasTrackWidgetId(buttonId)):
                 foundTrackId = i
                 break
-        if(foundTrackId != None):
+        if(foundTrackId is not None):
             self.setActiveTrackId(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
-            if(destinationConfig != None):
+            if(destinationConfig is not None):
                 settings = self._trackGuiSettings[foundTrackId]
                 activeNoteId = settings.getActiveNoteId()
                 if((activeNoteId >= 0) and (activeNoteId < 128)):
                     self._activeNoteId = activeNoteId
                     self._selectKeyboardKey(self._activeNoteId)
                     noteConfig = self._configuration.getNoteConfiguration(self._activeNoteId)
-                    if(noteConfig == None):
+                    if(noteConfig is None):
                         self._noteGui.updateOverviewClipBitmap(self._emptyBitMap)
                         self._noteGui.clearGui(self._activeNoteId)
                     else:
@@ -1723,7 +1723,7 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackGuiSettings[i].hasPlayWidgetId(buttonId)):
                 foundTrackId = i
                 break
-        if(foundTrackId != None):
+        if(foundTrackId is not None):
             self._activeTrackId = foundTrackId
             if(self._selectedMidiChannel == foundTrackId):
                 self._selectedMidiChannel = -1
@@ -1733,13 +1733,13 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
                     self._selectedMidiChannel = foundTrackId
             self._selectTrack(foundTrackId)
             destinationConfig = self._configuration.getTrackConfiguration(foundTrackId)
-            if(destinationConfig != None):
+            if(destinationConfig is not None):
                 settings = self._trackGuiSettings[foundTrackId]
                 activeNoteId = settings.getActiveNoteId()
                 noteMixMode = "Default"
                 if((activeNoteId >= 0) and (activeNoteId < 128)):
                     activeNoteConfig = self._configuration.getNoteConfiguration(activeNoteId)
-                    if(activeNoteConfig != None):
+                    if(activeNoteConfig is not None):
                         noteMixMode = activeNoteConfig.getMixMode()
                 else:
                     noteMixMode = "None"
@@ -1753,19 +1753,19 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._trackGuiSettings[i].hasStopWidgetId(buttonId)):
                 foundTrackId = i
                 break
-        if(foundTrackId != None):
+        if(foundTrackId is not None):
             self._configuration.getMidiSender().sendGuiClearChannelNotes(foundTrackId)
 
     def _onClose(self, event):
         print "User has closed window!"
         self._cueServer.requestCueWebServerProcessToStop()
         self._guiClient1.requestGuiClientProcessToStop()
-        if(self._guiClient2 != None):
+        if(self._guiClient2 is not None):
             self._guiClient2.requestGuiClientProcessToStop()
-        if(self._guiClient3 != None):
+        if(self._guiClient3 is not None):
             self._guiClient3.requestGuiClientProcessToStop()
         self._midiListner.requestTcpMidiListnerProcessToStop()
-        if(self._statusQueue != None):
+        if(self._statusQueue is not None):
             print "Telling player process that we are quitting."
             self._statusQueue.put("QUIT")
         self._shutdownTimer = wx.Timer(self, -1) #@UndefinedVariable
@@ -1787,9 +1787,9 @@ class TaktPlayerGui(wx.Frame): #@UndefinedVariable
             if(self._shutdownTimerCounter > 200):
                 if(self._guiClient1.hasGuiClientProcessToShutdownNicely() == False):
                     self._guiClient1.forceGuiClientProcessToStop()
-                if(self._guiClient2 != None and self._guiClient2.hasGuiClientProcessToShutdownNicely() == False):
+                if(self._guiClient2 is not None and self._guiClient2.hasGuiClientProcessToShutdownNicely() == False):
                     self._guiClient2.forceGuiClientProcessToStop()
-                if(self._guiClient3 != None and self._guiClient3.hasGuiClientProcessToShutdownNicely() == False):
+                if(self._guiClient3 is not None and self._guiClient3.hasGuiClientProcessToShutdownNicely() == False):
                     self._guiClient3.forceGuiClientProcessToStop()
                 if(self._midiListner.hasTcpMidiListnerProcessToShutdownNicely() == False):
                     self._midiListner.forceTcpMidiListnerProcessToStop()
@@ -1822,7 +1822,7 @@ def startGui(debugMode, configDir, commandQueue = None, statusQueue = None):
         os.environ["PATH"] += ":."
     app = wx.App(redirect = redirectValue, filename = logFileName) #@UndefinedVariable
     gui = TaktPlayerGui(None, configDir, debugMode, title="Takt Player GUI")
-    if(commandQueue != None and statusQueue != None):
+    if(commandQueue is not None and statusQueue is not None):
         gui.setupProcessQueues(commandQueue, statusQueue)
     app.MainLoop()
 

@@ -1,8 +1,8 @@
-'''
+"""
 Created on 21. des. 2011
 
 @author: pcn
-'''
+"""
 
 from video.media.MediaFile import VideoLoopFile, ImageFile, ImageSequenceFile,\
     CameraInput, MediaError, KinectCameraInput, ScrollImageFile, SpriteImageFile,\
@@ -55,18 +55,20 @@ class MediaPool(object):
             print "mediaPool config is updated..."
             self._getConfiguration()
             for mediaFile in self._mediaPool:
-                if(mediaFile != None):
+                if(mediaFile is not None):
                     mediaFile.checkAndUpdateFromConfiguration()
             self._configurationTree.resetConfigurationUpdated()
 
-    def _isFileNameAnImageName(self, filename):
+    @staticmethod
+    def _isFileNameAnImageName(filename):
         if(filename.endswith(".png")):
             return True
         if(filename.endswith(".jpg")):
             return True
         return False
 
-    def _isFileNameAnImageSequenceName(self, filename):
+    @staticmethod
+    def _isFileNameAnImageSequenceName(filename):
         if(filename.endswith("_sequence.avi")):
             return True
         return False
@@ -76,7 +78,7 @@ class MediaPool(object):
         for i in range(128):
             mediaPoolState.append(False)
         xmlChildren = self._configurationTree.findXmlChildrenList("MediaFile")
-        if(xmlChildren != None):
+        if(xmlChildren is not None):
             for xmlConfig in xmlChildren:
                 midiNote = self.addXmlMedia(xmlConfig)
                 mediaPoolState[midiNote] = True
@@ -92,11 +94,7 @@ class MediaPool(object):
 
     def setupSpecialNoteModulations(self):
         for note in self._mediaPool:
-#            if(note == None):
-#                print "n",
-#            else:
-#                print note.getType(),
-            if((note != None) and (note.getType() == "Modulation")):
+            if((note is not None) and (note.getType() == "Modulation")):
                 noteName = note.getFileName().encode("utf-8")
                 descSum = "Modulation;" + noteName + ";Any;Sum"
                 desc1st = "Modulation;" + noteName + ";Any;1st"
@@ -132,7 +130,7 @@ class MediaPool(object):
         oldMedia = self._mediaPool[midiNote]
 
         if(len(fileName) <= 0):
-            if(oldMedia != None):
+            if(oldMedia is not None):
                 print "New file is empty: Removing old media. " + noteLetter + " filename: " + str(oldMedia.getFileName().encode("utf-8"))
                 if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
                     print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
@@ -141,7 +139,7 @@ class MediaPool(object):
                 oldMedia.close()
             mediaFile = None
         else:
-            if(mediaType == None):
+            if(mediaType is None):
                 if(self._isFileNameAnImageName(fileName)):
                     mediaType = "Image"
                 elif(self._isFileNameAnImageSequenceName(fileName)):
@@ -149,11 +147,11 @@ class MediaPool(object):
                 else:
                     mediaType = "VideoLoop"
             keepOld = False
-            if(oldMedia != None):
+            if(oldMedia is not None):
                 if(oldMedia.equalFileName(fileName)):
                     if((oldMedia.getType() == mediaType)):
                         print "Keeping old media in this slot: " + str(midiNote) + " fileName: " + str(fileName.encode("utf-8"))
-                        if(midiLength != None):
+                        if(midiLength is not None):
                             oldMedia.setMidiLengthInBeats(midiLength)
                         try:
                             oldMedia.checkAndUpdateFromConfiguration()
@@ -163,7 +161,7 @@ class MediaPool(object):
                             traceback.print_exc()
                             mediaFile = None
             if(keepOld == False):
-                if(oldMedia != None):
+                if(oldMedia is not None):
                     print "Removing old media. " + noteLetter + " filename: " + str(oldMedia.getFileName().encode("utf-8"))
                     if(self._configurationTree.removeChildUniqueId("MediaFile", "Note", noteLetter) == False):
                         print "Config child NOT removed -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!"
@@ -240,7 +238,7 @@ class MediaPool(object):
 
     def mediaPostConfigurations(self):
         for media in self._mediaPool:
-            if(media != None):
+            if(media is not None):
 #                print "DEBUG pcn: mediaPostConfigurations() mediaType: " + str(media.getType()) + " name: " + str(media.getFileName())
                 media.doPostConfigurations()
 
@@ -254,7 +252,7 @@ class MediaPool(object):
         noteListString = ""
         for i in range(128):
             media = self._mediaPool[i]
-            if(media != None):
+            if(media is not None):
                 if(noteListString != ""):
                     noteListString += ","
                 noteListString += str(i)
@@ -270,14 +268,14 @@ class MediaPool(object):
         return noteListString
 
     def requestEffectState(self, midiChannel, midiNote):
-        if(midiNote == None):
+        if(midiNote is None):
             if(midiChannel < 0 or midiChannel >= 16):
                 print "Channel effect state request: Bad channel: " + str(midiChannel)
             else:
 #                print "Channel effect state request!"
                 return self._mediaMixer.getEffectState(midiChannel)
         else:
-            if(midiNote != None):
+            if(midiNote is not None):
                 if(midiNote < 0 or midiNote >= 128):
                     print "Note effect state request: Bad note: " + str(midiNote)
                 else:
@@ -289,7 +287,7 @@ class MediaPool(object):
                             mediaStateHolder = self._mediaTrackStateHolders[midiChannel]
 #                    print "Note effect state request!"
                     midiNoteObject = self._mediaPool[midiNote]
-                    if(midiNoteObject != None):
+                    if(midiNoteObject is not None):
                         return midiNoteObject.getEffectState(mediaStateHolder)
             else:
                 print "Error: Empty request!"
@@ -297,14 +295,14 @@ class MediaPool(object):
 
     def requestVideoThumbnail(self, noteId, videoPosition, forceUpdate):
         noteMedia = self._mediaPool[noteId]
-        if(noteMedia != None):
+        if(noteMedia is not None):
             return noteMedia.getThumbnailId(videoPosition, self._appDataDirectory, forceUpdate)
         else:
             return None
 
     def closeAll(self):
         for media in self._mediaPool:
-            if(media != None):
+            if(media is not None):
                 media.close()
 
     def updateVideo(self, timeStamp):
@@ -320,7 +318,7 @@ class MediaPool(object):
             note = midiChannelState.checkIfNextNoteIsQuantized()
             if(note > -1):
                 noteMedia = self._mediaPool[note]
-                if(noteMedia != None):
+                if(noteMedia is not None):
                     quantizeValue = noteMedia.getQuantize()
                 midiChannelState.quantizeWaitingNote(note, quantizeValue)
             midiNoteState = midiChannelState.getActiveNote(midiTime)
@@ -335,20 +333,20 @@ class MediaPool(object):
                 noteIsNew = False
                 if(midiNoteState.isNew() == True):
                     noteIsNew = True
-                    if(newMedia != None):
+                    if(newMedia is not None):
                         midiNoteState.setNewState(False)
                 oldMedia = self._mediaTracks[midiChannel]
                 oldMediaState = self._mediaTrackStateHolders[midiChannel]
-                if((newMedia != None) and (newMedia.getType() == "Modulation")):
+                if((newMedia is not None) and (newMedia.getType() == "Modulation")):
                     newMedia.setStartPosition(midiNoteState.getStartPosition(), None, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState, noteIsNew)
                     newMedia = oldMedia
                     noteMediaIsModulationType = True
-                if(oldMedia == None):
-#                    if(newMedia != None):
+                if(oldMedia is None):
+#                    if(newMedia is not None):
 #                        print "DEBUG pcn: newMedia noteId: " + str(newNoteId),
 #                        midiNoteState.printState(midiChannel)
                     try:
-                        if(newMedia != None):
+                        if(newMedia is not None):
                             activeMediaState = newMedia.getMediaStateHolder()
                             self._mediaTrackIds[midiChannel] = newNoteId
                         else:
@@ -368,7 +366,7 @@ class MediaPool(object):
                     oldMedia.releaseMedia(oldMediaState)
                     self._mediaTracks[midiChannel] = newMedia
                     try:
-                        if(newMedia != None):
+                        if(newMedia is not None):
                             activeMediaState = newMedia.getMediaStateHolder()
                             self._mediaTrackIds[midiChannel] = newNoteId
                         else:
@@ -383,14 +381,14 @@ class MediaPool(object):
                         midiChannelState.removeAllNotes()
                 else:
                     activeMediaState = oldMediaState
-                if(newMedia != None):
+                if(newMedia is not None):
                     activeMedia = newMedia
                     if(noteMediaIsModulationType == False):
                         newMedia.setStartPosition(midiNoteState.getStartPosition(), activeMediaState, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState, noteIsNew)
             elif(midiNoteState.isActive(-1.0)):
                 activeMedia = self._mediaTracks[midiChannel]
                 activeMediaState = self._mediaTrackStateHolders[midiChannel]
-            if(activeMedia != None):
+            if(activeMedia is not None):
                 try:
                     noteIsDone = activeMedia.skipFrames(activeMediaState, midiTime, midiNoteState, self._midiStateHolder.getDmxState(), midiChannelState)
                     if(noteIsDone == True):
@@ -403,7 +401,7 @@ class MediaPool(object):
                     self._mediaMixer.gueueImage(None, None, midiChannel)
             else:
                 self._mediaMixer.gueueImage(None, None, midiChannel)
-                if(self._mediaTracks[midiChannel] != None):
+                if(self._mediaTracks[midiChannel] is not None):
 #                    print "DEBUG pcn: removing media on channel: " + str(midiChannel) + " Iiik! "
                     self._mediaTracks[midiChannel].releaseMedia(self._mediaTrackStateHolders[midiChannel])
                 self._mediaTracks[midiChannel] = None

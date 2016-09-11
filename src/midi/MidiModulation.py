@@ -136,7 +136,7 @@ def getAdsrShapeId(shapeName):
 
 
 class AttackDecaySustainRelease(object):
-    def __init__(self, midiTimingClass, mode, attack, decay, sustain, release, minVal = 0.0, maxVal = 1.0):
+    def __init__(self, midiTimingClass, mode, attack, decay, sustain, release, minVal, maxVal):
         self._midiTiming = midiTimingClass
         self._shape = mode
 
@@ -174,7 +174,7 @@ class AttackDecaySustainRelease(object):
                     else:
                         returnValue = 1.0 - self._sustainValue
         else:
-#            print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
+            #print "ADSR: originalLength " + str(originalLength)+ " self._releaseLengthCalc " + str(self._releaseLengthCalc)
             if((self._releaseLengthCalc > 0.0)):
                 if((noteOffSPP - noteOnSPP) < self._sustainStartCalc):
                     releaseStartValue = self.getValue(noteOffSPP, (noteOnSPP, 0.0, 0.0))
@@ -188,6 +188,8 @@ class AttackDecaySustainRelease(object):
                     returnValue = 1.0
             else:
                 returnValue = 1.0
+        if(self._minVal > 0.001 or self._maxVal < 0.999):
+            returnValue = self._minVal + (returnValue * self._valRange)
         return returnValue
 
     def getAttackLength(self):
@@ -202,13 +204,15 @@ class AttackDecaySustainRelease(object):
     def getReleaseLength(self):
         return self._releaseLengthCalc
 
-    def isEqual(self, mode, attack, decay, sustain, release):
+    def isEqual(self, mode, attack, decay, sustain, release, minValue, maxValue):
         if(self._shape == mode):
             if(self._attackLength == attack):
                 if(self._decayLength == decay):
                     if(self._sustainValue == sustain):
                         if(self._releaseLength == release):
-                            return True
+                            if(self._minVal == minValue):
+                                if(self._maxVal == maxValue):
+                                    return True
         return False
 
 class ModulationSources():
@@ -368,9 +372,11 @@ class MidiModulation(object):
                     decay = 0.0
                     sustain = 1.0
                     release = 0.0
+                    minValue = 0.0
+                    maxValue = 1.0
                     if(len(sourceSplit) > 2):
                         newSplit = sourceDescription.split('.', 2)
-                        valuesSplit = newSplit[2].split('|', 5)
+                        valuesSplit = newSplit[2].split('|', 7)
                         try:
                             tmpAttack = float(valuesSplit[0])
                             if(tmpAttack >= 0.0):
@@ -406,8 +412,22 @@ class MidiModulation(object):
                                             release = tmpRelease
                                     except:
                                         pass #Keep default
+                                if(len(valuesSplit) > 4):
+                                    try:
+                                        tmpMin = float(valuesSplit[4])
+                                        if(tmpMin >= 0.0):
+                                            minValue = tmpMin
+                                    except:
+                                        pass #Keep default
+                                if(len(valuesSplit) > 5):
+                                    try:
+                                        tmpMax = float(valuesSplit[5])
+                                        if(tmpMax >= 0.0):
+                                            maxValue = tmpMax
+                                    except:
+                                        pass #Keep default
                     #print "ADSR id: " + str(self._getAdsrId(mode, attack, decay, sustain, release))
-                    return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release))
+                    return (ModulationSources.ADSR, self._getAdsrId(mode, attack, decay, sustain, release, minValue, maxValue))
         elif( sourceSplit[0] == "Special" ):
             restId = sourceDescription.split("Special.")[1]
             return (ModulationSources.Special, self._specialModulationHolder.getModulationId(restId))
@@ -417,7 +437,6 @@ class MidiModulation(object):
 
     def getStringFromId(self, modulationId):
         modulationSource, subModId = modulationId
-        returnString = ""
         if(modulationSource == ModulationSources.MidiChannel):
             returnString = "MidiChannel"
             isInt = isinstance(subModId, int)
@@ -490,7 +509,12 @@ class MidiModulation(object):
                 returnString += "." + str(subModId[1])
             else:
                 returnString += ".0.0"
-            if(subModId[0] != adsrType.AR):
+            if(subModId[0] == adsrType.AR):
+                if(len(subModId) > 4):
+                    returnString += "|" + str(subModId[4])
+                else:
+                    returnString += "|0.0"
+            else:
                 if(len(subModId) > 2):
                     returnString += "|" + str(subModId[2])
                 else:
@@ -499,10 +523,18 @@ class MidiModulation(object):
                     returnString += "|" + str(subModId[3])
                 else:
                     returnString += "|1.0"
-            if(len(subModId) > 4):
-                returnString += "|" + str(subModId[4])
-            else:
-                returnString += "|0.0"
+                if(len(subModId) > 4):
+                    returnString += "|" + str(subModId[4])
+                else:
+                    returnString += "|0.0"
+                if(len(subModId) > 5):
+                    returnString += "|" + str(subModId[5])
+                else:
+                    returnString += "|0.0"
+                if(len(subModId) > 6):
+                    returnString += "|" + str(subModId[6])
+                else:
+                    returnString += "|1.0"
         elif(modulationSource == ModulationSources.Value):
             returnString = "Value"
             isFloat = isinstance(subModId, float)
@@ -543,24 +575,24 @@ class MidiModulation(object):
     def _getLfoId(self, mode, midiLength = 4.0 , startSPP = 0.0, minVal = 0.0, maxVal = 1.0):
         return (mode, midiLength, startSPP, minVal, maxVal)
 
-    def _findAdsr(self, mode, attack, decay, sustain, release):
+    def _findAdsr(self, mode, attack, decay, sustain, release, minValue, maxValue):
         for adsr in self._activeAdsrs:
-            if(adsr.isEqual(mode, attack, decay, sustain, release)):
+            if(adsr.isEqual(mode, attack, decay, sustain, release, minValue, maxValue)):
                 return adsr
         return None
 
     def _getAdsr(self, adsrConfig):
-        mode, attack, decay, sustain, release = adsrConfig
-        foundAdsr = self._findAdsr(mode, attack, decay, sustain, release)
+        mode, attack, decay, sustain, release, minValue, maxValue = adsrConfig
+        foundAdsr = self._findAdsr(mode, attack, decay, sustain, release, minValue, maxValue)
         if(foundAdsr == None):
-            newAdsr = AttackDecaySustainRelease(self._midiTiming, mode, attack, decay, sustain, release)
+            newAdsr = AttackDecaySustainRelease(self._midiTiming, mode, attack, decay, sustain, release, minValue, maxValue)
             self._activeAdsrs.append(newAdsr)
             return newAdsr
         else:
             return foundAdsr
 
-    def _getAdsrId(self, mode, attack, decay, sustain, release):
-        return (mode, attack, decay, sustain, release)
+    def _getAdsrId(self, mode, attack, decay, sustain, release, minValue, maxValue):
+        return (mode, attack, decay, sustain, release, minValue, maxValue)
 
     def getModlulationValue(self, combinedId, midiChannelStateHolder, midiNoteStateHolder, dmxStateHolder, songPosition, specialModulationHolder, argument = 0.0, plussMinus = False):
         if(combinedId != None):

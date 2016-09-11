@@ -217,18 +217,20 @@ class MediaFile(object):
             self._configurationTree.addBoolParameter("HorizontalMode", True)
             self._configurationTree.addBoolParameter("ReverseMode", False)
         elif(mediaType == "Sprite"):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addTextParameter("ZModulation", "None")
+            self._configurationTree.addTextParameter("RotModulation", "None")
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
         elif(mediaType == "Text"):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addTextParameter("ZModulation", "None")
+            self._configurationTree.addTextParameter("RotModulation", "None")
             self._configurationTree.addTextParameter("Font", "Arial;32;#FFFFFF")
         elif(mediaType == "ImageSequence"):
             self._configurationTree.addTextParameter("SequenceMode", "Time")
@@ -297,6 +299,7 @@ class MediaFile(object):
                 self._configurationTree.removeParameter("XModulation")
                 self._configurationTree.removeParameter("YModulation")
                 self._configurationTree.removeParameter("ZModulation")
+                self._configurationTree.removeParameter("RotModulation")
                 self._configurationTree.removeParameter("Font")
             elif(oldType == "Modulation"):
                 self._configurationTree.removeParameter("FirstModulation")
@@ -357,6 +360,7 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("XModulation")
                     self._configurationTree.removeParameter("YModulation")
                     self._configurationTree.removeParameter("ZModulation")
+                    self._configurationTree.removeParameter("RotModulation")
                     self._configurationTree.removeParameter("InvertFirstFrameMask")
                 elif(oldType == "Text"):
                     self._configurationTree.removeParameter("StartPosition")
@@ -364,6 +368,7 @@ class MediaFile(object):
                     self._configurationTree.removeParameter("XModulation")
                     self._configurationTree.removeParameter("YModulation")
                     self._configurationTree.removeParameter("ZModulation")
+                    self._configurationTree.removeParameter("RotModulation")
                     self._configurationTree.removeParameter("Font")
                 elif(oldType == "Group"):
                     pass
@@ -497,11 +502,12 @@ class MediaFile(object):
             self._configurationTree.removeParameter("ReverseMode")
             
         if((mediaType == "Sprite") or (mediaType == "Text")):
-            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
-            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
+            self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0|0.0")
+            self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0|0.0")
             self._configurationTree.addTextParameter("XModulation", "None")
             self._configurationTree.addTextParameter("YModulation", "None")
             self._configurationTree.addTextParameter("ZModulation", "None")
+            self._configurationTree.addTextParameter("RotModulation", "None")
             startVal = sourceConfigTree.getValue("StartPosition")
             if(startVal is not None):
                 self._configurationTree.setValue("StartPosition", startVal)
@@ -517,12 +523,16 @@ class MediaFile(object):
             zVal = sourceConfigTree.getValue("ZModulation")
             if(zVal is not None):
                 self._configurationTree.setValue("ZModulation", zVal)
+            rotVal = sourceConfigTree.getValue("RotModulation")
+            if(rotVal is not None):
+                self._configurationTree.setValue("RotModulation", rotVal)
         else:
             self._configurationTree.removeParameter("StartPosition")
             self._configurationTree.removeParameter("EndPosition")
             self._configurationTree.removeParameter("XModulation")
             self._configurationTree.removeParameter("YModulation")
             self._configurationTree.removeParameter("ZModulation")
+            self._configurationTree.removeParameter("RotModulation")
 
         if(mediaType == "Sprite"):
             self._configurationTree.addBoolParameter("InvertFirstFrameMask", False)
@@ -2466,20 +2476,20 @@ class MediaFileGui(object): #@UndefinedVariable
 
                 if((self._type == "Sprite") or (self._type == "Text")):
                     fieldValString = self._values1Field.GetValue()
-                    startVal = textToFloatValues(fieldValString, 3)
+                    startVal = textToFloatValues(fieldValString, 4)
                     startValString = floatValuesToString(startVal)
                     if(fieldValString != startValString):
-                        startValString = "0.5|0.5|0.0"
+                        startValString = "0.5|0.5|0.0|0.0"
                     self._values1Field.SetValue(startValString)
-                    self._config.addTextParameter("StartPosition", "0.5|0.5|0.0")
+                    self._config.addTextParameter("StartPosition", "0.5|0.5|0.0|0.0")
                     self._config.setValue("StartPosition", startValString)
                     fieldValString = self._values2Field.GetValue()
-                    endVal = textToFloatValues(fieldValString, 3)
+                    endVal = textToFloatValues(fieldValString, 4)
                     endValString = floatValuesToString(endVal)
                     if(fieldValString != endValString):
-                        endValString = "0.5|0.5|0.0"
+                        endValString = "0.5|0.5|0.0|0.0"
                     self._values2Field.SetValue(endValString)
-                    self._config.addTextParameter("EndPosition", "0.5|0.5|0.0")
+                    self._config.addTextParameter("EndPosition", "0.5|0.5|0.0|0.0")
                     self._config.setValue("EndPosition", endValString)
                     xModulation = self._midiModulation.validateModulationString(self._subModulationField.GetValue())
                     self._subModulationField.SetValue(xModulation)
@@ -2499,6 +2509,7 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._config.removeParameter("XModulation")
                     self._config.removeParameter("YModulation")
                     self._config.removeParameter("ZModulation")
+                    self._config.removeParameter("RotModulation")
 
                 if(self._type == "Sprite"):
                     self._config.addBoolParameter("InvertFirstFrameMask", False)
@@ -2723,16 +2734,16 @@ class MediaFileGui(object): #@UndefinedVariable
                         self._fontField.SetValue(font)
                 confString = self._config.getValue("StartPosition")
                 if(confString is None):
-                    confValString = "0.5|0.5|0.0"
+                    confValString = "0.5|0.5|0.0|0.0"
                 else:
-                    confVal = textToFloatValues(confString, 3)
+                    confVal = textToFloatValues(confString, 4)
                     confValString = floatValuesToString(confVal)
                 self._values1Field.SetValue(confValString)
                 confString = self._config.getValue("EndPosition")
                 if(confString is None):
-                    confValString = "0.5|0.5|0.0"
+                    confValString = "0.5|0.5|0.0|0.0"
                 else:
-                    confVal = textToFloatValues(confString, 3)
+                    confVal = textToFloatValues(confString, 4)
                     confValString = floatValuesToString(confVal)
                 self._values2Field.SetValue(confValString)
                 xMod = config.getValue("XModulation")
@@ -2747,8 +2758,8 @@ class MediaFileGui(object): #@UndefinedVariable
                     self._updateInvertModeChoices(self._subModeField, self._selectedSubMode, "Normal")
                 else:
                     self._fontField.SetValue("Arial;32;#FFFFFF")
-                self._values1Field.SetValue("0.5|0.5|0.0")
-                self._values2Field.SetValue("0.5|0.5|0.0")
+                self._values1Field.SetValue("0.5|0.5|0.0|0.0")
+                self._values2Field.SetValue("0.5|0.5|0.0|0.0")
                 self._subModulationField.SetValue("None")
                 self._subModulation2Field.SetValue("None")
                 self._subModulation3Field.SetValue("None")

@@ -571,8 +571,8 @@ class MediaFile(object):
             else:
                 if(syncLength is None):
                     return 1.0
-                if(mediaSettingsHolder.isLastFrameSpeedModified == True):
-                    framesDiff = ((unmodifiedFramePos % (2 * self._numberOfFrames)) - (mediaSettingsHolder.lastFramePos % (2 * self._numberOfFrames))) % (2 * self._numberOfFrames)
+                if(mediaSettingsHolder.isLastFrameSpeedModified == True and self._numberOfFrames > 1):
+                    framesDiff = ((unmodifiedFramePos % (2 * int(self._numberOfFrames))) - (mediaSettingsHolder.lastFramePos % (2 * int(self._numberOfFrames)))) % (2 * int(self._numberOfFrames))
                     framesSpeed = float(self._numberOfFrames) / syncLength
                     if(framesDiff > (2.0 * framesSpeed)):
                         if(framesDiff < self._numberOfFrames):
@@ -1556,19 +1556,23 @@ class SpriteMediaBase(MediaFile):
         MediaFile.__init__(self, fileName, midiTimingClass, timeModulationConfiguration, specialModulationHolder, effectsConfiguration, effectImagesConfig, fadeConfiguration, configurationTree, internalResolutionX, internalResolutionY, videoDir)
 
         self._midiModulation = MidiModulation(self._configurationTree, self._midiTiming, self._specialModulationHolder)
-        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0")
-        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0")
+        self._configurationTree.addTextParameter("StartPosition", "0.5|0.5|0.0|0.0")
+        self._configurationTree.addTextParameter("EndPosition", "0.5|0.5|0.0|0.0")
         self._midiModulation.setModulationReceiver("XModulation", "None")
         self._midiModulation.setModulationReceiver("YModulation", "None")
         self._midiModulation.setModulationReceiver("ZModulation", "None")
-        self._startX, self._startY, self._startZ = textToFloatValues("0.5|0.5|0.0", 3)
-        self._endX, self._endY, self._endZ = textToFloatValues("0.5|0.5|0.0", 3)
+        self._startX, self._startY, self._startZ, self._startRot = textToFloatValues("0.5|0.5|0.0|0.0", 4)
+        self._endX, self._endY, self._endZ, self._endRot = textToFloatValues("0.5|0.5|0.0|0.0", 4)
         self._xModulationId = None
         self._yModulationId = None
         self._zModulationId = None
+        self._rotModulationId = None
 
         self._bufferedImageList = []
         self._bufferedImageMasks = []
+        self._rotatedImage = None
+        self._rotatedMask = None
+        self._rotatedImageSize = 0
 
         self._spritePlacementMat = createMat(self._internalResolutionX, self._internalResolutionY)
 
@@ -1580,17 +1584,19 @@ class SpriteMediaBase(MediaFile):
         mediaSettingsHolder.oldX = -2.0
         mediaSettingsHolder.oldY = -2.0
         mediaSettingsHolder.oldZ = -2.0
+        mediaSettingsHolder.oldRot = -2.0
         mediaSettingsHolder.oldCurrentFrame = -1
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)
         startValuesString = self._configurationTree.getValue("StartPosition")
-        self._startX, self._startY, self._startZ = textToFloatValues(startValuesString, 3)
+        self._startX, self._startY, self._startZ, self._startRot = textToFloatValues(startValuesString, 4)
         endValuesString = self._configurationTree.getValue("EndPosition")
-        self._endX, self._endY, self._endZ = textToFloatValues(endValuesString, 3)
+        self._endX, self._endY, self._endZ, self._endRot = textToFloatValues(endValuesString, 4)
         self._xModulationId = self._midiModulation.connectModulation("XModulation")
         self._yModulationId = self._midiModulation.connectModulation("YModulation")
         self._zModulationId = self._midiModulation.connectModulation("ZModulation")
+        self._rotModulationId = self._midiModulation.connectModulation("rotModulation")
 
     def getType(self):
         return "SpriteMediaBase"
@@ -1615,6 +1621,7 @@ class SpriteMediaBase(MediaFile):
         posX = 0.5
         posY = 0.5
         posZ = 0.0
+        posRot = 0.0
         modulationIsActive = False
         if((self._xModulationId is not None)):
             posX = self._midiModulation.getModlulationValue(self._xModulationId, midiChannelState, midiNoteState, dmxState, currentSongPosition, self._specialModulationHolder)
@@ -1625,17 +1632,22 @@ class SpriteMediaBase(MediaFile):
         if((self._zModulationId is not None)):
             posZ = self._midiModulation.getModlulationValue(self._zModulationId, midiChannelState, midiNoteState, dmxState, currentSongPosition, self._specialModulationHolder)
             modulationIsActive = True
+        if((self._rotModulationId is not None)):
+            posRot = self._midiModulation.getModlulationValue(self._rotModulationId, midiChannelState, midiNoteState, dmxState, currentSongPosition, self._specialModulationHolder)
+            modulationIsActive = True
 
         if(modulationIsActive == False):
             posX = self._startX
             posY = self._startY
             posZ = self._startZ
+            posRot = self._startRot
             unmodifiedPos = (currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength
             modifiedPos = self._timeModulatePos(unmodifiedPos, currentSongPosition, mediaSettingsHolder, midiNoteState, dmxState, midiChannelState, syncLength)
             if(modifiedPos >= 1.0):
                 posX = self._endX
                 posY = self._endY
                 posZ = self._endZ
+                posRot = self._endRot
             elif(mediaSettingsHolder.startSongPosition < currentSongPosition):
                 if(self._endX != self._startX):
                     posX = self._startX + ((self._endX - self._startX) * modifiedPos)
@@ -1643,6 +1655,8 @@ class SpriteMediaBase(MediaFile):
                     posY = self._startY + ((self._endY - self._startY) * modifiedPos)
                 if(self._endZ != self._startZ):
                     posZ = self._startZ + ((self._endZ - self._startZ) * modifiedPos)
+                if(self._endRot != self._startRot):
+                    posRot = self._startRot + ((self._endRot - self._startRot) * modifiedPos)
 
         if(mediaSettingsHolder.guiCtrlStateHolder is not None):
             guiStates = mediaSettingsHolder.guiCtrlStateHolder.getGuiContollerState(10)
@@ -1655,19 +1669,23 @@ class SpriteMediaBase(MediaFile):
             if(guiStates[2] is not None):
                 if(guiStates[2] > -0.5):
                     posZ = guiStates[2]
+            if(guiStates[3] is not None):
+                if(guiStates[3] > -0.5):
+                    posRot = guiStates[3]
 
         #Select frame.
-        if(self._numberOfFrames == 1):
+        if(self._numberOfFrames < 2):
             mediaSettingsHolder.currentFrame = 0
         else:
             unmodifiedFramePos = ((currentSongPosition - mediaSettingsHolder.startSongPosition) / syncLength) * self._numberOfFrames
             mediaSettingsHolder.currentFrame = int(unmodifiedFramePos) % self._numberOfFrames
 
         #Scroll image + mask
-        if((posX != mediaSettingsHolder.oldX) or (posY != mediaSettingsHolder.oldY) or (posZ != mediaSettingsHolder.oldZ) or (mediaSettingsHolder.currentFrame != mediaSettingsHolder.oldCurrentFrame)):
+        if((posX != mediaSettingsHolder.oldX) or (posY != mediaSettingsHolder.oldY) or (posZ != mediaSettingsHolder.oldZ) or (posRot != mediaSettingsHolder.oldRot) or (mediaSettingsHolder.currentFrame != mediaSettingsHolder.oldCurrentFrame)):
             mediaSettingsHolder.oldX = posX
             mediaSettingsHolder.oldY = posY
             mediaSettingsHolder.oldZ = posZ
+            mediaSettingsHolder.oldRot = posRot
             zoom = 1.0 - posZ
             mediaSettingsHolder.oldCurrentFrame = mediaSettingsHolder.currentFrame
             cv.SetZero(self._spritePlacementMat)
@@ -1675,6 +1693,18 @@ class SpriteMediaBase(MediaFile):
             if(zoom > 0.001):
                 currentSource = self._bufferedImageList[mediaSettingsHolder.currentFrame]
                 currentSourceMask = self._bufferedImageMasks[mediaSettingsHolder.currentFrame]
+                if(posRot > 0.0 and posRot < 1.0):
+                    angle = posRot * 360
+                    # print "DEBUG pcn: angle: " + str(angle) + " center: " + str((xCenter, yCenter))
+                    rotateMatrix = cv.CreateMat(2,3,cv.CV_32F)
+                    sourceX, sourceY = cv.GetSize(currentSource)
+                    cv.GetRotationMatrix2D( (sourceX/2, sourceY/2), angle, 1.0, rotateMatrix)
+                    cv.SetZero(self._rotatedImage)
+                    cv.WarpAffine(currentSource, self._rotatedImage, rotateMatrix)
+                    cv.SetZero(self._rotatedMask)
+                    cv.WarpAffine(currentSourceMask, self._rotatedMask, rotateMatrix)
+                    currentSource = self._rotatedImage
+                    currentSourceMask = self._rotatedMask
                 sourceX, sourceY = cv.GetSize(currentSource)
                 width = int(sourceX * zoom)
                 height = int(sourceY * zoom)
@@ -1713,6 +1743,7 @@ class SpriteMediaBase(MediaFile):
                     sourceHeight = sourceY
                 if((width > 0) and (height > 0)):
                     srcRegion = cv.GetSubRect(currentSource, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
+                    #print "DEBUG pcn: left: " + str(left) + " top: " + str(top) + " width: " + str(width) + " height: " + str(height)
                     dstRegion = cv.GetSubRect(self._spritePlacementMat, (left, top, width, height))
                     cv.Resize(srcRegion, dstRegion)
                     srcRegion = cv.GetSubRect(currentSourceMask, (sourceLeft, sourceTop, sourceWidth, sourceHeight))
@@ -1836,6 +1867,10 @@ class SpriteImageFile(SpriteMediaBase):
             pass
         copyOrResizeImage(self._firstImage, self._mediaSettingsHolder.captureImage)
         self._firstImageMask = self._mediaSettingsHolder.captureMask
+        spriteSize = cv.GetSize(self._firstImage)
+        self._rotatedImageSize = max(spriteSize[0], spriteSize[1])
+        self._rotatedImage = createMat(self._rotatedImageSize, self._rotatedImageSize)
+        self._rotatedMask = createMask(self._rotatedImageSize, self._rotatedImageSize)
         self._numberOfFrames = len(self._bufferedImageList)
         self._originalTime = 1.0
         for mediaSettingsHolder in self._mediaSettingsHolder.getSettingsList():
@@ -1907,6 +1942,10 @@ class TextMedia(SpriteMediaBase):
         self._firstImageMask = self._mediaSettingsHolder.captureMask
         self._bufferedImageList = []
         self._bufferedImageMasks = []
+        spriteSize = cv.GetSize(self._firstImage)
+        self._rotatedImageSize = max(spriteSize[0], spriteSize[1])
+        self._rotatedImage = createMat(self._rotatedImageSize, self._rotatedImageSize)
+        self._rotatedMask = createMask(self._rotatedImageSize, self._rotatedImageSize)
         self._bufferedImageList.append(self._firstImage)
         self._bufferedImageMasks.append(self._firstImageMask)
         self._numberOfFrames = len(self._bufferedImageList)
@@ -2702,6 +2741,7 @@ class VideoLoopFile(MediaFile):
         self._loopMode = VideoLoopMode.Normal
         self._configurationTree.addTextParameter("LoopMode", "Normal")
         self._getConfiguration()
+        self._lastStartPos = None
 
     def _getConfiguration(self):
         MediaFile._getConfiguration(self)

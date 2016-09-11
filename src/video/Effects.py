@@ -625,15 +625,15 @@ class RotateEffect(object):
         return self.rotateImage(image, amount, move, direction, zoom)
 
     def rotateImage(self, image, amount, move, direction, zoom):
-        if((amount < 0.02) or (amount > 0.99)):
-            if(zoom < 0.02):
+        if((amount < 0.001) or (amount > 0.999)):
+            if(zoom < 0.001):
                 return image
             else:
                 cv.Copy(image, self._rotateMat)
         else:
             xCenter = int(self._internalResolutionX / 2)
             yCenter = int(self._internalResolutionY / 2)
-            if(move > 0.02):
+            if(move > 0.001):
                 xCenter -= self._internalResolutionX *  0.5 * move * math.cos(self._radians360 * -direction)
                 yCenter -= self._internalResolutionY * -0.5 * move * math.sin(self._radians360 * -direction)
             angle = amount * 360
@@ -642,7 +642,7 @@ class RotateEffect(object):
             cv.GetRotationMatrix2D( (xCenter, yCenter), angle, 1.0, rotateMatrix)
             cv.SetZero(self._rotateMat)
             cv.WarpAffine(image, self._rotateMat, rotateMatrix)
-        if(zoom < 0.02):
+        if(zoom < 0.001):
             cv.Copy(self._rotateMat, image)
         else:
             zoomMultiplier = 0.60 + ((1.0 - zoom) * 0.4)

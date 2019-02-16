@@ -195,18 +195,17 @@ def midiOverNetProcess(host, port, guiHost, guiPort, useBroadcast, filterClock, 
             time.sleep(0.005)
 
 if __name__ == '__main__':
-    deviceName = ""
+    inputId = -1
     midiOverNetSender = MidiOverNetSender()
     inputList = midiOverNetSender.scanInputs()
-    if(sys.argv[1] == "--list"):
-        print inputList
-    elif(sys.argv[1] != ""):
-        deviceName = sys.argv[1]
+    print inputList
+    if(len(sys.argv) >1 and sys.argv[1] != ""):
+        inputId = int(sys.argv[1])
 
-    if(deviceName != ""):
-        midiOverNetSender.startMidiOverNetProcess(deviceName, "bcast", 2020, "127.0.0.1", 2022, True, False)
+    if(inputId > -1):
+        midiOverNetSender.startMidiOverNetProcess(inputId, "bcast", 2020, "127.0.0.1", 2022, True, False)
         while(True):
-            time.sleep(0.005)
-            midiOverNetSender.getMidiStatus()
+            time.sleep(2)
+            print midiOverNetSender.getMidiStatus()
     else:
         print "Exiting..."

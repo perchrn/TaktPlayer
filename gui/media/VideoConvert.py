@@ -246,6 +246,7 @@ class VideoConverterDialog(wx.Dialog): #@UndefinedVariable
                 streamCopyOnly = True
             if(self._mjpegFixField.GetValue() == "H264 encoding"):
                 h264Encoding = True
+        #h264Encoding = True
         if(imageSequenceMode == False):
             baseName = os.path.basename(self._inputFile)
             if(baseName.endswith("_mjpeg.avi")):

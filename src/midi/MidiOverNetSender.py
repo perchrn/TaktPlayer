@@ -3,17 +3,23 @@ Created on 21. mars 2012
 
 @author: pcn
 '''
-import pygame.midi
-import socket
 import ctypes
+import socket
+import sys
 import time
-from multiprocessing import Process, Queue
 from Queue import Empty
+from multiprocessing import Process, Queue
+
+import pygame.midi
+
 
 class MidiOverNetSender(object):
     def __init__(self):
         self._midiInputList = None
         self._midiOverNetProcess = None
+        self._midiOverNetQueue = Queue(32)
+        self._statusQueue = Queue(1024)
+        self._debugPrintQueue = Queue(1024)
 
     def scanInputs(self):
         pygame.midi.init()
@@ -47,9 +53,6 @@ class MidiOverNetSender(object):
             if(filterClock == True):
                 clockInfo = "Filtering MIDI clock!"
             print "Starting MidiOverNetPorcess. From MIDI input: \"%s\" to host: %s:%d %s" %(midiName, host, port, clockInfo)
-            self._midiOverNetQueue = Queue(32)
-            self._statusQueue = Queue(1024)
-            self._debugPrintQueue = Queue(1024)
             self._midiOverNetProcess = Process(target=midiOverNetProcess, args=(host, port, guiHost, guiPort, useBroadcast, filterClock, pygameMidiId, self._midiOverNetQueue, self._statusQueue, self._debugPrintQueue))
             self._midiOverNetProcess.name = "midiUdpSender"
             self._midiOverNetProcess.start()
@@ -191,3 +194,19 @@ def midiOverNetProcess(host, port, guiHost, guiPort, useBroadcast, filterClock, 
             statusQueue.put_nowait(0)#No MIDI
             time.sleep(0.005)
 
+if __name__ == '__main__':
+    deviceName = ""
+    midiOverNetSender = MidiOverNetSender()
+    inputList = midiOverNetSender.scanInputs()
+    if(sys.argv[1] == "--list"):
+        print inputList
+    elif(sys.argv[1] != ""):
+        deviceName = sys.argv[1]
+
+    if(deviceName != ""):
+        midiOverNetSender.startMidiOverNetProcess(deviceName, "bcast", 2020, "127.0.0.1", 2022, True, False)
+        while(True):
+            time.sleep(0.005)
+            midiOverNetSender.getMidiStatus()
+    else:
+        print "Exiting..."
